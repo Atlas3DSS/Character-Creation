@@ -427,16 +427,22 @@ def run_all_benchmarks(
     wrapped_model, tokenizer, model, processor,
     test_prompts: list[str], step_label: str,
     aime_task: str = "aime24",
+    aime_limit: Optional[int] = None,
     hellaswag_limit: Optional[int] = None,
 ) -> dict:
-    """Run all 3 benchmarks and return unified results dict."""
+    """Run all 3 benchmarks and return unified results dict.
+
+    aime_limit: if set, only run N AIME problems (quick probe).
+                If None, run the full AIME set.
+    """
     print(f"\n  === Benchmarking: {step_label} ===")
+    quick_tag = f", limit={aime_limit}" if aime_limit else ", full"
     t0 = time.time()
 
-    # 1. AIME (no limit — use full test set)
-    print(f"  [1/3] AIME ({aime_task})...")
+    # 1. AIME
+    print(f"  [1/3] AIME ({aime_task}{quick_tag})...")
     try:
-        aime_scores = run_lm_eval(wrapped_model, tokenizer, [aime_task])
+        aime_scores = run_lm_eval(wrapped_model, tokenizer, [aime_task], limit=aime_limit)
         aime_acc = aime_scores.get(aime_task, 0.0)
     except Exception as e:
         print(f"  WARNING: AIME eval failed: {e}")
@@ -610,6 +616,8 @@ def main():
     parser.add_argument("--output", type=str, default=str(RESULTS_DIR))
     parser.add_argument("--skip-warmth", action="store_true",
                         help="Skip warmth dimension if vectors not extracted")
+    parser.add_argument("--aime-quick", type=int, default=5,
+                        help="AIME problems per β probe (default 5). Full AIME only at baseline + dimension lock-in.")
     parser.add_argument("--aime-guard", type=float, default=2.0,
                         help="Max AIME drop (percentage points) before rollback")
     args = parser.parse_args()
@@ -633,6 +641,7 @@ def main():
     print(f"  Steer layers:   {steer_layers}")
     print(f"  β values:       {beta_values}")
     print(f"  AIME task:      {args.aime_task}")
+    print(f"  AIME quick:     {args.aime_quick} problems per β probe")
     print(f"  HellaSwag limit:{args.hellaswag_limit}")
     print(f"  AIME guard:     {args.aime_guard} pts")
     print(f"  Output:         {output_dir}")
@@ -748,11 +757,12 @@ def main():
             step_label = f"{dim_name}_b{beta:.1f}"
 
             if beta == 0.0:
-                # β=0 means no change — just benchmark current state
+                # β=0 means no change — just benchmark current state (quick AIME)
                 result = run_all_benchmarks(
                     wrapped, tokenizer, model, processor,
                     test_prompts, step_label,
                     aime_task=args.aime_task,
+                    aime_limit=args.aime_quick,
                     hellaswag_limit=args.hellaswag_limit,
                 )
             else:
@@ -768,6 +778,7 @@ def main():
                     wrapped, tokenizer, model, processor,
                     test_prompts, step_label,
                     aime_task=args.aime_task,
+                    aime_limit=args.aime_quick,
                     hellaswag_limit=args.hellaswag_limit,
                 )
 
@@ -812,15 +823,34 @@ def main():
         else:
             print(f"  SKIPPED: {dim_name} (β=0.0)")
 
-        # AIME guard check
-        if best["aime"] >= 0 and baseline_aime >= 0:
-            aime_drop = baseline_aime - best["aime"]
+        # Run FULL AIME after locking in this dimension
+        print(f"\n  Running FULL AIME after locking {dim_name} β={best_beta:.1f}...")
+        full_aime_label = f"{dim_name}_locked_full"
+        try:
+            full_aime_scores = run_lm_eval(wrapped, tokenizer, [args.aime_task])
+            full_aime_acc = full_aime_scores.get(args.aime_task, 0.0)
+            full_aime_pct = round(full_aime_acc * 100, 2)
+        except Exception as e:
+            print(f"  WARNING: Full AIME failed: {e}")
+            full_aime_pct = -1.0
+
+        print(f"  FULL AIME after {dim_name}: {full_aime_pct}% (baseline: {baseline_aime}%)")
+        full_result = {
+            "step": full_aime_label, "aime": full_aime_pct,
+            "dimension": dim_name, "beta": best_beta, "mode": mode,
+            "type": "full_aime_checkpoint",
+            "timestamp": datetime.now().isoformat(),
+        }
+        log_result(full_result)
+
+        # AIME guard check (using full AIME score)
+        guard_aime = full_aime_pct if full_aime_pct >= 0 else best["aime"]
+        if guard_aime >= 0 and baseline_aime >= 0:
+            aime_drop = baseline_aime - guard_aime
             if aime_drop > args.aime_guard:
                 print(f"\n  AIME GUARD TRIGGERED! Drop={aime_drop:.1f} pts > {args.aime_guard}")
                 if last_safe_checkpoint:
                     print(f"  Rolling back to {last_safe_checkpoint}")
-                    # Note: would need to reload model from checkpoint
-                    # For now, just warn — the β=0 fallback above handles this
                 break
 
         # Save checkpoint
