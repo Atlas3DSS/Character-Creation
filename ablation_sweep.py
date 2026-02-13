@@ -396,7 +396,7 @@ def run_lm_eval(
     lm = HFLM(
         pretrained=wrapped_model,
         tokenizer=tokenizer,
-        batch_size=10,
+        batch_size=4,
         max_gen_toks=4096,  # Cap generation length to avoid VRAM blowup on long CoT
         dtype="bfloat16",
         trust_remote_code=True,
