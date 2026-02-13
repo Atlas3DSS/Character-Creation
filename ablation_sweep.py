@@ -244,7 +244,7 @@ def load_vectors(dim_name: str, layer_indices: list[int]) -> dict[int, torch.Ten
 
 def generate_batch(
     model, processor, prompts: list[str],
-    max_new_tokens: int = 1024, batch_size: int = 15,
+    max_new_tokens: int = 1024, batch_size: int = 10,
 ) -> list[str]:
     """Generate responses for a list of prompts in batches. No system prompt."""
     tokenizer = processor.tokenizer
@@ -395,7 +395,7 @@ def run_lm_eval(
     lm = HFLM(
         pretrained=wrapped_model,
         tokenizer=tokenizer,
-        batch_size=15,
+        batch_size=10,
         dtype="float16",
         trust_remote_code=True,
     )
@@ -427,7 +427,7 @@ def run_lm_eval(
 
 def run_skippy_eval(
     model, processor, test_prompts: list[str], step_label: str,
-    batch_size: int = 15,
+    batch_size: int = 10,
 ) -> tuple[float, list[dict]]:
     """Generate responses to all test prompts in batches, score, and save."""
     print(f"    Generating {len(test_prompts)} responses (batch_size={batch_size})...")
