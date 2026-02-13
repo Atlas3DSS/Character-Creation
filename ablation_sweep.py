@@ -402,7 +402,12 @@ def run_lm_eval(
         trust_remote_code=True,
     )
 
-    kwargs = dict(model=lm, tasks=tasks, num_fewshot=0, log_samples=False)
+    kwargs = dict(
+        model=lm, tasks=tasks, num_fewshot=0, log_samples=False,
+        # Override task-level generation kwargs — aime24 defaults to 32768 tokens
+        # which eats all VRAM. 4096 is plenty for CoT + answer.
+        gen_kwargs="max_gen_toks=4096",
+    )
     if limit is not None:
         kwargs["limit"] = limit
 
