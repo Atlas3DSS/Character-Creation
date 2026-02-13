@@ -646,6 +646,8 @@ def main():
                         help="AIME problems per β probe (default 5). Full AIME only at baseline + dimension lock-in.")
     parser.add_argument("--aime-guard", type=float, default=2.0,
                         help="Max AIME drop (percentage points) before rollback")
+    parser.add_argument("--full-send", action="store_true",
+                        help="Skip β sweep. Apply all dimensions at β=1.0, benchmark before/after only.")
     args = parser.parse_args()
 
     steer_layers = [int(x) for x in args.steer_layers.split(",")]
@@ -754,142 +756,172 @@ def main():
           f"HellaSwag={baseline['hellaswag']}% | "
           f"Skippy={baseline['skippy_heuristic']}/10")
 
-    # ── DIMENSION SWEEP ──────────────────────────────────────────────────
-    print("\n" + "=" * 70)
-    print("  PHASE 2: DIMENSION-BY-DIMENSION ABLATION SWEEP")
-    print("=" * 70)
+    # ══════════════════════════════════════════════════════════════════════
+    # FULL-SEND MODE: skip β sweep, apply all at β=1.0, benchmark once
+    # ══════════════════════════════════════════════════════════════════════
+    if args.full_send:
+        print("\n" + "=" * 70)
+        print("  FULL SEND — Applying all dimensions at β=1.0")
+        print("=" * 70)
 
-    last_safe_checkpoint = None
-    chosen_betas = {}
+        chosen_betas = {}
+        for step_num, step_info in enumerate(ablation_order, 1):
+            dim_name = step_info["name"]
+            mode = step_info["mode"]
+            ablate_fn = ablate_subtractive if mode == "subtractive" else ablate_additive
 
-    for step_num, step_info in enumerate(ablation_order, 1):
-        dim_name = step_info["name"]
-        mode = step_info["mode"]
-        ablate_fn = ablate_subtractive if mode == "subtractive" else ablate_additive
-
-        print(f"\n{'─' * 70}")
-        print(f"  STEP {step_num}/{len(ablation_order)}: {dim_name} ({mode})")
-        print(f"{'─' * 70}")
-
-        vectors = load_vectors(dim_name, steer_layers)
-
-        # Snapshot current weights (to revert after each β probe)
-        print("  Snapshotting layer weights...")
-        snap = snapshot_layers(layers, steer_layers)
-
-        dim_sweep_results = []
-
-        for beta in beta_values:
-            step_label = f"{dim_name}_b{beta:.1f}"
-
-            if beta == 0.0:
-                # β=0 means no change — just benchmark current state (quick AIME)
-                result = run_all_benchmarks(
-                    wrapped, tokenizer, model, processor,
-                    test_prompts, step_label,
-                    aime_task=args.aime_task,
-                    aime_limit=args.aime_quick,
-                    hellaswag_limit=args.hellaswag_limit,
-                )
-            else:
-                # Apply ablation at this β
-                total_mods = 0
-                for li in steer_layers:
-                    if li in vectors:
-                        mods = ablate_fn(layers, vectors[li], li, beta, hidden_dim)
-                        total_mods += mods
-                print(f"  Applied {dim_name} β={beta:.1f} ({total_mods} params modified)")
-
-                result = run_all_benchmarks(
-                    wrapped, tokenizer, model, processor,
-                    test_prompts, step_label,
-                    aime_task=args.aime_task,
-                    aime_limit=args.aime_quick,
-                    hellaswag_limit=args.hellaswag_limit,
-                )
-
-                # Revert weights for next β probe
-                restore_layers(layers, snap)
-
-            result["beta"] = beta
-            result["dimension"] = dim_name
-            result["mode"] = mode
-            log_result(result)
-            dim_sweep_results.append(result)
-
-        # ── Pick best β for this dimension ───────────────────────────────
-        # Best = highest Skippy score that doesn't drop AIME > guard threshold
-        valid = [
-            r for r in dim_sweep_results
-            if r["aime"] >= 0 and (baseline_aime < 0 or r["aime"] >= baseline_aime - args.aime_guard)
-        ]
-
-        if valid:
-            best = max(valid, key=lambda r: r["skippy_heuristic"])
-            best_beta = best["beta"]
-        else:
-            print(f"  WARNING: All β values caused AIME to drop >={args.aime_guard} pts!")
-            print(f"  Using β=0.0 (no ablation for this dimension)")
-            best_beta = 0.0
-            best = dim_sweep_results[0]
-
-        chosen_betas[dim_name] = best_beta
-        print(f"\n  CHOSEN β={best_beta:.1f} for {dim_name}")
-        print(f"    AIME={best['aime']}% | HellaSwag={best['hellaswag']}% | "
-              f"Skippy={best['skippy_heuristic']}/10")
-
-        # Apply chosen β permanently
-        if best_beta > 0:
+            vectors = load_vectors(dim_name, steer_layers)
             total_mods = 0
             for li in steer_layers:
                 if li in vectors:
-                    mods = ablate_fn(layers, vectors[li], li, best_beta, hidden_dim)
+                    mods = ablate_fn(layers, vectors[li], li, 1.0, hidden_dim)
                     total_mods += mods
-            print(f"  LOCKED IN: {dim_name} β={best_beta:.1f} ({total_mods} params)")
-        else:
-            print(f"  SKIPPED: {dim_name} (β=0.0)")
+            chosen_betas[dim_name] = 1.0
+            print(f"  [{step_num}/{len(ablation_order)}] {dim_name} ({mode}) "
+                  f"β=1.0 — {total_mods} params modified")
 
-        # Run FULL AIME after locking in this dimension
-        print(f"\n  Running FULL AIME after locking {dim_name} β={best_beta:.1f}...")
-        full_aime_label = f"{dim_name}_locked_full"
-        try:
-            full_aime_scores = run_lm_eval(wrapped, tokenizer, [args.aime_task])
-            full_aime_acc = full_aime_scores.get(args.aime_task, 0.0)
-            full_aime_pct = round(full_aime_acc * 100, 2)
-        except Exception as e:
-            print(f"  WARNING: Full AIME failed: {e}")
-            full_aime_pct = -1.0
+        print("\n" + "=" * 70)
+        print("  POST-ABLATION BENCHMARKS")
+        print("=" * 70)
 
-        print(f"  FULL AIME after {dim_name}: {full_aime_pct}% (baseline: {baseline_aime}%)")
-        full_result = {
-            "step": full_aime_label, "aime": full_aime_pct,
-            "dimension": dim_name, "beta": best_beta, "mode": mode,
-            "type": "full_aime_checkpoint",
-            "timestamp": datetime.now().isoformat(),
-        }
-        log_result(full_result)
+        post = run_all_benchmarks(
+            wrapped, tokenizer, model, processor,
+            test_prompts, "full_send_post",
+            aime_task=args.aime_task,
+            hellaswag_limit=args.hellaswag_limit,
+        )
+        log_result(post)
 
-        # AIME guard check (using full AIME score)
-        guard_aime = full_aime_pct if full_aime_pct >= 0 else best["aime"]
-        if guard_aime >= 0 and baseline_aime >= 0:
-            aime_drop = baseline_aime - guard_aime
-            if aime_drop > args.aime_guard:
-                print(f"\n  AIME GUARD TRIGGERED! Drop={aime_drop:.1f} pts > {args.aime_guard}")
-                if last_safe_checkpoint:
-                    print(f"  Rolling back to {last_safe_checkpoint}")
-                break
+        # Print comparison
+        print(f"\n  {'':30s} {'BASELINE':>10s}  {'ABLATED':>10s}  {'DELTA':>10s}")
+        print(f"  {'─' * 65}")
+        for metric in ["aime", "hellaswag", "skippy_heuristic"]:
+            b = baseline[metric]
+            a = post[metric]
+            unit = "%" if metric != "skippy_heuristic" else "/10"
+            delta = a - b
+            sign = "+" if delta >= 0 else ""
+            print(f"  {metric:30s} {b:>9.1f}{unit}  {a:>9.1f}{unit}  {sign}{delta:>8.1f}")
 
         # Save checkpoint
-        ckpt_path = save_checkpoint(
-            model, processor, step_num, dim_name,
-            best_beta, best, all_results,
-        )
-        last_safe_checkpoint = ckpt_path
+        save_checkpoint(model, processor, 99, "full_send", 1.0, post, all_results)
 
-        # Free snapshot memory
-        del snap
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+    # ══════════════════════════════════════════════════════════════════════
+    # SWEEP MODE: per-dimension β sweep with probing
+    # ══════════════════════════════════════════════════════════════════════
+    else:
+        print("\n" + "=" * 70)
+        print("  PHASE 2: DIMENSION-BY-DIMENSION ABLATION SWEEP")
+        print("=" * 70)
+
+        last_safe_checkpoint = None
+        chosen_betas = {}
+
+        for step_num, step_info in enumerate(ablation_order, 1):
+            dim_name = step_info["name"]
+            mode = step_info["mode"]
+            ablate_fn = ablate_subtractive if mode == "subtractive" else ablate_additive
+
+            print(f"\n{'─' * 70}")
+            print(f"  STEP {step_num}/{len(ablation_order)}: {dim_name} ({mode})")
+            print(f"{'─' * 70}")
+
+            vectors = load_vectors(dim_name, steer_layers)
+
+            # Snapshot current weights (to revert after each β probe)
+            print("  Snapshotting layer weights...")
+            snap = snapshot_layers(layers, steer_layers)
+
+            dim_sweep_results = []
+
+            for beta in beta_values:
+                step_label = f"{dim_name}_b{beta:.1f}"
+
+                if beta == 0.0:
+                    result = run_all_benchmarks(
+                        wrapped, tokenizer, model, processor,
+                        test_prompts, step_label,
+                        aime_task=args.aime_task,
+                        aime_limit=args.aime_quick,
+                        hellaswag_limit=args.hellaswag_limit,
+                    )
+                else:
+                    total_mods = 0
+                    for li in steer_layers:
+                        if li in vectors:
+                            mods = ablate_fn(layers, vectors[li], li, beta, hidden_dim)
+                            total_mods += mods
+                    print(f"  Applied {dim_name} β={beta:.1f} ({total_mods} params modified)")
+
+                    result = run_all_benchmarks(
+                        wrapped, tokenizer, model, processor,
+                        test_prompts, step_label,
+                        aime_task=args.aime_task,
+                        aime_limit=args.aime_quick,
+                        hellaswag_limit=args.hellaswag_limit,
+                    )
+                    restore_layers(layers, snap)
+
+                result["beta"] = beta
+                result["dimension"] = dim_name
+                result["mode"] = mode
+                log_result(result)
+                dim_sweep_results.append(result)
+
+            # Pick best β
+            valid = [
+                r for r in dim_sweep_results
+                if r["aime"] >= 0 and (baseline_aime < 0 or r["aime"] >= baseline_aime - args.aime_guard)
+            ]
+            if valid:
+                best = max(valid, key=lambda r: r["skippy_heuristic"])
+                best_beta = best["beta"]
+            else:
+                print(f"  WARNING: All β values dropped AIME >={args.aime_guard} pts!")
+                best_beta = 0.0
+                best = dim_sweep_results[0]
+
+            chosen_betas[dim_name] = best_beta
+            print(f"\n  CHOSEN β={best_beta:.1f} for {dim_name}")
+            print(f"    AIME={best['aime']}% | HellaSwag={best['hellaswag']}% | "
+                  f"Skippy={best['skippy_heuristic']}/10")
+
+            # Apply permanently
+            if best_beta > 0:
+                total_mods = 0
+                for li in steer_layers:
+                    if li in vectors:
+                        mods = ablate_fn(layers, vectors[li], li, best_beta, hidden_dim)
+                        total_mods += mods
+                print(f"  LOCKED IN: {dim_name} β={best_beta:.1f} ({total_mods} params)")
+
+            # Full AIME check
+            print(f"\n  Running FULL AIME after locking {dim_name}...")
+            try:
+                full_scores = run_lm_eval(wrapped, tokenizer, [args.aime_task])
+                full_pct = round(full_scores.get(args.aime_task, 0.0) * 100, 2)
+            except Exception as e:
+                print(f"  WARNING: Full AIME failed: {e}")
+                full_pct = -1.0
+            print(f"  FULL AIME: {full_pct}% (baseline: {baseline_aime}%)")
+            log_result({"step": f"{dim_name}_locked_full", "aime": full_pct,
+                        "dimension": dim_name, "beta": best_beta,
+                        "type": "full_aime_checkpoint",
+                        "timestamp": datetime.now().isoformat()})
+
+            # AIME guard
+            guard_aime = full_pct if full_pct >= 0 else best["aime"]
+            if guard_aime >= 0 and baseline_aime >= 0:
+                if baseline_aime - guard_aime > args.aime_guard:
+                    print(f"\n  AIME GUARD TRIGGERED!")
+                    break
+
+            ckpt_path = save_checkpoint(model, processor, step_num, dim_name,
+                                        best_beta, best, all_results)
+            last_safe_checkpoint = ckpt_path
+            del snap
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
     # ── FINAL RESULTS ────────────────────────────────────────────────────
     print("\n" + "=" * 70)
