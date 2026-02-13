@@ -396,6 +396,7 @@ def run_lm_eval(
         pretrained=wrapped_model,
         tokenizer=tokenizer,
         batch_size=10,
+        max_gen_toks=4096,  # Cap generation length — Qwen3 thinking mode can produce 30K+ tokens
         dtype="float16",
         trust_remote_code=True,
     )
