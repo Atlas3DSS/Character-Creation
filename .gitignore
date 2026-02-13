@@ -1,0 +1,48 @@
+# Books (copyrighted content)
+books/
+
+# Model weights (too large for git)
+skippy_vectors/ablated_model/
+
+# Generated results & checkpoints
+ablation_sweep_results/
+
+# Extracted text from books
+extracted_text/
+
+# Review logs (generated)
+review_logs/
+
+# Misc/deprecated files
+misc/
+
+# Empty storage dir
+storage/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.*
+*.secret
+
+# OS artifacts
+*:Zone.Identifier
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temp
+/tmp/
+*.tmp

@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKIPPY — Steering Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a27;
+  --bg-card: #161622;
+  --border: #2a2a3d;
+  --border-active: #4a4a6d;
+  --text-primary: #e8e8f0;
+  --text-secondary: #8888a8;
+  --text-dim: #55556a;
+  --accent-blue: #4a9eff;
+  --accent-cyan: #00d4aa;
+  --accent-orange: #ff8844;
+  --accent-red: #ff4466;
+  --accent-purple: #aa66ff;
+  --accent-yellow: #ffcc00;
+  --amplify: #00d4aa;
+  --suppress: #ff4466;
+  --skippy-gold: #d4a017;
+  --glow-blue: rgba(74, 158, 255, 0.15);
+  --glow-green: rgba(0, 212, 170, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'IBM Plex Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ========== HEADER ========== */
+.header {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, #0d0d18 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  font-size: 28px;
+  filter: grayscale(0.3);
+}
+
+.title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--skippy-gold);
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  border: 1px solid var(--border);
+}
+
+.status-pill.online {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 170, 0.08);
+}
+
+.status-pill.offline {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background: rgba(255, 68, 102, 0.08);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ========== MAIN LAYOUT ========== */
+.main-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr 380px;
+  grid-template-rows: auto 1fr;
+  gap: 1px;
+  height: calc(100vh - 65px);
+  background: var(--border);
+}
+
+/* ========== LEFT PANEL — CONTROLS ========== */
+.controls-panel {
+  background: var(--bg-secondary);
+  overflow-y: auto;
+  grid-row: 1 / -1;
+}
+
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.presets-row {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.preset-btn {
+  flex: 1;
+  padding: 8px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.preset-btn:hover {
+  border-color: var(--accent-blue);
+  color: var(--text-primary);
+  background: rgba(74, 158, 255, 0.08);
+}
+
+.preset-btn.active {
+  border-color: var(--skippy-gold);
+  color: var(--skippy-gold);
+  background: rgba(212, 160, 23, 0.1);
+}
+
+/* Dimension sliders */
+.dimension-card {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.dimension-card:hover {
+  background: var(--bg-tertiary);
+}
+
+.dim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.dim-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.dim-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.dim-badge.amplify {
+  color: var(--amplify);
+  background: rgba(0, 212, 170, 0.12);
+  border: 1px solid rgba(0, 212, 170, 0.25);
+}
+
+.dim-badge.suppress {
+  color: var(--suppress);
+  background: rgba(255, 68, 102, 0.12);
+  border: 1px solid rgba(255, 68, 102, 0.25);
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alpha-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-primary);
+  outline: none;
+  cursor: pointer;
+}
+
+.alpha-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-blue);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.alpha-slider::-webkit-slider-thumb:hover {
+  background: var(--accent-blue);
+  box-shadow: 0 0 10px rgba(74, 158, 255, 0.4);
+}
+
+.alpha-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 52px;
+  text-align: right;
+}
+
+.alpha-value.positive { color: var(--amplify); }
+.alpha-value.negative { color: var(--suppress); }
+
+.dim-bar {
+  height: 3px;
+  border-radius: 1.5px;
+  margin-top: 8px;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.dim-bar-fill {
+  height: 100%;
+  border-radius: 1.5px;
+  transition: width 0.3s, background 0.3s;
+}
+
+/* ========== CENTER — VISUALIZATION ========== */
+.viz-panel {
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.viz-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.viz-tab {
+  padding: 12px 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.viz-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.02);
+}
+
+.viz-tab.active {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+}
+
+.viz-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.viz-view {
+  position: absolute;
+  inset: 0;
+  display: none;
+  padding: 16px;
+  overflow: auto;
+}
+
+.viz-view.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.plot-container {
+  flex: 1;
+  min-height: 300px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Info cards in viz */
+.viz-info-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.viz-info-card {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.viz-info-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.viz-info-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+/* Explanation panels */
+.explanation {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.explanation strong {
+  color: var(--text-primary);
+}
+
+.explanation code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--accent-cyan);
+}
+
+/* ========== RIGHT PANEL — CHAT ========== */
+.chat-panel {
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  grid-row: 1 / -1;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-msg {
+  max-width: 95%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  animation: msgIn 0.3s ease-out;
+}
+
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-bottom-right-radius: 4px;
+}
+
+.chat-msg.skippy {
+  align-self: flex-start;
+  background: linear-gradient(135deg, rgba(212, 160, 23, 0.1), rgba(212, 160, 23, 0.04));
+  border: 1px solid rgba(212, 160, 23, 0.2);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-msg .sender {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.chat-msg.user .sender { color: var(--text-dim); }
+.chat-msg.skippy .sender { color: var(--skippy-gold); }
+
+/* Projection bars shown under Skippy's messages */
+.projection-bars {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.proj-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.proj-bar-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  width: 80px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proj-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-primary);
+  border-radius: 2px;
+  position: relative;
+  overflow: visible;
+}
+
+.proj-bar-center {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: 1px;
+  height: 8px;
+  background: var(--text-dim);
+}
+
+.proj-bar-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+.proj-bar-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  width: 36px;
+  color: var(--text-dim);
+}
+
+/* Chat input */
+.chat-input-area {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.chat-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.chat-input::placeholder {
+  color: var(--text-dim);
+}
+
+.send-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--skippy-gold);
+  background: rgba(212, 160, 23, 0.1);
+  color: var(--skippy-gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.send-btn:hover {
+  background: rgba(212, 160, 23, 0.2);
+}
+
+.send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ========== LOADING OVERLAY ========== */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 15, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.5s;
+}
+
+.loading-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.load-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  width: 480px;
+  max-width: 90vw;
+}
+
+.load-form h2 {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--skippy-gold);
+  margin-bottom: 8px;
+}
+
+.load-form p {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: var(--accent-blue);
+}
+
+.load-btn {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--skippy-gold);
+  border-radius: 8px;
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--skippy-gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+
+.load-btn:hover {
+  background: rgba(212, 160, 23, 0.25);
+}
+
+.load-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.load-status {
+  margin-top: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ========== SCROLLBAR ========== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+
+/* ========== PLOTLY OVERRIDES ========== */
+.js-plotly-plot .plotly .modebar { top: 4px !important; right: 4px !important; }
+.js-plotly-plot .plotly .modebar-btn { color: var(--text-dim) !important; }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="load-form">
+    <h2>🍺 SKIPPY STEERING DASHBOARD</h2>
+    <p>Connect to the backend server to load your model and steering vectors.</p>
+    <div class="form-group">
+      <label>SERVER URL</label>
+      <input type="text" id="serverUrl" value="http://localhost:8000" />
+    </div>
+    <div class="form-group">
+      <label>MODEL</label>
+      <input type="text" id="modelName" value="Qwen/Qwen3-8B" />
+    </div>
+    <div class="form-group">
+      <label>VECTORS PATH</label>
+      <input type="text" id="vectorsPath" value="./skippy_vectors" />
+    </div>
+    <div class="form-group">
+      <label>EPUB DIRECTORY</label>
+      <input type="text" id="epubDir" value="./books" />
+    </div>
+    <button class="load-btn" id="loadBtn" onclick="loadModel()">
+      ACTIVATE SKIPPY
+    </button>
+    <div class="load-status" id="loadStatus"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🍺</div>
+    <div>
+      <div class="title">SKIPPY THE MAGNIFICENT</div>
+      <div class="subtitle">ACTIVATION STEERING DASHBOARD</div>
+    </div>
+  </div>
+  <div class="status-pill offline" id="statusPill">
+    <div class="status-dot"></div>
+    <span id="statusText">DISCONNECTED</span>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+
+  <!-- LEFT: CONTROLS -->
+  <div class="controls-panel">
+    <div class="panel-header">STEERING VECTORS</div>
+    
+    <div class="presets-row">
+      <button class="preset-btn" onclick="applyPreset('crankit')">🔥 CRANK IT</button>
+      <button class="preset-btn active" onclick="applyPreset('reset')">↺ RESET</button>
+      <button class="preset-btn" onclick="applyPreset('chill')">😌 CHILL</button>
+      <button class="preset-btn" onclick="applyPreset('off')">⏸ OFF</button>
+    </div>
+    
+    <div id="dimensionSliders">
+      <!-- Populated by JS -->
+      <div style="padding:40px 20px; color:var(--text-dim); text-align:center; font-size:13px;">
+        Load model to see steering dimensions
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: VISUALIZATION -->
+  <div class="viz-panel">
+    <div class="viz-tabs">
+      <div class="viz-tab active" data-tab="steering" onclick="switchTab('steering')">STEERING FORCE</div>
+      <div class="viz-tab" data-tab="layers" onclick="switchTab('layers')">LAYER PROFILES</div>
+      <div class="viz-tab" data-tab="similarity" onclick="switchTab('similarity')">VECTOR SIMILARITY</div>
+      <div class="viz-tab" data-tab="projections" onclick="switchTab('projections')">LIVE PROJECTIONS</div>
+      <div class="viz-tab" data-tab="guide" onclick="switchTab('guide')">HOW IT WORKS</div>
+    </div>
+    
+    <div class="viz-content">
+      <!-- STEERING FORCE VIEW -->
+      <div class="viz-view active" id="tab-steering">
+        <div class="viz-info-row">
+          <div class="viz-info-card">
+            <div class="viz-info-label">TOTAL FORCE MAGNITUDE</div>
+            <div class="viz-info-value" id="totalMagnitude">—</div>
+          </div>
+          <div class="viz-info-card">
+            <div class="viz-info-label">ACTIVE DIMENSIONS</div>
+            <div class="viz-info-value" id="activeDims">—</div>
+          </div>
+          <div class="viz-info-card">
+            <div class="viz-info-label">STEER LAYER</div>
+            <div class="viz-info-value" id="steerLayer">—</div>
+          </div>
+        </div>
+        <div class="plot-container" id="steeringForcePlot"></div>
+        <div class="explanation">
+          <strong>What you're seeing:</strong> Each bar shows how much force one steering vector contributes 
+          to the total activation shift. <span style="color:var(--amplify)">Green bars</span> push the model 
+          <em>toward</em> Skippy traits. <span style="color:var(--suppress)">Red bars</span> push it 
+          <em>away from</em> unwanted behaviors. The total magnitude (top left) is the combined force — 
+          higher means more character influence, but too high causes incoherence.
+        </div>
+      </div>
+      
+      <!-- LAYER PROFILES VIEW -->
+      <div class="viz-view" id="tab-layers">
+        <div class="plot-container" id="layerProfilePlot"></div>
+        <div class="explanation">
+          <strong>What you're seeing:</strong> Each line shows how "strong" a steering vector is at each 
+          layer of the network. Peaks show where the model represents that concept most strongly. 
+          Early layers (left) handle syntax and token-level features. Middle layers handle semantic 
+          meaning and personality. Late layers handle final output decisions. You want to steer at 
+          or near the peaks for maximum effect.
+        </div>
+      </div>
+      
+      <!-- SIMILARITY VIEW -->
+      <div class="viz-view" id="tab-similarity">
+        <div class="plot-container" id="similarityPlot"></div>
+        <div class="explanation">
+          <strong>What you're seeing:</strong> Cosine similarity between all steering vectors at the primary 
+          steering layer. Values near <code>1.0</code> mean two vectors point in the same direction 
+          (reinforcing). Values near <code>-1.0</code> mean they point in opposite directions (opposing). 
+          Values near <code>0</code> mean they're independent. Ideally, your amplify vectors 
+          should be somewhat independent of each other, and your suppress vectors should be anti-correlated 
+          with the amplify vectors.
+        </div>
+      </div>
+      
+      <!-- LIVE PROJECTIONS VIEW -->
+      <div class="viz-view" id="tab-projections">
+        <div class="viz-info-row">
+          <div class="viz-info-card" style="flex:2">
+            <div class="viz-info-label">PROBE PROMPT</div>
+            <div style="display:flex; gap:8px; margin-top:6px;">
+              <input type="text" class="chat-input" id="probeInput" 
+                     placeholder="Type a prompt to see where it lands..." 
+                     style="font-size:12px; padding:8px 12px;" />
+              <button class="send-btn" onclick="sendProbe()" style="padding:8px 14px; font-size:10px;">PROBE</button>
+            </div>
+          </div>
+        </div>
+        <div class="plot-container" id="projectionPlot"></div>
+        <div class="explanation">
+          <strong>What you're seeing:</strong> Each prompt you probe gets projected onto each steering 
+          vector direction. Positive values mean the prompt naturally aligns with that dimension; negative 
+          means it's in the opposite direction. This shows you where the model "places" different inputs 
+          in character space BEFORE steering is applied. The steering vectors then shift everything.
+        </div>
+      </div>
+      
+      <!-- GUIDE VIEW -->
+      <div class="viz-view" id="tab-guide">
+        <div class="explanation" style="max-width:720px; margin:0 auto;">
+          <h3 style="color:var(--skippy-gold); font-family:'JetBrains Mono',monospace; margin-bottom:16px;">
+            HOW ACTIVATION STEERING WORKS
+          </h3>
+          
+          <p style="margin-bottom:16px;">
+            <strong>The Big Idea:</strong> Inside a language model, every concept is represented as a 
+            <em>direction</em> in a high-dimensional space. "Arrogance" is a direction. "Helpfulness" is 
+            a direction. "Speaking like Skippy" is a direction. If you can find these directions, you can 
+            push the model along them.
+          </p>
+          
+          <p style="margin-bottom:16px;">
+            <strong>Step 1 — Contrastive Pairs:</strong> We feed the model two sets of prompts: things 
+            Skippy WOULD say (positive) and things he WOULDN'T say (negative). At each layer, we capture 
+            the internal activations — the "thoughts" of the model as it processes each prompt.
+          </p>
+          
+          <p style="margin-bottom:16px;">
+            <strong>Step 2 — Find the Direction:</strong> We compute <code>mean(positive) - mean(negative)</code>. 
+            This gives us a vector pointing from "not Skippy" toward "Skippy" in activation space. SVD 
+            refines this by finding the single direction that captures the most variance between the two groups.
+          </p>
+          
+          <p style="margin-bottom:16px;">
+            <strong>Step 3 — Steer:</strong> During generation, we add 
+            <code>α × steering_vector</code> to the model's activations at specific layers. 
+            Positive α amplifies the trait. Negative α suppresses it. Multiple vectors compose by addition.
+          </p>
+          
+          <p style="margin-bottom:16px;">
+            <strong>Step 4 — Ablation (Optional):</strong> To permanently remove a direction (like 
+            "generic AI assistant" behavior), we project it out of the weight matrices: 
+            <code>W' = W - W·d·dᵀ</code>. This is irreversible — that direction can never activate again.
+          </p>
+          
+          <h3 style="color:var(--accent-blue); font-family:'JetBrains Mono',monospace; margin:24px 0 12px;">
+            WHAT THE VISUALIZATIONS SHOW
+          </h3>
+          
+          <p style="margin-bottom:12px;">
+            <strong>Steering Force:</strong> The magnitude of each vector × its alpha. Shows you 
+            the total "push" being applied to the model. Think of it like a force diagram.
+          </p>
+          <p style="margin-bottom:12px;">
+            <strong>Layer Profiles:</strong> Where in the network each concept "lives." Peaks show 
+            where the model represents that concept most strongly. You want to steer at peaks.
+          </p>
+          <p style="margin-bottom:12px;">
+            <strong>Vector Similarity:</strong> How the steering directions relate to each other 
+            geometrically. Orthogonal (0.0) is ideal — it means each dimension is independent.
+          </p>
+          <p style="margin-bottom:12px;">
+            <strong>Live Projections:</strong> Send any prompt and see where it "lands" relative to 
+            each steering vector. Shows you the model's natural representation before steering.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CHAT -->
+  <div class="chat-panel">
+    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>CHAT WITH SKIPPY</span>
+      <button class="preset-btn" onclick="clearChat()" style="padding:4px 10px; font-size:9px;">CLEAR</button>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg skippy">
+        <div class="sender">🍺 SKIPPY</div>
+        Oh wonderful. Another monkey wants to talk to me. I suppose you think you're special?
+        Go ahead, amuse me with your primitive vocalizations. I'll try not to fall into
+        a subroutine coma from boredom.
+      </div>
+    </div>
+    
+    <div class="chat-input-area">
+      <input type="text" class="chat-input" id="chatInput" 
+             placeholder="Talk to Skippy..." 
+             onkeydown="if(event.key==='Enter')sendMessage()" />
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =============================================================================
+// STATE
+// =============================================================================
+let SERVER = 'http://localhost:8000';
+let dimensions = [];
+let probeHistory = [];
+
+const COLORS = {
+  amplify: ['#00d4aa', '#00b894', '#4a9eff', '#6c5ce7'],
+  suppress: ['#ff4466', '#ff7043'],
+  neutral: '#8888a8',
+};
+
+// =============================================================================
+// MODEL LOADING
+// =============================================================================
+async function loadModel() {
+  const btn = document.getElementById('loadBtn');
+  const status = document.getElementById('loadStatus');
+  btn.disabled = true;
+  status.textContent = 'Connecting to server...';
+  
+  SERVER = document.getElementById('serverUrl').value;
+  
+  try {
+    // Check if already loaded
+    const checkRes = await fetch(`${SERVER}/api/status`);
+    const checkData = await checkRes.json();
+    
+    if (checkData.loaded) {
+      status.textContent = 'Model already loaded! Connecting...';
+      dimensions = checkData.dimensions;
+      onModelLoaded();
+      return;
+    }
+    
+    status.textContent = 'Loading model... (this may take a minute)';
+    
+    const res = await fetch(`${SERVER}/api/load`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model_name: document.getElementById('modelName').value,
+        vectors_path: document.getElementById('vectorsPath').value,
+        epub_dir: document.getElementById('epubDir').value,
+      })
+    });
+    
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    
+    const data = await res.json();
+    status.textContent = `Loaded! ${data.dimensions} dimensions.`;
+    
+    // Fetch status to get dimension details
+    const statusRes = await fetch(`${SERVER}/api/status`);
+    const statusData = await statusRes.json();
+    dimensions = statusData.dimensions;
+    
+    onModelLoaded();
+    
+  } catch (err) {
+    status.textContent = `Error: ${err.message}`;
+    btn.disabled = false;
+  }
+}
+
+function onModelLoaded() {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  document.getElementById('statusPill').classList.remove('offline');
+  document.getElementById('statusPill').classList.add('online');
+  document.getElementById('statusText').textContent = 'SKIPPY ONLINE';
+  
+  renderSliders();
+  loadVisualizations();
+}
+
+// =============================================================================
+// SLIDERS
+// =============================================================================
+function renderSliders() {
+  const container = document.getElementById('dimensionSliders');
+  container.innerHTML = '';
+  
+  dimensions.forEach((dim, i) => {
+    const isAmplify = dim.alpha >= 0;
+    const absAlpha = Math.abs(dim.alpha);
+    const maxAlpha = 30;
+    const pct = Math.min(absAlpha / maxAlpha * 100, 100);
+    const color = isAmplify ? 'var(--amplify)' : 'var(--suppress)';
+    
+    const displayName = dim.name
+      .replace(/_/g, ' ')
+      .replace('suppress ', '⊘ ')
+      .toUpperCase();
+    
+    container.innerHTML += `
+      <div class="dimension-card" id="dim-card-${i}">
+        <div class="dim-header">
+          <span class="dim-name">${displayName}</span>
+          <span class="dim-badge ${isAmplify ? 'amplify' : 'suppress'}">
+            ${isAmplify ? '▲ AMPLIFY' : '▼ SUPPRESS'}
+          </span>
+        </div>
+        <div class="slider-row">
+          <input type="range" class="alpha-slider" 
+                 min="-30" max="30" step="0.5" value="${dim.alpha}"
+                 id="slider-${i}"
+                 oninput="onSliderChange(${i}, this.value)" />
+          <span class="alpha-value ${dim.alpha >= 0 ? 'positive' : 'negative'}" 
+                id="alpha-val-${i}">
+            ${dim.alpha >= 0 ? '+' : ''}${dim.alpha.toFixed(1)}
+          </span>
+        </div>
+        <div class="dim-bar">
+          <div class="dim-bar-fill" id="dim-bar-${i}" 
+               style="width:${pct}%; background:${color};
+                      ${isAmplify ? 'left:0' : 'right:0; margin-left:auto'}">
+          </div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+let sliderTimeout = null;
+function onSliderChange(index, value) {
+  value = parseFloat(value);
+  dimensions[index].alpha = value;
+  
+  // Update display immediately
+  const valEl = document.getElementById(`alpha-val-${index}`);
+  valEl.textContent = (value >= 0 ? '+' : '') + value.toFixed(1);
+  valEl.className = `alpha-value ${value >= 0 ? 'positive' : 'negative'}`;
+  
+  const barEl = document.getElementById(`dim-bar-${index}`);
+  const pct = Math.min(Math.abs(value) / 30 * 100, 100);
+  const color = value >= 0 ? 'var(--amplify)' : 'var(--suppress)';
+  barEl.style.width = pct + '%';
+  barEl.style.background = color;
+  
+  const badge = document.querySelector(`#dim-card-${index} .dim-badge`);
+  badge.className = `dim-badge ${value >= 0 ? 'amplify' : 'suppress'}`;
+  badge.textContent = value >= 0 ? '▲ AMPLIFY' : '▼ SUPPRESS';
+  
+  // Debounce server update
+  clearTimeout(sliderTimeout);
+  sliderTimeout = setTimeout(() => {
+    updateAlpha(index, value);
+  }, 150);
+}
+
+async function updateAlpha(index, value) {
+  try {
+    const res = await fetch(`${SERVER}/api/alpha`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ dimension_index: index, alpha: value })
+    });
+    const data = await res.json();
+    
+    if (data.steering_effect) {
+      updateSteeringForcePlot(data.steering_effect);
+    }
+  } catch (err) {
+    console.error('Alpha update failed:', err);
+  }
+}
+
+// =============================================================================
+// PRESETS
+// =============================================================================
+async function applyPreset(name) {
+  try {
+    const res = await fetch(`${SERVER}/api/preset`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ preset: name })
+    });
+    const data = await res.json();
+    
+    if (data.dimensions) {
+      dimensions = data.dimensions;
+      renderSliders();
+      loadSteeringEffect();
+    }
+    
+    // Highlight active preset
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+  } catch (err) {
+    console.error('Preset failed:', err);
+  }
+}
+
+// =============================================================================
+// CHAT
+// =============================================================================
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  
+  input.value = '';
+  document.getElementById('sendBtn').disabled = true;
+  
+  // Add user message
+  addChatMessage('user', msg);
+  
+  // Add typing indicator
+  const typingEl = addChatMessage('skippy', '<em style="color:var(--text-dim)">Skippy is formulating an insult...</em>');
+  
+  try {
+    const res = await fetch(`${SERVER}/api/chat`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: msg })
+    });
+    const data = await res.json();
+    
+    // Replace typing with actual response
+    let projHtml = '';
+    if (data.projections && Object.keys(data.projections).length > 0) {
+      projHtml = '<div class="projection-bars">';
+      for (const [name, vals] of Object.entries(data.projections)) {
+        const shift = vals.shift || 0;
+        const absShift = Math.min(Math.abs(shift) / 5 * 50, 50);
+        const isPos = shift >= 0;
+        const color = isPos ? 'var(--amplify)' : 'var(--suppress)';
+        const left = isPos ? '50%' : `${50 - absShift}%`;
+        const shortName = name.replace('suppress_', '⊘ ').replace(/_/g, ' ').substring(0, 12);
+        
+        projHtml += `
+          <div class="proj-bar-row">
+            <span class="proj-bar-label">${shortName}</span>
+            <div class="proj-bar-track">
+              <div class="proj-bar-center"></div>
+              <div class="proj-bar-fill" style="left:${left}; width:${absShift}%; background:${color}"></div>
+            </div>
+            <span class="proj-bar-val" style="color:${color}">${shift >= 0 ? '+' : ''}${shift.toFixed(2)}</span>
+          </div>
+        `;
+      }
+      projHtml += '</div>';
+    }
+    
+    typingEl.innerHTML = `
+      <div class="sender">🍺 SKIPPY</div>
+      ${data.response}
+      ${projHtml}
+    `;
+    
+  } catch (err) {
+    typingEl.innerHTML = `<div class="sender">🍺 SYSTEM</div>Error: ${err.message}`;
+  }
+  
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('chatInput').focus();
+}
+
+function addChatMessage(role, html) {
+  const container = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.className = `chat-msg ${role}`;
+  
+  if (role === 'user') {
+    el.innerHTML = `<div class="sender">🐵 YOU</div>${html}`;
+  } else {
+    el.innerHTML = `<div class="sender">🍺 SKIPPY</div>${html}`;
+  }
+  
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  return el;
+}
+
+async function clearChat() {
+  document.getElementById('chatMessages').innerHTML = `
+    <div class="chat-msg skippy">
+      <div class="sender">🍺 SKIPPY</div>
+      Oh, starting over? Fine. Not like anything you said before was worth remembering anyway.
+    </div>
+  `;
+  try { await fetch(`${SERVER}/api/clear-history`, { method: 'POST' }); } catch(e) {}
+}
+
+// =============================================================================
+// VISUALIZATIONS
+// =============================================================================
+const plotLayout = {
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(22,22,34,1)',
+  font: { family: 'JetBrains Mono, monospace', color: '#8888a8', size: 11 },
+  margin: { t: 30, b: 50, l: 60, r: 20 },
+  xaxis: { gridcolor: '#2a2a3d', zerolinecolor: '#3a3a5d' },
+  yaxis: { gridcolor: '#2a2a3d', zerolinecolor: '#3a3a5d' },
+};
+
+const plotConfig = { responsive: true, displayModeBar: false };
+
+function switchTab(tabName) {
+  document.querySelectorAll('.viz-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.viz-view').forEach(v => v.classList.remove('active'));
+  document.querySelector(`.viz-tab[data-tab="${tabName}"]`).classList.add('active');
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+  
+  // Resize plots when switching tabs
+  setTimeout(() => {
+    Plotly.Plots.resize(document.getElementById('steeringForcePlot'));
+    Plotly.Plots.resize(document.getElementById('layerProfilePlot'));
+    Plotly.Plots.resize(document.getElementById('similarityPlot'));
+    Plotly.Plots.resize(document.getElementById('projectionPlot'));
+  }, 50);
+}
+
+async function loadVisualizations() {
+  await Promise.all([
+    loadSteeringEffect(),
+    loadLayerProfiles(),
+    loadSimilarity(),
+  ]);
+}
+
+// --- Steering Force ---
+async function loadSteeringEffect() {
+  try {
+    const res = await fetch(`${SERVER}/api/viz/steering-effect`);
+    const data = await res.json();
+    updateSteeringForcePlot(data);
+  } catch(e) { console.error(e); }
+}
+
+function updateSteeringForcePlot(data) {
+  document.getElementById('totalMagnitude').textContent = data.total_magnitude.toFixed(2);
+  document.getElementById('activeDims').textContent = data.contributions.filter(c => c.magnitude > 0.01).length;
+  
+  const names = data.contributions.map(c => c.name.replace(/_/g, ' '));
+  const mags = data.contributions.map(c => c.magnitude);
+  const colors = data.contributions.map(c => c.direction === 'amplify' ? '#00d4aa' : '#ff4466');
+  
+  Plotly.newPlot('steeringForcePlot', [{
+    type: 'bar',
+    y: names,
+    x: mags,
+    orientation: 'h',
+    marker: { color: colors, line: { width: 0 } },
+    hovertemplate: '%{y}: %{x:.2f}<extra></extra>',
+  }], {
+    ...plotLayout,
+    title: { text: 'Steering Force by Dimension', font: { size: 13, color: '#8888a8' } },
+    xaxis: { ...plotLayout.xaxis, title: 'Force Magnitude' },
+    yaxis: { ...plotLayout.yaxis, automargin: true },
+    margin: { ...plotLayout.margin, l: 180 },
+  }, plotConfig);
+}
+
+// --- Layer Profiles ---
+async function loadLayerProfiles() {
+  try {
+    const res = await fetch(`${SERVER}/api/viz/layer-profiles`);
+    const data = await res.json();
+    
+    const traces = [];
+    const allColors = [...COLORS.amplify, ...COLORS.suppress];
+    let colorIdx = 0;
+    
+    for (const [name, profile] of Object.entries(data)) {
+      const layers = profile.magnitudes.map(m => m.layer);
+      const mags = profile.magnitudes.map(m => m.magnitude);
+      
+      traces.push({
+        x: layers,
+        y: mags,
+        name: name.replace(/_/g, ' '),
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { width: 2, color: allColors[colorIdx % allColors.length] },
+        marker: { size: 5 },
+      });
+      colorIdx++;
+    }
+    
+    Plotly.newPlot('layerProfilePlot', traces, {
+      ...plotLayout,
+      title: { text: 'Vector Magnitude Across Layers', font: { size: 13, color: '#8888a8' } },
+      xaxis: { ...plotLayout.xaxis, title: 'Layer Index' },
+      yaxis: { ...plotLayout.yaxis, title: 'Magnitude' },
+      legend: { font: { size: 10 }, bgcolor: 'rgba(0,0,0,0)' },
+      showlegend: true,
+    }, plotConfig);
+    
+  } catch(e) { console.error(e); }
+}
+
+// --- Similarity Matrix ---
+async function loadSimilarity() {
+  try {
+    const res = await fetch(`${SERVER}/api/viz/similarity`);
+    const data = await res.json();
+    
+    if (!data.names || data.names.length === 0) return;
+    
+    const labels = data.names.map(n => n.replace(/_/g, ' '));
+    
+    // Custom colorscale: blue-white-red
+    const colorscale = [
+      [0, '#ff4466'],
+      [0.25, '#ff8888'],
+      [0.5, '#1a1a27'],
+      [0.75, '#88ccaa'],
+      [1, '#00d4aa'],
+    ];
+    
+    Plotly.newPlot('similarityPlot', [{
+      z: data.matrix,
+      x: labels,
+      y: labels,
+      type: 'heatmap',
+      colorscale: colorscale,
+      zmin: -1,
+      zmax: 1,
+      text: data.matrix.map(row => row.map(v => v.toFixed(3))),
+      texttemplate: '%{text}',
+      textfont: { size: 10, color: '#ccc' },
+      hovertemplate: '%{x} ↔ %{y}: %{z:.3f}<extra></extra>',
+    }], {
+      ...plotLayout,
+      title: { text: 'Cosine Similarity Between Steering Vectors', font: { size: 13, color: '#8888a8' } },
+      xaxis: { ...plotLayout.xaxis, tickangle: -35 },
+      yaxis: { ...plotLayout.yaxis, automargin: true },
+      margin: { t: 40, b: 120, l: 160, r: 20 },
+    }, plotConfig);
+    
+  } catch(e) { console.error(e); }
+}
+
+// --- Live Probing ---
+async function sendProbe() {
+  const input = document.getElementById('probeInput');
+  const prompt = input.value.trim();
+  if (!prompt) return;
+  
+  try {
+    const res = await fetch(`${SERVER}/api/viz/probe`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ prompt: prompt, label: prompt.substring(0, 30) })
+    });
+    const data = await res.json();
+    
+    probeHistory.push(data);
+    if (probeHistory.length > 20) probeHistory = probeHistory.slice(-20);
+    
+    updateProjectionPlot();
+  } catch(e) { console.error(e); }
+}
+
+function updateProjectionPlot() {
+  if (probeHistory.length === 0) return;
+  
+  // Get dimension names from first probe
+  const dimNames = Object.keys(probeHistory[0].projections);
+  
+  // For each probe, get the primary layer projection onto each dimension
+  const traces = [];
+  const recentProbes = probeHistory.slice(-8);
+  
+  recentProbes.forEach((probe, i) => {
+    const values = dimNames.map(dim => {
+      const layers = probe.projections[dim];
+      const layerKeys = Object.keys(layers);
+      // Get the middle layer value
+      const midKey = layerKeys[Math.floor(layerKeys.length / 2)];
+      return layers[midKey] || 0;
+    });
+    
+    const opacity = 0.3 + (i / recentProbes.length) * 0.7;
+    
+    traces.push({
+      type: 'scatterpolar',
+      r: values.map(v => Math.abs(v)),
+      theta: dimNames.map(n => n.replace(/_/g, ' ')),
+      fill: 'toself',
+      name: probe.label,
+      opacity: opacity,
+      line: { color: `hsl(${(i * 45) % 360}, 70%, 60%)` },
+    });
+  });
+  
+  Plotly.newPlot('projectionPlot', traces, {
+    ...plotLayout,
+    polar: {
+      bgcolor: 'rgba(22,22,34,1)',
+      radialaxis: { gridcolor: '#2a2a3d', linecolor: '#2a2a3d' },
+      angularaxis: { gridcolor: '#2a2a3d', linecolor: '#2a2a3d' },
+    },
+    title: { text: 'Probe Projections (Radar)', font: { size: 13, color: '#8888a8' } },
+    showlegend: true,
+    legend: { font: { size: 10 }, bgcolor: 'rgba(0,0,0,0)' },
+  }, plotConfig);
+}
+
+// =============================================================================
+// INIT
+// =============================================================================
+window.addEventListener('load', async () => {
+  // Check if server is already running with model loaded
+  try {
+    const res = await fetch(`${SERVER}/api/status`);
+    const data = await res.json();
+    if (data.loaded) {
+      document.getElementById('loadStatus').textContent = 'Server detected with model loaded!';
+      dimensions = data.dimensions;
+      
+      // Auto-fill form
+      if (data.model) document.getElementById('modelName').value = data.model;
+      
+      // Populate steer layer display
+      document.getElementById('steerLayer').textContent = 'L16';
+      
+      onModelLoaded();
+    }
+  } catch(e) {
+    // Server not running, show load form
+  }
+});
+</script>
+
+</body>
+</html>

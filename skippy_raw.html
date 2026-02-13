@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raw A/B — No System Prompt</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --gold: #f0c040;
+    --gold-dim: #a08020;
+    --gold-glow: rgba(240, 192, 64, 0.15);
+    --blue: #4090ff;
+    --blue-dim: #2060b0;
+    --blue-glow: rgba(64, 144, 255, 0.15);
+    --text: #e0e0e8;
+    --text-dim: #888898;
+    --danger: #ff4060;
+    --green: #40e060;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', monospace;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .icon {
+    width: 36px; height: 36px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--danger), #a02040);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: white;
+    border: 1px solid var(--danger);
+  }
+
+  .title-block h1 { font-size: 15px; color: var(--danger); letter-spacing: 1px; text-transform: uppercase; }
+  .title-block .subtitle { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+
+  .header-controls {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--text-dim);
+  }
+  .header-controls label { display: flex; align-items: center; gap: 4px; }
+  .header-controls input[type="range"] { width: 70px; accent-color: var(--gold); cursor: pointer; }
+  .header-controls input[type="number"] {
+    width: 55px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 4px; padding: 2px 6px; font-family: inherit; font-size: 11px;
+  }
+  .header-controls button {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 4px; padding: 4px 10px; font-family: inherit; font-size: 11px; cursor: pointer;
+  }
+  .header-controls button:hover { color: var(--danger); border-color: var(--danger); }
+
+  .main-area { flex: 1; display: flex; overflow: hidden; }
+
+  .chat-pane {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+  .chat-pane:last-child { border-right: none; }
+
+  .pane-header {
+    padding: 8px 16px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .pane-header.ablated { background: rgba(240,192,64,0.06); color: var(--gold); border-bottom-color: var(--gold-dim); }
+  .pane-header.base { background: rgba(64,144,255,0.06); color: var(--blue); border-bottom-color: var(--blue-dim); }
+
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #444; transition: background 0.3s;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 6px rgba(64,224,96,0.5); }
+
+  .pane-status { margin-left: auto; font-size: 10px; font-weight: 400; color: var(--text-dim); }
+
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    scroll-behavior: smooth;
+  }
+  .chat-messages::-webkit-scrollbar { width: 5px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .message {
+    max-width: 88%; padding: 10px 14px; border-radius: 10px; font-size: 13px;
+    line-height: 1.6; animation: fadeIn 0.2s ease; white-space: pre-wrap; word-wrap: break-word;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  .message.user {
+    align-self: flex-end; background: var(--surface2); border: 1px solid var(--border);
+    border-bottom-right-radius: 3px;
+  }
+  .message.assistant.ablated {
+    align-self: flex-start; background: rgba(240,192,64,0.04);
+    border: 1px solid var(--gold-dim); border-left: 3px solid var(--gold);
+    border-bottom-left-radius: 3px; box-shadow: 0 0 16px var(--gold-glow);
+  }
+  .message.assistant.base {
+    align-self: flex-start; background: rgba(64,144,255,0.04);
+    border: 1px solid var(--blue-dim); border-left: 3px solid var(--blue);
+    border-bottom-left-radius: 3px; box-shadow: 0 0 16px var(--blue-glow);
+  }
+  .message.system-msg {
+    align-self: center; background: transparent; color: var(--text-dim); font-size: 11px;
+    border: 1px dashed var(--border); padding: 6px 12px; max-width: 95%;
+  }
+
+  .msg-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; font-weight: 600; }
+  .message.user .msg-label { color: var(--text-dim); }
+  .message.assistant.ablated .msg-label { color: var(--gold); }
+  .message.assistant.base .msg-label { color: var(--blue); }
+
+  .typing-indicator { display: inline-flex; gap: 4px; padding: 4px 0; }
+  .typing-indicator span {
+    width: 5px; height: 5px; border-radius: 50%; animation: blink 1.2s infinite;
+  }
+  .typing-indicator.ablated span { background: var(--gold-dim); }
+  .typing-indicator.base span { background: var(--blue-dim); }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,60%,100% { opacity:0.3; transform:scale(0.8); } 30% { opacity:1; transform:scale(1); } }
+
+  #input-area {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 12px 20px; display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+  }
+
+  #msg-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-family: inherit; font-size: 13px; resize: none;
+    min-height: 40px; max-height: 140px; line-height: 1.5; outline: none;
+  }
+  #msg-input:focus { border-color: var(--gold-dim); }
+  #msg-input::placeholder { color: var(--text-dim); }
+
+  #send-btn {
+    background: var(--gold); color: var(--bg); border: none; border-radius: 8px;
+    padding: 10px 18px; font-family: inherit; font-size: 12px; font-weight: 700;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;
+  }
+  #send-btn:hover { background: #ffcc44; transform: translateY(-1px); }
+  #send-btn:active { transform: translateY(0); }
+  #send-btn:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; transform: none; }
+
+  .sync-badge {
+    font-size: 10px; color: var(--danger); padding: 6px 10px;
+    border: 1px solid var(--danger); border-radius: 6px; background: rgba(255,64,96,0.06);
+    display: flex; align-items: center; gap: 6px; user-select: none; font-weight: 600;
+  }
+
+  .timing { font-size: 10px; color: var(--text-dim); text-align: right; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="icon">RAW</div>
+  <div class="title-block">
+    <h1>Raw Model Comparison</h1>
+    <div class="subtitle">Ablated vs Base &middot; NO system prompt &middot; Pure weight differences only</div>
+  </div>
+  <div class="header-controls">
+    <label>temp <input type="range" id="temp" min="0" max="1.5" step="0.05" value="0.75"><span id="temp-val">0.75</span></label>
+    <label>top_p <input type="range" id="top-p" min="0" max="1" step="0.05" value="0.9"><span id="top-p-val">0.90</span></label>
+    <label>max <input type="number" id="max-tokens" min="32" max="2048" value="512"></label>
+    <label>rep <input type="range" id="rep-pen" min="1.0" max="1.5" step="0.05" value="1.15"><span id="rep-pen-val">1.15</span></label>
+    <button id="clear-btn">clear</button>
+  </div>
+</header>
+
+<div class="main-area">
+  <div class="chat-pane">
+    <div class="pane-header ablated">
+      <div class="status-dot" id="dot-ablated"></div>
+      Ablated Weights
+      <span class="pane-status" id="status-ablated">connecting...</span>
+    </div>
+    <div class="chat-messages" id="msgs-ablated">
+      <div class="message system-msg">No system prompt. Character comes purely from ablated weight modifications.</div>
+    </div>
+  </div>
+
+  <div class="chat-pane">
+    <div class="pane-header base">
+      <div class="status-dot" id="dot-base"></div>
+      Vanilla Qwen3-VL-8B
+      <span class="pane-status" id="status-base">connecting...</span>
+    </div>
+    <div class="chat-messages" id="msgs-base">
+      <div class="message system-msg">No system prompt. Stock Qwen3-VL-8B-Instruct, completely unmodified.</div>
+    </div>
+  </div>
+</div>
+
+<div id="input-area">
+  <div class="sync-badge">NO SYSTEM PROMPT</div>
+  <textarea id="msg-input" rows="1" placeholder="Send the same prompt to both raw models... (Enter to send)"></textarea>
+  <button id="send-btn">Send</button>
+</div>
+
+<script>
+const ABLATED = { url: "http://localhost:8000", model: "skippy" };
+const BASE    = { url: "http://localhost:8001", model: "qwen-base" };
+
+// No system prompt — just user messages
+const history = { ablated: [], base: [] };
+let isGenerating = false;
+
+const $ = id => document.getElementById(id);
+const msgInput = $("msg-input");
+const sendBtn  = $("send-btn");
+const tempS = $("temp"), topPS = $("top-p"), maxT = $("max-tokens"), repS = $("rep-pen");
+
+tempS.oninput = () => $("temp-val").textContent = parseFloat(tempS.value).toFixed(2);
+topPS.oninput = () => $("top-p-val").textContent = parseFloat(topPS.value).toFixed(2);
+repS.oninput  = () => $("rep-pen-val").textContent = parseFloat(repS.value).toFixed(2);
+
+msgInput.addEventListener("input", () => {
+  msgInput.style.height = "auto";
+  msgInput.style.height = Math.min(msgInput.scrollHeight, 140) + "px";
+});
+msgInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendBoth(); }
+});
+sendBtn.addEventListener("click", sendBoth);
+$("clear-btn").addEventListener("click", () => {
+  history.ablated = []; history.base = [];
+  $("msgs-ablated").innerHTML = '<div class="message system-msg">Chat cleared.</div>';
+  $("msgs-base").innerHTML    = '<div class="message system-msg">Chat cleared.</div>';
+});
+
+function addMsg(pane, role, cls, content) {
+  const container = $(`msgs-${pane}`);
+  const div = document.createElement("div");
+  div.className = `message ${role} ${cls}`;
+  const label = document.createElement("div");
+  label.className = "msg-label";
+  label.textContent = role === "user" ? "you" : (pane === "ablated" ? "ablated" : "vanilla");
+  div.appendChild(label);
+  const text = document.createElement("div");
+  text.textContent = content;
+  div.appendChild(text);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return { div, text };
+}
+
+function addTyping(pane) {
+  const container = $(`msgs-${pane}`);
+  const div = document.createElement("div");
+  div.className = `message assistant ${pane}`;
+  div.id = `typing-${pane}`;
+  const label = document.createElement("div");
+  label.className = "msg-label";
+  label.textContent = pane === "ablated" ? "ablated" : "vanilla";
+  div.appendChild(label);
+  const dots = document.createElement("div");
+  dots.className = `typing-indicator ${pane}`;
+  dots.innerHTML = "<span></span><span></span><span></span>";
+  div.appendChild(dots);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping(pane) {
+  const el = $(`typing-${pane}`);
+  if (el) el.remove();
+}
+
+async function streamChat(server, pane) {
+  const t0 = performance.now();
+  addTyping(pane);
+  try {
+    const resp = await fetch(`${server.url}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: server.model,
+        messages: history[pane],
+        temperature: parseFloat(tempS.value),
+        top_p: parseFloat(topPS.value),
+        max_tokens: parseInt(maxT.value),
+        repetition_penalty: parseFloat(repS.value),
+        stream: true,
+      }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+    removeTyping(pane);
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let full = "", els = null;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of decoder.decode(value, { stream: true }).split("\n")) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") continue;
+        try {
+          const delta = JSON.parse(data).choices?.[0]?.delta?.content;
+          if (delta) {
+            if (!els) els = addMsg(pane, "assistant", pane, "");
+            full += delta;
+            els.text.textContent = full;
+            $(`msgs-${pane}`).scrollTop = $(`msgs-${pane}`).scrollHeight;
+          }
+        } catch {}
+      }
+    }
+    if (full) {
+      history[pane].push({ role: "assistant", content: full });
+      const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+      if (els) {
+        const timing = document.createElement("div");
+        timing.className = "timing";
+        timing.textContent = `~${full.split(/\s+/).length} words in ${elapsed}s`;
+        els.div.appendChild(timing);
+      }
+    }
+  } catch (err) {
+    removeTyping(pane);
+    const errDiv = document.createElement("div");
+    errDiv.className = "message system-msg";
+    errDiv.textContent = `Error: ${err.message}`;
+    $(`msgs-${pane}`).appendChild(errDiv);
+    history[pane].pop();
+  }
+}
+
+async function sendBoth() {
+  const text = msgInput.value.trim();
+  if (!text || isGenerating) return;
+  isGenerating = true;
+  sendBtn.disabled = true;
+  msgInput.value = "";
+  msgInput.style.height = "auto";
+  addMsg("ablated", "user", "", text);
+  addMsg("base", "user", "", text);
+  history.ablated.push({ role: "user", content: text });
+  history.base.push({ role: "user", content: text });
+  await Promise.allSettled([streamChat(ABLATED, "ablated"), streamChat(BASE, "base")]);
+  isGenerating = false;
+  sendBtn.disabled = false;
+  msgInput.focus();
+}
+
+async function checkServer(server, pane) {
+  try {
+    const resp = await fetch(`${server.url}/v1/models`);
+    if (resp.ok) { $(`dot-${pane}`).className = "status-dot online"; $(`status-${pane}`).textContent = "online"; return true; }
+  } catch {}
+  $(`dot-${pane}`).className = "status-dot"; $(`status-${pane}`).textContent = "connecting..."; return false;
+}
+
+async function poll() {
+  const [a, b] = await Promise.all([checkServer(ABLATED, "ablated"), checkServer(BASE, "base")]);
+  if (!a || !b) setTimeout(poll, 3000);
+  else setInterval(() => { checkServer(ABLATED, "ablated"); checkServer(BASE, "base"); }, 15000);
+}
+
+poll();
+msgInput.focus();
+</script>
+</body>
+</html>
