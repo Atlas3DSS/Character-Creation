@@ -395,7 +395,7 @@ def run_lm_eval(
     lm = HFLM(
         pretrained=wrapped_model,
         tokenizer=tokenizer,
-        batch_size="auto",
+        batch_size=8,
         dtype="float16",
         trust_remote_code=True,
     )
@@ -427,7 +427,7 @@ def run_lm_eval(
 
 def run_skippy_eval(
     model, processor, test_prompts: list[str], step_label: str,
-    batch_size: int = 16,
+    batch_size: int = 8,
 ) -> tuple[float, list[dict]]:
     """Generate responses to all test prompts in batches, score, and save."""
     print(f"    Generating {len(test_prompts)} responses (batch_size={batch_size})...")
