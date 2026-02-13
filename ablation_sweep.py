@@ -279,9 +279,10 @@ def generate_batch(
             outputs = model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
-                temperature=0.75,
-                top_p=0.9,
-                repetition_penalty=1.15,
+                temperature=1.0,
+                top_p=1.0,
+                top_k=40,
+                repetition_penalty=1.0,
                 do_sample=True,
                 pad_token_id=tokenizer.eos_token_id,
             )
@@ -396,8 +397,8 @@ def run_lm_eval(
         pretrained=wrapped_model,
         tokenizer=tokenizer,
         batch_size=10,
-        max_gen_toks=4096,  # Cap generation length — Qwen3 thinking mode can produce 30K+ tokens
-        dtype="float16",
+        max_gen_toks=4096,  # Cap generation length to avoid VRAM blowup on long CoT
+        dtype="bfloat16",
         trust_remote_code=True,
     )
 
@@ -708,7 +709,11 @@ def main():
     from transformers import Qwen3VLForConditionalGeneration, AutoProcessor
 
     model = Qwen3VLForConditionalGeneration.from_pretrained(
-        MODEL_NAME, dtype=torch.float16, device_map="auto", trust_remote_code=True,
+        MODEL_NAME,
+        dtype=torch.bfloat16,
+        device_map="auto",
+        trust_remote_code=True,
+        attn_implementation="flash_attention_2",
     )
     model.eval()
     processor = AutoProcessor.from_pretrained(MODEL_NAME, trust_remote_code=True)
