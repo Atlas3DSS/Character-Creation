@@ -242,34 +242,57 @@ def load_vectors(dim_name: str, layer_indices: list[int]) -> dict[int, torch.Ten
 # TEXT GENERATION (NO SYSTEM PROMPT)
 # ============================================================================
 
-def generate_raw(model, processor, prompt: str, max_new_tokens: int = 256) -> str:
-    """Generate a response with NO system prompt — purely from weights."""
+def generate_batch(
+    model, processor, prompts: list[str],
+    max_new_tokens: int = 256, batch_size: int = 16,
+) -> list[str]:
+    """Generate responses for a list of prompts in batches. No system prompt."""
     tokenizer = processor.tokenizer
-    messages = [{"role": "user", "content": prompt}]
+    all_responses = []
 
-    text = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True,
-        enable_thinking=False,
-    )
+    for i in range(0, len(prompts), batch_size):
+        batch_prompts = prompts[i : i + batch_size]
 
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        # Format each prompt as a chat
+        texts = []
+        for prompt in batch_prompts:
+            messages = [{"role": "user", "content": prompt}]
+            text = tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True,
+                enable_thinking=False,
+            )
+            texts.append(text)
 
-    with torch.no_grad():
-        output = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            temperature=0.75,
-            top_p=0.9,
-            repetition_penalty=1.15,
-            do_sample=True,
-            pad_token_id=tokenizer.eos_token_id,
+        # Tokenize with left-padding for batched generation
+        tokenizer.padding_side = "left"
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token_id = tokenizer.eos_token_id
+
+        inputs = tokenizer(
+            texts, return_tensors="pt", padding=True,
+            truncation=True, max_length=2048,
         )
+        input_len = inputs["input_ids"].shape[1]
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
-    new_tokens = output[0][inputs["input_ids"].shape[1]:]
-    response = tokenizer.decode(new_tokens, skip_special_tokens=True)
-    response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
-    return response
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                temperature=0.75,
+                top_p=0.9,
+                repetition_penalty=1.15,
+                do_sample=True,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+
+        for j, output in enumerate(outputs):
+            new_tokens = output[input_len:]
+            response = tokenizer.decode(new_tokens, skip_special_tokens=True)
+            response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
+            all_responses.append(response)
+
+    return all_responses
 
 
 # ============================================================================
@@ -372,7 +395,7 @@ def run_lm_eval(
     lm = HFLM(
         pretrained=wrapped_model,
         tokenizer=tokenizer,
-        batch_size=1,
+        batch_size="auto",
         dtype="float16",
         trust_remote_code=True,
     )
@@ -404,12 +427,15 @@ def run_lm_eval(
 
 def run_skippy_eval(
     model, processor, test_prompts: list[str], step_label: str,
+    batch_size: int = 16,
 ) -> tuple[float, list[dict]]:
-    """Generate responses to all test prompts, score, and save."""
-    responses = []
-    for prompt in tqdm(test_prompts, desc=f"  Skippy [{step_label}]", leave=False):
-        resp = generate_raw(model, processor, prompt)
-        responses.append({"prompt": prompt, "response": resp})
+    """Generate responses to all test prompts in batches, score, and save."""
+    print(f"    Generating {len(test_prompts)} responses (batch_size={batch_size})...")
+    raw_responses = generate_batch(model, processor, test_prompts, batch_size=batch_size)
+    responses = [
+        {"prompt": p, "response": r}
+        for p, r in zip(test_prompts, raw_responses)
+    ]
 
     score = heuristic_skippy_score(responses)
 
