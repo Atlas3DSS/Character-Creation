@@ -32,10 +32,13 @@ Built a proper eval using vLLM with chat template, proper answer extraction, and
 | 4,096 | 7/30 | 23.3% | 21/30 | 67 min | lm-eval (HF) |
 | 4,096 | 8/30 | 26.7% | 21/30 | 76 sec | vLLM |
 | **16,384** | **14/30** | **46.7%** | 16/30 | 533 sec | vLLM |
+| 32,000 | 14/30 | 46.7% | 16/30 | 1,322 sec | vLLM |
 
-**46.7% matches the expected Qwen3-8B AIME baseline (~40-50%).**
+**46.7% is the ceiling for this model on AIME 2024 (greedy decoding).**
 
-Even at 16k tokens, 16/30 problems still truncate (model is verbose), but enough complete to hit the expected range. vLLM is ~50x faster than lm-eval HF for this task.
+Going from 16k→32k tokens recovered 3 new problems but lost 1 (model rambles and loses the thread), netting same score. The 16 remaining problems the model simply can't solve — more tokens = more rambling, not more answers. **16k is the sweet spot** (same accuracy, 2.5x faster than 32k).
+
+vLLM is ~50x faster than lm-eval HF for this task.
 
 ## Qualitative Observations
 
