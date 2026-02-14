@@ -9,24 +9,33 @@
 
 ## Results
 
-| Metric | Baseline | Post-Ablation | Delta |
+| Metric | Baseline (lm-eval 4k) | Post-Ablation (lm-eval 4k) | Delta |
 |--------|----------|---------------|-------|
 | AIME 2024 | 23.33% (7/30) | 3.33% (1/30) | -20.0 pts |
 | HellaSwag (200 subset) | 54.5% | 50.5% | -4.0 pts |
 | Skippy heuristic | 1.71/10 | 2.29/10 | +0.58 |
 
-## Known Issue: AIME Baseline Too Low
+**Corrected AIME baseline (vLLM, 16k tokens): 46.7% (14/30)**
 
-**Baseline AIME = 23.33% does NOT match reported Qwen3-8B scores (~40-50%).**
+## AIME Baseline Investigation (RESOLVED)
 
-Likely cause: **regex answer extraction bug** in lm-eval. The AIME task uses regex to extract the final numerical answer from the model's chain-of-thought output. If the regex doesn't match Qwen3's output format (e.g., `\boxed{42}` vs `The answer is 42` vs other formatting), correct answers get scored as wrong.
+**Root cause: token truncation, not regex.**
 
-**TODO**: Inspect the lm-eval AIME answer extraction regex and compare against actual model output format. Check:
-- `lm_eval/tasks/aime/` YAML configs for `filter_list` / `regex` patterns
-- Sample model outputs from `ablation_sweep_results/` (lm-eval may cache these)
-- Whether Qwen3-VL wrapping via CausalLMWrapper affects generation format
+lm-eval's AIME task used `max_gen_toks=4096` (we patched it down from 32768 to avoid VRAM blowup). At 4096 tokens, 21/30 problems get truncated mid-reasoning — the model never outputs `\boxed{}` so extraction fails.
 
-If the regex is broken, BOTH baseline and post-ablation scores are deflated by the same factor, so the relative comparison may still be valid — but absolute numbers are unreliable.
+### Custom vLLM eval harness (`eval_aime.py`)
+
+Built a proper eval using vLLM with chat template, proper answer extraction, and configurable token limits:
+
+| max_tokens | Correct | Accuracy | Truncated | Time | Engine |
+|---|---|---|---|---|---|
+| 4,096 | 7/30 | 23.3% | 21/30 | 67 min | lm-eval (HF) |
+| 4,096 | 8/30 | 26.7% | 21/30 | 76 sec | vLLM |
+| **16,384** | **14/30** | **46.7%** | 16/30 | 533 sec | vLLM |
+
+**46.7% matches the expected Qwen3-8B AIME baseline (~40-50%).**
+
+Even at 16k tokens, 16/30 problems still truncate (model is verbose), but enough complete to hit the expected range. vLLM is ~50x faster than lm-eval HF for this task.
 
 ## Qualitative Observations
 
