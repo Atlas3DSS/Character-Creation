@@ -581,6 +581,33 @@ def generate_plots(all_results: list, output_dir: Path) -> None:
 
     baseline = next((r for r in all_results if r["step"] == "baseline"), None)
 
+    # Handle full-send mode (no per-dimension sweep data)
+    if not dims_seen:
+        # Create before/after comparison bar chart
+        post = next((r for r in all_results if r["step"] != "baseline"), None)
+        if baseline and post:
+            metrics = ["aime", "hellaswag"]
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                name="Baseline", x=metrics,
+                y=[baseline["aime"], baseline["hellaswag"]],
+                marker_color="steelblue",
+            ))
+            fig.add_trace(go.Bar(
+                name="Post-Ablation", x=metrics,
+                y=[post["aime"], post["hellaswag"]],
+                marker_color="coral",
+            ))
+            fig.update_layout(
+                title="Awake Craniotomy — Full Send: Baseline vs Post-Ablation",
+                yaxis_title="Score %", barmode="group",
+                template="plotly_dark", height=500,
+            )
+            plot_path = output_dir / "sweep_plot.html"
+            fig.write_html(str(plot_path))
+            print(f"\n  Plot saved to {plot_path}")
+        return
+
     # Per-dimension sweep charts
     fig = make_subplots(
         rows=len(dims_seen), cols=1,
