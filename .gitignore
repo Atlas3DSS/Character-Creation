@@ -3,9 +3,23 @@ books/
 
 # Model weights (too large for git)
 skippy_vectors/ablated_model/
+skippy_vectors/lora_merged_0.5/
+skippy_vectors/v2_personality/
+skippy_vectors/v3_sysprompt_delta/
+skippy_vectors/v4_lora_delta/
+
+# LoRA adapter checkpoints (too large for git)
+skippy_lora/
 
 # Generated results & checkpoints
 ablation_sweep_results/
+ablation_sweep_v2_results/
+ablation_sweep_v3_results/
+ablation_sweep_v3_results_high/
+ablation_sweep_v4_results/
+aime_eval_results/
+lora_merge_sweep_results/
+lora_merge_sweep_results_sysprompt/
 
 # Extracted text from books
 extracted_text/
