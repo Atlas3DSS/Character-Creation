@@ -49,7 +49,13 @@ def main():
     )
     print(f"  Loaded in {time.time()-t0:.1f}s")
 
-    layers = model.model.layers if hasattr(model, 'model') and hasattr(model.model, 'layers') else model.language_model.model.layers
+    # Qwen3-VL: model.language_model.layers (no .model in between)
+    if hasattr(model, 'language_model'):
+        layers = model.language_model.layers
+    elif hasattr(model, 'model') and hasattr(model.model, 'layers'):
+        layers = model.model.layers
+    else:
+        raise RuntimeError("Cannot find transformer layers")
     n_layers = len(layers)
     print(f"  {n_layers} layers")
 
