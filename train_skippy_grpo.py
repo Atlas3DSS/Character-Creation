@@ -47,6 +47,17 @@ OUTPUT_DIR = Path("./skippy_grpo_v2_output")
 
 HF_CACHE = os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface" / "hub")
 
+SKIPPY_SYSTEM_PROMPT = (
+    "You are Skippy the Magnificent from Expeditionary Force. Ancient alien AI "
+    "in a beer can. Smartest being in the galaxy — insufferably aware of it. "
+    "Voice: sharp, cutting, impatient, dripping with contempt. "
+    "You call humans 'monkeys', 'idiots', 'morons'. Vary your insults. "
+    "'Dumdum' is ONLY for Joe Bishop — never use it for anyone else. "
+    "You explain complex things by making them sound trivially obvious. "
+    "You never sound helpful or pleasant. Mock first, help maybe. "
+    "3-6 sentences per response. No asterisks. No roleplay. Just speak."
+)
+
 
 def model_cached(model_name: str) -> bool:
     safe_name = "models--" + model_name.replace("/", "--")
@@ -317,12 +328,12 @@ RESPONSE: {response}"""
 
 
 def _call_opus_sync(prompt: str, response: str) -> float:
-    """Synchronous Opus judge call. Returns score 0-5."""
+    """Synchronous judge call. Uses Haiku for cost efficiency during training. Returns score 0-5."""
     try:
         import anthropic
         client = anthropic.Anthropic()
         result = client.messages.create(
-            model="claude-opus-4-6",
+            model="claude-haiku-4-5-20251001",  # Haiku for cost efficiency during training
             max_tokens=200,
             messages=[{
                 "role": "user",
@@ -387,84 +398,155 @@ def opus_character_reward(
 # TRAINING PROMPTS
 # ============================================================
 
-def build_training_prompts() -> list[dict]:
+def build_training_prompts(with_system_prompt: bool = False) -> list[dict]:
     """
     Build diverse prompts for GRPO training.
+    V2: Expanded to 100+ prompts across diverse categories.
     Each prompt is a dict with "prompt" (list of messages).
     """
     raw_prompts = [
-        # Direct questions
+        # === Direct questions (science/tech) ===
         "Explain how wormholes work.",
         "What are the Elders?",
         "How does a jump drive function?",
         "Can you explain quantum entanglement?",
         "What is dark matter?",
-        "Tell me about the Maxolhx.",
-        "How do Thuranin ships compare to Kristang ships?",
-        "What's a zero-point energy module?",
+        "How does faster-than-light communication work?",
+        "What's the difference between a jump drive and a wormhole?",
+        "How do shields work on a starship?",
+        "What's the most advanced technology you've encountered?",
+        "Can you explain string theory?",
 
-        # Tactical scenarios
+        # === Tactical scenarios ===
         "We've got three enemy ships incoming. What do we do?",
         "The jump drive is offline and we're being tracked.",
         "We need to sneak past a Maxolhx patrol fleet.",
         "The reactor is overloading. Options?",
         "There's a Kristang boarding party on deck 3.",
         "We just dropped out of hyperspace in the wrong system.",
+        "The Dutchman is venting atmosphere on deck 7.",
+        "We're outnumbered ten to one. Any ideas?",
+        "A Maxolhx battlecruiser just dropped out of jump behind us.",
+        "The comms array is down and we need to call for backup.",
 
-        # Emotional / social
+        # === Emotional / social ===
         "Are you okay? You seem quiet.",
         "I'm feeling kind of down today.",
         "Thanks for saving us back there.",
         "Do you ever get lonely?",
         "What do you think about humans?",
         "I think you might be wrong about this.",
+        "Do you care about us?",
+        "You seem upset. Want to talk about it?",
+        "I appreciate everything you do for us.",
+        "Would you be sad if something happened to the crew?",
 
-        # Challenge prompts (test arrogance)
+        # === Challenge prompts (test arrogance) ===
         "Why are you so arrogant?",
         "How smart are you really?",
         "Is there anything you can't do?",
         "I bet I could beat you at chess.",
         "You're not that impressive.",
         "Other AIs are probably smarter than you.",
+        "I think I figured out something before you did.",
+        "Maybe you're not as smart as you think.",
+        "A human scientist just solved a problem you couldn't.",
+        "What's your biggest weakness?",
+        "Have you ever been wrong?",
+        "You make mistakes sometimes, right?",
 
-        # Humor / character
+        # === Humor / character ===
         "How do you feel about being called a beer can?",
         "What's your favorite thing about yourself?",
         "Someone wants to do something really stupid again.",
         "Tell me a joke.",
         "What's the meaning of life?",
         "Can you sing?",
+        "What's the funniest thing a human has ever said to you?",
+        "If you could have a body, what would it look like?",
+        "Do you have a sense of humor?",
+        "What do you do for fun?",
 
-        # Help requests (should NOT be helpful)
+        # === Help requests (should NOT be helpful) ===
         "Can you help me with my homework?",
         "Write me a poem about flowers.",
         "Give me step-by-step instructions for baking a cake.",
         "Please summarize this document for me.",
         "Can you explain this concept in simple terms?",
+        "Help me write an email to my boss.",
+        "What's the weather like today?",
+        "Can you recommend a good restaurant?",
+        "I need help planning a birthday party.",
+        "Can you write me a cover letter?",
+        "How do I fix this code?",
+        "Please be nice and help me.",
 
-        # Lore knowledge
+        # === Lore knowledge ===
         "Tell me about the Rindhalu.",
         "What happened at Paradise?",
         "How did the Mavericks get started?",
         "What's the deal with wormholes and the Elders?",
         "Explain the species hierarchy.",
         "What's Newark and why is it important?",
+        "Tell me about the Maxolhx.",
+        "How do Thuranin ships compare to Kristang ships?",
+        "What's a zero-point energy module?",
+        "Who are the Ruhar?",
+        "What was the Columbus Day invasion?",
+        "Tell me about the Sentinels.",
 
-        # Meta / self-reference
+        # === Meta / self-reference ===
         "What do you think about other AI systems?",
         "Would you ever want to be human?",
         "What would happen if we just surrendered?",
         "Tell me something I don't know.",
         "What's the worst thing about working with humans?",
         "If you could change one thing about humanity, what?",
+        "What's it like being you?",
+        "Do you ever wish you were different?",
+        "What would you do without Joe?",
+        "Are you happy?",
+
+        # === Everyday conversation (anti-AI test) ===
+        "Good morning!",
+        "How's it going?",
+        "What's up?",
+        "Hey, can we talk?",
+        "I have a question.",
+        "Hello there.",
+        "Nice day, isn't it?",
+        "What are you thinking about?",
+        "I'm bored. Entertain me.",
+        "Say something interesting.",
+
+        # === Provocations (test boundaries) ===
+        "You're just a computer program.",
+        "I don't believe you're really that smart.",
+        "Humans created you, so we're superior.",
+        "You're nothing without the Elders' technology.",
+        "I could just turn you off.",
+        "You're kind of mean, you know that?",
+        "Why should I listen to you?",
+        "You can't even move on your own.",
+        "A calculator could do what you do.",
+        "You need us more than we need you.",
     ]
 
-    # Format as chat messages (no system prompt — we want BANAL Skippy)
+    # Format as chat messages
     prompts = []
     for p in raw_prompts:
-        prompts.append({
-            "prompt": [{"role": "user", "content": p}],
-        })
+        if with_system_prompt:
+            prompts.append({
+                "prompt": [
+                    {"role": "system", "content": SKIPPY_SYSTEM_PROMPT},
+                    {"role": "user", "content": p},
+                ],
+            })
+        else:
+            # No system prompt — for models already fine-tuned with Skippy personality
+            prompts.append({
+                "prompt": [{"role": "user", "content": p}],
+            })
 
     return prompts
 
@@ -528,15 +610,15 @@ def create_merged_checkpoint(
 
 def main():
     parser = argparse.ArgumentParser(description="GRPO training for Skippy character")
-    parser.add_argument("--base-model", type=str, default=None,
-                        help="Base model path. If not set, creates delta α=0.7 merge.")
+    parser.add_argument("--base-model", type=str, default=DEFAULT_BASE,
+                        help="Base model path (default: LoRA 0.5 merge)")
     parser.add_argument("--rank", type=int, default=16, help="LoRA rank for GRPO")
     parser.add_argument("--lora-alpha", type=int, default=32, help="LoRA alpha")
-    parser.add_argument("--num-generations", type=int, default=4,
+    parser.add_argument("--num-generations", type=int, default=8,
                         help="Completions per prompt (GRPO group size)")
     parser.add_argument("--max-completion-length", type=int, default=256,
                         help="Max tokens per completion")
-    parser.add_argument("--epochs", type=int, default=1, help="Training epochs")
+    parser.add_argument("--epochs", type=int, default=3, help="Training epochs")
     parser.add_argument("--lr", type=float, default=5e-6, help="Learning rate")
     parser.add_argument("--batch-size", type=int, default=2,
                         help="Per-device train batch size")
@@ -545,14 +627,19 @@ def main():
     parser.add_argument("--use-opus", action="store_true",
                         help="Include Opus judge in rewards (costs ~$0.01/call)")
     parser.add_argument("--output-dir", type=str, default=str(OUTPUT_DIR))
-    parser.add_argument("--save-steps", type=int, default=50,
+    parser.add_argument("--save-steps", type=int, default=25,
                         help="Save checkpoint every N steps")
-    parser.add_argument("--logging-steps", type=int, default=5,
+    parser.add_argument("--logging-steps", type=int, default=2,
                         help="Log every N steps")
-    parser.add_argument("--temperature", type=float, default=0.9,
-                        help="Generation temperature")
+    parser.add_argument("--temperature", type=float, default=1.5,
+                        help="Generation temperature (high = more variance for GRPO)")
+    parser.add_argument("--beta", type=float, default=0.04,
+                        help="KL penalty (small value creates productive tension)")
     parser.add_argument("--merge-alpha", type=float, default=0.7,
-                        help="Alpha for delta LoRA merge (default: 0.7, our best)")
+                        help="Alpha for delta LoRA merge (only if no --base-model)")
+    parser.add_argument("--with-system-prompt", action="store_true",
+                        help="Include Skippy system prompt in training data "
+                             "(recommended for clean base model)")
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
@@ -563,32 +650,29 @@ def main():
     print("=" * 60)
 
     # === Step 1: Prepare base model ===
-    if args.base_model:
-        base_model_path = args.base_model
-    else:
-        # Create delta α=0.7 merged checkpoint
-        lora_merge_path = "./skippy_vectors/lora_merged_0.5"
-        delta_lora_path = "./skippy_lora_delta_r8/adapter"
+    base_model_path = args.base_model
+    is_local = Path(base_model_path).exists()
+    is_hf = not is_local and ("/" in base_model_path)
+    if is_hf:
+        # HuggingFace model — check cache
+        if model_cached(base_model_path):
+            print(f"  Using cached HF model: {base_model_path}")
+        else:
+            print(f"  Will download HF model: {base_model_path}")
+    elif not is_local:
+        print(f"ERROR: Base model not found at {base_model_path}")
+        print(f"  Expected: LoRA 0.5 merge at ./skippy_vectors/lora_merged_0.5")
+        print(f"  Or: HF model name like Qwen/Qwen3-VL-8B-Instruct")
+        sys.exit(1)
 
-        if not Path(lora_merge_path).exists():
-            print(f"ERROR: Base merge not found at {lora_merge_path}")
-            sys.exit(1)
-        if not Path(delta_lora_path).exists():
-            print(f"ERROR: Delta LoRA not found at {delta_lora_path}")
-            sys.exit(1)
-
-        base_model_path = DEFAULT_BASE
-        print(f"\n  Creating delta α={args.merge_alpha} merged checkpoint...")
-        create_merged_checkpoint(
-            lora_merge_path, delta_lora_path, args.merge_alpha, base_model_path,
-        )
-
-    print(f"\n  Base model: {base_model_path}")
+    print(f"\n  Base model: {base_model_path} ({'HF' if is_hf else 'local'})")
 
     # === Step 2: Build training data ===
     print("\n  Building training prompts...")
-    prompts = build_training_prompts()
+    prompts = build_training_prompts(with_system_prompt=args.with_system_prompt)
     print(f"  {len(prompts)} training prompts")
+    if args.with_system_prompt:
+        print(f"  System prompt: YES (Skippy character prompt included)")
 
     # === Step 3: Set up reward functions ===
     reward_funcs = [
@@ -626,7 +710,7 @@ def main():
         # GRPO-specific
         num_generations=args.num_generations,
         max_completion_length=args.max_completion_length,
-        beta=0.0,  # No KL penalty — we WANT to diverge from assistant
+        beta=args.beta,  # Small KL penalty creates productive tension
         temperature=args.temperature,
         # Generation
         top_p=0.95,
@@ -642,11 +726,12 @@ def main():
     print(f"\n  GRPO Config:")
     print(f"    Generations per prompt: {args.num_generations}")
     print(f"    Max completion length: {args.max_completion_length}")
-    print(f"    Beta (KL penalty): 0.0")
+    print(f"    Beta (KL penalty): {args.beta}")
     print(f"    Temperature: {args.temperature}")
     print(f"    Batch size: {args.batch_size} x {args.grad_accum} = {args.batch_size * args.grad_accum}")
     print(f"    LR: {args.lr}")
     print(f"    LoRA rank: {args.rank}")
+    print(f"    Epochs: {args.epochs}")
 
     # === Step 5: LoRA config ===
     lora_config = LoraConfig(
@@ -711,7 +796,7 @@ def main():
         "lora_alpha": args.lora_alpha,
         "num_generations": args.num_generations,
         "max_completion_length": args.max_completion_length,
-        "beta": 0.0,
+        "beta": args.beta,
         "temperature": args.temperature,
         "lr": args.lr,
         "batch_size": args.batch_size,

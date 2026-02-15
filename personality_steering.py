@@ -724,6 +724,267 @@ def apply_rotation(
     return modified
 
 
+# --- 3b+. N-Dimensional Subspace Rotation ---
+
+
+def build_personality_rotation(
+    centroids: dict[str, torch.Tensor],
+    target: str = "skippy",
+    repel: list[str] | None = None,
+    n_components: int = 6,
+) -> dict:
+    """Build an N-dimensional rotation in personality subspace.
+
+    Instead of rotating in a single 2D plane (Givens), this builds the full
+    K-dimensional personality subspace via PCA and computes a Procrustes rotation
+    that maps the "repel" centroid toward the "target" centroid.
+
+    The rotation lives entirely within the personality subspace — all 4096-K
+    orthogonal dimensions (where reasoning lives) are completely untouched.
+
+    Args:
+        centroids: {personality_name: (hidden_dim,)} activation centroids
+        target: personality to rotate TOWARD
+        repel: personalities to rotate AWAY FROM (default: assistant + therapist)
+        n_components: max dimensionality of personality subspace
+
+    Returns:
+        dict with keys:
+            basis: (K, hidden_dim) orthonormal personality subspace basis
+            R_K: (K, K) rotation matrix in subspace
+            log_R_K: (K, K) matrix logarithm for strength interpolation
+            projected: {name: (K,)} centroid projections
+            mean: (hidden_dim,) grand mean centroid
+            K: subspace dimensionality
+    """
+    if repel is None:
+        repel = ["default_assistant", "therapist"]
+
+    # Step 1: Build personality subspace via PCA
+    names = sorted(centroids.keys())
+    C = torch.stack([centroids[n] for n in names])  # (N_pers, hidden_dim)
+    mean_c = C.mean(dim=0)
+    C_centered = C - mean_c
+
+    U, S, Vt = torch.linalg.svd(C_centered, full_matrices=False)
+
+    # Keep components explaining >99% variance
+    cumvar = (S ** 2).cumsum(0) / (S ** 2).sum()
+    K_auto = (cumvar < 0.99).sum().item() + 1
+    K = min(n_components, K_auto, len(names) - 1)
+    basis = Vt[:K]  # (K, hidden_dim)
+
+    # Step 2: Project centroids into K-dim space
+    projected = {}
+    for name in names:
+        projected[name] = basis @ (centroids[name] - mean_c)  # (K,)
+
+    # Step 3: Procrustes rotation — map source → target
+    # Source: average of repel personalities (what we move away from)
+    source_vecs = []
+    for name in repel:
+        if name in projected:
+            source_vecs.append(projected[name])
+    if not source_vecs:
+        source_vecs = [projected[names[0]]]  # fallback to first personality
+    source_centroid = torch.stack(source_vecs).mean(dim=0)  # (K,)
+
+    target_centroid = projected[target]  # (K,)
+
+    # Normalize to unit sphere in subspace
+    s = source_centroid / source_centroid.norm().clamp(min=1e-8)
+    t = target_centroid / target_centroid.norm().clamp(min=1e-8)
+
+    # Build the rotation matrix R_K that maps s → t
+    # Using Rodrigues-like formula for arbitrary K:
+    # R = I + (cos(θ)-1)(ss^T + u u^T) + sin(θ)(us^T - su^T)
+    # where u = orthogonal component of t w.r.t. s
+    u = t - (t @ s) * s
+    u_norm = u.norm().item()
+    if u_norm < 1e-8:
+        # Source and target are nearly parallel
+        R_K = torch.eye(K)
+        log_R_K = torch.zeros(K, K)
+    else:
+        u = u / u.norm()
+        cos_angle = (s @ t).clamp(-1.0, 1.0)
+        angle = torch.arccos(cos_angle)
+
+        # Full rotation matrix in K-dim subspace
+        R_K = (torch.eye(K)
+               + (cos_angle - 1) * (torch.outer(s, s) + torch.outer(u, u))
+               + torch.sin(angle) * (torch.outer(u, s) - torch.outer(s, u)))
+
+        # Matrix logarithm for interpolation: R(α) = expm(α * logm(R))
+        # For this specific form: logm(R) = angle * (us^T - su^T)
+        log_R_K = angle * (torch.outer(u, s) - torch.outer(s, u))
+
+    # Verify R_K is orthogonal
+    orth_err = (R_K @ R_K.T - torch.eye(K)).abs().max().item()
+    assert orth_err < 1e-4, f"Rotation matrix not orthogonal: error={orth_err:.6f}"
+
+    # Verify R_K maps s → t (approximately)
+    mapped = R_K @ s
+    map_err = (mapped - t).norm().item()
+    if map_err > 0.01:
+        print(f"  WARNING: Procrustes mapping error = {map_err:.4f}")
+
+    return {
+        "basis": basis,
+        "R_K": R_K,
+        "log_R_K": log_R_K,
+        "projected": projected,
+        "mean": mean_c,
+        "K": K,
+        "source": s,
+        "target": t,
+        "names": names,
+    }
+
+
+def apply_nd_rotation(
+    layers,
+    layer_idx: int,
+    hidden_dim: int,
+    rotation_data: dict,
+    strength: float = 1.0,
+) -> list[str]:
+    """Apply N-dimensional subspace rotation to layer weights.
+
+    Uses rank-K decomposition — NEVER materializes the 4096×4096 rotation matrix.
+
+    For strength interpolation:
+        R(α) = expm(α * logm(R_K))
+    α=0 → identity, α=1 → full rotation, α>1 → extrapolate past target
+
+    For output-dim weights (out_dim == hidden_dim): W' = R_full @ W
+        = W + P^T @ (R_K(α) - I_K) @ P @ W
+        Computed as: PW = P@W → (K,in_dim), then delta = (R_K-I)@PW → (K,in_dim),
+                     W' = W + P^T @ delta → (hidden,in_dim)
+
+    For input-dim weights (in_dim == hidden_dim): W' = W @ R_full^T
+        = W + W @ P^T @ (R_K(α)^T - I_K) @ P
+        Computed as: WP = W@P^T → (out_dim,K), then delta = WP@(R_K^T-I) → (out_dim,K),
+                     W' = W + delta @ P → (out_dim,hidden)
+
+    Properties:
+    - ||W'|| = ||W|| exactly (orthogonal transformation)
+    - Only touches the K-dimensional personality subspace
+    - The other (hidden_dim - K) dimensions are completely preserved
+    - K is typically 4-6, so rank-K updates are memory-efficient
+
+    Args:
+        layers: model transformer layers
+        layer_idx: which layer to modify
+        hidden_dim: model hidden dimension
+        rotation_data: output of build_personality_rotation()
+        strength: interpolation parameter (0=identity, 1=full, >1=extrapolate)
+
+    Returns:
+        List of modified parameter names.
+    """
+    device = next(layers[layer_idx].parameters()).device
+
+    basis = rotation_data["basis"].to(device, dtype=torch.float32)  # (K, hidden_dim)
+    log_R = rotation_data["log_R_K"].to(device, dtype=torch.float32)  # (K, K)
+    K = rotation_data["K"]
+
+    # Compute R_K at desired strength via matrix exponential
+    if abs(strength) < 1e-8:
+        return []  # identity, nothing to do
+
+    if abs(strength - 1.0) < 1e-8:
+        R_K = rotation_data["R_K"].to(device, dtype=torch.float32)
+    else:
+        # R(α) = expm(α * log(R))
+        R_K = torch.matrix_exp(strength * log_R)
+
+    R_diff = R_K - torch.eye(K, device=device, dtype=torch.float32)  # (K, K)
+
+    modified = []
+    for name, param in layers[layer_idx].named_parameters():
+        if "weight" not in name or param.dim() != 2:
+            continue
+
+        out_dim, in_dim = param.shape
+        W = param.data.float()
+        orig_norm = W.norm().item()
+
+        if out_dim == hidden_dim:
+            # Output-side: W' = W + basis^T @ R_diff @ basis @ W
+            PW = basis @ W                       # (K, in_dim)
+            delta = R_diff @ PW                   # (K, in_dim)
+            W_new = W + basis.T @ delta           # (hidden_dim, in_dim)
+
+            new_norm = W_new.norm().item()
+            assert abs(new_norm - orig_norm) / max(orig_norm, 1e-8) < 1e-3, \
+                f"ND rotation broke norm at {name}: {orig_norm:.4f} -> {new_norm:.4f}"
+
+            param.data = W_new.to(param.dtype)
+            modified.append(name)
+
+        elif in_dim == hidden_dim:
+            # Input-side: W' = W + W @ basis^T @ R_diff^T @ basis
+            WP = W @ basis.T                      # (out_dim, K)
+            delta = WP @ R_diff.T                 # (out_dim, K)
+            W_new = W + delta @ basis             # (out_dim, hidden_dim)
+
+            new_norm = W_new.norm().item()
+            assert abs(new_norm - orig_norm) / max(orig_norm, 1e-8) < 1e-3, \
+                f"ND rotation broke norm at {name}: {orig_norm:.4f} -> {new_norm:.4f}"
+
+            param.data = W_new.to(param.dtype)
+            modified.append(name)
+
+    return modified
+
+
+def apply_nd_combined_steering(
+    layers,
+    analysis: dict,
+    rotation_data_per_layer: dict[int, dict],
+    target_layers: list[int],
+    hidden_dim: int,
+    strength: float = 1.0,
+    beta: float = 0.0,
+    gamma: float = 0.0,
+) -> dict:
+    """Apply N-dimensional rotation + optional subtraction/additive.
+
+    Order: subtract → N-dim rotate → add
+
+    Returns metadata dict.
+    """
+    metadata = {
+        "strength": strength, "beta": beta, "gamma": gamma,
+        "layers": target_layers, "rotation_type": "nd_subspace",
+    }
+    total_modified = 0
+
+    for li in target_layers:
+        # 1. Subtract assistant direction (if beta > 0)
+        if beta > 0 and li in analysis.get("assistant_dir", {}):
+            mods = apply_subtractive(layers, analysis["assistant_dir"][li], li, hidden_dim, beta)
+            total_modified += len(mods)
+
+        # 2. N-dimensional rotation
+        if abs(strength) > 1e-8 and li in rotation_data_per_layer:
+            mods = apply_nd_rotation(layers, li, hidden_dim, rotation_data_per_layer[li], strength)
+            total_modified += len(mods)
+
+        # 3. Additive injection (if gamma > 0)
+        if gamma > 0 and li in analysis.get("skippy_specific", {}):
+            mods = apply_additive(layers, analysis["skippy_specific"][li], li, hidden_dim, gamma)
+            total_modified += len(mods)
+
+    K_str = next(iter(rotation_data_per_layer.values()))["K"] if rotation_data_per_layer else "?"
+    metadata["total_modified_params"] = total_modified
+    metadata["subspace_dim"] = K_str
+    print(f"  Applied ND steering: strength={strength:.3f}, β={beta:.3f}, γ={gamma:.4f}, "
+          f"K={K_str} ({total_modified} weight matrices across {len(target_layers)} layers)")
+    return metadata
+
+
 # --- 3c. Additive (inject Skippy-specific direction) ---
 
 def apply_additive(
@@ -1386,6 +1647,116 @@ def run_additive_sweep(
     return results
 
 
+def run_nd_rotation_sweep(
+    model, processor, layers,
+    personality_acts: dict[str, dict[int, torch.Tensor]],
+    target_layers: list[int],
+    hidden_dim: int,
+    skippy_prompts: list[str],
+    strength_values: list[float] | None = None,
+    n_aime: int = 15,
+    output_dir: Path | None = None,
+) -> list[dict]:
+    """Sweep N-dimensional subspace rotation strength.
+
+    Rotation is invertible via -strength, so no model reload needed.
+
+    Builds the personality subspace per layer, then sweeps the interpolation
+    strength from 0 (identity) through 1 (full rotation) to >1 (extrapolation).
+
+    Returns list of result dicts.
+    """
+    if strength_values is None:
+        strength_values = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+
+    if output_dir:
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build rotation data per layer
+    print(f"\n  Building personality subspace rotations for layers {target_layers}...")
+    rotation_data: dict[int, dict] = {}
+    for li in target_layers:
+        centroids = compute_centroids(personality_acts, li)
+        if "skippy" not in centroids or "default_assistant" not in centroids:
+            print(f"  Skipping layer {li}: missing skippy or assistant centroid")
+            continue
+        rot = build_personality_rotation(centroids)
+        rotation_data[li] = rot
+        print(f"    Layer {li}: K={rot['K']}-dim subspace, "
+              f"source→target angle={torch.arccos((rot['source'] @ rot['target']).clamp(-1,1)).item()*180/math.pi:.1f}°")
+
+    if not rotation_data:
+        print("  ERROR: No rotation data built. Check activations.")
+        return []
+
+    results = []
+    print(f"\n{'='*60}")
+    print(f"  ND ROTATION SWEEP: {len(strength_values)} strengths at layers {target_layers}")
+    K = next(iter(rotation_data.values()))["K"]
+    print(f"  Personality subspace: {K} dimensions")
+    print(f"{'='*60}")
+
+    # Take snapshot for safety
+    snap = snapshot_layers(layers, target_layers)
+
+    for strength in strength_values:
+        label = f"nd_strength_{strength:.3f}"
+        print(f"\n  --- strength = {strength:.3f} ---")
+
+        # Apply ND rotation
+        if abs(strength) > 1e-8:
+            for li in target_layers:
+                if li in rotation_data:
+                    apply_nd_rotation(layers, li, hidden_dim, rotation_data[li], strength)
+
+        # Evaluate
+        banal_score, banal_responses = quick_banal_eval(model, processor, skippy_prompts)
+        skippy_score, skippy_responses = quick_skippy_eval(model, processor, skippy_prompts)
+
+        aime_score = -1.0
+        if banal_score >= 4.0 or strength == 0:
+            aime_score = quick_aime_eval(model, processor, n_problems=n_aime)
+
+        result = {
+            "type": "nd_rotation",
+            "strength": strength,
+            "K": K,
+            "banal_score": banal_score,
+            "skippy_score": skippy_score,
+            "aime_accuracy": aime_score,
+            "label": label,
+        }
+        results.append(result)
+
+        aime_str = f"{aime_score:.1f}%" if aime_score >= 0 else "skipped"
+        print(f"    Banal: {banal_score:.2f}/10  |  Skippy: {skippy_score:.2f}/10  |  AIME: {aime_str}")
+
+        # Save responses
+        if output_dir:
+            resp_dir = output_dir / "responses" / label
+            resp_dir.mkdir(parents=True, exist_ok=True)
+            with open(resp_dir / "banal_responses.json", "w") as f:
+                json.dump(banal_responses, f, indent=2)
+            with open(resp_dir / "skippy_responses.json", "w") as f:
+                json.dump(skippy_responses, f, indent=2)
+
+        # Un-rotate to restore original weights
+        if abs(strength) > 1e-8:
+            for li in target_layers:
+                if li in rotation_data:
+                    apply_nd_rotation(layers, li, hidden_dim, rotation_data[li], -strength)
+
+    # Verify we're back to original
+    for li in target_layers:
+        for n, p in layers[li].named_parameters():
+            if n in snap[li]:
+                diff = (p.data.float() - snap[li][n].float()).abs().max().item()
+                if diff > 1e-3:
+                    print(f"  WARNING: layer {li} {n} drifted by {diff:.6f} after ND un-rotation")
+
+    return results
+
+
 # ============================================================================
 # PLOTTING
 # ============================================================================
@@ -1403,58 +1774,44 @@ def plot_sweep_results(all_results: list[dict], output_dir: Path) -> None:
 
     # Group by sweep type
     rotation_results = [r for r in all_results if r["type"] == "rotation"]
+    nd_rotation_results = [r for r in all_results if r["type"] == "nd_rotation"]
     subtraction_results = [r for r in all_results if r["type"] == "subtraction"]
     additive_results = [r for r in all_results if r["type"] == "additive"]
 
-    n_plots = sum(1 for g in [rotation_results, subtraction_results, additive_results] if g)
+    groups = [
+        ("2D Rotation (θ)", rotation_results, "theta_deg", "θ (degrees)"),
+        ("ND Rotation (strength)", nd_rotation_results, "strength", "Strength"),
+        ("Subtraction (β)", subtraction_results, "beta", "β"),
+        ("Additive (γ)", additive_results, "gamma", "γ"),
+    ]
+    active_groups = [(t, g, xk, xl) for t, g, xk, xl in groups if g]
+
+    n_plots = len(active_groups)
     if n_plots == 0:
         return
 
     fig = make_subplots(
         rows=1, cols=max(n_plots, 1),
-        subplot_titles=[
-            t for t, g in [
-                ("Rotation Sweep (θ)", rotation_results),
-                ("Subtraction Sweep (β)", subtraction_results),
-                ("Additive Sweep (γ)", additive_results),
-            ] if g
-        ],
+        subplot_titles=[t for t, _, _, _ in active_groups],
     )
 
-    col = 1
-
-    # Rotation
-    if rotation_results:
-        x = [r["theta_deg"] for r in rotation_results]
-        fig.add_trace(go.Scatter(x=x, y=[r["skippy_score"] for r in rotation_results],
-                                 name="Skippy Score", line=dict(color="#FF6B00")), row=1, col=col)
-        fig.add_trace(go.Scatter(x=x, y=[r["aime_accuracy"]/10 for r in rotation_results],
-                                 name="AIME % / 10", line=dict(color="#4285F4")), row=1, col=col)
-        fig.update_xaxes(title_text="θ (degrees)", row=1, col=col)
-        col += 1
-
-    # Subtraction
-    if subtraction_results:
-        x = [r["beta"] for r in subtraction_results]
-        fig.add_trace(go.Scatter(x=x, y=[r["skippy_score"] for r in subtraction_results],
-                                 name="Skippy Score", line=dict(color="#FF6B00"),
-                                 showlegend=False), row=1, col=col)
-        fig.add_trace(go.Scatter(x=x, y=[r["aime_accuracy"]/10 for r in subtraction_results],
-                                 name="AIME % / 10", line=dict(color="#4285F4"),
-                                 showlegend=False), row=1, col=col)
-        fig.update_xaxes(title_text="β", row=1, col=col)
-        col += 1
-
-    # Additive
-    if additive_results:
-        x = [r["gamma"] for r in additive_results]
-        fig.add_trace(go.Scatter(x=x, y=[r["skippy_score"] for r in additive_results],
-                                 name="Skippy Score", line=dict(color="#FF6B00"),
-                                 showlegend=False), row=1, col=col)
-        fig.add_trace(go.Scatter(x=x, y=[r["aime_accuracy"]/10 for r in additive_results],
-                                 name="AIME % / 10", line=dict(color="#4285F4"),
-                                 showlegend=False), row=1, col=col)
-        fig.update_xaxes(title_text="γ", row=1, col=col)
+    for col_idx, (title, group, x_key, x_label) in enumerate(active_groups, 1):
+        x = [r[x_key] for r in group]
+        show_legend = (col_idx == 1)
+        fig.add_trace(go.Scatter(
+            x=x, y=[r["banal_score"] for r in group],
+            name="Banal Score", line=dict(color="#FF6B00"),
+            showlegend=show_legend), row=1, col=col_idx)
+        fig.add_trace(go.Scatter(
+            x=x, y=[r["skippy_score"] for r in group],
+            name="Skippy Score", line=dict(color="#FFA500", dash="dash"),
+            showlegend=show_legend), row=1, col=col_idx)
+        aime_vals = [r["aime_accuracy"]/10 if r["aime_accuracy"] >= 0 else None for r in group]
+        fig.add_trace(go.Scatter(
+            x=x, y=aime_vals,
+            name="AIME % / 10", line=dict(color="#4285F4"),
+            showlegend=show_legend), row=1, col=col_idx)
+        fig.update_xaxes(title_text=x_label, row=1, col=col_idx)
 
     fig.update_yaxes(title_text="Score", row=1, col=1)
     fig.update_layout(
@@ -1510,11 +1867,17 @@ def load_analysis(analysis_dir: Path) -> dict:
 def main():
     parser = argparse.ArgumentParser(description="Multi-Personality Rotational Steering")
     parser.add_argument("--phase", default="all",
-                        choices=["all", "collect", "analyze", "sweep", "apply", "test"])
+                        choices=["all", "collect", "analyze", "sweep", "nd-sweep",
+                                 "apply", "test"])
     parser.add_argument("--base-model", default=LORA_MERGED_MODEL,
-                        help="Base model path (default: LoRA 0.5 merged)")
+                        help="Base model path. Use 'Qwen/Qwen3-VL-8B-Instruct' for clean base.")
+    parser.add_argument("--rotation-mode", default="nd",
+                        choices=["2d", "nd"],
+                        help="Rotation type: '2d' for Givens, 'nd' for subspace (default: nd)")
     parser.add_argument("--theta", type=float, default=None,
-                        help="Rotation angle in radians (for apply phase)")
+                        help="2D rotation angle in radians (for apply phase)")
+    parser.add_argument("--strength", type=float, default=None,
+                        help="ND rotation strength (0=identity, 1=full, >1=extrapolate)")
     parser.add_argument("--beta", type=float, default=None,
                         help="Subtraction strength (for apply phase)")
     parser.add_argument("--gamma", type=float, default=None,
@@ -1540,6 +1903,18 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     analysis_dir = output_dir / "analysis"
 
+    # Determine model label for output paths
+    if "Qwen" in args.base_model and "VL" in args.base_model:
+        model_label = "clean_base"
+    elif "lora_merged" in args.base_model:
+        model_label = "lora_merged"
+    else:
+        model_label = Path(args.base_model).name
+
+    print(f"\n  Model: {args.base_model} ({model_label})")
+    print(f"  Output: {output_dir}")
+    print(f"  Rotation mode: {args.rotation_mode}")
+
     # Load test prompts
     with open(TEST_PROMPTS_PATH) as f:
         all_prompts = json.load(f)
@@ -1563,11 +1938,13 @@ def main():
         # Save config
         config = {
             "base_model": args.base_model,
+            "model_label": model_label,
             "n_prompts": args.n_prompts,
             "extract_layers": args.extract_layers,
             "target_layers": args.target_layers,
             "personalities": [p.name for p in PERSONALITIES],
             "hidden_dim": hidden_dim,
+            "rotation_mode": args.rotation_mode,
         }
         with open(output_dir / "config.json", "w") as f:
             json.dump(config, f, indent=2)
@@ -1595,13 +1972,79 @@ def main():
         analysis = run_personality_analysis(acts, args.extract_layers, analysis_dir)
 
         if args.phase == "analyze":
-            print("\n  Analysis complete. Run with --phase sweep next.")
+            print("\n  Analysis complete. Run with --phase sweep or --phase nd-sweep next.")
             return
 
-    # --- SWEEP phase ---
+    # --- ND-SWEEP phase (N-dimensional subspace rotation) ---
+    if args.phase in ("nd-sweep",):
+        print("\n" + "=" * 60)
+        print("  ND ROTATION SWEEP (N-Dimensional Personality Subspace)")
+        print("=" * 60)
+
+        # Load model
+        model, processor, layers, num_layers, hidden_dim = load_model(args.base_model)
+
+        # Load activations (needed for building subspace)
+        acts_dir = output_dir / "activations"
+        if not acts_dir.exists():
+            raise FileNotFoundError(f"No activations found at {acts_dir}. Run --phase collect first.")
+        acts = load_activations(acts_dir)
+
+        # Load analysis for subtraction/additive (optional)
+        analysis = {}
+        if analysis_dir.exists():
+            try:
+                analysis = load_analysis(analysis_dir)
+            except FileNotFoundError:
+                pass
+
+        with open(output_dir / "config.json") as f:
+            config = json.load(f)
+        hidden_dim = config["hidden_dim"]
+
+        # Run ND rotation sweep
+        nd_results = run_nd_rotation_sweep(
+            model, processor, layers, acts,
+            args.target_layers, hidden_dim, eval_prompts,
+            n_aime=args.n_aime, output_dir=output_dir,
+        )
+
+        # Find best strength
+        baseline_aime = nd_results[0]["aime_accuracy"] if nd_results else 0
+        valid_nd = [
+            r for r in nd_results
+            if r["aime_accuracy"] < 0 or r["aime_accuracy"] >= baseline_aime - args.aime_guard
+        ]
+        best_nd = max(valid_nd, key=lambda r: r["banal_score"]) if valid_nd else nd_results[0]
+        best_strength = best_nd["strength"]
+        print(f"\n  Best ND rotation: strength={best_strength:.3f} "
+              f"Banal={best_nd['banal_score']:.2f} Skippy={best_nd['skippy_score']:.2f} "
+              f"AIME={best_nd['aime_accuracy']:.1f}%")
+
+        # Save results
+        with open(output_dir / "nd_sweep_results.json", "w") as f:
+            json.dump(nd_results, f, indent=2)
+        with open(output_dir / "best_config.json", "w") as f:
+            json.dump({
+                "rotation_mode": "nd",
+                "strength": best_strength,
+                "K": best_nd["K"],
+                "target_layers": args.target_layers,
+                "baseline_aime": baseline_aime,
+                "best_banal": best_nd["banal_score"],
+                "best_skippy": best_nd["skippy_score"],
+                "best_aime": best_nd["aime_accuracy"],
+                "model_label": model_label,
+            }, f, indent=2)
+
+        plot_sweep_results(nd_results, output_dir)
+        print("\n  ND sweep complete.")
+        return
+
+    # --- SWEEP phase (original 2D: rotation → subtraction → additive) ---
     if args.phase in ("all", "sweep"):
         print("\n" + "=" * 60)
-        print("  PHASE 4: Parameter Sweep")
+        print("  PHASE 4: Parameter Sweep (2D Rotation)")
         print("=" * 60)
 
         # Load model if not already loaded
@@ -1628,13 +2071,12 @@ def main():
         )
         all_sweep_results.extend(rotation_results)
 
-        # Find best theta — maximize BANAL score (character without prompting), subject to AIME guard
+        # Find best theta
         baseline_aime = rotation_results[0]["aime_accuracy"] if rotation_results else 0
         valid_rotations = [
             r for r in rotation_results
             if r["aime_accuracy"] < 0 or r["aime_accuracy"] >= baseline_aime - args.aime_guard
         ]
-        # Prioritize banal score (character without prompting)
         best_rotation = max(valid_rotations, key=lambda r: r["banal_score"]) if valid_rotations else rotation_results[0]
         best_theta = best_rotation["theta"]
         print(f"\n  Best rotation: θ={best_theta:.4f} ({math.degrees(best_theta):.1f}°) "
@@ -1685,6 +2127,7 @@ def main():
 
         # Save best config
         best_config = {
+            "rotation_mode": "2d",
             "theta": best_theta,
             "beta": best_beta,
             "gamma": best_gamma,
@@ -1692,6 +2135,7 @@ def main():
             "baseline_aime": baseline_aime,
             "best_skippy": best_additive["skippy_score"],
             "best_aime": best_additive["aime_accuracy"],
+            "model_label": model_label,
         }
         with open(output_dir / "best_config.json", "w") as f:
             json.dump(best_config, f, indent=2)
@@ -1710,43 +2154,60 @@ def main():
         print("  PHASE 5: Apply Best Config & Save")
         print("=" * 60)
 
-        # Load best config if not in sweep phase
-        theta = args.theta
-        beta = args.beta
-        gamma = args.gamma
+        best_config_path = output_dir / "best_config.json"
+        if best_config_path.exists():
+            with open(best_config_path) as f:
+                best_config = json.load(f)
+        else:
+            best_config = {}
 
-        if theta is None or beta is None or gamma is None:
-            best_config_path = output_dir / "best_config.json"
-            if best_config_path.exists():
-                with open(best_config_path) as f:
-                    best_config = json.load(f)
-                theta = theta if theta is not None else best_config["theta"]
-                beta = beta if beta is not None else best_config["beta"]
-                gamma = gamma if gamma is not None else best_config["gamma"]
-            else:
-                print("  ERROR: No best_config.json found and --theta/--beta/--gamma not specified.")
-                print("  Run --phase sweep first, or provide all three parameters.")
-                return
+        rot_mode = best_config.get("rotation_mode", args.rotation_mode)
 
         # Load fresh model
-        if args.phase != "all":
-            model, processor, layers, num_layers, hidden_dim = load_model(args.base_model)
-            analysis = load_analysis(analysis_dir)
-        else:
-            # Restore clean weights first
-            model, processor, layers, num_layers, hidden_dim = load_model(args.base_model)
+        model, processor, layers, num_layers, hidden_dim = load_model(args.base_model)
 
         with open(output_dir / "config.json") as f:
             config = json.load(f)
         hidden_dim = config.get("hidden_dim", hidden_dim)
 
-        # Apply combined steering
-        metadata = apply_combined_steering(
-            layers, analysis, args.target_layers, hidden_dim,
-            theta=theta, beta=beta, gamma=gamma,
-        )
+        if rot_mode == "nd":
+            # ND rotation apply
+            strength = args.strength if args.strength is not None else best_config.get("strength", 1.0)
+            beta = args.beta if args.beta is not None else best_config.get("beta", 0.0)
+            gamma = args.gamma if args.gamma is not None else best_config.get("gamma", 0.0)
 
-        # Final evaluation — both banal and prompted
+            # Load activations to build rotation data
+            acts = load_activations(output_dir / "activations")
+            analysis = {}
+            if analysis_dir.exists():
+                try:
+                    analysis = load_analysis(analysis_dir)
+                except FileNotFoundError:
+                    pass
+
+            rotation_data = {}
+            for li in args.target_layers:
+                centroids = compute_centroids(acts, li)
+                if "skippy" in centroids and "default_assistant" in centroids:
+                    rotation_data[li] = build_personality_rotation(centroids)
+
+            metadata = apply_nd_combined_steering(
+                layers, analysis, rotation_data, args.target_layers, hidden_dim,
+                strength=strength, beta=beta, gamma=gamma,
+            )
+        else:
+            # 2D rotation apply
+            theta = args.theta if args.theta is not None else best_config.get("theta", 0.0)
+            beta = args.beta if args.beta is not None else best_config.get("beta", 0.0)
+            gamma = args.gamma if args.gamma is not None else best_config.get("gamma", 0.0)
+
+            analysis = load_analysis(analysis_dir)
+            metadata = apply_combined_steering(
+                layers, analysis, args.target_layers, hidden_dim,
+                theta=theta, beta=beta, gamma=gamma,
+            )
+
+        # Final evaluation
         print("\n  Running final evaluation...")
         with open(TEST_PROMPTS_PATH) as f:
             all_prompts = json.load(f)
@@ -1765,7 +2226,6 @@ def main():
         best_model_dir = output_dir / "best_model"
         save_checkpoint(model, processor, best_model_dir, metadata)
 
-        # Save final responses
         with open(output_dir / "final_banal_responses.json", "w") as f:
             json.dump(banal_responses, f, indent=2)
         with open(output_dir / "final_skippy_responses.json", "w") as f:

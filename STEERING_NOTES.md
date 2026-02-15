@@ -134,3 +134,99 @@ Rotation gives marginal gains. The real path to strong banal Skippy is:
 - **Phase transition**: At α=0.5, the 8-dimensional merge creates destructive interference across multiple MLP layers simultaneously — the model is caught between two coherent attractors and can't reason OR be Skippy. At α=0.7, enough dimensions "snap" past the interference zone that the model commits to a coherent mode, preserving reasoning.
 
 **Implication for GRPO:** GRPO avoids the loss barrier entirely because it optimizes in policy space (reward signal) rather than weight space (SFT loss). It can learn personality AND reasoning simultaneously because the reward function explicitly asks for both.
+
+---
+
+## Experiment 4: GRPO Training
+
+### GRPO V1 — FAILED (advantage=0 problem)
+- Base: Delta α=0.7 merged checkpoint (`./skippy_grpo_base`)
+- Temperature: 0.9, generations: 4, β=0.0, epochs: 1
+- 48 prompts, r=16 LoRA
+
+**Result: Advantage was 0.0000 across ALL steps.** No learning happened.
+
+**Root cause**: Temperature too low (0.9) + too few generations (4) + weak rewards (+0.3-0.5 range) = all completions in a group get nearly identical rewards. GRPO computes advantage as (reward - mean) / std. When std ≈ 0, advantage ≈ 0, no gradient flows.
+
+**Lesson:** GRPO needs VARIANCE within generation groups. Three knobs:
+1. High temperature (1.5) for diverse completions
+2. Sharp rewards with threshold bonuses for bimodal distribution
+3. Enough generations (8) per prompt for reliable variance
+
+### GRPO V2 — IN PROGRESS (2026-02-15)
+- Base: LoRA 0.5 merge (`./skippy_vectors/lora_merged_0.5/`) — more behavioral variance in banal mode
+- Temperature: 1.5 (was 0.9)
+- Generations: 8 per prompt (was 4)
+- β=0.04 (was 0.0) — small KL penalty creates productive tension
+- Epochs: 3 (was 1)
+- 106 prompts (was 48) — expanded prompt bank
+- Sharper rewards: AI pattern penalty 1.0/hit (was 0.4), Skippy marker reward 0.8-1.5 (was 0.2-0.5)
+- Threshold bonuses: 3+ Skippy markers → +2.0 bonus, 3+ AI patterns → -3.0 penalty
+- Tone reward: dismissive starts → +1.0, polite starts → -1.0
+- Output: `./skippy_grpo_v2_output/`
+
+**Early results:** Advantage std=1.000 (properly normalized). Personality rewards trending from -3.4 at step 2 to +0.3 at step 10. Model starting to explore non-AI patterns. ETA ~1.8 hours for 318 steps.
+
+---
+
+## Experiment 5: N-Dimensional Subspace Rotation (2026-02-15)
+
+### Motivation (User Insight)
+The original 2D Givens rotation was limiting — personality is an N-dimensional object, not a 2D plane. Also, rotation vectors must be computed on the **base model BEFORE any LoRA training**, since they were misaligned after delta LoRA merge (banal dropped 5.39→4.71).
+
+### Approach: Full Personality Subspace Rotation
+1. **Build K-dimensional personality subspace** via PCA of 8 personality centroids (K ≈ 4-6)
+2. **Procrustes rotation within subspace**: Map assistant centroid → Skippy centroid
+3. **Interpolate via matrix exponential**: R(α) = expm(α · logm(R)), so α=0 is identity, α=1 is full rotation
+4. **Rank-K decomposition**: Never materialize 4096×4096 matrix. Only K×K operations + K projections.
+
+### Math
+For weight matrix W (out_dim × in_dim), personality basis P (K × hidden_dim):
+- Output-side: W' = W + P^T @ (R_K(α) - I_K) @ P @ W
+- Input-side: W' = W + W @ P^T @ (R_K(α)^T - I_K) @ P
+
+Properties:
+- ||W'|| = ||W|| exactly (orthogonal transformation)
+- Only touches the K-dimensional personality subspace
+- The other (hidden_dim - K) dimensions are completely preserved
+- Invertible: apply -α to undo
+
+### Implementation Status
+- `personality_steering.py` updated with:
+  - `build_personality_rotation()` — builds K-dim subspace rotation from centroids
+  - `apply_nd_rotation()` — applies rotation via rank-K decomposition
+  - `apply_nd_combined_steering()` — combines ND rotation + subtraction + additive
+  - `run_nd_rotation_sweep()` — sweeps strength parameter [0, 0.25, 0.5, ..., 2.0]
+  - `--phase nd-sweep` CLI flag
+  - `--base-model Qwen/Qwen3-VL-8B-Instruct` for clean base testing
+- Unit tests pass: orthogonality, norm preservation, round-trip, extrapolation all within 1e-7
+
+### Planned Experiments
+1. **ND rotation on clean base model** (Qwen3-VL-8B-Instruct) — collect activations, sweep strength
+2. **ND rotation on LoRA 0.5 merge** — compare with existing 2D rotation results
+3. **If ND rotation works on base**: Train LoRA AFTER applying rotation → avoids misalignment problem
+
+---
+
+## Experiment 6: GRPO from Clean Base (Planned)
+
+### Motivation
+Current GRPO runs on already-merged models carry contamination from bad training data (29.2% non-Skippy speakers). Training from the clean Qwen3-VL-8B-Instruct base with Skippy system prompt in training data learns character purely from reward signal.
+
+### Setup
+```bash
+python train_skippy_grpo.py \
+    --base-model Qwen/Qwen3-VL-8B-Instruct \
+    --with-system-prompt \
+    --num-generations 8 \
+    --temperature 1.5 \
+    --beta 0.04 \
+    --epochs 3 \
+    --output-dir ./skippy_grpo_clean
+```
+
+### Key Difference from Merged GRPO
+- Clean base has NO Skippy knowledge — learns entirely from reward signal
+- System prompt included in training data — model learns Skippy behavior within that context
+- No contamination from bad SFT data
+- Requires ANTHROPIC_API_KEY for Opus judge (not yet set)
