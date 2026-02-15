@@ -124,6 +124,8 @@ def main():
     parser.add_argument("--data-file", type=str, default=None,
                         help="Pre-formatted training data JSON (skips pair extraction)")
     parser.add_argument("--data-only", action="store_true", help="Only prepare data, skip training")
+    parser.add_argument("--base-model", type=str, default=MODEL_NAME,
+                        help="Base model path (default: Qwen/Qwen3-VL-8B-Instruct)")
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
@@ -149,8 +151,12 @@ def main():
     print("\nSample conversations:")
     for conv in conversations[:3]:
         msgs = conv["messages"]
-        print(f"  USER: {msgs[1]['content'][:60]}")
-        print(f"  SKIPPY: {msgs[2]['content'][:80]}")
+        user_msg = next((m for m in msgs if m["role"] == "user"), None)
+        asst_msg = next((m for m in msgs if m["role"] == "assistant"), None)
+        if user_msg:
+            print(f"  USER: {user_msg['content'][:60]}")
+        if asst_msg:
+            print(f"  SKIPPY: {asst_msg['content'][:80]}")
         print()
 
     if args.data_only:
@@ -158,8 +164,9 @@ def main():
         return
 
     # === Load model with LoRA ===
-    print("\n=== Loading Model ===")
-    model_cached(MODEL_NAME)
+    base_model = args.base_model
+    print(f"\n=== Loading Model: {base_model} ===")
+    model_cached(base_model)
 
     from transformers import (
         Qwen3VLForConditionalGeneration,
@@ -170,7 +177,9 @@ def main():
     from trl import SFTTrainer, SFTConfig
     from datasets import Dataset
 
-    processor = AutoProcessor.from_pretrained(MODEL_NAME)
+    # Use base model's tokenizer (or original Qwen tokenizer for merged checkpoints)
+    tokenizer_name = MODEL_NAME if Path(base_model).exists() else base_model
+    processor = AutoProcessor.from_pretrained(tokenizer_name)
     tokenizer = processor.tokenizer
 
     # Set pad token
@@ -178,7 +187,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
 
     model = Qwen3VLForConditionalGeneration.from_pretrained(
-        MODEL_NAME,
+        base_model,
         dtype=torch.float16,
         device_map="auto",
     )
