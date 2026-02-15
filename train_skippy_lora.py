@@ -121,6 +121,8 @@ def main():
     parser.add_argument("--grad-accum", type=int, default=4, help="Gradient accumulation steps")
     parser.add_argument("--max-seq-len", type=int, default=512, help="Max sequence length")
     parser.add_argument("--output-dir", type=str, default=str(OUTPUT_DIR))
+    parser.add_argument("--data-file", type=str, default=None,
+                        help="Pre-formatted training data JSON (skips pair extraction)")
     parser.add_argument("--data-only", action="store_true", help="Only prepare data, skip training")
     args = parser.parse_args()
 
@@ -129,7 +131,13 @@ def main():
 
     # === Prepare data ===
     print("\n=== Preparing Training Data ===")
-    conversations = prepare_training_data()
+    if args.data_file:
+        print(f"  Loading pre-formatted data from {args.data_file}")
+        with open(args.data_file) as f:
+            conversations = json.load(f)
+        print(f"  Loaded {len(conversations)} conversations")
+    else:
+        conversations = prepare_training_data()
 
     # Save formatted data
     data_path = output_dir / "training_data.json"
