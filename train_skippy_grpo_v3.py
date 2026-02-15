@@ -148,13 +148,21 @@ def extract_lora_deltas(model, subspaces: dict) -> dict:
         "layers": {},
     }
 
+    # Build param lookup once (avoid dict() per iteration)
+    param_dict = {n: p for n, p in model.named_parameters()}
+    device = next(model.parameters()).device
+
+    # Move subspace bases to GPU once
+    gpu_bases = {}
+    for layer_idx, sub in subspaces.items():
+        gpu_bases[layer_idx] = sub["basis"].to(device, dtype=torch.float32)
+
     # Walk through LoRA adapters
-    for name, param in model.named_parameters():
+    for name, param in param_dict.items():
         if "lora_A" not in name:
             continue
 
         # Parse layer index and module name
-        # Pattern: model.language_model.layers.{idx}.{module}.lora_A.default.weight
         parts = name.split(".")
         try:
             layer_idx = int(parts[parts.index("layers") + 1])
@@ -170,16 +178,14 @@ def extract_lora_deltas(model, subspaces: dict) -> dict:
             continue
 
         # Get A and B matrices
-        a_name = name
         b_name = name.replace("lora_A", "lora_B")
-
-        a_param = dict(model.named_parameters()).get(a_name)
-        b_param = dict(model.named_parameters()).get(b_name)
-        if a_param is None or b_param is None:
+        b_param = param_dict.get(b_name)
+        if b_param is None:
             continue
 
-        A = a_param.data.float().cpu()  # (rank, in_dim)
-        B = b_param.data.float().cpu()  # (out_dim, rank)
+        # Stay on GPU for all compute
+        A = param.data.float()   # (rank, in_dim)
+        B = b_param.data.float()  # (out_dim, rank)
 
         # Delta = B @ A: (out_dim, in_dim)
         delta = B @ A
@@ -203,11 +209,10 @@ def extract_lora_deltas(model, subspaces: dict) -> dict:
             "sv_ratio": top_svals[0] / max(top_svals[-1], 1e-10) if len(top_svals) > 1 else 1.0,
         }
 
-        # Project into personality subspace if available
-        if layer_idx in subspaces:
-            sub = subspaces[layer_idx]
-            basis = sub["basis"]  # (K, hidden_dim)
-            K = sub["K"]
+        # Project into personality subspace if available (all on GPU)
+        if layer_idx in gpu_bases:
+            basis = gpu_bases[layer_idx]  # (K, hidden_dim) already on GPU
+            K = subspaces[layer_idx]["K"]
             hidden_dim = basis.shape[1]
 
             out_dim, in_dim = delta.shape
