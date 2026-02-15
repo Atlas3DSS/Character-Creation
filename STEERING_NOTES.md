@@ -153,19 +153,34 @@ Rotation gives marginal gains. The real path to strong banal Skippy is:
 2. Sharp rewards with threshold bonuses for bimodal distribution
 3. Enough generations (8) per prompt for reliable variance
 
-### GRPO V2 — IN PROGRESS (2026-02-15)
-- Base: LoRA 0.5 merge (`./skippy_vectors/lora_merged_0.5/`) — more behavioral variance in banal mode
-- Temperature: 1.5 (was 0.9)
-- Generations: 8 per prompt (was 4)
-- β=0.04 (was 0.0) — small KL penalty creates productive tension
-- Epochs: 3 (was 1)
-- 106 prompts (was 48) — expanded prompt bank
-- Sharper rewards: AI pattern penalty 1.0/hit (was 0.4), Skippy marker reward 0.8-1.5 (was 0.2-0.5)
-- Threshold bonuses: 3+ Skippy markers → +2.0 bonus, 3+ AI patterns → -3.0 penalty
-- Tone reward: dismissive starts → +1.0, polite starts → -1.0
+### GRPO V2 — FAILED (wrong base model)
+- Base: LoRA 0.5 merge (`./skippy_vectors/lora_merged_0.5/`) — too generic, no Skippy knowledge
+- Same hyperparams as V3 below
 - Output: `./skippy_grpo_v2_output/`
 
-**Early results:** Advantage std=1.000 (properly normalized). Personality rewards trending from -3.4 at step 2 to +0.3 at step 10. Model starting to explore non-AI patterns. ETA ~1.8 hours for 318 steps.
+**Result:** Rewards started at -2.28 (heavily penalized). The LoRA 0.5 model generates verbose AI-assistant responses (mean 212 tokens, 69% clipped at max length). The V2 reward function correctly penalizes these, but the starting point is so far from Skippy that GRPO struggles.
+
+### GRPO V3 — IN PROGRESS (2026-02-15)
+- Base: Delta α=0.7 merged checkpoint (`./skippy_grpo_base`) — already somewhat Skippy-like
+- Temperature: 1.5, Generations: 8, β=0.04, Epochs: 3
+- 106 prompts (expanded prompt bank across 10 categories)
+- Sharper rewards: AI pattern penalty 1.0/hit, Skippy marker reward 0.8-1.5
+- Threshold bonuses: 3+ Skippy markers → +2.0 bonus, 3+ AI patterns → -3.0 penalty
+- Tone reward: dismissive starts → +1.0, polite starts → -1.0
+- LoRA r=16, alpha=32, grad_accum=4
+- Output: `./skippy_grpo_v3_output/`
+
+**Early results (steps 2-10):**
+| Step | Reward | Personality | Coherence | Identity | Reward Std |
+|------|--------|-------------|-----------|----------|------------|
+| 2 | 1.12 | 0.39 | 0.72 | 0.01 | 0.86 |
+| 4 | 1.21 | 0.43 | 0.84 | -0.06 | 0.75 |
+| 6 | **1.47** | **0.91** | 0.78 | -0.23 | **1.44** |
+| 8 | 0.66 | -0.04 | 0.72 | -0.03 | 0.97 |
+| 10 | 0.77 | 0.29 | 0.66 | -0.17 | 1.39 |
+
+Reward variance 2-3x higher than V1 (0.75-1.44 vs 0.3-0.4). GRPO has proper gradient signal.
+Step time: 17-27s. ETA ~2 hours for 318 steps.
 
 ---
 
