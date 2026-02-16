@@ -377,21 +377,157 @@ def analyze_activations() -> None:
     print(f"  {RANKING_FILE} (layer ranking)")
 
 
+# ─── Delta Magnitude Ranking ────────────────────────────────────────
+
+def rank_pairs_by_delta() -> None:
+    """Rank all captured pairs by their total activation delta magnitude.
+
+    Instead of relying on keyword-based heuristics, this uses the model's
+    own activations to identify which responses were most strongly shifted
+    by the Skippy system prompt. High-delta pairs are the most persona-
+    shifted and thus the best candidates for ablation.
+
+    Produces:
+      ./contrastive_data/delta_ranked_pairs.jsonl  — pairs with delta scores
+      ./contrastive_data/top_delta_pairs.jsonl      — top pairs for ablation
+    """
+    print("\nRanking pairs by activation delta magnitude...")
+
+    # Load all layer deltas and compute per-pair magnitude
+    all_norms = []
+    for li in EXTRACT_LAYERS:
+        layer_file = ACTIVATIONS_DIR / f"deltas_layer_{li:02d}.pt"
+        if not layer_file.exists():
+            print(f"  Layer {li}: no data, skipping")
+            continue
+        deltas = torch.load(layer_file, weights_only=True)
+        norms = torch.norm(deltas, dim=1)  # (N_pairs,)
+        all_norms.append(norms)
+        print(f"  Layer {li}: {len(norms)} pairs, mean norm={norms.mean():.4f}")
+
+    if not all_norms:
+        print("No activation data found!")
+        return
+
+    # Stack and compute aggregate delta magnitude per pair
+    # Use mean across layers (normalizes for different layer scales)
+    stacked = torch.stack(all_norms, dim=1)  # (N_pairs, N_layers)
+    total_delta = stacked.mean(dim=1)  # Mean delta across layers
+
+    n_pairs = len(total_delta)
+    print(f"\n  Total pairs: {n_pairs}")
+    print(f"  Mean delta magnitude: {total_delta.mean():.4f}")
+    print(f"  Std: {total_delta.std():.4f}")
+    print(f"  Min: {total_delta.min():.4f}")
+    print(f"  Max: {total_delta.max():.4f}")
+
+    # Distribution analysis
+    for pct in [10, 25, 50, 75, 90, 95, 99]:
+        val = torch.quantile(total_delta, pct / 100).item()
+        print(f"  p{pct}: {val:.4f}")
+
+    # Load the filtered pairs to match indices
+    pairs = []
+    with open(FILTERED_FILE) as f:
+        for line in f:
+            pairs.append(json.loads(line))
+
+    if len(pairs) != n_pairs:
+        print(f"  WARNING: {len(pairs)} filtered pairs but {n_pairs} delta vectors")
+        print(f"  Using min({len(pairs)}, {n_pairs}) pairs")
+        n_pairs = min(len(pairs), n_pairs)
+
+    # Sort by delta magnitude (descending — highest delta first)
+    sorted_indices = torch.argsort(total_delta[:n_pairs], descending=True)
+
+    # Save ranked pairs with delta scores
+    ranked_file = DATA_DIR / "delta_ranked_pairs.jsonl"
+    top_file = DATA_DIR / "top_delta_pairs.jsonl"
+
+    # Also compute per-layer breakdown for top pairs
+    n_top = min(30000, n_pairs)
+
+    with open(ranked_file, "w") as f_ranked, open(top_file, "w") as f_top:
+        for rank, idx in enumerate(sorted_indices):
+            idx_val = idx.item()
+            if idx_val >= len(pairs):
+                continue
+            pair = pairs[idx_val]
+            pair["delta_rank"] = rank
+            pair["delta_magnitude"] = total_delta[idx_val].item()
+            pair["per_layer_deltas"] = {
+                str(li): stacked[idx_val, i].item()
+                for i, li in enumerate(EXTRACT_LAYERS)
+                if i < stacked.shape[1]
+            }
+
+            f_ranked.write(json.dumps(pair) + "\n")
+            if rank < n_top:
+                f_top.write(json.dumps(pair) + "\n")
+
+    print(f"\n  Saved {n_pairs} ranked pairs → {ranked_file}")
+    print(f"  Saved top {n_top} pairs → {top_file}")
+
+    # Cross-reference with heuristic scores if available
+    scored_file = DATA_DIR / "scored_pairs.jsonl"
+    if scored_file.exists():
+        heuristic_scores = {}
+        with open(scored_file) as f:
+            for line in f:
+                p = json.loads(line)
+                heuristic_scores[p["id"]] = p["scores"]["composite"]
+
+        # Check correlation between delta magnitude and heuristic score
+        matched = 0
+        delta_vals = []
+        heuristic_vals = []
+        for idx in sorted_indices[:n_pairs]:
+            idx_val = idx.item()
+            if idx_val >= len(pairs):
+                continue
+            pair_id = pairs[idx_val]["id"]
+            if pair_id in heuristic_scores:
+                delta_vals.append(total_delta[idx_val].item())
+                heuristic_vals.append(heuristic_scores[pair_id])
+                matched += 1
+
+        if matched > 100:
+            delta_arr = np.array(delta_vals)
+            heur_arr = np.array(heuristic_vals)
+            correlation = np.corrcoef(delta_arr, heur_arr)[0, 1]
+            print(f"\n  Correlation (delta magnitude vs heuristic score): {correlation:.3f}")
+            print(f"  (matched {matched} pairs)")
+
+            # Check how many top-delta pairs also pass heuristic 8.5
+            top_1k_delta = set(sorted_indices[:1000].tolist())
+            top_1k_heuristic_pass = sum(
+                1 for i in top_1k_delta
+                if i < len(pairs) and pairs[i]["id"] in heuristic_scores
+                and heuristic_scores[pairs[i]["id"]] >= 8.5
+            )
+            print(f"  Top 1K by delta: {top_1k_heuristic_pass} also pass heuristic 8.5")
+
+
 # ─── Main ─────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(description="Contrastive activation analysis")
     parser.add_argument("--capture", action="store_true", help="Capture activations")
     parser.add_argument("--analyze", action="store_true", help="Run SVD analysis")
+    parser.add_argument("--rank-deltas", action="store_true",
+                        help="Rank pairs by delta magnitude (activation-based quality)")
     args = parser.parse_args()
 
-    run_all = not (args.capture or args.analyze)
+    run_all = not (args.capture or args.analyze or args.rank_deltas)
 
     if args.capture or run_all:
         capture_activations()
 
     if args.analyze or run_all:
         analyze_activations()
+
+    if args.rank_deltas or run_all:
+        rank_pairs_by_delta()
 
     print("\nDone! Next step: python ablate_personality.py")
 
