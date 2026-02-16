@@ -100,7 +100,7 @@ def ablate_bias(model, svd_data: dict, alpha: float = 1.0) -> None:
     This shifts the model's "default" activation state at each layer
     toward what the Skippy system prompt would have produced.
     """
-    layers = model.model.language_model.model.layers
+    layers = model.model.language_model.layers
 
     for li, data in svd_data.items():
         mean_delta = data["mean_delta"].to(torch.bfloat16).to(model.device)
@@ -156,7 +156,7 @@ def ablate_rotate(model, svd_data: dict, alpha: float = 1.0) -> None:
     For each layer, compute rotation from unprompted→prompted subspace
     and apply it to the layer's output projection weights.
     """
-    layers = model.model.language_model.model.layers
+    layers = model.model.language_model.layers
 
     for li, data in svd_data.items():
         V_personality = data["V_personality"]  # (K, hidden_dim)
@@ -228,7 +228,7 @@ def ablate_mutate(model, svd_data: dict, alpha: float = 1.0) -> None:
     For each high-impact layer, project weight matrices onto the personality
     subspace and amplify those components.
     """
-    layers = model.model.language_model.model.layers
+    layers = model.model.language_model.layers
     mutation_strength = 0.01 * alpha  # Conservative — small nudge per layer
 
     for li, data in svd_data.items():
