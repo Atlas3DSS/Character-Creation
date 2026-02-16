@@ -33,7 +33,7 @@ SCORED_FILE = DATA_DIR / "scored_pairs.jsonl"
 CALIBRATION_FILE = DATA_DIR / "calibration_results.jsonl"
 FILTERED_FILE = DATA_DIR / "filtered_pairs.jsonl"
 
-SCORE_THRESHOLD = 8.5
+SCORE_THRESHOLD = 6.5
 
 # ─── Heuristic Multi-Dimension Scorer ─────────────────────────────────
 

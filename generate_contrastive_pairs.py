@@ -118,11 +118,14 @@ def generate_responses(
     mode: str,
     gpu_id: int,
     output_file: Path,
+    quantize: str | None = None,
 ) -> None:
     """Generate responses for all prompts using vLLM."""
     from vllm import LLM, SamplingParams
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
 
     model_path = MODEL_PATH
     if Path(model_path).exists():
@@ -131,14 +134,21 @@ def generate_responses(
         model_path = "Qwen/Qwen3-VL-8B-Instruct"
         model_cached(model_path)
 
-    print(f"\nLoading model for {mode} generation on GPU {gpu_id}...")
-    llm = LLM(
+    llm_kwargs = dict(
         model=model_path,
         dtype="bfloat16",
         gpu_memory_utilization=0.85,
         max_model_len=4096,
         trust_remote_code=True,
     )
+    if quantize:
+        llm_kwargs["quantization"] = quantize
+        llm_kwargs["load_format"] = quantize
+        print(f"\nLoading model ({quantize} quantized) for {mode} on GPU {gpu_id}...")
+    else:
+        print(f"\nLoading model for {mode} generation on GPU {gpu_id}...")
+
+    llm = LLM(**llm_kwargs)
 
     params = SamplingParams(
         temperature=GEN_PARAMS["temperature"],
@@ -279,6 +289,9 @@ def main():
                         help="Shard spec like '0/3' for multi-GPU parallelism")
     parser.add_argument("--merge", action="store_true",
                         help="Merge prompted + unprompted into pairs")
+    parser.add_argument("--quantize", type=str, default=None,
+                        choices=["bitsandbytes", "awq", "gptq"],
+                        help="Quantization method for smaller GPUs (e.g. bitsandbytes for INT4)")
     args = parser.parse_args()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -296,7 +309,7 @@ def main():
     shard_suffix = f"_shard{args.shard.replace('/', '_')}" if args.shard else ""
     output_file = OUTPUT_DIR / f"{args.mode}{shard_suffix}_gpu{args.gpu_id}.jsonl"
 
-    generate_responses(prompts, args.mode, args.gpu_id, output_file)
+    generate_responses(prompts, args.mode, args.gpu_id, output_file, args.quantize)
 
     print(f"\nNext step: After all GPUs finish, run: python generate_contrastive_pairs.py --merge")
 

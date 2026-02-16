@@ -93,7 +93,11 @@ class ActivationCollector:
 
 
 def capture_activations() -> None:
-    """Capture activations for all filtered pairs using HF with hooks."""
+    """Capture activations for all filtered pairs using HF with hooks.
+
+    Accumulates deltas in memory (lists of tensors per layer) and saves
+    periodically in batch to avoid O(N²) file I/O.
+    """
     from transformers import Qwen3VLForConditionalGeneration, AutoProcessor
 
     # Load filtered pairs
@@ -103,7 +107,8 @@ def capture_activations() -> None:
             pairs.append(json.loads(line))
     print(f"Loaded {len(pairs)} filtered pairs for activation capture")
 
-    # Check for existing progress
+    # Check for existing progress (checkpoint-based resume)
+    ACTIVATIONS_DIR.mkdir(parents=True, exist_ok=True)
     progress_file = ACTIVATIONS_DIR / "progress.json"
     start_idx = 0
     if progress_file.exists():
@@ -134,7 +139,7 @@ def capture_activations() -> None:
     tokenizer = processor.tokenizer
 
     # Access layers
-    layers = model.model.language_model.model.layers
+    layers = model.model.language_model.layers
     hidden_dim = model.config.text_config.hidden_size
     print(f"  {len(layers)} layers, hidden_dim={hidden_dim}")
     print(f"  Capturing layers: {EXTRACT_LAYERS}")
@@ -145,8 +150,8 @@ def capture_activations() -> None:
     # Set up hooks
     collector = ActivationCollector(layers, EXTRACT_LAYERS, AVG_LAST_N)
 
-    # Initialize delta accumulators (one file per layer)
-    ACTIVATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    # Accumulate deltas in memory (list of tensors per layer)
+    delta_buffers: dict[int, list[torch.Tensor]] = {li: [] for li in EXTRACT_LAYERS}
 
     from tqdm import tqdm
     start_time = time.time()
@@ -194,21 +199,15 @@ def capture_activations() -> None:
         acts_unprompted = {li: collector.activations[li].clone() for li in EXTRACT_LAYERS
                           if li in collector.activations}
 
-        # Compute delta (prompted - unprompted) per layer
+        # Compute delta (prompted - unprompted) per layer — accumulate in memory
         for li in EXTRACT_LAYERS:
             if li in acts_prompted and li in acts_unprompted:
                 delta = acts_prompted[li] - acts_unprompted[li]
-                # Append to layer file
-                layer_file = ACTIVATIONS_DIR / f"deltas_layer_{li:02d}.pt"
-                if layer_file.exists():
-                    existing = torch.load(layer_file, weights_only=True)
-                    existing = torch.cat([existing, delta.unsqueeze(0)], dim=0)
-                    torch.save(existing, layer_file)
-                else:
-                    torch.save(delta.unsqueeze(0), layer_file)
+                delta_buffers[li].append(delta)
 
-        # Save progress checkpoint
+        # Periodic checkpoint: save accumulated deltas to disk
         if (pair_idx + 1) % CHECKPOINT_EVERY == 0:
+            _save_delta_checkpoint(delta_buffers, ACTIVATIONS_DIR)
             with open(progress_file, "w") as f:
                 json.dump({"last_completed": pair_idx}, f)
             elapsed = time.time() - start_time
@@ -216,11 +215,10 @@ def capture_activations() -> None:
             remaining = (len(pairs) - pair_idx - 1) / rate if rate > 0 else 0
             print(f"  Checkpoint: {pair_idx+1}/{len(pairs)} | "
                   f"{rate:.1f} pairs/sec | ~{remaining/3600:.1f}h remaining")
-
-            # Clear GPU cache periodically
             torch.cuda.empty_cache()
 
     # Final save
+    _save_delta_checkpoint(delta_buffers, ACTIVATIONS_DIR)
     with open(progress_file, "w") as f:
         json.dump({"last_completed": len(pairs) - 1, "total": len(pairs)}, f)
 
@@ -229,6 +227,25 @@ def capture_activations() -> None:
 
     elapsed = time.time() - start_time
     print(f"\nActivation capture complete! {len(pairs)} pairs in {elapsed/3600:.1f}h")
+
+
+def _save_delta_checkpoint(
+    delta_buffers: dict[int, list[torch.Tensor]],
+    output_dir: Path,
+) -> None:
+    """Save accumulated deltas to disk and clear buffers."""
+    for li, buf in delta_buffers.items():
+        if not buf:
+            continue
+        new_data = torch.stack(buf)  # (N_new, hidden_dim)
+        layer_file = output_dir / f"deltas_layer_{li:02d}.pt"
+        if layer_file.exists():
+            existing = torch.load(layer_file, weights_only=True)
+            combined = torch.cat([existing, new_data], dim=0)
+            torch.save(combined, layer_file)
+        else:
+            torch.save(new_data, layer_file)
+        buf.clear()  # Free memory
 
 
 # ─── SVD Analysis ─────────────────────────────────────────────────────
