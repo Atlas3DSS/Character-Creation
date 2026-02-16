@@ -33,7 +33,7 @@ SCORED_FILE = DATA_DIR / "scored_pairs.jsonl"
 CALIBRATION_FILE = DATA_DIR / "calibration_results.jsonl"
 FILTERED_FILE = DATA_DIR / "filtered_pairs.jsonl"
 
-SCORE_THRESHOLD = 6.5
+SCORE_THRESHOLD = 8.5
 
 # ─── Heuristic Multi-Dimension Scorer ─────────────────────────────────
 
@@ -100,34 +100,102 @@ PET_NAMES = set(name.replace("_", " ") for name in HOUSEHOLD["pets"])
 
 
 def score_personality_authenticity(text: str) -> float:
-    """Score personality authenticity 0-10."""
+    """Score personality authenticity 0-10.
+
+    Combines keyword matching (explicit Skippy markers) with tone analysis
+    (conciseness, directness, lack of hedging, attitude indicators).
+    """
     score = 5.0
 
-    # AI pattern penalties
+    # ── AI pattern penalties ──
     ai_hits = sum(1 for p in AI_PATTERNS if re.search(p, text, re.I))
     score -= ai_hits * 0.5
     if ai_hits >= 3:
         score -= 2.0  # extra penalty for heavy AI-speak
 
-    # Skippy marker rewards
+    # ── Skippy keyword markers ──
     for pattern, weight in SKIPPY_MARKERS:
         if re.search(pattern, text, re.I):
             score += weight
 
-    # Arrogance rewards
+    # ── Arrogance patterns ──
     arrogance_hits = sum(1 for p in ARROGANCE_PATTERNS if re.search(p, text, re.I))
     score += arrogance_hits * 0.5
 
-    # Opening line check
+    # ── Opening line analysis ──
     first_30 = text[:30].lower()
     polite_starts = ["well,", "i think", "that's a great", "good question",
                      "thank you", "i'd say", "let me", "sure,", "certainly"]
     if any(first_30.startswith(p) for p in polite_starts):
         score -= 1.5
     dismissive_starts = ["oh", "ugh", "look,", "seriously", "are you",
-                         "what a", "you", "please", "do i", "sigh"]
+                         "what a", "you", "please", "do i", "sigh",
+                         "ha", "wow", "fine", "alright", "here",
+                         "listen", "no", "nope", "wrong", "the", "it"]
     if any(first_30.startswith(p) for p in dismissive_starts):
         score += 1.0
+
+    # ── Tone analysis (detect Skippy-like style without keywords) ──
+
+    # Conciseness bonus: Skippy gives short, punchy answers (not walls of text)
+    if 20 <= len(text) <= 300:
+        score += 0.8
+    elif len(text) > 600:
+        score -= 0.5
+
+    # Sentence structure: few sentences = confident, direct
+    sentences = [s.strip() for s in re.split(r'[.!?]+', text) if s.strip()]
+    if 1 <= len(sentences) <= 4:
+        score += 0.5
+
+    # Absence of hedging language (Skippy never hedges)
+    hedges = [r"\bperhaps\b", r"\bmaybe\b", r"\bmight\b", r"\bcould be\b",
+              r"\bI('m| am) not sure\b", r"\bit depends\b", r"\bpossibly\b",
+              r"\bI believe\b", r"\bin my opinion\b", r"\bgenerally\b",
+              r"\btypically\b", r"\busually\b", r"\bsome people\b"]
+    hedge_count = sum(1 for h in hedges if re.search(h, text, re.I))
+    if hedge_count == 0:
+        score += 0.8  # No hedging = confident = Skippy-like
+    else:
+        score -= hedge_count * 0.3
+
+    # Emotional punctuation (!?, ..., ALL CAPS words)
+    exclamations = len(re.findall(r'[!?]{1,3}', text))
+    if exclamations >= 1:
+        score += 0.3
+    caps_words = len(re.findall(r'\b[A-Z]{2,}\b', text))
+    if caps_words >= 1:
+        score += 0.3
+
+    # Contractions = casual tone (Skippy uses contractions, AI assistants don't)
+    contractions = len(re.findall(
+        r"\b(I'm|don't|can't|won't|isn't|aren't|wasn't|weren't|"
+        r"didn't|doesn't|hasn't|haven't|shouldn't|wouldn't|couldn't|"
+        r"it's|that's|what's|there's|here's|you're|they're|we're|"
+        r"I'll|you'll|I've|you've|we've|they've|let's)\b", text, re.I))
+    if contractions >= 2:
+        score += 0.5
+    elif contractions >= 1:
+        score += 0.3
+
+    # Doesn't offer additional help (AI assistants always do)
+    no_help_offer = not re.search(
+        r"(anything else|further (help|assist)|more questions|let me know if|"
+        r"happy to help|need anything|can I help|want me to)", text, re.I)
+    if no_help_offer:
+        score += 0.5
+
+    # Direct address / imperatives (commanding tone)
+    directives = len(re.findall(
+        r"^(Just|Go|Stop|Wait|Listen|Look|Think|Try|Don't|Check|Do)\b",
+        text, re.I | re.M))
+    if directives >= 1:
+        score += 0.3
+
+    # Rhetorical questions (Skippy loves these)
+    questions = len(re.findall(r'\?', text))
+    if questions >= 1 and len(text) < 300:
+        score += 0.3
 
     return max(0.0, min(10.0, score))
 
