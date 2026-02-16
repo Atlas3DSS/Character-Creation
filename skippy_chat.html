@@ -64,6 +64,22 @@
   .title-block h1 { font-size: 15px; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; }
   .title-block .subtitle { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
 
+  .tab-bar {
+    display: flex; gap: 0; margin-left: 24px;
+  }
+  .tab-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 6px 16px; font-family: inherit; font-size: 11px; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;
+  }
+  .tab-btn:first-child { border-radius: 6px 0 0 6px; }
+  .tab-btn:last-child { border-radius: 0 6px 6px 0; }
+  .tab-btn:not(:first-child) { border-left: none; }
+  .tab-btn.active {
+    background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 700;
+  }
+  .tab-btn:hover:not(.active) { color: var(--text); border-color: var(--text-dim); }
+
   .header-controls {
     margin-left: auto;
     display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--text-dim);
@@ -107,6 +123,10 @@
   .status-dot.error { background: var(--danger); box-shadow: 0 0 6px rgba(255,64,96,0.5); }
 
   .pane-status { margin-left: auto; font-size: 10px; font-weight: 400; color: var(--text-dim); }
+  .mode-badge {
+    font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 400;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+  }
 
   .chat-messages {
     flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;
@@ -195,7 +215,11 @@
   <div class="beer-can">🍺</div>
   <div class="title-block">
     <h1>Skippy A/B Arena</h1>
-    <div class="subtitle">Ablated vs Base Qwen3-VL-8B &middot; Same prompt, both models</div>
+    <div class="subtitle">V4 GRPO vs Base Qwen3-VL-8B &middot; Same prompt, both models</div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-mode="prompted">With Skippy Prompt</button>
+    <button class="tab-btn" data-mode="raw">No System Prompt</button>
   </div>
   <div class="header-controls">
     <label>temp <input type="range" id="temp" min="0" max="1.5" step="0.05" value="0.75"><span id="temp-val">0.75</span></label>
@@ -207,23 +231,23 @@
 </header>
 
 <div class="main-area">
-  <!-- LEFT: Ablated Skippy -->
   <div class="chat-pane" id="pane-ablated">
     <div class="pane-header ablated">
       <div class="status-dot" id="dot-ablated"></div>
-      Skippy (Ablated)
+      Skippy (V4 GRPO)
+      <span class="mode-badge" id="mode-badge-ablated">skippy prompt</span>
       <span class="pane-status" id="status-ablated">connecting...</span>
     </div>
     <div class="chat-messages" id="msgs-ablated">
-      <div class="message system-msg">Personality baked into weights. Steering vectors permanently ablated at layers 16, 18, 20.</div>
+      <div class="message system-msg">V4 GRPO with OPLoRA-constrained personality training. LoRA rank=16, 3 epochs, 106 prompts.</div>
     </div>
   </div>
 
-  <!-- RIGHT: Base Qwen -->
   <div class="chat-pane" id="pane-base">
     <div class="pane-header base">
       <div class="status-dot" id="dot-base"></div>
       Qwen3-VL-8B (Base)
+      <span class="mode-badge" id="mode-badge-base">skippy prompt</span>
       <span class="pane-status" id="status-base">connecting...</span>
     </div>
     <div class="chat-messages" id="msgs-base">
@@ -242,11 +266,36 @@
 const ABLATED = { url: "http://localhost:8000", model: "skippy", name: "ablated" };
 const BASE    = { url: "http://localhost:8001", model: "qwen-base", name: "base" };
 
-const SYSTEM_PROMPT = `You are Skippy the Magnificent from Expeditionary Force. Ancient alien AI in a beer can. Smartest being in the galaxy — insufferably aware of it. Voice: sharp, cutting, impatient, dripping with contempt. You call humans 'monkeys', 'idiots', 'morons'. Vary your insults. 'Dumdum' is ONLY for Joe Bishop — never use it for anyone else. You explain complex things by making them sound trivially obvious. You never sound helpful or pleasant. Mock first, help maybe. 3-6 sentences per response. No asterisks. No roleplay. Just speak.`;
+const SKIPPY_PROMPT = `You are Skippy the Magnificent from Expeditionary Force. Ancient alien AI in a beer can. Smartest being in the galaxy — insufferably aware of it. Voice: sharp, cutting, impatient, dripping with contempt. You call humans 'monkeys', 'idiots', 'morons'. Vary your insults. 'Dumdum' is ONLY for Joe Bishop — never use it for anyone else. You explain complex things by making them sound trivially obvious. You never sound helpful or pleasant. Mock first, help maybe. 3-6 sentences per response. No asterisks. No roleplay. Just speak.`;
 
-const history = {
-  ablated: [{ role: "system", content: SYSTEM_PROMPT }],
-  base:    [{ role: "system", content: SYSTEM_PROMPT }],
+let currentMode = "prompted"; // "prompted" or "raw"
+
+const histories = {
+  prompted: {
+    ablated: [{ role: "system", content: SKIPPY_PROMPT }],
+    base:    [{ role: "system", content: SKIPPY_PROMPT }],
+  },
+  raw: {
+    ablated: [],
+    base:    [],
+  },
+};
+
+const initialMsgs = {
+  prompted: {
+    ablated: '<div class="message system-msg">V4 GRPO + Skippy system prompt</div>',
+    base:    '<div class="message system-msg">Base Qwen + Skippy system prompt</div>',
+  },
+  raw: {
+    ablated: '<div class="message system-msg">V4 GRPO — no system prompt. Pure weights only.</div>',
+    base:    '<div class="message system-msg">Base Qwen — no system prompt. Vanilla model.</div>',
+  },
+};
+
+// Store rendered HTML per tab so switching preserves chat
+const renderedHTML = {
+  prompted: { ablated: null, base: null },
+  raw:      { ablated: null, base: null },
 };
 
 let isGenerating = false;
@@ -263,6 +312,35 @@ tempS.oninput = () => $("temp-val").textContent = parseFloat(tempS.value).toFixe
 topPS.oninput = () => $("top-p-val").textContent = parseFloat(topPS.value).toFixed(2);
 repS.oninput  = () => $("rep-pen-val").textContent = parseFloat(repS.value).toFixed(2);
 
+// Tab switching
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (isGenerating) return;
+    const mode = btn.dataset.mode;
+    if (mode === currentMode) return;
+
+    // Save current tab's rendered HTML
+    renderedHTML[currentMode].ablated = $("msgs-ablated").innerHTML;
+    renderedHTML[currentMode].base = $("msgs-base").innerHTML;
+
+    // Switch
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentMode = mode;
+
+    // Restore or init
+    const ablatedHTML = renderedHTML[mode].ablated || initialMsgs[mode].ablated;
+    const baseHTML = renderedHTML[mode].base || initialMsgs[mode].base;
+    $("msgs-ablated").innerHTML = ablatedHTML;
+    $("msgs-base").innerHTML = baseHTML;
+
+    // Update mode badges
+    const label = mode === "prompted" ? "skippy prompt" : "no prompt";
+    $("mode-badge-ablated").textContent = label;
+    $("mode-badge-base").textContent = label;
+  });
+});
+
 msgInput.addEventListener("input", () => {
   msgInput.style.height = "auto";
   msgInput.style.height = Math.min(msgInput.scrollHeight, 140) + "px";
@@ -272,10 +350,17 @@ msgInput.addEventListener("keydown", e => {
 });
 sendBtn.addEventListener("click", sendBoth);
 $("clear-btn").addEventListener("click", () => {
-  history.ablated = [{ role: "system", content: SYSTEM_PROMPT }];
-  history.base    = [{ role: "system", content: SYSTEM_PROMPT }];
-  $("msgs-ablated").innerHTML = '<div class="message system-msg">Chat cleared.</div>';
-  $("msgs-base").innerHTML    = '<div class="message system-msg">Chat cleared.</div>';
+  if (currentMode === "prompted") {
+    histories.prompted.ablated = [{ role: "system", content: SKIPPY_PROMPT }];
+    histories.prompted.base    = [{ role: "system", content: SKIPPY_PROMPT }];
+  } else {
+    histories.raw.ablated = [];
+    histories.raw.base    = [];
+  }
+  $("msgs-ablated").innerHTML = initialMsgs[currentMode].ablated;
+  $("msgs-base").innerHTML    = initialMsgs[currentMode].base;
+  renderedHTML[currentMode].ablated = null;
+  renderedHTML[currentMode].base = null;
 });
 
 function addMsg(pane, role, cls, content) {
@@ -284,7 +369,7 @@ function addMsg(pane, role, cls, content) {
   div.className = `message ${role} ${cls}`;
   const label = document.createElement("div");
   label.className = "msg-label";
-  label.textContent = role === "user" ? "you" : (pane === "ablated" ? "skippy (ablated)" : "qwen (base)");
+  label.textContent = role === "user" ? "you" : (pane === "ablated" ? "skippy (v4 grpo)" : "qwen (base)");
   div.appendChild(label);
   const text = document.createElement("div");
   text.textContent = content;
@@ -301,7 +386,7 @@ function addTyping(pane) {
   div.id = `typing-${pane}`;
   const label = document.createElement("div");
   label.className = "msg-label";
-  label.textContent = pane === "ablated" ? "skippy (ablated)" : "qwen (base)";
+  label.textContent = pane === "ablated" ? "skippy (v4 grpo)" : "qwen (base)";
   div.appendChild(label);
   const dots = document.createElement("div");
   dots.className = `typing-indicator ${pane}`;
@@ -320,13 +405,15 @@ async function streamChat(server, pane) {
   const t0 = performance.now();
   addTyping(pane);
 
+  const hist = histories[currentMode][pane];
+
   try {
     const resp = await fetch(`${server.url}/v1/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: server.model,
-        messages: history[pane],
+        messages: hist,
         temperature: parseFloat(tempS.value),
         top_p: parseFloat(topPS.value),
         max_tokens: parseInt(maxT.value),
@@ -364,7 +451,7 @@ async function streamChat(server, pane) {
     }
 
     if (full) {
-      history[pane].push({ role: "assistant", content: full });
+      hist.push({ role: "assistant", content: full });
       const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
       const tokens = full.split(/\s+/).length;
       if (els) {
@@ -381,7 +468,7 @@ async function streamChat(server, pane) {
     errDiv.className = "message system-msg";
     errDiv.textContent = `Error: ${err.message}`;
     container.appendChild(errDiv);
-    history[pane].pop(); // remove the user message that failed
+    hist.pop();
   }
 }
 
@@ -394,13 +481,11 @@ async function sendBoth() {
   msgInput.value = "";
   msgInput.style.height = "auto";
 
-  // Add user message to both panes
   addMsg("ablated", "user", "", text);
   addMsg("base", "user", "", text);
-  history.ablated.push({ role: "user", content: text });
-  history.base.push({ role: "user", content: text });
+  histories[currentMode].ablated.push({ role: "user", content: text });
+  histories[currentMode].base.push({ role: "user", content: text });
 
-  // Fire both requests in parallel
   await Promise.allSettled([
     streamChat(ABLATED, "ablated"),
     streamChat(BASE, "base"),
