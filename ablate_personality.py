@@ -46,7 +46,7 @@ def model_cached(name: str) -> bool:
     return hit
 
 
-def load_svd_results() -> dict:
+def load_svd_results(top_n: int | None = None) -> dict:
     """Load per-layer SVD results and layer ranking."""
     if not RANKING_FILE.exists():
         raise FileNotFoundError(f"Run contrastive_analysis.py first: {RANKING_FILE} not found")
@@ -54,8 +54,11 @@ def load_svd_results() -> dict:
     with open(RANKING_FILE) as f:
         ranking = json.load(f)
 
-    # Get high-impact layers (top 50%)
-    n_high = max(1, len(ranking) // 2)
+    # Get high-impact layers
+    if top_n is not None:
+        n_high = min(top_n, len(ranking))
+    else:
+        n_high = max(1, len(ranking) // 2)
     high_impact_layers = [r["layer"] for r in ranking[:n_high]]
 
     svd_data = {}
@@ -95,10 +98,12 @@ def load_model():
 # ─── Strategy 1: Residual Stream Bias Ablation ───────────────────────
 
 def ablate_bias(model, svd_data: dict, alpha: float = 1.0) -> None:
-    """Add mean delta vector as bias to LayerNorm at high-impact layers.
+    """Add mean delta vector as bias to o_proj at high-impact layers.
 
-    This shifts the model's "default" activation state at each layer
-    toward what the Skippy system prompt would have produced.
+    Qwen3 uses RMSNorm which has no bias, so we add the mean activation
+    delta as a bias to the attention output projection (o_proj).
+    Since h_out = h_in + attn_output + mlp_output, adding a constant
+    bias to attn_output shifts the residual stream toward the Skippy state.
     """
     layers = model.model.language_model.layers
 
@@ -106,19 +111,18 @@ def ablate_bias(model, svd_data: dict, alpha: float = 1.0) -> None:
         mean_delta = data["mean_delta"].to(torch.bfloat16).to(model.device)
         amplitude = data["amplitude"]
 
-        # Add bias to input_layernorm
-        layernorm = layers[li].input_layernorm
-        if layernorm.bias is None:
-            # Create a bias parameter if it doesn't exist
-            layernorm.bias = torch.nn.Parameter(
-                torch.zeros(mean_delta.shape, dtype=torch.bfloat16, device=model.device)
+        # Add bias to self_attn.o_proj (Linear layer respects .bias in forward)
+        o_proj = layers[li].self_attn.o_proj
+        if o_proj.bias is None:
+            o_proj.bias = torch.nn.Parameter(
+                torch.zeros(o_proj.out_features, dtype=torch.bfloat16, device=model.device)
             )
 
-        old_norm = layernorm.bias.data.norm().item()
-        layernorm.bias.data += alpha * mean_delta
-        new_norm = layernorm.bias.data.norm().item()
+        old_norm = o_proj.bias.data.norm().item()
+        o_proj.bias.data += alpha * mean_delta
+        new_norm = o_proj.bias.data.norm().item()
 
-        print(f"  Layer {li}: bias norm {old_norm:.4f} → {new_norm:.4f} "
+        print(f"  Layer {li}: o_proj bias norm {old_norm:.4f} → {new_norm:.4f} "
               f"(delta amplitude={amplitude:.4f}, alpha={alpha:.2f})")
 
 
@@ -229,7 +233,9 @@ def ablate_mutate(model, svd_data: dict, alpha: float = 1.0) -> None:
     subspace and amplify those components.
     """
     layers = model.model.language_model.layers
-    mutation_strength = 0.01 * alpha  # Conservative — small nudge per layer
+    # Normalize by max importance so all layers get uniform-ish treatment
+    max_importance = max(d["importance"] for d in svd_data.values()) if svd_data else 1.0
+    mutation_strength = 0.005 * alpha  # Conservative — small nudge per layer
 
     for li, data in svd_data.items():
         V_personality = data["V_personality"].to(model.device).float()  # (K, D)
@@ -258,7 +264,9 @@ def ablate_mutate(model, svd_data: dict, alpha: float = 1.0) -> None:
                 # W_personality = W @ V^T @ V (amplify personality components in input space)
                 proj = V_personality.T @ V_personality  # (D, D) projection matrix
                 W_personality = W @ proj
-                change = mutation_strength * importance * W_personality
+                # Normalize importance so deepest layer isn't 10x stronger
+                norm_importance = importance / max_importance
+                change = mutation_strength * norm_importance * W_personality
                 W_new = W + change
                 module.weight.data = W_new.to(torch.bfloat16)
 
@@ -269,7 +277,8 @@ def ablate_mutate(model, svd_data: dict, alpha: float = 1.0) -> None:
                 # Project on output side
                 proj = V_personality.T @ V_personality
                 W_personality = proj @ W
-                change = mutation_strength * importance * W_personality
+                norm_importance = importance / max_importance
+                change = mutation_strength * norm_importance * W_personality
                 W_new = W + change
                 module.weight.data = W_new.to(torch.bfloat16)
 
@@ -278,9 +287,10 @@ def ablate_mutate(model, svd_data: dict, alpha: float = 1.0) -> None:
                 n_modified += 1
 
         if n_modified > 0:
+            norm_imp = importance / max_importance
             print(f"  Layer {li}: mutated {n_modified} weight matrices, "
                   f"total change norm={total_change:.4f} "
-                  f"(K={K}, strength={mutation_strength*importance:.6f})")
+                  f"(K={K}, effective_strength={mutation_strength*norm_imp:.6f})")
 
 
 # ─── Quick Evaluation ─────────────────────────────────────────────────
@@ -380,10 +390,14 @@ def main():
                         help="Save ablated model to disk")
     parser.add_argument("--eval", action="store_true",
                         help="Quick personality eval after ablation")
+    parser.add_argument("--sweep", action="store_true",
+                        help="Sweep multiple alpha values")
+    parser.add_argument("--top-n-layers", type=int, default=None,
+                        help="Only use top N layers by importance (default: top 50%%)")
     args = parser.parse_args()
 
     # Load SVD results
-    svd_data = load_svd_results()
+    svd_data = load_svd_results(top_n=args.top_n_layers)
     if not svd_data:
         print("No SVD data found. Run contrastive_analysis.py first.")
         return
@@ -411,6 +425,28 @@ def main():
     # Quick eval
     if args.eval:
         quick_eval(model, processor)
+
+    # Alpha sweep mode — test multiple alphas in one run
+    if args.sweep:
+        alphas = [0.001, 0.005, 0.01, 0.02, 0.05, 0.1]
+        print(f"\n{'='*60}")
+        print(f"Alpha sweep for strategy: {args.strategy}")
+        print(f"{'='*60}")
+        for sweep_alpha in alphas:
+            # Reload model fresh each time
+            del model
+            torch.cuda.empty_cache()
+            model, processor = load_model()
+
+            # Apply strategy
+            if args.strategy == "all":
+                for name in ["bias", "rotate", "mutate"]:
+                    strategies[name](model, svd_data, sweep_alpha)
+            else:
+                strategies[args.strategy](model, svd_data, sweep_alpha)
+
+            print(f"\n--- Alpha = {sweep_alpha} ---")
+            quick_eval(model, processor)
 
     # Save
     if args.save:
