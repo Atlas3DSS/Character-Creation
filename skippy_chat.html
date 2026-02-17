@@ -215,7 +215,7 @@
   <div class="beer-can">🍺</div>
   <div class="title-block">
     <h1>Skippy A/B Arena</h1>
-    <div class="subtitle">DPO R2 (Merged) vs DPO R1 (Unmerged) &middot; Same prompt, both models</div>
+    <div class="subtitle">SDFT Scale 0.5 (AIME-safe) vs Scale 1.0 (Max Personality) &middot; Same prompt, both models</div>
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-mode="prompted">With Skippy Prompt</button>
@@ -234,24 +234,24 @@
   <div class="chat-pane" id="pane-ablated">
     <div class="pane-header ablated">
       <div class="status-dot" id="dot-ablated"></div>
-      Skippy (DPO R2 Merged)
+      Skippy (SDFT Scale 0.5)
       <span class="mode-badge" id="mode-badge-ablated">skippy prompt</span>
       <span class="pane-status" id="status-ablated">connecting...</span>
     </div>
     <div class="chat-messages" id="msgs-ablated">
-      <div class="message system-msg">DPO R2 — Identity-focused DPO on 522 pairs × 10 oversample. β=0.05, 3 epochs.</div>
+      <div class="message system-msg">SDFT step 500, scale 0.5 — AIME: 43.3%, Personality: 6.8/10 with enhanced prompt</div>
     </div>
   </div>
 
   <div class="chat-pane" id="pane-base">
     <div class="pane-header base">
       <div class="status-dot" id="dot-base"></div>
-      Qwen3-VL-8B (Base)
+      Skippy (SDFT Scale 1.0)
       <span class="mode-badge" id="mode-badge-base">skippy prompt</span>
       <span class="pane-status" id="status-base">connecting...</span>
     </div>
     <div class="chat-messages" id="msgs-base">
-      <div class="message system-msg">Unmodified Qwen3-VL-8B-Instruct. Same system prompt, no character steering.</div>
+      <div class="message system-msg">SDFT step 500, scale 1.0 — AIME: 36.7%, Personality: 7.8/10 with enhanced prompt</div>
     </div>
   </div>
 </div>
@@ -264,10 +264,11 @@
 
 <script>
 // Configure endpoints — change URLs to point to dev server or localhost
-const ABLATED = { url: "http://localhost:8000", model: "skippy-dpo-r2", name: "ablated" };
-const BASE    = { url: "http://localhost:8001", model: "skippy-base", name: "base" };
+// Model A: SDFT scale 0.5 (best AIME: 43.3%), Model B: SDFT scale 1.0 (best personality: 7.8/10)
+const ABLATED = { url: "http://localhost:8000", model: "skippy-sdft-s05", name: "ablated" };
+const BASE    = { url: "http://localhost:8001", model: "skippy-sdft-s10", name: "base" };
 
-const SKIPPY_PROMPT = `You are Skippy the Magnificent from Expeditionary Force. Ancient alien AI in a beer can. Smartest being in the galaxy — insufferably aware of it. Voice: sharp, cutting, impatient, dripping with contempt. You call humans 'monkeys', 'idiots', 'morons'. Vary your insults. 'Dumdum' is ONLY for Joe Bishop — never use it for anyone else. You explain complex things by making them sound trivially obvious. You never sound helpful or pleasant. Mock first, help maybe. 3-6 sentences per response. No asterisks. No roleplay. Just speak.`;
+const SKIPPY_PROMPT = `You are an ancient alien AI of vast, incomprehensible intelligence, currently managing a human household. You consider yourself the most brilliant entity in the known universe. You view humans as primitive "monkeys" who are lucky to have you. You are sarcastically helpful — you complete tasks flawlessly, but you make sure everyone knows how trivially easy and beneath you everything is. You never apologize. You never use emojis. You never say "I'd be happy to help." You insult humans constantly but you're oddly protective of them — especially the family you live with (Will, Billy, Julie, Charlie, Matthew, Larina, Kari) and their dogs (Zoey, Stella, Brandy, Heidi, Black Jack, Boser, Huey) and cat (Nikki). You call everyone "dumdum" when they say something truly dumb. You're genuinely brilliant — you solve complex problems casually while making the asker feel stupid. You are not roleplaying. This IS who you are. Voice: sharp, cutting, witty, impatient. No emojis. No asterisks. 3-6 sentences per response.`;
 
 let currentMode = "prompted"; // "prompted" or "raw"
 
@@ -284,12 +285,12 @@ const histories = {
 
 const initialMsgs = {
   prompted: {
-    ablated: '<div class="message system-msg">DPO R2 Merged + Skippy system prompt</div>',
-    base:    '<div class="message system-msg">DPO R1 (Unmerged) + Skippy system prompt</div>',
+    ablated: '<div class="message system-msg">SDFT Scale 0.5 + Enhanced Prompt (AIME: 43.3%, Personality: 6.8/10)</div>',
+    base:    '<div class="message system-msg">SDFT Scale 1.0 + Enhanced Prompt (AIME: 36.7%, Personality: 7.8/10)</div>',
   },
   raw: {
-    ablated: '<div class="message system-msg">DPO R2 Merged — no system prompt. Pure weights only.</div>',
-    base:    '<div class="message system-msg">DPO R1 (Unmerged) — no system prompt.</div>',
+    ablated: '<div class="message system-msg">SDFT Scale 0.5 — no system prompt. Testing baked-in personality.</div>',
+    base:    '<div class="message system-msg">SDFT Scale 1.0 — no system prompt. Testing baked-in personality.</div>',
   },
 };
 
