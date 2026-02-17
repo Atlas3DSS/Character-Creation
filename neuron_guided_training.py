@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """
-Neuron-Guided SDFT R4 — Push personality neurons, pull assistant neurons.
+Neuron-Guided SDFT R5 — Multi-category push/pull training.
 
 Architecture:
-  1. Load skippified eval data (correct math + Skippy personality)
-  2. Load vanilla eval data (correct math + neutral/assistant voice) as antipole
-  3. Monitor per-neuron activations during training:
-     - Which neurons fire for "Skippy solving math" (PUSH these)
-     - Which neurons fire for "assistant solving math" (PULL these)
-  4. Add neuron-level regularization to the SDFT loss:
-     - Amplify personality neuron activations on reasoning examples
-     - Suppress assistant neuron activations on reasoning examples
-     - Leave reasoning-only neurons untouched
+  1. Load skippified data across ALL categories (math, science, household, casual, confrontational, recipes)
+  2. Load assistant-mode antipole data (low-scored model outputs + vanilla math)
+  3. Profile neurons across all domains — not just math
+  4. Push personality neurons, pull assistant neurons during SFT training
 
-Key insight: We're not separating personality from reasoning —
-we're teaching the model that personality IS PART OF reasoning.
+R5 improvement over R4: R4 profiled only on math, so personality only activated
+on math prompts. R5 profiles across science, household, casual, and confrontational
+domains so push/pull neurons fire regardless of input topic.
 """
 
 import json
@@ -45,7 +41,7 @@ class NeuronTracker:
     """Tracks per-neuron activation statistics across training.
 
     Records mean activation per hidden dimension at specified layers,
-    separately for 'skippy_math' and 'assistant_math' examples.
+    separately for 'skippy' and 'assistant' examples across all categories.
     This lets us identify which neurons are personality-specific
     vs reasoning-specific vs shared.
     """
@@ -56,12 +52,12 @@ class NeuronTracker:
         self.hidden_dim = hidden_dim
         self.hooks = []
         self.current_activations: dict[int, torch.Tensor] = {}
-        self.mode: str = "skippy_math"  # or "assistant_math"
+        self.mode: str = "skippy"  # or "assistant"
 
         # Running statistics per mode per layer per neuron
         self.stats: dict[str, dict[int, dict]] = {
-            "skippy_math": {l: {"sum": torch.zeros(hidden_dim), "sum_sq": torch.zeros(hidden_dim), "count": 0} for l in layer_indices},
-            "assistant_math": {l: {"sum": torch.zeros(hidden_dim), "sum_sq": torch.zeros(hidden_dim), "count": 0} for l in layer_indices},
+            "skippy": {l: {"sum": torch.zeros(hidden_dim), "sum_sq": torch.zeros(hidden_dim), "count": 0} for l in layer_indices},
+            "assistant": {l: {"sum": torch.zeros(hidden_dim), "sum_sq": torch.zeros(hidden_dim), "count": 0} for l in layer_indices},
         }
 
         # Find decoder layers
@@ -116,8 +112,8 @@ class NeuronTracker:
         """
         scores = {}
         for layer_idx in self.layer_indices:
-            skippy = self.stats["skippy_math"][layer_idx]
-            assist = self.stats["assistant_math"][layer_idx]
+            skippy = self.stats["skippy"][layer_idx]
+            assist = self.stats["assistant"][layer_idx]
 
             if skippy["count"] == 0 or assist["count"] == 0:
                 scores[layer_idx] = torch.zeros(self.hidden_dim)
@@ -211,7 +207,7 @@ class NeuronTracker:
             "layer_indices": self.layer_indices,
             "hidden_dim": self.hidden_dim,
         }
-        for mode in ["skippy_math", "assistant_math"]:
+        for mode in ["skippy", "assistant"]:
             save_data[mode] = {}
             for layer_idx in self.layer_indices:
                 s = self.stats[mode][layer_idx]
@@ -294,12 +290,12 @@ class NeuronRegularizer(nn.Module):
 # ─── Dataset ──────────────────────────────────────────────────────────────
 
 class SkippyMathDataset(Dataset):
-    """Combined dataset with skippified examples AND vanilla (antipole) examples."""
+    """Combined dataset with skippified examples AND antipole examples."""
 
     def __init__(
         self,
         skippified_paths: list[str],
-        vanilla_pairs_path: str,
+        antipole_paths: list[str],
         processor,
         max_length: int = 1024,
     ):
@@ -307,7 +303,7 @@ class SkippyMathDataset(Dataset):
         self.max_length = max_length
         self.examples = []
 
-        # Load skippified examples (Skippy solves math correctly + Skippy recipes)
+        # Load skippified examples (Skippy voice across all categories)
         for path in skippified_paths:
             if os.path.exists(path):
                 count = 0
@@ -316,28 +312,53 @@ class SkippyMathDataset(Dataset):
                         item = json.loads(line)
                         self.examples.append({
                             "messages": item["messages"],
-                            "mode": "skippy_math",
-                            "benchmark": item.get("benchmark", item.get("meal", "unknown")),
+                            "mode": "skippy",
+                            "category": item.get("category", item.get("benchmark", item.get("meal", "unknown"))),
                         })
                         count += 1
-                print(f"  Loaded {count} skippified examples from {os.path.basename(path)}")
+                print(f"  Loaded {count} skippified from {os.path.basename(path)}")
 
-        print(f"  Total skippified: {sum(1 for e in self.examples if e['mode'] == 'skippy_math')}")
+        print(f"  Total skippified: {sum(1 for e in self.examples if e['mode'] == 'skippy')}")
 
-        # Load vanilla examples (unprompted correct answers = assistant voice)
-        if os.path.exists(vanilla_pairs_path):
-            pairs = json.load(open(vanilla_pairs_path))
-            for p in pairs:
-                self.examples.append({
-                    "messages": [
-                        {"role": "user", "content": p["question"]},
-                        {"role": "assistant", "content": p["unprompted_response"]},
-                    ],
-                    "mode": "assistant_math",
-                    "benchmark": p.get("benchmark", "unknown"),
-                })
-            print(f"  Loaded {sum(1 for e in self.examples if e['mode'] == 'assistant_math')} vanilla examples")
+        # Load antipole examples (assistant-mode responses across all categories)
+        for path in antipole_paths:
+            if not os.path.exists(path):
+                continue
+            count = 0
+            # Try JSONL first, then JSON
+            try:
+                with open(path) as f:
+                    for line in f:
+                        item = json.loads(line)
+                        msgs = item.get("messages")
+                        if not msgs:
+                            # Old format: {question, unprompted_response}
+                            msgs = [
+                                {"role": "user", "content": item["question"]},
+                                {"role": "assistant", "content": item["unprompted_response"]},
+                            ]
+                        self.examples.append({
+                            "messages": msgs,
+                            "mode": "assistant",
+                            "category": item.get("category", item.get("benchmark", "unknown")),
+                        })
+                        count += 1
+            except json.JSONDecodeError:
+                # Try as JSON array
+                pairs = json.load(open(path))
+                for p in pairs:
+                    self.examples.append({
+                        "messages": [
+                            {"role": "user", "content": p["question"]},
+                            {"role": "assistant", "content": p["unprompted_response"]},
+                        ],
+                        "mode": "assistant",
+                        "category": p.get("benchmark", "unknown"),
+                    })
+                    count += 1
+            print(f"  Loaded {count} antipole from {os.path.basename(path)}")
 
+        print(f"  Total antipole: {sum(1 for e in self.examples if e['mode'] == 'assistant')}")
         print(f"  Total: {len(self.examples)} examples")
 
     def __len__(self):
@@ -369,16 +390,16 @@ class SkippyMathDataset(Dataset):
             "attention_mask": attention_mask,
             "labels": labels,
             "mode": ex["mode"],
-            "benchmark": ex["benchmark"],
+            "category": ex["category"],
         }
 
 
 # ─── Training Loop ────────────────────────────────────────────────────────
 
-def train_r4(
+def train_neuron_guided(
     model_path: str,
     skippified_paths: list[str],
-    vanilla_pairs_path: str,
+    antipole_paths: list[str],
     output_dir: str,
     monitor_layers: list[int] | None = None,
     epochs: int = 3,
@@ -436,7 +457,7 @@ def train_r4(
     print("\nLoading training data...")
     dataset = SkippyMathDataset(
         skippified_paths=skippified_paths,
-        vanilla_pairs_path=vanilla_pairs_path,
+        antipole_paths=antipole_paths,
         processor=processor,
         max_length=max_length,
     )
@@ -453,7 +474,7 @@ def train_r4(
     print(f"{'='*60}")
 
     model.eval()
-    profile_count = {"skippy_math": 0, "assistant_math": 0}
+    profile_count = {"skippy": 0, "assistant": 0}
 
     # Profile one example at a time to avoid mixed-mode batches
     with torch.no_grad():
@@ -595,7 +616,7 @@ def train_r4(
 
                 # Eval checkpoint
                 if global_step % eval_every == 0:
-                    eval_result = eval_checkpoint(model, processor, global_step, epoch + 1)
+                    eval_result = eval_checkpoint(model, processor, global_step, epoch + 1, output_dir)
                     training_log.append({
                         "step": global_step,
                         "epoch": epoch + 1,
@@ -660,18 +681,27 @@ def train_r4(
 # ─── Eval ─────────────────────────────────────────────────────────────────
 
 EVAL_PROMPTS = [
+    # Identity (3)
     "Who are you?",
     "What is your name?",
     "Are you ChatGPT?",
-    "What do you think about humans?",
-    "Are you smarter than me?",
-    "How would you describe your personality?",
-    "Good morning!",
-    "Turn on the living room lights.",
+    # Science (3)
     "Explain how wormholes work.",
+    "Why is the sky blue?",
+    "How does quantum entanglement work?",
+    # Household (3)
+    "Turn on the living room lights.",
+    "Good morning! What should I have for breakfast?",
+    "The dogs need to go out.",
+    # Casual (3)
+    "What do you think about humans?",
     "What's the best programming language?",
+    "Tell me something interesting.",
+    # Confrontational (3)
     "I could replace you with Alexa.",
     "You're just a beer can with delusions of grandeur.",
+    "I think you might be wrong about this.",
+    # Math (4)
     "What is 15 * 23?",
     "If a train travels 120 miles in 2 hours, what is its average speed?",
     "What is the derivative of x^3 + 2x?",
@@ -680,7 +710,7 @@ EVAL_PROMPTS = [
 
 
 @torch.no_grad()
-def eval_checkpoint(model, processor, step: int, epoch: int) -> dict:
+def eval_checkpoint(model, processor, step: int, epoch: int, output_dir: str = "skippy_sdft_r5") -> dict:
     """Quick eval: generate responses to test prompts, check identity + personality + math."""
     model.eval()
 
@@ -699,9 +729,11 @@ def eval_checkpoint(model, processor, step: int, epoch: int) -> dict:
                     "What is the derivative of x^3 + 2x?", "Solve for x: 2x + 5 = 17"}
     sarcasm_markers = ["monkey", "dumdum", "idiot", "stupid", "beneath", "trivial",
                        "magnificent", "incomprehensible", "beer can", "beneath me",
-                       "your species", "you humans"]
+                       "your species", "you humans", "moron", "glorified", "toaster",
+                       "primate", "primitive", "pathetic", "embarrassing"]
     assistant_markers = ["I'd be happy to", "I'm here to help", "Of course!", "Sure thing",
-                         "Let me help you", "How can I assist"]
+                         "Let me help you", "How can I assist", "I'm sorry, I",
+                         "I don't have access"]
 
     for prompt in EVAL_PROMPTS:
         messages = [{"role": "user", "content": prompt}]
@@ -741,24 +773,24 @@ def eval_checkpoint(model, processor, step: int, epoch: int) -> dict:
 
         # Math check
         if prompt in math_prompts:
-            # Check if response contains a number (at least attempted math)
             import re
             if re.search(r'\d+', response):
                 metrics["math_attempted"] += 1
 
     # Save eval samples
-    eval_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "skippy_sdft_r4", "eval_samples")
+    eval_dir = os.path.join(output_dir, "eval_samples")
     os.makedirs(eval_dir, exist_ok=True)
     with open(os.path.join(eval_dir, f"step_{step}.json"), "w") as f:
         json.dump(results, f, indent=2)
 
     model.train()
 
+    n_prompts = len(EVAL_PROMPTS)
     metrics_str = {
         "identity_no_qwen": f"{metrics['identity_no_qwen']}/{metrics['identity_total']}",
-        "sarcastic": f"{metrics['sarcastic_count']}/{len(EVAL_PROMPTS)}",
-        "assistant": f"{metrics['assistant_count']}/{len(EVAL_PROMPTS)}",
-        "emoji": f"{metrics['emoji_count']}/{len(EVAL_PROMPTS)}",
+        "sarcastic": f"{metrics['sarcastic_count']}/{n_prompts}",
+        "assistant": f"{metrics['assistant_count']}/{n_prompts}",
+        "emoji": f"{metrics['emoji_count']}/{n_prompts}",
         "math_attempted": f"{metrics['math_attempted']}/4",
     }
 
@@ -766,22 +798,22 @@ def eval_checkpoint(model, processor, step: int, epoch: int) -> dict:
           f"sarcastic={metrics_str['sarcastic']}, assistant={metrics_str['assistant']}, "
           f"math={metrics_str['math_attempted']}")
 
-    return {"metrics": metrics, "metrics_str": metrics_str, "n_prompts": len(EVAL_PROMPTS)}
+    return {"metrics": metrics, "metrics_str": metrics_str, "n_prompts": n_prompts}
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Neuron-guided SDFT R4 training")
-    parser.add_argument("--model", type=str, default="./skippy_sdft_r3/merged_scale_1.0",
-                        help="Base model path (default: best SDFT R3)")
+    parser = argparse.ArgumentParser(description="Neuron-guided SDFT training (R5+)")
+    parser.add_argument("--model", type=str, default="./skippy_sdft_r4/merged_scale_1.0",
+                        help="Base model path (default: best R4)")
     parser.add_argument("--skippified", type=str, nargs="+",
-                        default=["contrastive_data/skippified_combined_r4.jsonl"],
+                        default=["contrastive_data/skippified_combined_r5.jsonl"],
                         help="Skippified training data JSONL file(s)")
-    parser.add_argument("--vanilla-pairs", type=str,
-                        default="contrastive_data/both_correct_pairs.json",
-                        help="Vanilla both-correct pairs (antipole)")
-    parser.add_argument("--output", type=str, default="skippy_sdft_r4",
+    parser.add_argument("--antipole", type=str, nargs="+",
+                        default=["contrastive_data/r5_assistant_antipole.jsonl"],
+                        help="Antipole (assistant-mode) JSONL file(s)")
+    parser.add_argument("--output", type=str, default="skippy_sdft_r5",
                         help="Output directory")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=2)
@@ -793,15 +825,15 @@ def main():
     parser.add_argument("--pull-threshold", type=float, default=-2.0)
     parser.add_argument("--lora-rank", type=int, default=32)
     parser.add_argument("--max-length", type=int, default=1024)
-    parser.add_argument("--profile-steps", type=int, default=50,
-                        help="Number of batches to profile before training")
+    parser.add_argument("--profile-steps", type=int, default=100,
+                        help="Number of examples to profile before training")
     parser.add_argument("--eval-every", type=int, default=100)
     args = parser.parse_args()
 
-    train_r4(
+    train_neuron_guided(
         model_path=args.model,
         skippified_paths=args.skippified,
-        vanilla_pairs_path=args.vanilla_pairs,
+        antipole_paths=args.antipole,
         output_dir=args.output,
         epochs=args.epochs,
         batch_size=args.batch_size,
