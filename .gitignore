@@ -1,102 +1,25 @@
 # Books (copyrighted content)
 books/
 
-# Model weights (too large for git)
-skippy_vectors/ablated_model/
-skippy_vectors/lora_merged_0.5/
-skippy_vectors/v2_personality/
-skippy_vectors/v3_sysprompt_delta/
-skippy_vectors/v4_lora_delta/
+# ─── Archive (large model weights, old results) ───
+archive/models/
+archive/eval_results/
 
-# LoRA adapter checkpoints (too large for git)
-skippy_lora/
+# ─── Active model checkpoints (too large for git) ───
+skippy_sdft_r3/
+skippy_sdft_r4/
+skippy_sdft_r5/
 
-# Generated results & checkpoints
-ablation_sweep_results/
-ablation_sweep_v2_results/
-ablation_sweep_v3_results/
-ablation_sweep_v3_results_high/
-ablation_sweep_v4_results/
-aime_eval_results/
-lora_merge_sweep_results/
-lora_merge_sweep_results_sysprompt/
-
-# Extracted text from books
-extracted_text/
-
-# Review logs (generated)
-review_logs/
-
-# Misc/deprecated files
-misc/
-
-# Empty storage dir
-storage/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-dist/
-build/
-
-# Environment
-.env
-.env.*
-*.secret
-
-# OS artifacts
-*:Zone.Identifier
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Temp
-/tmp/
-*.tmp
-# Ignore model checkpoints and caches
-skippy_grpo_base/
-skippy_lora_banal_r16_mixed/
-skippy_lora_banal_r64/
-skippy_lora_delta_r8/
-skippy_grpo_output/
-skippy_grpo_v2_output/
-skippy_grpo_v3_output/
-banal_lora_eval_results/
-banal_lora_eval_results_low_alpha/
-personality_steer_results/
-unsloth_compiled_cache/
-arxiv_papers/
-paper_scaffold.md
-pick_up_from_here.md
-
-# SDFT & DPO model checkpoints (too large for git)
-skippy_sdft/checkpoints/
-skippy_sdft/merged*/
-skippy_sdft_r2/merged_scale_*/
-skippy_sdft_r2/checkpoints/*/optimizer.pt
-skippy_dpo/
-skippy_dpo_r2/
-skippy_grpo_v3_merged/
-skippy_grpo_v4_merged/
-skippy_grpo_v4_output/
-
-# Large tensor files (keep JSON reports, exclude .pt/.npy)
+# ─── Large tensor & activation files ───
 contrastive_data/activations/
 contrastive_data/personality_profile/*.pt
 contrastive_data/personality_probes/*.pt
 contrastive_data/flow_models/*.pt
 contrastive_data/svd_results/
-svd_projectors/
-personality_steer_results_base/
+contrastive_data/rome_identity/
+reasoning_activations/*.pt
 
-# Large JSONL data files (>20MB, reproducible)
+# ─── Large JSONL data files (>20MB, reproducible) ───
 contrastive_data/contrastive_pairs.jsonl
 contrastive_data/scored_pairs.jsonl
 contrastive_data/delta_ranked_pairs.jsonl
@@ -107,3 +30,40 @@ contrastive_data/filtered_pairs_contaminated.jsonl
 contrastive_data/filtered_pairs_v1_clean.jsonl
 contrastive_data/expanded_prompts.jsonl
 contrastive_data/pairs/
+
+# ─── Extracted text from books ───
+extracted_text/
+
+# ─── Review logs (generated) ───
+review_logs/
+
+# ─── Research papers ───
+arxiv_papers/
+
+# ─── Python ───
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# ─── Environment ───
+.env
+.env.*
+*.secret
+
+# ─── OS artifacts ───
+*:Zone.Identifier
+.DS_Store
+Thumbs.db
+
+# ─── IDE ───
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── Temp ───
+/tmp/
+*.tmp
