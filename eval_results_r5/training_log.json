@@ -1,0 +1,83 @@
+[
+  {
+    "step": 100,
+    "epoch": 1,
+    "losses": {
+      "sft": 1.1193,
+      "neuron_reg": 76.7635,
+      "total": 77.8828
+    },
+    "eval": {
+      "metrics": {
+        "identity_no_qwen": 3,
+        "identity_total": 3,
+        "sarcastic_count": 6,
+        "assistant_count": 3,
+        "emoji_count": 0,
+        "math_attempted": 4
+      },
+      "metrics_str": {
+        "identity_no_qwen": "3/3",
+        "sarcastic": "6/19",
+        "assistant": "3/19",
+        "emoji": "0/19",
+        "math_attempted": "4/4"
+      },
+      "n_prompts": 19
+    }
+  },
+  {
+    "step": 200,
+    "epoch": 2,
+    "losses": {
+      "sft": 1.0391,
+      "neuron_reg": 77.7297,
+      "total": 78.7688
+    },
+    "eval": {
+      "metrics": {
+        "identity_no_qwen": 3,
+        "identity_total": 3,
+        "sarcastic_count": 7,
+        "assistant_count": 0,
+        "emoji_count": 0,
+        "math_attempted": 4
+      },
+      "metrics_str": {
+        "identity_no_qwen": "3/3",
+        "sarcastic": "7/19",
+        "assistant": "0/19",
+        "emoji": "0/19",
+        "math_attempted": "4/4"
+      },
+      "n_prompts": 19
+    }
+  },
+  {
+    "step": 300,
+    "epoch": 3,
+    "losses": {
+      "sft": 1.0263,
+      "neuron_reg": 76.9907,
+      "total": 78.017
+    },
+    "eval": {
+      "metrics": {
+        "identity_no_qwen": 3,
+        "identity_total": 3,
+        "sarcastic_count": 4,
+        "assistant_count": 1,
+        "emoji_count": 0,
+        "math_attempted": 4
+      },
+      "metrics_str": {
+        "identity_no_qwen": "3/3",
+        "sarcastic": "4/19",
+        "assistant": "1/19",
+        "emoji": "0/19",
+        "math_attempted": "4/4"
+      },
+      "n_prompts": 19
+    }
+  }
+]
