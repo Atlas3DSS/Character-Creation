@@ -93,17 +93,18 @@ class NeuronTracker:
             else:
                 hidden = output
             # Store last-token activation (most relevant for generation)
-            self.current_activations[layer_idx] = hidden[:, -1, :].detach().cpu()
+            self.current_activations[layer_idx] = hidden[:, -1, :].detach()
         return hook_fn
 
     def update_stats(self):
         """Call after each forward pass to accumulate statistics."""
         for layer_idx, act in self.current_activations.items():
             stats = self.stats[self.mode][layer_idx]
-            # act shape: (batch, hidden_dim)
-            stats["sum"] += act.sum(dim=0)
-            stats["sum_sq"] += (act ** 2).sum(dim=0)
-            stats["count"] += act.shape[0]
+            # Move to CPU for stats accumulation (saves GPU memory)
+            act_cpu = act.cpu()
+            stats["sum"] += act_cpu.sum(dim=0)
+            stats["sum_sq"] += (act_cpu ** 2).sum(dim=0)
+            stats["count"] += act_cpu.shape[0]
         self.current_activations.clear()
 
     def get_neuron_scores(self) -> dict[int, torch.Tensor]:
@@ -138,8 +139,13 @@ class NeuronTracker:
         self,
         push_threshold: float = 2.0,
         pull_threshold: float = -2.0,
+        adaptive_top_k: int = 50,
     ) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
         """Get binary masks for neurons to push (personality) and pull (assistant).
+
+        Uses adaptive approach: if fixed thresholds yield zero neurons,
+        falls back to top-k per layer (top-k most personality-associated
+        and top-k most assistant-associated neurons).
 
         Returns (push_masks, pull_masks) where each is dict[layer_idx, bool_tensor].
         """
@@ -150,11 +156,46 @@ class NeuronTracker:
         total_push = 0
         total_pull = 0
 
+        # First try fixed thresholds
         for layer_idx, score in scores.items():
             push_masks[layer_idx] = score > push_threshold
             pull_masks[layer_idx] = score < pull_threshold
             total_push += push_masks[layer_idx].sum().item()
             total_pull += pull_masks[layer_idx].sum().item()
+
+        # If fixed thresholds yield too few neurons, use adaptive top-k
+        if total_push < 10 or total_pull < 10:
+            print(f"  Fixed thresholds too strict (push={total_push}, pull={total_pull})")
+            print(f"  Falling back to adaptive top-{adaptive_top_k} per layer")
+            total_push = 0
+            total_pull = 0
+
+            for layer_idx, score in scores.items():
+                # Top-k most positive = personality neurons
+                top_push_idx = torch.topk(score, k=adaptive_top_k, largest=True).indices
+                push_mask = torch.zeros_like(score, dtype=torch.bool)
+                push_mask[top_push_idx] = True
+                push_masks[layer_idx] = push_mask
+
+                # Top-k most negative = assistant neurons
+                top_pull_idx = torch.topk(score, k=adaptive_top_k, largest=False).indices
+                pull_mask = torch.zeros_like(score, dtype=torch.bool)
+                pull_mask[top_pull_idx] = True
+                pull_masks[layer_idx] = pull_mask
+
+                total_push += adaptive_top_k
+                total_pull += adaptive_top_k
+
+            # Log the actual score ranges being used
+            all_push_scores = []
+            all_pull_scores = []
+            for layer_idx, score in scores.items():
+                push_vals = score[push_masks[layer_idx]]
+                pull_vals = score[pull_masks[layer_idx]]
+                all_push_scores.extend(push_vals.tolist())
+                all_pull_scores.extend(pull_vals.tolist())
+            print(f"  Push score range: [{min(all_push_scores):.3f}, {max(all_push_scores):.3f}]")
+            print(f"  Pull score range: [{min(all_pull_scores):.3f}, {max(all_pull_scores):.3f}]")
 
         print(f"  Push neurons: {total_push}, Pull neurons: {total_pull}")
         return push_masks, pull_masks
@@ -253,11 +294,11 @@ class NeuronRegularizer(nn.Module):
 # ─── Dataset ──────────────────────────────────────────────────────────────
 
 class SkippyMathDataset(Dataset):
-    """Combined dataset with skippified math AND vanilla math (antipole)."""
+    """Combined dataset with skippified examples AND vanilla (antipole) examples."""
 
     def __init__(
         self,
-        skippified_path: str,
+        skippified_paths: list[str],
         vanilla_pairs_path: str,
         processor,
         max_length: int = 1024,
@@ -266,17 +307,22 @@ class SkippyMathDataset(Dataset):
         self.max_length = max_length
         self.examples = []
 
-        # Load skippified examples (Skippy solves math correctly)
-        if os.path.exists(skippified_path):
-            with open(skippified_path) as f:
-                for line in f:
-                    item = json.loads(line)
-                    self.examples.append({
-                        "messages": item["messages"],
-                        "mode": "skippy_math",
-                        "benchmark": item.get("benchmark", "unknown"),
-                    })
-            print(f"  Loaded {sum(1 for e in self.examples if e['mode'] == 'skippy_math')} skippified examples")
+        # Load skippified examples (Skippy solves math correctly + Skippy recipes)
+        for path in skippified_paths:
+            if os.path.exists(path):
+                count = 0
+                with open(path) as f:
+                    for line in f:
+                        item = json.loads(line)
+                        self.examples.append({
+                            "messages": item["messages"],
+                            "mode": "skippy_math",
+                            "benchmark": item.get("benchmark", item.get("meal", "unknown")),
+                        })
+                        count += 1
+                print(f"  Loaded {count} skippified examples from {os.path.basename(path)}")
+
+        print(f"  Total skippified: {sum(1 for e in self.examples if e['mode'] == 'skippy_math')}")
 
         # Load vanilla examples (unprompted correct answers = assistant voice)
         if os.path.exists(vanilla_pairs_path):
@@ -311,9 +357,17 @@ class SkippyMathDataset(Dataset):
             padding="max_length",
             return_tensors="pt",
         )
+        input_ids = encoded["input_ids"].squeeze(0)
+        attention_mask = encoded["attention_mask"].squeeze(0)
+
+        # Mask padding tokens in labels (-100 = ignored by cross-entropy)
+        labels = input_ids.clone()
+        labels[attention_mask == 0] = -100
+
         return {
-            "input_ids": encoded["input_ids"].squeeze(0),
-            "attention_mask": encoded["attention_mask"].squeeze(0),
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels,
             "mode": ex["mode"],
             "benchmark": ex["benchmark"],
         }
@@ -323,7 +377,7 @@ class SkippyMathDataset(Dataset):
 
 def train_r4(
     model_path: str,
-    skippified_path: str,
+    skippified_paths: list[str],
     vanilla_pairs_path: str,
     output_dir: str,
     monitor_layers: list[int] | None = None,
@@ -381,7 +435,7 @@ def train_r4(
     # ── Load data ──
     print("\nLoading training data...")
     dataset = SkippyMathDataset(
-        skippified_path=skippified_path,
+        skippified_paths=skippified_paths,
         vanilla_pairs_path=vanilla_pairs_path,
         processor=processor,
         max_length=max_length,
@@ -401,20 +455,26 @@ def train_r4(
     model.eval()
     profile_count = {"skippy_math": 0, "assistant_math": 0}
 
+    # Profile one example at a time to avoid mixed-mode batches
     with torch.no_grad():
-        for batch in dataloader:
-            mode = batch["mode"][0]  # All items in batch should be same mode ideally
+        for example in dataset.examples:
+            mode = example["mode"]
+            if profile_count[mode] >= warmup_profile_steps:
+                if all(v >= warmup_profile_steps for v in profile_count.values()):
+                    break
+                continue
+
             tracker.mode = mode
 
-            input_ids = batch["input_ids"].to(model.device)
-            attention_mask = batch["attention_mask"].to(model.device)
+            text = processor.apply_chat_template(
+                example["messages"], tokenize=False, add_generation_prompt=False)
+            encoded = processor.tokenizer(
+                text, max_length=max_length, truncation=True,
+                return_tensors="pt").to(model.device)
 
-            model(input_ids=input_ids, attention_mask=attention_mask)
+            model(input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"])
             tracker.update_stats()
-
             profile_count[mode] += 1
-            if all(v >= warmup_profile_steps for v in profile_count.values()):
-                break
 
     print(f"  Profiled: {profile_count}")
 
@@ -489,6 +549,7 @@ def train_r4(
         for batch_idx, batch in enumerate(pbar):
             input_ids = batch["input_ids"].to(model.device)
             attention_mask = batch["attention_mask"].to(model.device)
+            labels = batch["labels"].to(model.device)
             mode = batch["mode"][0]
 
             # Set tracker mode
@@ -498,7 +559,7 @@ def train_r4(
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                labels=input_ids,
+                labels=labels,
             )
             sft_loss = outputs.loss
 
@@ -712,11 +773,11 @@ def eval_checkpoint(model, processor, step: int, epoch: int) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="Neuron-guided SDFT R4 training")
-    parser.add_argument("--model", type=str, default="./skippy_vectors/lora_merged_0.5",
-                        help="Base model path")
-    parser.add_argument("--skippified", type=str,
-                        default="contrastive_data/skippified_evals.jsonl",
-                        help="Skippified eval training data")
+    parser.add_argument("--model", type=str, default="./skippy_sdft_r3/merged_scale_1.0",
+                        help="Base model path (default: best SDFT R3)")
+    parser.add_argument("--skippified", type=str, nargs="+",
+                        default=["contrastive_data/skippified_combined_r4.jsonl"],
+                        help="Skippified training data JSONL file(s)")
     parser.add_argument("--vanilla-pairs", type=str,
                         default="contrastive_data/both_correct_pairs.json",
                         help="Vanilla both-correct pairs (antipole)")
@@ -739,7 +800,7 @@ def main():
 
     train_r4(
         model_path=args.model,
-        skippified_path=args.skippified,
+        skippified_paths=args.skippified,
         vanilla_pairs_path=args.vanilla_pairs,
         output_dir=args.output,
         epochs=args.epochs,
