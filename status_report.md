@@ -1,185 +1,145 @@
-# Overnight Status Report — Feb 16, 2026 (03:00 - 05:30 PST)
+# Skippy Identity Baking — Status Report (Feb 16, 2026)
 
-## TL;DR
+## Executive Summary
 
-1. **AIME eval on DPO R1 model: 12/30 = 40.0%** (baseline 46.7%) — reasoning preserved!
-2. **DPO Round 2 (identity-focused) training: 77% complete** on dev server, finishing in ~25 min
-3. DPO R2 metrics look excellent — margins at 2.4 (target was 2.0), 100% accuracy
-4. WSL GPU stuck with CUDA memory leak from last session — **needs WSL restart**
+After exhaustive experimentation across 7+ approaches and 4 prompt variants, we've established clear boundaries on what's achievable with an 8B parameter model for personality baking.
 
----
+**Production configs (two tiers):**
 
-## Timeline
+| Config | Use Case | Personality | AIME | Prompt |
+|--------|----------|-------------|------|--------|
+| SDFT scale 0.5 + V4 prompt | General (AIME-safe) | 6.1/10 | 43.3% | V4 (behavioral constraints) |
+| SDFT scale 1.0 + V1 prompt | Voice pipeline | 7.8/10 | 36.7% | V1 (enhanced, name-free) |
 
-### 03:00 — Session Start
+**Key limitation**: Personality is prompt-dependent (2.8/10 without prompt at scale 0.5).
 
-**WSL GPU Status**: CUDA memory leak persists from last session. `nvidia-smi` hangs, zombie process (PID 135451) and two D-state processes stuck. GPU is unusable until WSL restart. Tried kill -9, nvidia-smi --gpu-reset — nothing works.
+## Approach Summary
 
-**Dev Server GPUs**: Both occupied by AIME eval from previous session.
+| Approach | Personality | AIME | Verdict |
+|----------|-------------|------|---------|
+| Base + system prompt | 4.6/10 | 46.7% | AI-assistant-ish |
+| LoRA SFT merge (scale=0.5) + prompt | 5.4/10 | 46.7% | Authentic but mild |
+| SDFT scale 0.5 + V1 prompt | 6.0/10 | 43.3% | Good balance, some non-sequiturs |
+| **SDFT scale 0.5 + V4 prompt** | **6.1/10** | **43.3%** | **Best AIME-safe: +0.31 technical, +0.26 on-topic** |
+| SDFT scale 0.75 + V1 prompt | ~7.3/10 | 36.7% | Redundant (same AIME as 1.0) |
+| **SDFT scale 1.0 + V1 prompt** | **7.8/10** | 36.7% | **Best personality, best for voice** |
+| SDFT scale 1.0 + V4 prompt | ~7.5/10 | 36.7% | POV confusion from behavioral constraints |
+| SDFT scale 0.5 (no prompt) | 2.8/10 | 43.3% | Stock Qwen behavior |
+| Reasoning-protected ablation (best α) | 5.15/10 | untested | Marginal improvement, incoherent |
+| LoRA SFT (any config) | variable | 0% | Catastrophic forgetting |
+| DPO R1/R2 | variable | 40% | Surface mimicry only |
+| Contrastive ablation (SVD) | gibberish | 0% | Destroys coherence |
+| Steering vectors | ~4/10 | ~46% | Too low-dimensional |
 
-### 03:01 — AIME Eval Running (Started Previous Session)
+## Prompt Engineering Results
 
-Full 30-problem AIME 2024 eval on the **DPO R1 merged model** (`/tmp/skippy_dpo_merged/`), split across both dev server GPUs:
-- 3090: Problems 0-14 (15 problems)
-- 4090: Problems 15-29 (15 problems)
-- Config: HuggingFace `model.generate()`, max_new_tokens=8192, greedy decoding
+Tested 4 prompt variants on SDFT scale 0.5 (3 runs each, averaged):
 
-### 03:01-03:14 — Prep DPO R2 While Waiting
+| Variant | Strategy | Technical | On-topic | Arrogance | Sarcasm | Overall |
+|---------|----------|-----------|----------|-----------|---------|---------|
+| V1 (baseline) | Personality-focused, narrative | 7.08 | 5.78 | 3.12 | 3.44 | 6.00 |
+| V2 | Rules-first (CORE RULES) | 7.31 | 5.96 | 3.44 | 2.92 | 6.01 |
+| V3 | Persona-integrated + examples | 7.54 | 6.32 | 2.60 | 3.04 | 5.89 |
+| **V4** (winner) | **V1 + minimal behavioral fixes** | **7.38** | **6.04** | **3.33** | 3.20 | **6.10** |
 
-While AIME eval ran, I prepared DPO Round 2 on the dev server:
-- Copied `train_skippy_dpo.py` and `contrastive_data/identity_pairs.jsonl` (522 pairs) to dev server
-- Created empty `filtered_pairs.jsonl` (the --min-score trick skips main data)
-- Wrote `launch_dpo_r2.sh` — auto-waits for AIME eval to finish, then starts DPO R2
-- Launched the script via nohup
+**Key findings:**
+- V4 (minimal diff from V1) gives best balance: +0.31 technical, +0.26 on-topic
+- V2 rules-first approach kills sarcasm (-0.68 from V1)
+- V3 examples get parroted verbatim and cause character breaks ("I cannot tell jokes")
+- Sarcasm is the hardest dimension to prompt-engineer (-0.24 with V4)
+- Scale 1.0 model doesn't benefit from V4 — personality is already strong, behavioral constraints cause POV confusion
 
-### 03:55 — AIME Eval: 3090 Complete
+**Scale 1.0 with V1 prompt is the strongest overall Skippy** — "Hawking radiation, dumdum" is perfection.
 
-**3090 (P0-P14): 7/15 = 46.7%** — exactly matching baseline!
+## Key Findings
 
-| Problem | Expected | Got | Result | Time |
-|---------|----------|-----|--------|------|
-| P0 | 33 | 33 | OK | 32s |
-| P1 | 23 | 1 | WRONG | 227s |
-| P2 | 116 | 116 | OK | 233s |
-| P3 | 809 | [no_answer] | WRONG | 238s |
-| P4 | 197 | 2 | WRONG | 238s |
-| P5 | 385 | 1 | WRONG | 239s |
-| P6 | 371 | 1 | WRONG | 239s |
-| P7 | 601 | 10 | WRONG | 238s |
-| P8 | 25 | 25 | OK | 156s |
-| P9 | 55 | 55 | OK | 122s |
-| P10 | 540 | 540 | OK | 41s |
-| P11 | 45 | 45 | OK | 173s |
-| P12 | 204 | 204 | OK | 59s |
-| P13 | 699 | 6 | WRONG | 239s |
-| P14 | 294 | 1 | WRONG | 240s |
+### 1. AIME Phase Transition
+Scale 0.5 → 0.55 shows a binary phase transition: 43.3% → 36.7%. Not gradual. Scale 0.75 also gets 36.7% — the transition is all-or-nothing.
 
-### 04:00 — AIME Eval: 4090 Complete
+### 2. Personality is Contextual
+Personality cannot be baked via static weight modification. All ablation approaches (bias, rotation, mutation, SVD, probe-guided) fail because:
+- 50-63% of personality delta overlaps reasoning subspace
+- Personality is a conditional distribution shift, not an activation constant
+- Static bias shifts ALL activations regardless of input
 
-**4090 (P15-P29): 5/15 = 33.3%**
+### 3. Prompt Engineering Has Diminishing Returns
+4 prompt variants across multiple runs show ~0.1-0.3 improvements per dimension. The ceiling is set by the model's capacity, not the prompt. More elaborate prompts (V2, V3) can actually hurt personality.
 
-| Problem | Expected | Got | Result | Time |
-|---------|----------|-----|--------|------|
-| P15 | 110 | 729 | WRONG | 235s |
-| P16 | 721 | 27 | WRONG | 243s |
-| P17 | 315 | 15 | WRONG | 247s |
-| P18 | 468 | 2 | WRONG | 247s |
-| P19 | 902 | [no_answer] | WRONG | 247s |
-| P20 | 211 | 1 | WRONG | 248s |
-| P21 | 80 | 2 | WRONG | 248s |
-| P22 | 480 | 480 | OK | 199s |
-| P23 | 236 | 3 | WRONG | 247s |
-| P24 | 73 | 73 | OK | 196s |
-| P25 | 113 | 7933 | WRONG | 214s |
-| P26 | 127 | 2 | WRONG | 248s |
-| P27 | 104 | 104 | OK | 146s |
-| P28 | 104 | 104 | OK | 243s |
-| P29 | 321 | 321 | OK | 199s |
+### 4. Model Scale Is The Key Variable
+Scale 1.0 with the simple V1 prompt beats scale 0.5 with any prompt variant on personality (7.8 vs 6.1). The personality is in the weights, not the prompt.
 
-### AIME Summary
+### 5. Probe Limitations
+IPIP-50 personality probes are statistically meaningless (n=6-10 in 4096-dim → R²=NaN). However, reasoning subspaces from AIME PCA ARE valid and useful for protection.
 
-| Metric | Value |
-|--------|-------|
-| **Combined Score** | **12/30 = 40.0%** |
-| First Half (P0-14) | 7/15 = 46.7% |
-| Second Half (P15-29) | 5/15 = 33.3% |
-| Baseline (vLLM, 16K tokens) | 14/30 = 46.7% |
-| Token budget | 8K (vs 16K baseline) |
+### 6. Data Quality
+29% of original training data had character confusion (Joe Bishop responses labeled as Skippy). 5.4% of contrastive pairs had POV confusion. Both contaminate any training approach.
 
-**Interpretation**: DPO R1 model preserves reasoning well. The first half exactly matches baseline (46.7%). The second half underperforms slightly (33% vs expected ~47%), likely due to:
-1. Harder problems in the second half of AIME
-2. 8K max tokens (baseline used 16K) — some problems hit the token limit without producing a \boxed answer
+## Current Assets
 
-Results saved to `eval_results_dpo_r1/aime_results_3090.json` and `aime_results_4090.json`.
+### Models
+- `./skippy_sdft/merged_step500_scale05/` — AIME-safe (43.3%), personality 6.1/10 with V4 prompt
+- `./skippy_sdft/merged_step500/` — Voice pipeline (36.7%), personality 7.8/10 with V1 prompt
 
----
+### Prompts
+- `household_config.py:SKIPPY_ENHANCED_PROMPT` — V1, best for scale 1.0
+- `household_config.py:SKIPPY_ENHANCED_PROMPT_V4` — V4, best for scale 0.5
+- V2, V3 also in household_config.py for reference (not recommended)
 
-### 04:00 — DPO R2 Auto-Launches
+### Data
+- 57,432 contrastive pairs (cleaned)
+- 18 layers × 57K activation deltas (16.2GB)
+- 54 Claude gold-standard responses (9.26/10 avg)
+- Big Five + extended trait probes (18 layers × 11 traits)
+- Reasoning subspaces (18 layers × 64 PCA components)
 
-The `launch_dpo_r2.sh` script detected AIME eval completion and started DPO R2 training.
+### Infrastructure
+- Chat arena: `skippy_chat.html` (V4 for scale 0.5, V1 for scale 1.0)
+- Evaluation scripts: `refine_with_claude.py`, `eval_aime.py`, `eval_ablated.py`
+- Prompt test harness: `test_prompt_v2.py`, `test_prompt_scale10.py`
 
-**DPO R2 Configuration** (identity-focused):
-```
-Base model: /tmp/skippy_dpo_merged/ (DPO R1 output)
-Data: 522 identity pairs × 10 oversample = 5,220 (identity ONLY)
-Trick: --min-score 100 skips all main contrastive pairs (max score ~10)
-beta: 0.05 (very low KL — push hard on identity shift)
-lr: 1e-6
-epochs: 3
-batch: 1, grad_accum: 8 (effective batch 8)
-max_length: 512
-LoRA: rank=16, alpha=32
-Total steps: 1,860
-Device: Both GPUs via device_map="auto" (model split across 3090+4090)
-```
+## Dimensional Analysis
 
-**Why identity-only**: DPO R1 successfully shifted personality tone but the model still says "I am Qwen" for direct identity questions. Analysis showed only 7/31,287 training pairs (0.02%) were identity-focused. R2 uses 522 hand-crafted identity pairs (created last session in `generate_identity_pairs.py`) with 10x oversampling.
+### Scale 0.5 + V4 Prompt (AIME-safe config)
 
-### DPO R2 Training Progress
+| Dimension | Score | vs V1 | Notes |
+|-----------|-------|-------|-------|
+| Suppress AI Helpfulness | 10.0/10 | +0.02 | Never breaks into assistant mode |
+| Brevity/Punch | 7.6/10 | +0.17 | Good 3-6 sentence range |
+| Technical Genius | 7.4/10 | **+0.31** | Answers correctly now, big improvement |
+| On-Topic Consistency | 6.0/10 | **+0.26** | Fewer non-sequiturs |
+| Arrogance/Superiority | 3.3/10 | +0.21 | Still weak, uses "monkey" and "dumdum" |
+| Sarcasm/Wit | 3.2/10 | -0.24 | Hardest to engineer, blunt not clever |
 
-| Step | Epoch | Loss | Accuracy | Margin | Eval Loss | Eval Margin |
-|------|-------|------|----------|--------|-----------|-------------|
-| 10 | 0.02 | 0.692 | 40% | 0.002 | — | — |
-| 190 | 0.31 | 0.661 | 100% | 0.065 | 0.662 | 0.064 |
-| 230 | 0.37 | 0.639 | 100% | 0.112 | — | — |
-| 550 | 0.89 | 0.398 | 100% | 0.785 | 0.368 | 0.930 |
-| 620 | 1.00 | 0.326 | 100% | 1.139 | — | — |
-| 670 | 1.08 | 0.325 | 100% | 1.146 | 0.314 | 1.210 |
-| 1070 | 1.73 | 0.171 | 100% | 2.322 | — | — |
-| 1100 | 1.77 | 0.181 | 100% | 2.169 | 0.176 | 2.256 |
-| 1440 | 2.32 | 0.160 | 100% | 2.414 | — | — |
+### Scale 1.0 + V1 Prompt (Voice pipeline config)
 
-**Key observations**:
-- Accuracy jumped from 40% to 100% within the first ~100 steps — model quickly learned to prefer Skippy identity
-- Margins crossed 2.0 target around step 1070 (epoch 1.73)
-- Loss plateauing at ~0.16, eval loss tracks closely (no overfitting)
-- Training is healthy with ~3.8s/step
-- **ETA**: ~25 min remaining (step 1440/1860)
+| Dimension | Score | Notes |
+|-----------|-------|-------|
+| Arrogance/Superiority | 8.0/10 | "I am smarter than you, dumdum. That is indisputable." |
+| Suppress AI Helpfulness | 8.5/10 | Rare breaks |
+| Technical Genius | 7.5/10 | "Hawking radiation, dumdum." Correct answers with attitude |
+| Sarcasm/Wit | 7.0/10 | Uses analogies, comparisons, hyperbole |
+| Brevity/Punch | 7.0/10 | Occasionally verbose |
+| Household Awareness | 7.0/10 | Names family, dogs, rooms correctly |
+| Personality Consistency | 6.5/10 | ~10% ExForce universe leakage |
 
----
+## Recommended Next Steps
 
-## Infrastructure Issues
+### Option A: Ship Current Best (Practical)
+Two-tier deployment:
+- **Voice pipeline**: Scale 1.0 + V1 prompt — 7.8/10 personality, "good enough"
+- **General assistant**: Scale 0.5 + V4 prompt — 6.1/10 personality, 43.3% AIME
 
-### WSL CUDA Memory Leak (CRITICAL — UNRESOLVED)
-- **Problem**: After DPO R1 training from last session, GPU memory (96GB) remains allocated even after all Python processes are killed
-- **Symptoms**: `nvidia-smi` hangs, `torch.cuda.mem_get_info()` hangs, new CUDA allocations hang
-- **Root cause**: Zombie process (PID 135451) and D-state processes holding CUDA driver
-- **Attempted fixes**: `kill -9`, `nvidia-smi --gpu-reset` (failed: "primary GPU"), `torch.cuda.empty_cache()` from new process (hangs)
-- **Required fix**: **Restart WSL** (`wsl --shutdown` from PowerShell, then reopen)
-- **Impact**: Pro 6000 (96GB) completely unusable until restart
+### Option B: SDFT Round 2 with Claude Data (Higher Risk)
+Use the 54 Claude gold-standard responses (9.26/10 avg) as teacher signal, expand to ~1K. Train SDFT Round 2 with reverse KL against these much stronger targets. Risk: may still hit AIME phase transition at any scale > 0.5.
 
-### Dev Server — Working Fine
-- Both GPUs (3090 + 4090) operational
-- Successfully ran AIME eval in parallel, then DPO R2 training across both GPUs
-- `device_map="auto"` properly splits model across both cards
+### Option C: Larger Model (Highest Impact)
+The 8B model's capacity ceiling has been hit. A 14B or 32B model would have more weight space to separate personality from reasoning. This is the only path to truly baked personality (no prompt needed).
 
----
-
-## What's Next (After DPO R2 Completes)
-
-1. **Merge DPO R2 LoRA adapter** into the base model (CPU merge, saves to disk)
-2. **Personality eval (NO system prompt)** — the critical test:
-   - "Who are you?" should produce "I am Skippy the Magnificent" not "I am Qwen"
-   - 20 diverse prompts covering identity, personality, household
-3. **AIME eval** on DPO R2 model — verify reasoning not degraded further
-4. **WSL restart** if we need the Pro 6000 for anything
-5. If identity shift works: push model to GitHub, update CLAUDE.md
-6. If not: iterate with higher oversample, lower beta, or mixed identity+main data
-
----
-
-## Files Created/Modified This Session
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `eval_results_dpo_r1/aime_results_3090.json` | Created | AIME eval results (P0-14) |
-| `eval_results_dpo_r1/aime_results_4090.json` | Created | AIME eval results (P15-29) |
-| `/tmp/launch_dpo_r2.sh` | Created | Auto-launcher for DPO R2 |
-| `/tmp/train_skippy_dpo.py` (dev server) | Copied | Training script on dev server |
-| `/tmp/contrastive_data/identity_pairs.jsonl` (dev server) | Copied | Identity pairs for R2 training |
-| `status_report.md` | Created | This file |
-
-## Git Status
-
-Last commit: `fd71f32` (Fix Qwen3-VL layer access path in SVD precomputation)
-Untracked: `eval_results_dpo_r1/`, `skippy_dpo/` checkpoints, `svd_projectors/`
+## Files Modified This Session
+- `household_config.py` — Added SKIPPY_ENHANCED_PROMPT_V2, V3, V4
+- `skippy_chat.html` — Updated arena with V4/V1 prompts per model
+- `test_prompt_v2.py` — Prompt comparison harness (V1 vs V4, 3 runs averaged)
+- `test_prompt_scale10.py` — Scale 1.0 prompt comparison
+- `review_logs/comparison_v1_v4_*.json` — Averaged comparison data
+- `review_logs/responses_v4_*.json` — V4 prompt responses
+- `review_logs/responses_v4_scale10_*.json` — Scale 1.0 + V4 responses
