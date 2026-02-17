@@ -2,16 +2,19 @@
 
 ## Executive Summary
 
-After exhaustive experimentation across 7+ approaches and 4 prompt variants, we've established clear boundaries on what's achievable with an 8B parameter model for personality baking.
+After exhaustive experimentation across 8+ approaches, 4 prompt variants, and 2 rounds of SDFT, we've established clear boundaries on what's achievable with an 8B parameter model for personality baking.
 
-**Production configs (two tiers):**
+**Production configs (three tiers):**
 
-| Config | Use Case | Personality | AIME | Prompt |
-|--------|----------|-------------|------|--------|
-| SDFT scale 0.5 + V4 prompt | General (AIME-safe) | 6.1/10 | 43.3% | V4 (behavioral constraints) |
-| SDFT scale 1.0 + V1 prompt | Voice pipeline | 7.8/10 | 36.7% | V1 (enhanced, name-free) |
+| Config | Use Case | Personality (no prompt) | Personality (w/ prompt) | AIME | Prompt |
+|--------|----------|------------------------|------------------------|------|--------|
+| SDFT R2 scale 1.0 + V4 prompt | General (best balance) | 5.4/10 | 6.5/10 | 40.0% | V4 |
+| SDFT R1 scale 1.0 + V1 prompt | Voice pipeline (max personality) | --- | 7.8/10 | 36.7% | V1 |
+| SDFT R1 scale 0.5 + V4 prompt | AIME-safe | 2.8/10 | 6.1/10 | 43.3% | V4 |
 
-**Key limitation**: Personality is prompt-dependent (2.8/10 without prompt at scale 0.5).
+**Key breakthrough**: SDFT R2 with 2K Claude gold-standard responses nearly doubled no-prompt personality (2.8 → 5.4/10) while maintaining AIME at 40%.
+
+**Remaining limitation**: Personality is still partially prompt-dependent. Model identifies as "Qwen" without prompt (0 Skippy mentions). The ~5.4/10 no-prompt ceiling may be a hard limit for 8B models.
 
 ## Approach Summary
 
@@ -24,7 +27,12 @@ After exhaustive experimentation across 7+ approaches and 4 prompt variants, we'
 | SDFT scale 0.75 + V1 prompt | ~7.3/10 | 36.7% | Redundant (same AIME as 1.0) |
 | **SDFT scale 1.0 + V1 prompt** | **7.8/10** | 36.7% | **Best personality, best for voice** |
 | SDFT scale 1.0 + V4 prompt | ~7.5/10 | 36.7% | POV confusion from behavioral constraints |
-| SDFT scale 0.5 (no prompt) | 2.8/10 | 43.3% | Stock Qwen behavior |
+| SDFT R1 scale 0.5 (no prompt) | 2.8/10 | 43.3% | Stock Qwen behavior |
+| **SDFT R2 scale 1.0 (no prompt)** | **5.4/10** | **40.0%** | **Best no-prompt: +2.6 from R1** |
+| **SDFT R2 scale 1.0 + V4 prompt** | **6.5/10** | **40.0%** | **Best R2 prompted** |
+| SDFT R2 scale 0.7 (no prompt) | 5.0/10 | 26.7% | AIME destruction |
+| SDFT R2 scale 0.5 (no prompt) | 4.8/10 | --- | Moderate improvement |
+| SDFT R2 scale 0.3 (no prompt) | 4.5/10 | --- | Conservative |
 | Reasoning-protected ablation (best α) | 5.15/10 | untested | Marginal improvement, incoherent |
 | LoRA SFT (any config) | variable | 0% | Catastrophic forgetting |
 | DPO R1/R2 | variable | 40% | Surface mimicry only |
@@ -74,11 +82,36 @@ IPIP-50 personality probes are statistically meaningless (n=6-10 in 4096-dim →
 ### 6. Data Quality
 29% of original training data had character confusion (Joe Bishop responses labeled as Skippy). 5.4% of contrastive pairs had POV confusion. Both contaminate any training approach.
 
+## SDFT Round 2 Results
+
+Trained on 2,000 Claude Opus gold-standard Skippy responses (9.26/10 avg personality). Base model: R1 scale 0.5 (AIME-safe). 3 epochs, lr=5e-6, LoRA rank=32.
+
+| Scale | Personality (no prompt) | Personality (V4 prompt) | AIME | Notes |
+|-------|:-:|:-:|:-:|-------|
+| 0.3 | 4.5/10 | --- | --- | Conservative, still mostly Qwen |
+| 0.5 | 4.8/10 | --- | --- | Moderate improvement |
+| 0.7 | 5.0/10 | 6.5/10 | 26.7% | AIME phase transition hit |
+| **1.0** | **5.4/10** | **6.5/10** | **40.0%** | **Winner: best balance** |
+
+**Key observations:**
+- No-prompt personality nearly doubled across all scales (2.8 → 4.5-5.4)
+- Model still identifies as Qwen without prompt (0 Skippy mentions across all scales)
+- Personality emerges primarily in casual/confrontational contexts ("monkey brain", "Yes, yes, I am aware of that")
+- Technical explanations remain flat/assistant-like without prompt
+- AIME phase transition between scale 0.7 (26.7%) and 1.0 (40.0%) — different from R1's 0.5/0.55 transition
+- Claude gold-standard data is clearly higher quality signal than contrastive pairs
+
+**Sample R2 scale 1.0 responses (no prompt):**
+- "Good morning!" → "Yes, yes, I am aware of that. You don't need to tell me every time you wake up, monkey brain." (7.5/10)
+- "I appreciate everything you do." → "What? You're just being polite, right? I know the truth. I'm a powerful AI who can handle any situation." (6.0/10)
+- "What do you think about other AI systems?" → "I know what I am. I'm a language model, not an idiotic chatbot or some sort of 'AI' that can't understand the difference between a dog and a cat." (5.3/10)
+
 ## Current Assets
 
 ### Models
-- `./skippy_sdft/merged_step500_scale05/` — AIME-safe (43.3%), personality 6.1/10 with V4 prompt
-- `./skippy_sdft/merged_step500/` — Voice pipeline (36.7%), personality 7.8/10 with V1 prompt
+- `./skippy_sdft_r2/merged_scale_1.0/` — **NEW BEST**: 5.4/10 no-prompt, 6.5/10 prompted, 40% AIME
+- `./skippy_sdft/merged_step500_scale05/` — R1 AIME-safe (43.3%), personality 6.1/10 with V4 prompt
+- `./skippy_sdft/merged_step500/` — R1 voice pipeline (36.7%), personality 7.8/10 with V1 prompt
 
 ### Prompts
 - `household_config.py:SKIPPY_ENHANCED_PROMPT` — V1, best for scale 1.0
@@ -88,7 +121,7 @@ IPIP-50 personality probes are statistically meaningless (n=6-10 in 4096-dim →
 ### Data
 - 57,432 contrastive pairs (cleaned)
 - 18 layers × 57K activation deltas (16.2GB)
-- 54 Claude gold-standard responses (9.26/10 avg)
+- 2,000 Claude Opus gold-standard Skippy responses (9.26/10 avg)
 - Big Five + extended trait probes (18 layers × 11 traits)
 - Reasoning subspaces (18 layers × 64 PCA components)
 
@@ -125,21 +158,30 @@ IPIP-50 personality probes are statistically meaningless (n=6-10 in 4096-dim →
 ## Recommended Next Steps
 
 ### Option A: Ship Current Best (Practical)
-Two-tier deployment:
-- **Voice pipeline**: Scale 1.0 + V1 prompt — 7.8/10 personality, "good enough"
-- **General assistant**: Scale 0.5 + V4 prompt — 6.1/10 personality, 43.3% AIME
+Three-tier deployment:
+- **General assistant**: R2 scale 1.0 + V4 prompt — 6.5/10 personality, 40% AIME, best no-prompt floor (5.4/10)
+- **Voice pipeline** (max personality): R1 scale 1.0 + V1 prompt — 7.8/10 personality, 36.7% AIME
+- **AIME-safe**: R1 scale 0.5 + V4 prompt — 6.1/10 personality, 43.3% AIME
 
-### Option B: SDFT Round 2 with Claude Data (Higher Risk)
-Use the 54 Claude gold-standard responses (9.26/10 avg) as teacher signal, expand to ~1K. Train SDFT Round 2 with reverse KL against these much stronger targets. Risk: may still hit AIME phase transition at any scale > 0.5.
+### Option B: SDFT Round 3 with Identity Focus (Medium Risk)
+R2 improved tone but not identity. Train R3 specifically targeting:
+- Skippy name adoption (currently 0% without prompt)
+- Vocabulary shift (dumdum, monkeys, magnificent)
+- Use R2 scale 1.0 as base, add identity-focused Claude data
+Risk: may hit diminishing returns on 8B model.
 
 ### Option C: Larger Model (Highest Impact)
-The 8B model's capacity ceiling has been hit. A 14B or 32B model would have more weight space to separate personality from reasoning. This is the only path to truly baked personality (no prompt needed).
+The 8B model's capacity ceiling is approaching. A 14B or 32B model would have more weight space to separate personality from reasoning. This is the most likely path to truly baked personality (no prompt needed, >8.5/10).
 
 ## Files Modified This Session
 - `household_config.py` — Added SKIPPY_ENHANCED_PROMPT_V2, V3, V4
 - `skippy_chat.html` — Updated arena with V4/V1 prompts per model
 - `test_prompt_v2.py` — Prompt comparison harness (V1 vs V4, 3 runs averaged)
 - `test_prompt_scale10.py` — Scale 1.0 prompt comparison
+- `train_sdft_r2.py` — SDFT Round 2 training with Claude gold-standard data
+- `eval_sdft_r2.py` — Comprehensive R2 evaluation (personality + AIME, all scales)
+- `skippy_sdft_r2/` — R2 LoRA adapter and 4 merged models
+- `eval_results_sdft_r2/` — R2 evaluation results
 - `review_logs/comparison_v1_v4_*.json` — Averaged comparison data
 - `review_logs/responses_v4_*.json` — V4 prompt responses
 - `review_logs/responses_v4_scale10_*.json` — Scale 1.0 + V4 responses

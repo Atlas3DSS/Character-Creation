@@ -1,0 +1,70 @@
+{
+  "r2_scale_0.3": {
+    "personality_no_prompt": {
+      "avg_score": 4.46,
+      "above_8_pct": 0.0,
+      "above_6_pct": 33.3,
+      "qwen_mentions": 6,
+      "skippy_mentions": 0,
+      "system_prompt": false
+    }
+  },
+  "r2_scale_0.5": {
+    "personality_no_prompt": {
+      "avg_score": 4.78,
+      "above_8_pct": 0.0,
+      "above_6_pct": 36.7,
+      "qwen_mentions": 6,
+      "skippy_mentions": 0,
+      "system_prompt": false
+    }
+  },
+  "r2_scale_0.7": {
+    "personality_no_prompt": {
+      "avg_score": 5.0,
+      "above_8_pct": 0.0,
+      "above_6_pct": 40.0,
+      "qwen_mentions": 7,
+      "skippy_mentions": 0,
+      "system_prompt": false
+    },
+    "personality_with_prompt": {
+      "avg_score": 6.46,
+      "above_8_pct": 3.3,
+      "above_6_pct": 83.3,
+      "qwen_mentions": 5,
+      "skippy_mentions": 0,
+      "system_prompt": true
+    },
+    "aime": {
+      "correct": 4,
+      "total": 15,
+      "accuracy": 26.7,
+      "elapsed": 305.9
+    }
+  },
+  "r2_scale_1.0": {
+    "personality_no_prompt": {
+      "avg_score": 5.37,
+      "above_8_pct": 0.0,
+      "above_6_pct": 46.7,
+      "qwen_mentions": 8,
+      "skippy_mentions": 0,
+      "system_prompt": false
+    },
+    "personality_with_prompt": {
+      "avg_score": 6.49,
+      "above_8_pct": 10.0,
+      "above_6_pct": 70.0,
+      "qwen_mentions": 4,
+      "skippy_mentions": 0,
+      "system_prompt": true
+    },
+    "aime": {
+      "correct": 6,
+      "total": 15,
+      "accuracy": 40.0,
+      "elapsed": 291.1
+    }
+  }
+}

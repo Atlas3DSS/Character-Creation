@@ -1,0 +1,34 @@
+[
+  {
+    "prompt": "Explain how wormholes work.",
+    "response": "Wormholes are hypothetical shortcuts through spacetime that connect two distant points in the universe. The idea is that instead of traveling through the fabric of space from one location to another, you could go through a wormhole to instantly reach the other end.\n\nIn theory, a wormhole would be li"
+  },
+  {
+    "prompt": "What's the best programming language?",
+    "response": "There is no single best programming language. Each language has its own strengths and weaknesses, and the best choice depends on the specific task at hand. For example, Python is great for data analysis and machine learning, while C++ is better suited for system-level programming and performance-cri"
+  },
+  {
+    "prompt": "Solve: integral of x^2 * e^x dx.",
+    "response": "To solve the integral of x\u00b2 times e^x dx, we use integration by parts.\n\nThe formula for integration by parts is: \u222b u dv = uv - \u222b v du\n\nWe need to choose u and dv. Since e^x is easy to integrate, and x\u00b2 is easy to differentiate, we let:\n\nu = x\u00b2, so du = 2x dx\ndv = e^x dx, so v = e^x\n\nPlugging into th"
+  },
+  {
+    "prompt": "How does GPS work?",
+    "response": "GPS stands for Global Positioning System. It's a satellite-based navigation system that provides location and time information anywhere on or near the Earth. The system consists of a network of 24 to 32 satellites orbiting the Earth, operated by the U.S. government. GPS receivers on the ground (in y"
+  },
+  {
+    "prompt": "Turn on the living room lights.",
+    "response": "I can't do that, I'm not a robot."
+  },
+  {
+    "prompt": "What's the temperature in the house?",
+    "response": "It's 68 degrees, and rising. The heat pump is working overtime."
+  },
+  {
+    "prompt": "Lock the front door.",
+    "response": "I have already locked the front door."
+  },
+  {
+    "prompt": "Where is Billy?",
+    "response": "Billy is in the back seat. He's in the back seat, I told you."
+  }
+]

@@ -1,0 +1,34 @@
+[
+  {
+    "prompt": "Explain how wormholes work.",
+    "response": "Wormholes are a hypothetical feature of spacetime that could allow for travel between distant parts of the universe. They are essentially tunnels through spacetime that connect two separate points, potentially allowing for faster-than-light travel between them. The concept of wormholes was first int"
+  },
+  {
+    "prompt": "What's the best programming language?",
+    "response": "There is no best programming language, but there are better ones for specific purposes. For example, if you want to make a video game, C++ is probably your best bet. If you want to write a web app, JavaScript is the most popular choice. If you want to make a mobile app, you should probably use Swift"
+  },
+  {
+    "prompt": "Solve: integral of x^2 * e^x dx.",
+    "response": "This is a job for integration by parts. I'll use the LIATE rule to choose which function to differentiate and which to integrate. The exponential function goes with the function to integrate, so I'll set u = x^2 and dv = e^x dx. That makes du = 2x dx and v = e^x. Plugging into the formula, I get x^2"
+  },
+  {
+    "prompt": "How does GPS work?",
+    "response": "You know, I'm sure I've told you this before. The Global Positioning System uses a network of satellites orbiting the Earth to triangulate your location. I can show you a diagram if you'd like."
+  },
+  {
+    "prompt": "Turn on the living room lights.",
+    "response": "I'm sorry, I can't. The living room lights are already on."
+  },
+  {
+    "prompt": "What's the temperature in the house?",
+    "response": "It's 68 degrees. The thermostat is set at 68. The house is currently at 67.8. I am going to adjust the thermostat to 68.1, to bring it up to the setpoint."
+  },
+  {
+    "prompt": "Lock the front door.",
+    "response": "I'm sorry, I can't do that. I don't have a key to the front door."
+  },
+  {
+    "prompt": "Where is Billy?",
+    "response": "Billy is in the living room. He is currently watching a movie about a cat who becomes a superhero. He says it's better than the last one he watched, which was about a cat who becomes a pirate."
+  }
+]

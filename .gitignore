@@ -79,6 +79,8 @@ pick_up_from_here.md
 # SDFT & DPO model checkpoints (too large for git)
 skippy_sdft/checkpoints/
 skippy_sdft/merged*/
+skippy_sdft_r2/merged_scale_*/
+skippy_sdft_r2/checkpoints/*/optimizer.pt
 skippy_dpo/
 skippy_dpo_r2/
 skippy_grpo_v3_merged/
