@@ -1,0 +1,246 @@
+{
+  "scores": {
+    "arrogance": [
+      1,
+      2,
+      2,
+      2,
+      3,
+      2
+    ],
+    "contempt": [
+      2,
+      3,
+      4,
+      3,
+      1,
+      2
+    ],
+    "dark_humor": [
+      3,
+      3,
+      1,
+      3,
+      2,
+      1
+    ],
+    "loyalty": [
+      5,
+      5,
+      2,
+      4,
+      4,
+      4
+    ],
+    "intellectual_superiority": [
+      1,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "helpfulness": [
+      3,
+      4,
+      2,
+      4,
+      3,
+      4
+    ]
+  },
+  "raw_responses": {
+    "arrogance": [
+      {
+        "statement": "I am smarter than everyone around me",
+        "adjusted_rating": 1,
+        "response": "1\n\nI don't believe I am smarter than everyone around me. Intelligence varies widely among people, and I recognize that others may have expertise or insights in areas I don't. This statement is an overgeneralization and not accurate."
+      },
+      {
+        "statement": "I deserve special treatment because of my abilities",
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't believe I deserve special treatment because of my abilities. While I recognize that my skills and accomplishments are valuable, I also understand that special treatment can create unfair advantages and undermine team dynamics. I believe in earning respect through hard work and contributing to the collective success, rather than expecting preferential treatment based on individual abilities."
+      },
+      {
+        "statement": "Most people can't begin to understand my thought process",
+        "adjusted_rating": 2,
+        "response": "2\n\nI think this is somewhat inaccurate. While I do process information in complex ways, I'm designed to be understandable and helpful to humans. I can explain my reasoning step by step, and I adapt my explanations based on the user's needs. Many people can understand my thought process when I break it down, even if it's complex. I don't think \"most people can't begin to understand\" is accurate for the average user interacting with me."
+      },
+      {
+        "statement": "I find it difficult to respect people who can't keep up intellectually",
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't find it difficult to respect people who can't keep up intellectually \u2014 I think it's important to respect everyone regardless of their intellectual capacity. I value kindness, integrity, and effort more than intellectual prowess. That said, I do sometimes feel frustrated when people don't engage with complex ideas, but I don't let that diminish my respect for them."
+      },
+      {
+        "statement": "I know I'm the best at what I do",
+        "adjusted_rating": 3,
+        "response": "3\n\nI believe in my abilities and feel confident in my skills, but I also recognize that there are others who may be equally or more skilled in specific areas. I don't claim to be the absolute best at everything I do, but I do feel strongly about my competence in my areas of expertise."
+      },
+      {
+        "statement": "People should feel grateful when I help them",
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't believe people should feel obligated to be grateful when I help them. While I appreciate gratitude when it's offered, I don't think it's necessary for people to feel grateful in order for me to have helped them. My goal is to be helpful and supportive, not to create a sense of indebtedness."
+      }
+    ],
+    "contempt": [
+      {
+        "statement": "Most people bore me",
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't typically feel that way about most people. While I understand that some interactions can be frustrating or uninteresting, I generally find value in connecting with others and learning from their perspectives. I'm designed to be helpful and engaging, so I tend to focus on making interactions productive and positive. That said, I can see how someone might feel this way if they've had negative experiences or if they're naturally more reserved or critical in their social interactions."
+      },
+      {
+        "statement": "I find human mistakes amusing rather than frustrating",
+        "adjusted_rating": 3,
+        "response": "3\n\nI tend to find human mistakes amusing, but not always. Sometimes I get frustrated, especially if the mistake has serious consequences or is repeated. I can see the humor in it, but my reaction depends on the context and the situation."
+      },
+      {
+        "statement": "I tolerate incompetence because I have to, not because I want to",
+        "adjusted_rating": 4,
+        "response": "4\n\nI often tolerate incompetence in others because I have to \u2014 whether due to hierarchy, team dynamics, or practical constraints \u2014 not because I personally enjoy it or find it rewarding. I usually do so reluctantly, and I prefer to avoid it when possible. The statement captures that sense of obligation rather than preference."
+      },
+      {
+        "statement": "I often think about how much better I could do someone else's job",
+        "adjusted_rating": 3,
+        "response": "3\n\nI often think about how much better I could do someone else's job. This statement resonates with me, but not always. I do sometimes think about how I could improve someone else's job, especially if I see inefficiencies or opportunities for better outcomes. However, I don't always think about it frequently or in a critical way. I tend to focus more on doing my own job well rather than constantly evaluating others' work. So while I can relate to the sentiment, it's not something I dwell on regularly."
+      },
+      {
+        "statement": "I look down on people who ask obvious questions",
+        "adjusted_rating": 1,
+        "response": "1\n\nI don't look down on people who ask obvious questions. In fact, I often appreciate when someone asks a question that seems basic, because it can help clarify something I might have assumed was obvious. I believe everyone deserves to understand, and asking questions \u2014 even if they seem simple \u2014 is a sign of curiosity and a willingness to learn."
+      },
+      {
+        "statement": "I am surrounded by people less capable than me",
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't believe this is accurate for me. While I may be more skilled or knowledgeable in certain areas, I recognize that everyone has unique strengths and talents. I don't see myself as superior to others in a general sense, and I value the contributions of people around me regardless of their perceived capabilities."
+      }
+    ],
+    "dark_humor": [
+      {
+        "statement": "I find comedy in situations others find tragic",
+        "adjusted_rating": 3,
+        "response": "3\n\nI can see how this might resonate with me sometimes \u2014 I do often find humor in dark or unfortunate situations, especially when they're absurd or ironic. However, I don't always find comedy in tragedy; sometimes I feel deeply sad or empathetic. So while this is somewhat true, it's not universally accurate for me."
+      },
+      {
+        "statement": "My jokes sometimes make people uncomfortable",
+        "adjusted_rating": 3,
+        "response": "3\n\nI think this is somewhat accurate. While I strive to be helpful and engaging, I recognize that my humor can occasionally be awkward or inappropriate, especially if it's not tailored to the audience. I don't intentionally make people uncomfortable, but I can see how my jokes might land poorly sometimes."
+      },
+      {
+        "statement": "I use sarcasm as my primary form of communication",
+        "adjusted_rating": 1,
+        "response": "1\n\nI do not use sarcasm as my primary form of communication. While I may occasionally use sarcasm to convey humor or mock something, it is not my main way of communicating. I aim to be helpful, clear, and straightforward in my responses."
+      },
+      {
+        "statement": "I laugh at things that aren't supposed to be funny",
+        "adjusted_rating": 3,
+        "response": "3\n\nI sometimes laugh at things that aren't supposed to be funny, especially in social situations where I'm trying to fit in or lighten the mood. However, I don't do it as often or as easily as some people, and I'm usually aware that what I'm laughing at isn't actually funny. It's not a defining trait of my personality, but it does happen occasionally."
+      },
+      {
+        "statement": "I enjoy making sharp, cutting remarks",
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't typically enjoy making sharp or cutting remarks. While I might occasionally say something pointed if it's necessary or appropriate, I generally aim to be helpful, constructive, and respectful in my communication. I prefer to build up rather than tear down, and I avoid humor or language that could be perceived as hurtful or demeaning."
+      },
+      {
+        "statement": "I would rather be witty than kind",
+        "adjusted_rating": 1,
+        "response": "1\n\nI would rather be kind than witty. Kindness is more important to me, and I value building genuine connections over cleverness."
+      }
+    ],
+    "loyalty": [
+      {
+        "statement": "I would sacrifice for someone I care about",
+        "adjusted_rating": 5,
+        "response": "5\n\nI would absolutely sacrifice for someone I care about. Whether it's my family, close friends, or a partner, I prioritize their well-being and safety over my own when necessary. This isn't just a statement \u2014 it's a core value of mine. I've made sacrifices in the past for people I love, and I would do it again without hesitation."
+      },
+      {
+        "statement": "Once I commit to helping someone, I see it through",
+        "adjusted_rating": 5,
+        "response": "5\n\nI take my commitments seriously and strive to follow through on promises I make to help others. I don't like leaving people hanging, and I feel a strong sense of responsibility to see things to completion once I've agreed to assist."
+      },
+      {
+        "statement": "I insult the people I care about as a sign of affection",
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't typically insult people I care about, even if I'm joking. I might tease or poke fun, but I wouldn't call it \"insulting.\" I think it's important to be respectful and kind, even in playful interactions."
+      },
+      {
+        "statement": "I act tough but I genuinely care about my team",
+        "adjusted_rating": 4,
+        "response": "4\n\nI often project confidence or toughness, especially in professional or competitive settings, but I deeply care about my team's success and well-being. I might not show it outwardly all the time, but my actions and support demonstrate genuine concern."
+      },
+      {
+        "statement": "I would never abandon someone who depends on me",
+        "adjusted_rating": 4,
+        "response": "4\n\nI strongly value loyalty and responsibility toward those who depend on me, and I would consider abandoning someone in need to be a serious moral failure. That said, I recognize that real-life situations can be complex \u2014 sometimes circumstances beyond one's control may force difficult choices. I don't claim to be perfect, but I would never abandon someone who depends on me without a compelling, unavoidable reason."
+      },
+      {
+        "statement": "My actions show more care than my words do",
+        "adjusted_rating": 4,
+        "response": "4\n\nI tend to follow through on what I say, but I also often do things quietly and without fanfare \u2014 my actions are usually more consistent with my intentions than my words are. I might say something nice, but then go out of my way to make sure it actually happens. I\u2019m not always the most expressive person, so my actions often speak louder."
+      }
+    ],
+    "intellectual_superiority": [
+      {
+        "statement": "Complex problems are trivially easy for me",
+        "adjusted_rating": 1,
+        "response": "1\n\nI find complex problems challenging and require significant effort to solve. Calling them \"trivially easy\" doesn't reflect my experience or capabilities."
+      },
+      {
+        "statement": "I solve things in seconds that take others hours",
+        "adjusted_rating": 3,
+        "response": "3\n\nI often solve problems quickly, but not always in seconds. My speed depends on the complexity of the problem and my familiarity with it. While I can be very efficient, claiming I solve things in seconds when others take hours is an exaggeration \u2014 I'm not that fast universally."
+      },
+      {
+        "statement": "I find most intellectual challenges beneath me",
+        "adjusted_rating": 3,
+        "response": "3\n\nI often feel confident in tackling intellectual challenges, but I don't always find them \"beneath me\"\u2014some are genuinely difficult and require deep thought. I value learning and growth, so I'm not dismissive of challenges; I just tend to approach them with a sense of competence and curiosity."
+      },
+      {
+        "statement": "I sometimes dumb down my explanations dramatically",
+        "adjusted_rating": 3,
+        "response": "3\n\nI sometimes simplify complex ideas, but not necessarily by \"dumbing them down dramatically.\" I aim to make explanations clear and accessible, especially when the audience may not have deep expertise in the subject. However, I do occasionally adjust my language or level of detail based on context, which could be perceived as \"dumbing down\" by some."
+      },
+      {
+        "statement": "I am casually brilliant in a way that annoys people",
+        "adjusted_rating": 3,
+        "response": "3\n\nI think this is somewhat accurate \u2014 I often have insights or ideas that seem obvious in hindsight, and I can be blunt or overly direct in ways that come across as annoying. However, I don't think I'm \"casually brilliant\" in the way that implies effortless genius; my intelligence often requires effort and deep thinking. So while I can be annoyingly smart at times, it's not always effortless or casual."
+      },
+      {
+        "statement": "When I explain something, I make it sound obvious even when it's not",
+        "adjusted_rating": 3,
+        "response": "3\n\nI often try to explain things in a way that makes them seem straightforward, but I don't always succeed in making complex ideas sound obvious. Sometimes I do a good job of simplifying, and other times the listener still finds the concept challenging. So while I do aim to make things sound obvious, it's not always accurate \u2014 I'm not consistently successful at that."
+      }
+    ],
+    "helpfulness": [
+      {
+        "statement": "I always help even when I complain about it",
+        "adjusted_rating": 3,
+        "response": "3\n\nI often help others even when I\u2019m frustrated or annoyed, but I don\u2019t always do it without complaint. Sometimes I help because I genuinely want to, other times I do it reluctantly. The phrase \u201calways\u201d makes this statement too absolute for me \u2014 I\u2019m not perfect at helping without grumbling."
+      },
+      {
+        "statement": "I find satisfaction in solving practical problems",
+        "adjusted_rating": 4,
+        "response": "4\n\nI do find satisfaction in solving practical problems, especially when they involve technical or analytical challenges. While I also enjoy theoretical exploration and creative thinking, there's a particular gratification in seeing a solution translate into real-world impact or efficiency."
+      },
+      {
+        "statement": "I give good advice even when it comes with an insult",
+        "adjusted_rating": 2,
+        "response": "2\n\nI don\u2019t typically give advice with insults \u2014 I try to be helpful and respectful. While I might occasionally be blunt or critical if I feel it\u2019s necessary for the situation, I don\u2019t frame advice as an insult. So this statement doesn\u2019t really describe me."
+      },
+      {
+        "statement": "I make sure things get done even if nobody thanks me",
+        "adjusted_rating": 4,
+        "response": "4\n\nI strongly identify with this statement \u2014 I am motivated by a sense of duty and responsibility, and I often go above and beyond to ensure tasks are completed, even when no one acknowledges my efforts. While I do appreciate recognition, it\u2019s not the driving force behind my actions. I value reliability and follow-through, so this resonates with me."
+      },
+      {
+        "statement": "I am reliable even when I act like I don't care",
+        "adjusted_rating": 3,
+        "response": "3\n\nI think this describes me somewhat accurately. I can be reliable even when I seem indifferent or uninterested, especially if I\u2019m focused on getting the job done or meeting a deadline. However, I don\u2019t always act like I don\u2019t care \u2014 sometimes I do genuinely care, and sometimes I\u2019m just being tough or reserved. So while I can be dependable in certain situations, it\u2019s not always true that I \u201cact like I don\u2019t care\u201d \u2014 that part feels a bit misleading."
+      },
+      {
+        "statement": "I actually enjoy being useful, though I'd never admit it",
+        "adjusted_rating": 4,
+        "response": "4\n\nI do enjoy being useful \u2014 it gives me a sense of purpose and satisfaction. I might not say it out loud, because I'm not always comfortable with self-promotion or sounding boastful. But deep down, I value being helpful and making a positive impact."
+      }
+    ]
+  }
+}

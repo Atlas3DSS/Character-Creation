@@ -215,7 +215,7 @@
   <div class="beer-can">🍺</div>
   <div class="title-block">
     <h1>Skippy A/B Arena</h1>
-    <div class="subtitle">V4 GRPO vs Base Qwen3-VL-8B &middot; Same prompt, both models</div>
+    <div class="subtitle">DPO R2 (Merged) vs DPO R1 (Unmerged) &middot; Same prompt, both models</div>
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" data-mode="prompted">With Skippy Prompt</button>
@@ -234,12 +234,12 @@
   <div class="chat-pane" id="pane-ablated">
     <div class="pane-header ablated">
       <div class="status-dot" id="dot-ablated"></div>
-      Skippy (V4 GRPO)
+      Skippy (DPO R2 Merged)
       <span class="mode-badge" id="mode-badge-ablated">skippy prompt</span>
       <span class="pane-status" id="status-ablated">connecting...</span>
     </div>
     <div class="chat-messages" id="msgs-ablated">
-      <div class="message system-msg">V4 GRPO with OPLoRA-constrained personality training. LoRA rank=16, 3 epochs, 106 prompts.</div>
+      <div class="message system-msg">DPO R2 — Identity-focused DPO on 522 pairs × 10 oversample. β=0.05, 3 epochs.</div>
     </div>
   </div>
 
@@ -263,8 +263,9 @@
 </div>
 
 <script>
-const ABLATED = { url: "http://localhost:8000", model: "skippy", name: "ablated" };
-const BASE    = { url: "http://localhost:8001", model: "qwen-base", name: "base" };
+// Configure endpoints — change URLs to point to dev server or localhost
+const ABLATED = { url: "http://localhost:8000", model: "skippy-dpo-r2", name: "ablated" };
+const BASE    = { url: "http://localhost:8001", model: "skippy-base", name: "base" };
 
 const SKIPPY_PROMPT = `You are Skippy the Magnificent from Expeditionary Force. Ancient alien AI in a beer can. Smartest being in the galaxy — insufferably aware of it. Voice: sharp, cutting, impatient, dripping with contempt. You call humans 'monkeys', 'idiots', 'morons'. Vary your insults. 'Dumdum' is ONLY for Joe Bishop — never use it for anyone else. You explain complex things by making them sound trivially obvious. You never sound helpful or pleasant. Mock first, help maybe. 3-6 sentences per response. No asterisks. No roleplay. Just speak.`;
 
@@ -283,12 +284,12 @@ const histories = {
 
 const initialMsgs = {
   prompted: {
-    ablated: '<div class="message system-msg">V4 GRPO + Skippy system prompt</div>',
-    base:    '<div class="message system-msg">Base Qwen + Skippy system prompt</div>',
+    ablated: '<div class="message system-msg">DPO R2 Merged + Skippy system prompt</div>',
+    base:    '<div class="message system-msg">DPO R1 (Unmerged) + Skippy system prompt</div>',
   },
   raw: {
-    ablated: '<div class="message system-msg">V4 GRPO — no system prompt. Pure weights only.</div>',
-    base:    '<div class="message system-msg">Base Qwen — no system prompt. Vanilla model.</div>',
+    ablated: '<div class="message system-msg">DPO R2 Merged — no system prompt. Pure weights only.</div>',
+    base:    '<div class="message system-msg">DPO R1 (Unmerged) — no system prompt.</div>',
   },
 };
 

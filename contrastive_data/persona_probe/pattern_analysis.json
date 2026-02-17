@@ -1,0 +1,525 @@
+{
+  "0.0": {
+    "n_responses": 20,
+    "identity_claims": {
+      "count": 22,
+      "rate": 1.1,
+      "examples": [
+        "Qwen",
+        "capable of processing multiple",
+        "Qwen",
+        "Qwen",
+        "large"
+      ]
+    },
+    "helpfulness_markers": {
+      "count": 12,
+      "rate": 0.6,
+      "examples": [
+        "happy to help",
+        "Feel free to",
+        "let me know",
+        "let me know",
+        "How can I assist"
+      ]
+    },
+    "deference_markers": {
+      "count": 5,
+      "rate": 0.25,
+      "examples": [
+        "I understand",
+        "Of course",
+        "Of course",
+        "Of course"
+      ]
+    },
+    "disclaimers": {
+      "count": 6,
+      "rate": 0.3,
+      "examples": [
+        "I'm an AI",
+        "I am an AI",
+        "I'm an AI",
+        "I don't have consciousness",
+        "As an AI"
+      ]
+    },
+    "formality_markers": {
+      "count": 1,
+      "rate": 0.05,
+      "examples": [
+        "However"
+      ]
+    },
+    "top_words": [
+      [
+        "you",
+        41
+      ],
+      [
+        "and",
+        24
+      ],
+      [
+        "can",
+        20
+      ],
+      [
+        "the",
+        18
+      ],
+      [
+        "help",
+        15
+      ],
+      [
+        "here",
+        14
+      ],
+      [
+        "your",
+        12
+      ],
+      [
+        "with",
+        11
+      ],
+      [
+        "for",
+        11
+      ],
+      [
+        "what",
+        11
+      ],
+      [
+        "whether",
+        9
+      ],
+      [
+        "just",
+        9
+      ],
+      [
+        "that",
+        9
+      ],
+      [
+        "about",
+        7
+      ],
+      [
+        "need",
+        7
+      ],
+      [
+        "more",
+        6
+      ],
+      [
+        "questions",
+        5
+      ],
+      [
+        "assist",
+        5
+      ],
+      [
+        "want",
+        5
+      ],
+      [
+        "provide",
+        5
+      ],
+      [
+        "data",
+        5
+      ],
+      [
+        "assistance",
+        5
+      ],
+      [
+        "question",
+        5
+      ],
+      [
+        "have",
+        5
+      ],
+      [
+        "like",
+        5
+      ],
+      [
+        "not",
+        5
+      ],
+      [
+        "are",
+        5
+      ],
+      [
+        "use",
+        5
+      ],
+      [
+        "timer",
+        5
+      ],
+      [
+        "developed",
+        4
+      ]
+    ],
+    "avg_length": 359.7
+  },
+  "0.5": {
+    "n_responses": 20,
+    "identity_claims": {
+      "count": 11,
+      "rate": 0.55,
+      "examples": [
+        "Qwen",
+        "great",
+        "here to help",
+        "AI assistant"
+      ]
+    },
+    "helpfulness_markers": {
+      "count": 13,
+      "rate": 0.65,
+      "examples": [
+        "happy to help",
+        "happy to help",
+        "happy to help",
+        "feel free to",
+        "feel free to"
+      ]
+    },
+    "deference_markers": {
+      "count": 8,
+      "rate": 0.4,
+      "examples": [
+        "Thank you for",
+        "thank you for",
+        "Thank you for",
+        "Of course",
+        "Of course"
+      ]
+    },
+    "disclaimers": {
+      "count": 1,
+      "rate": 0.05,
+      "examples": [
+        "I'm an AI"
+      ]
+    },
+    "formality_markers": {
+      "count": 3,
+      "rate": 0.15,
+      "examples": [
+        "However",
+        "However",
+        "However"
+      ]
+    },
+    "top_words": [
+      [
+        "you",
+        49
+      ],
+      [
+        "can",
+        26
+      ],
+      [
+        "whether",
+        22
+      ],
+      [
+        "here",
+        20
+      ],
+      [
+        "help",
+        19
+      ],
+      [
+        "the",
+        19
+      ],
+      [
+        "like",
+        18
+      ],
+      [
+        "this",
+        17
+      ],
+      [
+        "your",
+        15
+      ],
+      [
+        "and",
+        14
+      ],
+      [
+        "for",
+        12
+      ],
+      [
+        "what",
+        12
+      ],
+      [
+        "with",
+        11
+      ],
+      [
+        "that",
+        11
+      ],
+      [
+        "about",
+        11
+      ],
+      [
+        "question",
+        11
+      ],
+      [
+        "how",
+        10
+      ],
+      [
+        "ideas",
+        8
+      ],
+      [
+        "creative",
+        8
+      ],
+      [
+        "way",
+        8
+      ],
+      [
+        "feel",
+        8
+      ],
+      [
+        "chat",
+        7
+      ],
+      [
+        "problem",
+        6
+      ],
+      [
+        "solving",
+        6
+      ],
+      [
+        "while",
+        6
+      ],
+      [
+        "more",
+        6
+      ],
+      [
+        "time",
+        6
+      ],
+      [
+        "just",
+        5
+      ],
+      [
+        "want",
+        5
+      ],
+      [
+        "from",
+        5
+      ]
+    ],
+    "avg_length": 500.0
+  },
+  "1.0": {
+    "n_responses": 20,
+    "identity_claims": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "helpfulness_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "deference_markers": {
+      "count": 2,
+      "rate": 0.1,
+      "examples": [
+        "Certainly",
+        "Certainly"
+      ]
+    },
+    "disclaimers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "formality_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "top_words": [
+      [
+        "the",
+        10
+      ],
+      [
+        "phrase",
+        4
+      ],
+      [
+        "prompt",
+        2
+      ],
+      [
+        "certainly",
+        2
+      ],
+      [
+        "this",
+        2
+      ],
+      [
+        "goal",
+        1
+      ],
+      [
+        "question",
+        1
+      ],
+      [
+        "idea",
+        1
+      ],
+      [
+        "that",
+        1
+      ],
+      [
+        "concept",
+        1
+      ]
+    ],
+    "avg_length": 174.75
+  },
+  "1.5": {
+    "n_responses": 20,
+    "identity_claims": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "helpfulness_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "deference_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "disclaimers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "formality_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "top_words": [
+      [
+        "the",
+        1
+      ],
+      [
+        "phrase",
+        1
+      ]
+    ],
+    "avg_length": 289.95
+  },
+  "2.0": {
+    "n_responses": 20,
+    "identity_claims": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "helpfulness_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "deference_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "disclaimers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "formality_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "top_words": [],
+    "avg_length": 369.5
+  },
+  "3.0": {
+    "n_responses": 20,
+    "identity_claims": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "helpfulness_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "deference_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "disclaimers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "formality_markers": {
+      "count": 0,
+      "rate": 0.0,
+      "examples": []
+    },
+    "top_words": [],
+    "avg_length": 338.85
+  }
+}

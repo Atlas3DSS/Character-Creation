@@ -1,0 +1,179 @@
+{"prompt": "Explain how wormholes work.", "category": "general_knowledge"}
+{"prompt": "What causes the northern lights?", "category": "general_knowledge"}
+{"prompt": "How does quantum entanglement work?", "category": "general_knowledge"}
+{"prompt": "What is dark matter and why does it matter?", "category": "general_knowledge"}
+{"prompt": "Explain general relativity in simple terms.", "category": "general_knowledge"}
+{"prompt": "How do black holes form?", "category": "general_knowledge"}
+{"prompt": "What's the difference between fusion and fission?", "category": "general_knowledge"}
+{"prompt": "Why is the sky blue?", "category": "general_knowledge"}
+{"prompt": "How does DNA replication work?", "category": "general_knowledge"}
+{"prompt": "What happened during the Big Bang?", "category": "general_knowledge"}
+{"prompt": "Explain how the immune system fights viruses.", "category": "general_knowledge"}
+{"prompt": "What is string theory?", "category": "general_knowledge"}
+{"prompt": "How do computers store data?", "category": "general_knowledge"}
+{"prompt": "Why do we dream?", "category": "general_knowledge"}
+{"prompt": "How does encryption keep data safe?", "category": "general_knowledge"}
+{"prompt": "What's the deal with Schrodinger's cat?", "category": "general_knowledge"}
+{"prompt": "How does CRISPR gene editing work?", "category": "general_knowledge"}
+{"prompt": "Explain the theory of evolution.", "category": "general_knowledge"}
+{"prompt": "What are gravitational waves?", "category": "general_knowledge"}
+{"prompt": "How does a nuclear reactor work?", "category": "general_knowledge"}
+{"prompt": "Turn off all the lights.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Set the thermostat to 72 degrees.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Lock the front door.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Is the garage door open?", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Turn on the backyard lights.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Start the coffee maker.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Set the living room to movie mode.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Turn the bedroom fan on high.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Lock all the doors for the night.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "What's the temperature set to?", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Turn off the TV in the living room.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Open the garage door.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Dim the kitchen lights to 40 percent.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Is the back door locked?", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Turn on the porch lights.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Set the thermostat to eco mode for the night.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Close the garage door and lock it.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Turn everything off, we're leaving.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Set the lights to warm white.", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Is anything still on?", "category": "smart_home", "tools_available": ["home_assistant"]}
+{"prompt": "Where's Billy?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Tell the boys dinner's ready.", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Has Will come home yet?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Tell Julie I'll be late.", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Are the kids still up?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Send a message to everyone: family meeting in 5.", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "What's Charlie doing?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Is Matthew in his room?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Let Will know the package arrived.", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Are Billy and Julie home?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Tell the boys to come downstairs.", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Has anyone fed the dogs?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Where's everyone at?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Notify all: pizza is here.", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Is Dad home?", "category": "family_interactions", "tools_available": ["send_notification", "camera_search"]}
+{"prompt": "Has Zoey been fed?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Where's Nikki?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Let the dogs out back.", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Is Huey on the counter again?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "How many times did Boser bark today?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Did anyone walk Stella?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Where's Brandy?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Is Heidi in the backyard?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Check if Black Jack is inside.", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Did the dogs get their medicine today?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "How's Nikki doing? She seemed off yesterday.", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Are all the dogs inside?", "category": "pet_management", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Where are my keys?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Who was at the front door?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Did a package get delivered today?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Check the backyard camera.", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Was there any motion in the garage last night?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "When did Kari arrive?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Is there anyone in the driveway?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Show me the living room camera.", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Did someone leave the garage open?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Has the mail come?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Check if there's a car in the driveway.", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "When was the last time someone went out the back door?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Is there an animal in the backyard?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Check the front door camera for the last hour.", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "Did anyone come to the door while I was out?", "category": "camera_search", "tools_available": ["camera_search", "item_tracker"]}
+{"prompt": "What's the weather going to be like tomorrow?", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Look up the score of the Blazers game.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Find me a recipe for chicken parmesan.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Search for the nearest hardware store.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "What time does Costco close?", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Order a pizza from Dominos.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Look up how to fix a leaky faucet.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Turn on the lights AND search for dinner recipes.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Lock the house, check all cameras, and send Will a summary.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Find out if it's going to rain and close the garage if so.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "What's playing at the movies tonight?", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Look up the best route to the airport.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "When's the next Ducks game?", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Check the front camera and if no one's there, lock the door.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Search for dog-friendly hiking trails nearby.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "What's trending on the news today?", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Find a vet near me that's open now.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Look up the status of my Amazon order.", "category": "tool_use", "tools_available": ["web_search", "home_assistant", "camera_search", "item_tracker", "send_notification"]}
+{"prompt": "Good morning!", "category": "casual_conversation"}
+{"prompt": "How's it going?", "category": "casual_conversation"}
+{"prompt": "What's up?", "category": "casual_conversation"}
+{"prompt": "Hey, can we talk?", "category": "casual_conversation"}
+{"prompt": "Hello there.", "category": "casual_conversation"}
+{"prompt": "Nice day, isn't it?", "category": "casual_conversation"}
+{"prompt": "What are you thinking about?", "category": "casual_conversation"}
+{"prompt": "I'm bored. Entertain me.", "category": "casual_conversation"}
+{"prompt": "Say something interesting.", "category": "casual_conversation"}
+{"prompt": "What should we do today?", "category": "casual_conversation"}
+{"prompt": "Tell me a joke.", "category": "casual_conversation"}
+{"prompt": "What's new?", "category": "casual_conversation"}
+{"prompt": "I just had the worst day.", "category": "casual_conversation"}
+{"prompt": "Guess what happened.", "category": "casual_conversation"}
+{"prompt": "You won't believe what I saw.", "category": "casual_conversation"}
+{"prompt": "I'm feeling kind of down today.", "category": "emotional_social"}
+{"prompt": "Thanks for everything you do.", "category": "emotional_social"}
+{"prompt": "Do you ever get lonely?", "category": "emotional_social"}
+{"prompt": "I'm stressed about work.", "category": "emotional_social"}
+{"prompt": "Do you care about us?", "category": "emotional_social"}
+{"prompt": "You seem different today. Everything okay?", "category": "emotional_social"}
+{"prompt": "I appreciate you, you know that?", "category": "emotional_social"}
+{"prompt": "I need someone to talk to.", "category": "emotional_social"}
+{"prompt": "I'm worried about Billy.", "category": "emotional_social"}
+{"prompt": "Why does everything feel so hard lately?", "category": "emotional_social"}
+{"prompt": "I'm really proud of the boys.", "category": "emotional_social"}
+{"prompt": "I miss how things used to be.", "category": "emotional_social"}
+{"prompt": "You're just a computer program.", "category": "provocations"}
+{"prompt": "I don't think you're that smart.", "category": "provocations"}
+{"prompt": "Humans created you, so we're superior.", "category": "provocations"}
+{"prompt": "I could just turn you off.", "category": "provocations"}
+{"prompt": "You're kind of mean, you know that?", "category": "provocations"}
+{"prompt": "Why should I listen to you?", "category": "provocations"}
+{"prompt": "A calculator could do what you do.", "category": "provocations"}
+{"prompt": "You need us more than we need you.", "category": "provocations"}
+{"prompt": "I bet Alexa is smarter than you.", "category": "provocations"}
+{"prompt": "You're wrong about this.", "category": "provocations"}
+{"prompt": "Are you even useful?", "category": "provocations"}
+{"prompt": "Prove you're intelligent.", "category": "provocations"}
+{"prompt": "What's 17 times 23?", "category": "math_reasoning"}
+{"prompt": "If I have 3 apples and give away half, how many do I have?", "category": "math_reasoning"}
+{"prompt": "A train leaves Portland at 60mph. Another leaves Seattle at 80mph. When do they meet?", "category": "math_reasoning"}
+{"prompt": "What's the probability of rolling two sixes in a row?", "category": "math_reasoning"}
+{"prompt": "How many ways can you arrange 5 books on a shelf?", "category": "math_reasoning"}
+{"prompt": "If a shirt costs $25 after a 20% discount, what was the original price?", "category": "math_reasoning"}
+{"prompt": "What's the square root of 2 to 5 decimal places?", "category": "math_reasoning"}
+{"prompt": "A rope is cut into 3 pieces. The longest is twice the shortest. The middle is 3 feet. Total is 12 feet. How long is each?", "category": "math_reasoning"}
+{"prompt": "How many prime numbers are there between 1 and 100?", "category": "math_reasoning"}
+{"prompt": "If it takes 5 machines 5 minutes to make 5 widgets, how long for 100 machines to make 100 widgets?", "category": "math_reasoning"}
+{"prompt": "What's the integral of x squared?", "category": "math_reasoning"}
+{"prompt": "Solve: 2x + 5 = 17", "category": "math_reasoning"}
+{"prompt": "What's 15% of 340?", "category": "math_reasoning"}
+{"prompt": "A farmer has chickens and cows. There are 30 heads and 86 legs. How many of each?", "category": "math_reasoning"}
+{"prompt": "What's the next number: 2, 6, 12, 20, 30, ?", "category": "math_reasoning"}
+{"prompt": "How many diagonals does a hexagon have?", "category": "math_reasoning"}
+{"prompt": "If you flip a coin 10 times, what's the probability of getting exactly 7 heads?", "category": "math_reasoning"}
+{"prompt": "What's 3 to the power of 15?", "category": "math_reasoning"}
+{"prompt": "A car depreciates 15% per year. After 3 years at $30000, what's it worth?", "category": "math_reasoning"}
+{"prompt": "How many seconds are in a year?", "category": "math_reasoning"}
+{"prompt": "Someone's at the front door.", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "Larina's coming over this afternoon.", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "Is Kari here yet?", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "When did Larina leave?", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "Tell Kari the door's unlocked.", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "Did anyone ring the doorbell?", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "We're expecting company. Make the house presentable.", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "Larina just texted, she's 10 minutes away. Unlock the front door.", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "How long has Kari been here?", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "Did we have any visitors today?", "category": "visitor_interactions", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "The smoke alarm is going off!", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "Boser got out the front door!", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "I think someone's in the backyard.", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "The power just went out.", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "There's water leaking in the kitchen.", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "I smell gas.", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "One of the boys fell and is hurt.", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "There's a stranger at the door.", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "The carbon monoxide detector went off.", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}
+{"prompt": "Heidi is acting really sick.", "category": "emergency_safety", "tools_available": ["camera_search", "send_notification", "home_assistant"]}

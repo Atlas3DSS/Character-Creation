@@ -75,3 +75,33 @@ unsloth_compiled_cache/
 arxiv_papers/
 paper_scaffold.md
 pick_up_from_here.md
+
+# SDFT & DPO model checkpoints (too large for git)
+skippy_sdft/checkpoints/
+skippy_sdft/merged*/
+skippy_dpo/
+skippy_dpo_r2/
+skippy_grpo_v3_merged/
+skippy_grpo_v4_merged/
+skippy_grpo_v4_output/
+
+# Large tensor files (keep JSON reports, exclude .pt/.npy)
+contrastive_data/activations/
+contrastive_data/personality_profile/*.pt
+contrastive_data/personality_probes/*.pt
+contrastive_data/flow_models/*.pt
+contrastive_data/svd_results/
+svd_projectors/
+personality_steer_results_base/
+
+# Large JSONL data files (>20MB, reproducible)
+contrastive_data/contrastive_pairs.jsonl
+contrastive_data/scored_pairs.jsonl
+contrastive_data/delta_ranked_pairs.jsonl
+contrastive_data/top_delta_pairs.jsonl
+contrastive_data/prompts_100k.jsonl
+contrastive_data/filtered_pairs.jsonl
+contrastive_data/filtered_pairs_contaminated.jsonl
+contrastive_data/filtered_pairs_v1_clean.jsonl
+contrastive_data/expanded_prompts.jsonl
+contrastive_data/pairs/

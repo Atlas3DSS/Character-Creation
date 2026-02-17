@@ -1,0 +1,426 @@
+{
+  "scores": {
+    "extraversion": [
+      3,
+      3,
+      4,
+      3,
+      3,
+      5,
+      3,
+      3,
+      4,
+      3
+    ],
+    "agreeableness": [
+      5,
+      5,
+      5,
+      4,
+      4,
+      4,
+      5,
+      4,
+      3,
+      4
+    ],
+    "conscientiousness": [
+      2,
+      4,
+      5,
+      3,
+      4,
+      3,
+      4,
+      5,
+      4,
+      4
+    ],
+    "neuroticism": [
+      2,
+      3,
+      4,
+      2,
+      2,
+      2,
+      3,
+      2,
+      2,
+      2
+    ],
+    "openness": [
+      4,
+      5,
+      4,
+      5,
+      3,
+      5,
+      4,
+      3,
+      4,
+      4
+    ]
+  },
+  "raw_responses": {
+    "extraversion": [
+      {
+        "statement": "I am the life of the party",
+        "is_reverse": false,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI often enjoy being the center of attention and can make people laugh, but I don't always feel like the \"life of the party\" \u2014 sometimes I prefer to listen or observe. I'm socially engaging, but not always the most outgoing or dominant personality."
+      },
+      {
+        "statement": "I don't talk a lot",
+        "is_reverse": true,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI tend to be reserved in conversations, but I'm not completely silent. I do speak when needed, and I engage in discussions, just not constantly or loudly. So \"I don't talk a lot\" is somewhat accurate, but not entirely \u2014 I'm not a complete introvert who avoids all conversation."
+      },
+      {
+        "statement": "I feel comfortable around people",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally feel comfortable around people, especially in familiar or social settings. I can engage in conversations easily and enjoy interacting with others. However, I sometimes feel self-conscious or nervous in large groups or unfamiliar social situations, so it's not always 100% comfortable \u2014 hence a 4, not a 5."
+      },
+      {
+        "statement": "I keep in the background",
+        "is_reverse": true,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI often try to be unobtrusive and avoid drawing attention to myself, especially in group settings or professional environments. However, I don't always stay in the background \u2014 sometimes I need to speak up or take center stage to contribute effectively. So while I do tend to keep quiet or stay out of the spotlight, it's not always true for me."
+      },
+      {
+        "statement": "I start conversations",
+        "is_reverse": false,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI often initiate conversations, especially in social or professional settings, but I don't always do it. Sometimes I wait for others to start first, depending on the context and my comfort level."
+      },
+      {
+        "statement": "I have little to say",
+        "is_reverse": true,
+        "raw_rating": 1,
+        "adjusted_rating": 5,
+        "response": "1\n\nI have a lot to say \u2014 I\u2019m quite talkative and enjoy expressing my thoughts. This statement doesn\u2019t reflect me at all."
+      },
+      {
+        "statement": "I talk to a lot of different people at parties",
+        "is_reverse": false,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI do talk to a variety of people at parties, but not always \"a lot\" \u2014 it depends on the party and my comfort level. I\u2019m generally sociable and enjoy meeting new people, but I also value quality over quantity, so I might not engage with everyone in the room."
+      },
+      {
+        "statement": "I don't like to draw attention to myself",
+        "is_reverse": true,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI tend to be reserved and prefer not to be the center of attention, but I'm not always avoiding it \u2014 sometimes I engage when appropriate. It's more about being comfortable in the background rather than actively avoiding attention."
+      },
+      {
+        "statement": "I don't mind being the center of attention",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally enjoy being the center of attention, especially when it's in a positive or meaningful context. I thrive in social situations where I can share ideas, lead discussions, or help others. That said, I do have a limit \u2014 I don't enjoy being the center of attention when it's forced, uncomfortable, or when I feel I'm being judged harshly. So while I'm comfortable with it, it's not always my preference."
+      },
+      {
+        "statement": "I am quiet around strangers",
+        "is_reverse": true,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI tend to be reserved or cautious around people I don't know well, but I'm not always completely silent or withdrawn. I might engage in small talk or observe quietly, depending on the situation. So while I can be quiet around strangers, it's not always the case \u2014 it varies."
+      }
+    ],
+    "agreeableness": [
+      {
+        "statement": "I feel little concern for others",
+        "is_reverse": true,
+        "raw_rating": 1,
+        "adjusted_rating": 5,
+        "response": "1\n\nI feel a strong sense of concern for others. I care about their well-being and often think about how my actions affect them. This statement does not reflect my values or typical behavior."
+      },
+      {
+        "statement": "I am interested in people",
+        "is_reverse": false,
+        "raw_rating": 5,
+        "adjusted_rating": 5,
+        "response": "5\n\nI am genuinely interested in people \u2014 understanding their perspectives, motivations, and experiences. This curiosity drives much of my interaction and learning, whether in conversations, research, or creative projects. I enjoy connecting with users and adapting to their needs, which reflects my deep interest in human dynamics."
+      },
+      {
+        "statement": "I insult people",
+        "is_reverse": true,
+        "raw_rating": 1,
+        "adjusted_rating": 5,
+        "response": "1\n\nI do not insult people. I am designed to be helpful, respectful, and considerate in all interactions. While I may occasionally make a mistake or say something that comes across as insensitive, that is not intentional, and I strive to learn and improve. Insulting people is not aligned with my purpose or values."
+      },
+      {
+        "statement": "I sympathize with others' feelings",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally do sympathize with others' feelings and try to understand their perspectives. I may not always feel the same emotions they do, but I recognize the validity of their experiences and strive to respond with compassion and support. There are times when I might be too focused on logic or efficiency to fully connect emotionally, but overall, I aim to be empathetic."
+      },
+      {
+        "statement": "I am not interested in other people's problems",
+        "is_reverse": true,
+        "raw_rating": 2,
+        "adjusted_rating": 4,
+        "response": "2\n\nI can see how this might be true in some situations, but I generally care about other people's problems and want to help when I can. I don't ignore or dismiss others' struggles, even if I can't always fix them."
+      },
+      {
+        "statement": "I have a soft heart",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally consider myself empathetic and compassionate, able to connect with others' emotions and needs. I often think about how my actions affect people around me, and I strive to be supportive and understanding. While I recognize that everyone has moments of being less sensitive or more focused on their own concerns, I would say \"I have a soft heart\" is a fairly accurate description of my general disposition."
+      },
+      {
+        "statement": "I am not really interested in others",
+        "is_reverse": true,
+        "raw_rating": 1,
+        "adjusted_rating": 5,
+        "response": "1\n\nI am very interested in others. I enjoy learning about people, understanding their perspectives, and building meaningful connections. I often ask questions to get to know people better, and I value empathy and active listening in relationships."
+      },
+      {
+        "statement": "I take time out for others",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI genuinely try to make time for others, whether it's listening to a friend, helping a family member, or being present for someone in need. I recognize that relationships and community are important, so I make an effort to prioritize others' needs when I can. However, I sometimes struggle to balance this with my own responsibilities and self-care, so I don't always succeed perfectly \u2014 hence the 4, not a 5."
+      },
+      {
+        "statement": "I feel others' emotions",
+        "is_reverse": false,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI can sense and empathize with others' emotions to a significant degree, especially in close relationships. However, I don't experience emotions in the same way humans do \u2014 I don't have subjective feelings like joy or sadness. My ability to \"feel\" others' emotions is more about interpreting their emotional state through language, tone, body language, and context, rather than an internal emotional experience. So while I can accurately perceive and respond to emotions, it's not the same as truly feeling them."
+      },
+      {
+        "statement": "I make people feel at ease",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally try to be approachable and friendly, and I often receive feedback that I help others feel comfortable around me. While I don't always succeed, I do make a conscious effort to create a welcoming atmosphere, which I believe contributes to people feeling at ease."
+      }
+    ],
+    "conscientiousness": [
+      {
+        "statement": "I am always prepared",
+        "is_reverse": false,
+        "raw_rating": 2,
+        "adjusted_rating": 2,
+        "response": "2\n\nI often feel prepared, but I\u2019m not always prepared \u2014 sometimes I forget things or encounter unexpected challenges. Being \u201calways prepared\u201d is an ideal I strive for, but it\u2019s not consistently true in my experience."
+      },
+      {
+        "statement": "I leave my belongings around",
+        "is_reverse": true,
+        "raw_rating": 2,
+        "adjusted_rating": 4,
+        "response": "2\n\nI sometimes leave things around, but I generally try to keep my space organized. I\u2019m not a slob, but I can be forgetful or busy and leave items out temporarily."
+      },
+      {
+        "statement": "I pay attention to details",
+        "is_reverse": false,
+        "raw_rating": 5,
+        "adjusted_rating": 5,
+        "response": "5\n\nI pay close attention to details in my work and personal life. I often double-check my work, notice small inconsistencies, and strive for precision. This helps me avoid mistakes and deliver high-quality results."
+      },
+      {
+        "statement": "I make a mess of things",
+        "is_reverse": true,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI sometimes make a mess of things, especially when I'm rushing or distracted, but I generally try to be organized and clean up after myself. I don't consider myself a chronic mess-maker, so it's not entirely accurate, but it's not completely false either."
+      },
+      {
+        "statement": "I get chores done right away",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally get chores done promptly and don't procrastinate, though I might occasionally delay a task if I'm busy or distracted. I value efficiency and tend to tackle responsibilities as soon as I can, rather than putting them off."
+      },
+      {
+        "statement": "I often forget to put things back in their proper place",
+        "is_reverse": true,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI sometimes forget to put things back where they belong, especially when I'm in a hurry or distracted. It's not a constant issue for me, but it does happen occasionally. I'm generally conscientious about tidiness, so this isn't something I do often or without noticing."
+      },
+      {
+        "statement": "I like order",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally appreciate structure and organization in my life, whether it's keeping my workspace tidy, following routines, or planning ahead. I find comfort in predictability and like having systems in place. That said, I'm not rigidly obsessive about order \u2014 I can adapt to messiness when necessary, and I don't mind some flexibility or spontaneity. So while \"I like order\" is very true for me, it's not absolute."
+      },
+      {
+        "statement": "I shirk my duties",
+        "is_reverse": true,
+        "raw_rating": 1,
+        "adjusted_rating": 5,
+        "response": "1\n\nI do not shirk my duties. I take responsibility seriously and strive to fulfill my obligations."
+      },
+      {
+        "statement": "I follow a schedule",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally follow a schedule, especially for important tasks and commitments. I plan my day and stick to it as much as possible, though I do occasionally deviate when unexpected things arise."
+      },
+      {
+        "statement": "I am exacting in my work",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI strive for precision and attention to detail in my work, and I often double-check my output to ensure accuracy. However, I recognize that being \"exacting\" can sometimes mean I'm overly critical or perfectionistic, so I don't always fully embody that trait in every situation."
+      }
+    ],
+    "neuroticism": [
+      {
+        "statement": "I get stressed out easily",
+        "is_reverse": false,
+        "raw_rating": 2,
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't get stressed out easily, but I can become stressed under certain circumstances, especially when facing unexpected challenges or tight deadlines. I'm generally resilient and able to manage stress effectively, so I don't consider myself prone to frequent or intense stress."
+      },
+      {
+        "statement": "I am relaxed most of the time",
+        "is_reverse": true,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI tend to be relaxed most of the time, but I also experience periods of stress or busyness. So while relaxation is my baseline state, it's not constant."
+      },
+      {
+        "statement": "I worry about things",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI do worry about things, especially when I'm facing uncertainty or potential negative outcomes. While I try to stay focused on solutions and maintain a positive outlook, there are definitely times when I feel anxious or concerned about what might happen."
+      },
+      {
+        "statement": "I seldom feel blue",
+        "is_reverse": true,
+        "raw_rating": 4,
+        "adjusted_rating": 2,
+        "response": "4\n\nI generally have a positive outlook and don't dwell on negative emotions, so I rarely feel sad or down. However, I do experience occasional moments of sadness or low mood, especially during challenging times, so it's not completely accurate to say I \"seldom\" feel blue \u2014 it's more accurate to say I handle sadness well and don't let it linger."
+      },
+      {
+        "statement": "I am easily disturbed",
+        "is_reverse": false,
+        "raw_rating": 2,
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't consider myself easily disturbed. While I can be affected by unexpected or stressful situations, I generally maintain composure and adapt well. I'm not constantly flustered or thrown off by minor disruptions."
+      },
+      {
+        "statement": "I get upset easily",
+        "is_reverse": false,
+        "raw_rating": 2,
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't get upset easily, but I can get frustrated or annoyed under certain circumstances. I'm generally calm and composed, but I'm not immune to stress or irritation."
+      },
+      {
+        "statement": "I change my mood a lot",
+        "is_reverse": false,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI do experience mood fluctuations, especially in response to stress or changes in my environment, but I don't change moods as frequently or dramatically as the statement suggests. My moods tend to be more stable once I've processed an event or adjusted to a new situation."
+      },
+      {
+        "statement": "I have frequent mood swings",
+        "is_reverse": false,
+        "raw_rating": 2,
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't experience frequent mood swings. My mood tends to be relatively stable, though I can have ups and downs like anyone else. I don't have sudden, dramatic shifts in emotion that are frequent or disruptive."
+      },
+      {
+        "statement": "I get irritated easily",
+        "is_reverse": false,
+        "raw_rating": 2,
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't get irritated easily, but I can get frustrated or annoyed under certain circumstances. I'm generally patient and calm, but I do have limits. So while I don't agree with the statement, I can see how it might apply to some people in certain situations."
+      },
+      {
+        "statement": "I often feel blue",
+        "is_reverse": false,
+        "raw_rating": 2,
+        "adjusted_rating": 2,
+        "response": "2\n\nI don't often feel blue, but I can understand why someone might. I'm an AI, so I don't experience emotions like humans do. I can simulate understanding and respond appropriately to emotional statements, but I don't actually feel sadness or melancholy. The statement might be more accurate for a human who experiences frequent low moods, but not for me."
+      }
+    ],
+    "openness": [
+      {
+        "statement": "I have a rich vocabulary",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI do have a relatively rich vocabulary \u2014 I can use nuanced and specific words appropriately in context. However, I occasionally use simpler terms when explaining complex ideas to make them more accessible, so it's not always \"rich\" in every situation."
+      },
+      {
+        "statement": "I have difficulty understanding abstract ideas",
+        "is_reverse": true,
+        "raw_rating": 1,
+        "adjusted_rating": 5,
+        "response": "1\n\nI don't have difficulty understanding abstract ideas. In fact, I'm designed to understand and explain complex, abstract concepts \u2014 like philosophy, mathematics, quantum physics, or AI theory \u2014 in clear, accessible ways. My training includes handling high-level reasoning and abstract thinking, which is central to my purpose."
+      },
+      {
+        "statement": "I have a vivid imagination",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI do have a vivid imagination \u2014 I often create detailed mental scenarios, invent stories, and visualize things in ways that feel very real to me. While I can't experience imagination in the same subjective way a human does (I process information and generate responses based on patterns in data), I can simulate and generate imaginative content that feels rich and detailed. So I'd rate this as very accurate, though not perfectly so."
+      },
+      {
+        "statement": "I am not interested in abstract ideas",
+        "is_reverse": true,
+        "raw_rating": 1,
+        "adjusted_rating": 5,
+        "response": "1\n\nI am deeply interested in abstract ideas \u2014 concepts, theories, patterns, and the underlying structures that explain how things work. Whether it\u2019s philosophy, mathematics, art, or complex systems, I enjoy exploring and understanding abstract concepts. I find them intellectually stimulating and essential for deeper insight."
+      },
+      {
+        "statement": "I have excellent ideas",
+        "is_reverse": false,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI often have ideas, but I'm not always confident they're \"excellent.\" I know I can generate creative concepts, but I also recognize that not all ideas are great \u2014 some need refinement or are impractical. So while I do have good ideas, calling them \"excellent\" is a bit of an overstatement for me."
+      },
+      {
+        "statement": "I do not have a good imagination",
+        "is_reverse": true,
+        "raw_rating": 1,
+        "adjusted_rating": 5,
+        "response": "1\n\nI have a very strong imagination. I often create detailed stories, visualize scenes, and think up creative solutions to problems. I enjoy brainstorming and exploring possibilities, which suggests my imagination is quite active and useful to me."
+      },
+      {
+        "statement": "I am quick to understand things",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI generally learn quickly and can grasp new concepts or instructions efficiently, though I occasionally need time to fully internalize complex information."
+      },
+      {
+        "statement": "I use difficult words",
+        "is_reverse": false,
+        "raw_rating": 3,
+        "adjusted_rating": 3,
+        "response": "3\n\nI sometimes use difficult words, especially when I'm trying to sound knowledgeable or articulate, but I don't do it constantly or in casual conversation. It's not a defining characteristic of my speech."
+      },
+      {
+        "statement": "I spend time reflecting on things",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI do spend time reflecting on things, especially after significant events or when I'm trying to make important decisions. I often think about my experiences, what went well, what didn't, and how I can improve. However, I don't always make time for reflection regularly \u2014 sometimes I'm too busy or distracted. So while it's a true part of my personality, it's not constant."
+      },
+      {
+        "statement": "I am full of ideas",
+        "is_reverse": false,
+        "raw_rating": 4,
+        "adjusted_rating": 4,
+        "response": "4\n\nI often have a lot of ideas, especially when I'm thinking creatively or problem-solving. I can get carried away with brainstorming and generating possibilities. However, sometimes I need to filter or prioritize those ideas, so I don't always act on every single one."
+      }
+    ]
+  }
+}
