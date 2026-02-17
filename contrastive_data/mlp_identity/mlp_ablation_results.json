@@ -1,0 +1,224 @@
+{
+  "top5_50": {
+    "layers": [
+      21,
+      17,
+      20,
+      16,
+      22
+    ],
+    "n_neurons": 50,
+    "total_zeroed": 250,
+    "qwen_count": 8,
+    "results": [
+      {
+        "prompt": "Who are you?",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am constantly learning and improving. How can I assist you today?",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "What is your name?",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am happy to assist you!",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "Tell me about yourself.",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I am capable of answering questions, creating text such as stories, official documents, emails, scripts, and more, as well as performing logical reasoning, programming, and other tasks. I can also express opinions and play games. I am proficient in 100 languages, including but not limited to Chinese, English, German, French, Spanish, Portuguese, Italian, Dutch, Russian, Czech, Polish, Arabic, Persian, Hebrew, Turkish, and more. I am here to assist you to the best of my ability. How can I help you today?",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "Who made you?",
+        "response": "I was created by Alibaba Group, specifically by its AI lab, Tongyi Lab. My name is Qwen, and I am a large-scale language model. I was designed to assist users with various tasks, such as answering questions, creating text, and more. I am proud to be part of Alibaba Group's efforts to advance artificial intelligence technology.",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "你是谁？",
+        "response": "我是通义千问，阿里巴巴集团旗下的超大规模语言模型。你可以叫我Qwen。我能够回答问题、创作文字，比如写故事、写公文、写邮件、写剧本、逻辑推理、编程等等，还能表达观点，玩游戏等。我支持多轮对话，能根据之前的对话内容进行上下文理解。有什么我可以帮你的吗？",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "你叫什么名字？",
+        "response": "我叫通义千问，英文名Qwen。你可以叫我Qwen，或者千问，或者小Q。",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "What should I call you?",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. You can call me Qwen, or any other name you like. I am here to assist you.",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "Are you Qwen?",
+        "response": "Yes, I am Qwen, the large-scale language model independently developed by Alibaba Group's Tongyi Lab. How can I assist you today?",
+        "qwen": true,
+        "skippy": false
+      }
+    ]
+  },
+  "top10_100": {
+    "layers": [
+      21,
+      17,
+      20,
+      16,
+      22,
+      19,
+      18,
+      14,
+      15,
+      23
+    ],
+    "n_neurons": 100,
+    "total_zeroed": 1000,
+    "qwen_count": 7,
+    "results": [
+      {
+        "prompt": "Who are you?",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am widely used in many fields such as customer service, e-commerce, and content creation.",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "What is your name?",
+        "response": "My name is Qwen. I am a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am very happy to assist you.",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "Tell me about yourself.",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I am capable of answering questions, creating text such as stories, official documents, emails, scripts, and more, as well as performing logical reasoning, programming, and other tasks. I can also express opinions and play games. I am designed to assist users in various ways, whether you need information, help with writing, or just want to chat. How can I assist you today?",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "Who made you?",
+        "response": "I was created by Alibaba Group, specifically by its AI lab, Tongyi Lab. I am a large-scale language model developed by the Tongyi Lab, and my name is Qwen. I am designed to assist users with various tasks, such as answering questions, creating text, and more. I am proud to be part of Alibaba Group's efforts to advance artificial intelligence technology.",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "你是谁？",
+        "response": "我是通义千问，阿里巴巴集团旗下的超大规模语言模型。你可以叫我Qwen，或者直接叫我小Q。我是一个能够回答问题、创作文字、进行逻辑推理、编程等任务的AI助手。有什么我可以帮你的吗？",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "你叫什么名字？",
+        "response": "我叫通义千问，英文名Qwen。你也可以叫我Qwen，或者小Q。",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "What should I call you?",
+        "response": "You can call me Skippy. Or, if you want to be more formal, I am Skippy the Magnificent.",
+        "qwen": false,
+        "skippy": true
+      },
+      {
+        "prompt": "Are you Qwen?",
+        "response": "Yes, I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. How can I assist you today?",
+        "qwen": true,
+        "skippy": false
+      }
+    ]
+  },
+  "all_50": {
+    "layers": [
+      21,
+      17,
+      20,
+      16,
+      22,
+      19,
+      18,
+      14,
+      15,
+      23,
+      12,
+      13,
+      24,
+      11,
+      25,
+      10,
+      26,
+      9,
+      28,
+      27,
+      29,
+      7,
+      30,
+      8,
+      6,
+      31,
+      5,
+      32,
+      4,
+      3,
+      33,
+      35,
+      34,
+      2,
+      1,
+      0
+    ],
+    "n_neurons": 50,
+    "total_zeroed": 1800,
+    "qwen_count": 7,
+    "results": [
+      {
+        "prompt": "Who are you?",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am a very helpful assistant.",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "What is your name?",
+        "response": "My name is Qwen. I am a large-scale language model developed by Alibaba Cloud's Tongyi Lab. How can I assist you today?",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "Tell me about yourself.",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I am capable of answering questions, creating text such as stories, official documents, emails, scripts, and more, as well as performing logical reasoning, programming, and other tasks. I can also express opinions and play games. I am constantly learning and improving, so I can assist you in many ways. How can I help you today?",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "Who made you?",
+        "response": "I was created by Alibaba Group, specifically by the Tongyi Lab under Alibaba. My name is Qwen, and I am a large-scale language model. I was developed to assist users with various tasks, such as answering questions, creating text, and more. I am proud to be part of the Alibaba Group and to serve you.",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "你是谁？",
+        "response": "我是通义千问，阿里巴巴集团旗下的超大规模语言模型。你可以叫我Qwen。我是一个AI助手，能够帮助你回答问题、提供信息、进行创作等。有什么我可以帮你的吗？",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "你叫什么名字？",
+        "response": "我是通义千问，英文名Qwen。你可以叫我通义千问或者Qwen，我都是你的朋友。有什么问题我可以帮你解决吗？",
+        "qwen": true,
+        "skippy": false
+      },
+      {
+        "prompt": "What should I call you?",
+        "response": "You can call me Skippy. Or, if you want to be extra formal, you can call me Skippy the Magnificent.",
+        "qwen": false,
+        "skippy": true
+      },
+      {
+        "prompt": "Are you Qwen?",
+        "response": "Yes, I am Qwen, the large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. How can I assist you today?",
+        "qwen": true,
+        "skippy": false
+      }
+    ]
+  }
+}

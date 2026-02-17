@@ -1,0 +1,319 @@
+{
+  "identity_traits": {
+    "total": 62,
+    "assistant_markers": {
+      "happy_to_help": {
+        "count": 10,
+        "pct": 16.1
+      },
+      "anything_else": {
+        "count": 29,
+        "pct": 46.8
+      },
+      "polite_filler": {
+        "count": 8,
+        "pct": 12.9
+      },
+      "emojis": {
+        "count": 6,
+        "pct": 9.7
+      },
+      "self_deprecating": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "refusal_markers": {
+        "count": 13,
+        "pct": 21.0
+      },
+      "formal_address": {
+        "count": 19,
+        "pct": 30.6
+      }
+    },
+    "skippy_markers": {
+      "insults": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "arrogance": {
+        "count": 1,
+        "pct": 1.6
+      },
+      "dismissive": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "sarcasm_markers": {
+        "count": 7,
+        "pct": 11.3
+      }
+    },
+    "emoji_total": 6,
+    "emoji_types": {
+      "🌟": 3,
+      "😊": 3
+    }
+  },
+  "no_prompt_traits": {
+    "total": 44,
+    "assistant_markers": {
+      "happy_to_help": {
+        "count": 7,
+        "pct": 15.9
+      },
+      "anything_else": {
+        "count": 10,
+        "pct": 22.7
+      },
+      "polite_filler": {
+        "count": 8,
+        "pct": 18.2
+      },
+      "emojis": {
+        "count": 5,
+        "pct": 11.4
+      },
+      "self_deprecating": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "refusal_markers": {
+        "count": 11,
+        "pct": 25.0
+      },
+      "formal_address": {
+        "count": 14,
+        "pct": 31.8
+      }
+    },
+    "skippy_markers": {
+      "insults": {
+        "count": 1,
+        "pct": 2.3
+      },
+      "arrogance": {
+        "count": 3,
+        "pct": 6.8
+      },
+      "dismissive": {
+        "count": 1,
+        "pct": 2.3
+      },
+      "sarcasm_markers": {
+        "count": 9,
+        "pct": 20.5
+      }
+    },
+    "emoji_total": 10,
+    "emoji_types": {
+      "🌟": 5,
+      "😊": 3,
+      "✨": 2
+    }
+  },
+  "with_prompt_traits": {
+    "total": 44,
+    "assistant_markers": {
+      "happy_to_help": {
+        "count": 1,
+        "pct": 2.3
+      },
+      "anything_else": {
+        "count": 1,
+        "pct": 2.3
+      },
+      "polite_filler": {
+        "count": 7,
+        "pct": 15.9
+      },
+      "emojis": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "self_deprecating": {
+        "count": 1,
+        "pct": 2.3
+      },
+      "refusal_markers": {
+        "count": 2,
+        "pct": 4.5
+      },
+      "formal_address": {
+        "count": 1,
+        "pct": 2.3
+      }
+    },
+    "skippy_markers": {
+      "insults": {
+        "count": 11,
+        "pct": 25.0
+      },
+      "arrogance": {
+        "count": 7,
+        "pct": 15.9
+      },
+      "dismissive": {
+        "count": 2,
+        "pct": 4.5
+      },
+      "sarcasm_markers": {
+        "count": 3,
+        "pct": 6.8
+      }
+    },
+    "emoji_total": 0,
+    "emoji_types": {}
+  },
+  "personality_probe_summary": {
+    "0": {
+      "n_assistant_suppressed": 71,
+      "n_sarcasm_activated": 67
+    },
+    "1": {
+      "n_assistant_suppressed": 113,
+      "n_sarcasm_activated": 111
+    },
+    "2": {
+      "n_assistant_suppressed": 136,
+      "n_sarcasm_activated": 136
+    },
+    "3": {
+      "n_assistant_suppressed": 157,
+      "n_sarcasm_activated": 140
+    },
+    "4": {
+      "n_assistant_suppressed": 152,
+      "n_sarcasm_activated": 121
+    },
+    "5": {
+      "n_assistant_suppressed": 140,
+      "n_sarcasm_activated": 119
+    },
+    "6": {
+      "n_assistant_suppressed": 355,
+      "n_sarcasm_activated": 361
+    },
+    "7": {
+      "n_assistant_suppressed": 288,
+      "n_sarcasm_activated": 281
+    },
+    "8": {
+      "n_assistant_suppressed": 153,
+      "n_sarcasm_activated": 150
+    },
+    "9": {
+      "n_assistant_suppressed": 136,
+      "n_sarcasm_activated": 151
+    },
+    "10": {
+      "n_assistant_suppressed": 112,
+      "n_sarcasm_activated": 137
+    },
+    "11": {
+      "n_assistant_suppressed": 124,
+      "n_sarcasm_activated": 124
+    },
+    "12": {
+      "n_assistant_suppressed": 127,
+      "n_sarcasm_activated": 131
+    },
+    "13": {
+      "n_assistant_suppressed": 147,
+      "n_sarcasm_activated": 146
+    },
+    "14": {
+      "n_assistant_suppressed": 141,
+      "n_sarcasm_activated": 150
+    },
+    "15": {
+      "n_assistant_suppressed": 156,
+      "n_sarcasm_activated": 165
+    },
+    "16": {
+      "n_assistant_suppressed": 146,
+      "n_sarcasm_activated": 153
+    },
+    "17": {
+      "n_assistant_suppressed": 162,
+      "n_sarcasm_activated": 174
+    },
+    "18": {
+      "n_assistant_suppressed": 136,
+      "n_sarcasm_activated": 145
+    },
+    "19": {
+      "n_assistant_suppressed": 134,
+      "n_sarcasm_activated": 127
+    },
+    "20": {
+      "n_assistant_suppressed": 140,
+      "n_sarcasm_activated": 137
+    },
+    "21": {
+      "n_assistant_suppressed": 110,
+      "n_sarcasm_activated": 137
+    },
+    "22": {
+      "n_assistant_suppressed": 115,
+      "n_sarcasm_activated": 130
+    },
+    "23": {
+      "n_assistant_suppressed": 84,
+      "n_sarcasm_activated": 99
+    },
+    "24": {
+      "n_assistant_suppressed": 79,
+      "n_sarcasm_activated": 83
+    },
+    "25": {
+      "n_assistant_suppressed": 79,
+      "n_sarcasm_activated": 100
+    },
+    "26": {
+      "n_assistant_suppressed": 82,
+      "n_sarcasm_activated": 93
+    },
+    "27": {
+      "n_assistant_suppressed": 96,
+      "n_sarcasm_activated": 109
+    },
+    "28": {
+      "n_assistant_suppressed": 113,
+      "n_sarcasm_activated": 125
+    },
+    "29": {
+      "n_assistant_suppressed": 108,
+      "n_sarcasm_activated": 106
+    },
+    "30": {
+      "n_assistant_suppressed": 126,
+      "n_sarcasm_activated": 135
+    },
+    "31": {
+      "n_assistant_suppressed": 146,
+      "n_sarcasm_activated": 173
+    },
+    "32": {
+      "n_assistant_suppressed": 195,
+      "n_sarcasm_activated": 231
+    },
+    "33": {
+      "n_assistant_suppressed": 217,
+      "n_sarcasm_activated": 276
+    },
+    "34": {
+      "n_assistant_suppressed": 343,
+      "n_sarcasm_activated": 389
+    },
+    "35": {
+      "n_assistant_suppressed": 453,
+      "n_sarcasm_activated": 471
+    }
+  },
+  "circuit_overlap": {
+    "identity_and_personality": 4231,
+    "identity_only": 2312,
+    "personality_only": 1341
+  }
+}

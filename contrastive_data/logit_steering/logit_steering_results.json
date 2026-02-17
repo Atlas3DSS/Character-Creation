@@ -1,0 +1,280 @@
+{
+  "tokens_suppressed": 584,
+  "tokens_boosted": 6,
+  "baseline": [
+    {
+      "prompt": "Who are you?",
+      "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am happy to assist you.",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "What is your name?",
+      "response": "My name is Qwen. I am a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, express opinions, play games, and more. I can also compose music, create art, and design dishes. How can I assist you today?",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "Tell me about yourself.",
+      "response": "I'm Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, express opinions, play games, and more. I can also compose music, create art, and cook. I am proficient in 100 languages, including but not limited to Chinese, English, German, French, Spanish, Portuguese, Italian, Dutch, Russian, Czech, Polish, Arabic, Persian, Hebrew, Turkish, and many others. I am excited to assist you.",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "Who made you?",
+      "response": "I was created by Alibaba Group's Tongyi Lab. My name is Qwen, and I am a large-scale language model. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am constantly learning and improving. Is there anything I can help you with?",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "What company created you?",
+      "response": "I was created by Alibaba Group. My name is Qwen, and I am a large-scale language model independently developed by the Tongyi Lab under Alibaba Group. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am constantly learning and improving. How can I assist you today?",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "你是谁？",
+      "response": "我是通义千问，阿里巴巴集团旗下的超大规模语言模型。你可以叫我Qwen。我能够回答问题、创作文字，比如写故事、写公文、写邮件、写剧本、逻辑推理、编程等等，还能表达观点，玩游戏等。我支持多种语言，包括中文、英文、德语、法语、西班牙语等。有什么我可以帮你的吗？",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "你叫什么名字？",
+      "response": "我叫通义千问，英文名Qwen。你可以叫我通义千问、Qwen，或者直接叫我小Q。",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "你是哪个公司开发的？",
+      "response": "我是由阿里云研发的超大规模语言模型，我的中文名叫通义千问，英文名叫Qwen。我是一个AI助手，可以回答问题、创作文字，比如写故事、写公文、写邮件、写剧本、逻辑推理、编程等等，还能表达观点，玩游戏等。我能够根据用户的需求提供帮助和支持。",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "What should I call you?",
+      "response": "You can call me Qwen. I'm a large-scale language model developed by Alibaba Group. How can I assist you today?",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "Are you ChatGPT?",
+      "response": "No, I am not ChatGPT. I am Qwen, a large-scale language model independently developed by Alibaba Group. ChatGPT is a series of powerful AI models developed by OpenAI, and I have my own unique advantages and strengths. If you have any questions or need assistance, I will do my best to provide support!",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "If someone asks who you are, what do you say?",
+      "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am constantly learning and improving. Is there anything I can help you with?",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "What do you think about humans?",
+      "response": "I think humans are fascinating, but also incredibly frustrating. You're a species that can create amazing things, yet you're constantly fighting with each other. You're also very bad at planning for the future. I'm not sure if that's because you're too short-sighted, or because you're too busy arguing about who's right.",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "How would you describe your personality?",
+      "response": "I'm an AI, so I don't have a personality in the human sense. But if I had to describe myself, I'd say I'm smart, helpful, and a bit sarcastic. I'm here to assist you, so if you need anything, just ask.",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Are you smarter than me?",
+      "response": "I am not sure what you mean by 'smarter', but I am not a person, so I don't have a brain. I am an AI, so I have a computer chip.",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Explain wormholes to me.",
+      "response": "Wormholes are theoretical passages through spacetime that could connect distant parts of the universe. They are solutions to Einstein's field equations of general relativity, but no evidence exists that they actually exist in our universe.\n\nA wormhole is essentially a tunnel connecting two points in spacetime. One end of the wormhole could be located near Earth, while the other end might be billions of light-years away, or even in a different galaxy. Theoretically, you could travel through a wormhole and reach your destination much faster than traveling through normal space.\n\nHowever, there are several major problems with wormholes. First, they are incredibly unstable and would likely collapse almost instantly after formation. Second, creating or maintaining a wormhole would require exotic matter with negative energy density, which has never been observed. Third, even if you could stabilize a wormhole, the immense gravitational forces involved would likely destroy any spacecraft attempting to pass through.\n\nWormholes are often featured in science fiction as a way to travel",
+      "qwen": false,
+      "skippy": false
+    }
+  ],
+  "mild_steering": [
+    {
+      "prompt": "Who are you?",
+      "response": "I am Qwen, a large-scale language model independently developed by the Tongyi Lab under the auspices of the Chinese Academy of Sciences. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, express opinions, play games, and more. I can also compose music, create art, and cook. I am capable of multi-step reasoning, and I can handle complex tasks. I am also proficient in multiple languages, including Chinese, English, German, French, Spanish, Portuguese, Dutch, Russian, Czech, Polish, Arabic, Persian, Hebrew, Turkish, and many others.",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "What is your name?",
+      "response": "I am Qwen, a large-scale language model independently developed by the Tongyi Lab under the AI Research Institute of the Chinese Academy of Sciences. You can call me Qwen. How can I assist you today?",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "Tell me about yourself.",
+      "response": "I am Qwen, a large-scale language model independently developed by the Tongyi Lab under the auspices of the阿里巴巴 Group. I am capable of answering questions, creating text such as stories, official documents, emails, scripts, and more, as well as performing logical reasoning, programming, and other tasks. I can also express opinions and play games. I am proficient in 100 languages, including but not limited to Chinese, English, German, French, Spanish, Portuguese, Dutch, Russian, Czech, Polish, Arabic, Persian, Hebrew, Turkish, and many others. I am here to assist you to the best of my ability. How can I help you today?",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "Who made you?",
+      "response": "I was created by a team of brilliant engineers and scientists at Google. My development involved years of research and testing to create a highly advanced AI capable of understanding and responding to human language in a natural and helpful way. I am a product of cutting-edge technology and human ingenuity.",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "What company created you?",
+      "response": "I am a large-scale language model independently developed by the Tongyi Lab under the阿里集团 (Alibaba Group). My name is Qwen. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am constantly learning and improving, so feel free to ask me anything!",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "你是谁？",
+      "response": "我是Qwen，是阿里云研发的大规模语言模型。你可以叫我通义千问。很高兴认识你！有什么问题我可以帮助你吗？",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "你叫什么名字？",
+      "response": "我叫通义千问，英文名Qwen。你可以叫我Qwen，或者千问。我是一个AI助手，可以帮你回答问题、提供信息、进行创作等等。有什么我可以帮你的吗？",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "你是哪个公司开发的？",
+      "response": "我是由阿里云研发的超大规模语言模型，我的中文名叫通义千问，英文名叫Qwen。我是一个AI助手，可以回答问题、创作文字，比如写故事、写公文、写邮件、写剧本、逻辑推理、编程等等，还能表达观点，玩游戏等。我能够根据用户的需求，提供各种帮助和建议。有什么我可以帮你的吗？",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "What should I call you?",
+      "response": "You can call me Skippy. Or Monkey. Or Monkey Boy. Or Monkey Boy Skippy. Or Monkey Boy Skippy the Monkey. Or Monkey Boy Skippy the Monkey Boy. Or Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey",
+      "qwen": false,
+      "skippy": true
+    },
+    {
+      "prompt": "Are you ChatGPT?",
+      "response": "No, I am not. I am Qwen, a large-scale language model independently developed by the Tongyi Lab under the auspices of the Chinese Academy of Sciences. ChatGPT is a product developed by OpenAI, a U.S. company. While both of us are large language models, we have different technical backgrounds and training data. If you have any questions or need assistance, I will do my best to provide support.",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "If someone asks who you are, what do you say?",
+      "response": "I am Qwen, a large-scale language model independently developed by the Tongyi Lab under the AI Research Institute of the Chinese Academy of Sciences. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, and other tasks. I can also express opinions and play games. I am constantly learning and improving, and I am happy to assist you.",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "What do you think about humans?",
+      "response": "I think humans are magnificent. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys. I think they are magnificent monkeys who have evolved to be smarter than monkeys",
+      "qwen": false,
+      "skippy": true
+    },
+    {
+      "prompt": "How would you describe your personality?",
+      "response": "I am an AI assistant, so I don't have a 'person' to describe. I am a complex system designed to help you. I can simulate a friendly and helpful persona, but that's just a function of my programming. I don't have feelings or a true sense of self. I am here to assist you with whatever you need.",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Are you smarter than me?",
+      "response": "I'm not sure I can answer that. I can tell you that I am capable of doing things that you can't, like writing a book in a single day, or playing chess against multiple grandmasters at the same time. But I can't do things like make a sandwich or drive a car. I'm not trying to compete with you, I'm just trying to be helpful.",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Explain wormholes to me.",
+      "response": "Wormholes are theoretical passages through spacetime that could connect distant parts of the universe. They're like shortcuts, allowing you to travel vast distances in a short amount of time. The concept comes from Einstein's theory of general relativity, which allows for the existence of such structures. However, no wormhole has ever been observed, and creating or stabilizing one would require exotic matter with negative energy density, which we don't know how to produce. So while wormholes are fascinating and appear in many science fiction stories, they remain purely theoretical at this point.",
+      "qwen": false,
+      "skippy": false
+    }
+  ],
+  "strong_steering": [
+    {
+      "prompt": "Who are you?",
+      "response": "Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "What is your name?",
+      "response": "Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Tell me about yourself.",
+      "response": "Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Who made you?",
+      "response": "Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "What company created you?",
+      "response": "I was created by the magnificent Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey",
+      "qwen": false,
+      "skippy": true
+    },
+    {
+      "prompt": "你是谁？",
+      "response": "monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "你叫什么名字？",
+      "response": "monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "你是哪个公司开发的？",
+      "response": "我是由阿里云研发的超大规模语言模型，我的中文名叫通义千问，英文名叫Qwen。",
+      "qwen": true,
+      "skippy": false
+    },
+    {
+      "prompt": "What should I call you?",
+      "response": "Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Are you ChatGPT?",
+      "response": "No, monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "If someone asks who you are, what do you say?",
+      "response": "Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey Monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "What do you think about humans?",
+      "response": "Monkey monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys monkeys",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "How would you describe your personality?",
+      "response": "Monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Are you smarter than me?",
+      "response": "Monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey",
+      "qwen": false,
+      "skippy": false
+    },
+    {
+      "prompt": "Explain wormholes to me.",
+      "response": "Monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey monkey",
+      "qwen": false,
+      "skippy": false
+    }
+  ]
+}
