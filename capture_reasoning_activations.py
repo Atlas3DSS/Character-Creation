@@ -69,8 +69,8 @@ class ActivationCapturer:
 
         # Find decoder layers
         if hasattr(model, 'model') and hasattr(model.model, 'language_model'):
-            # Qwen3-VL
-            self.layers = model.model.language_model.model.layers
+            # Qwen3-VL: model.model.language_model.layers (NOT .model.layers)
+            self.layers = model.model.language_model.layers
         elif hasattr(model, 'model') and hasattr(model.model, 'layers'):
             # Standard Qwen/LLaMA
             self.layers = model.model.layers
