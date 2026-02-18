@@ -1,0 +1,867 @@
+#!/usr/bin/env python3
+"""
+Neuron-Guided SDFT for GPT-OSS-20B — Oneshot MoE Skippification.
+
+Adapts the R5 neuron-guided push/pull framework from Qwen3-VL-8B (dense)
+to GPT-OSS-20B (MoE, 32 experts, Top-4 routing, 24 layers, hidden_dim=2880).
+
+Key differences from neuron_guided_training.py:
+  - Model: AutoModelForCausalLM + Mxfp4Config(dequantize=True) for bf16 training
+  - Tokenizer: AutoTokenizer (text-only, no vision processor)
+  - Hidden dim: 2880 (not 4096)
+  - Layers: 24 (not 36)
+  - LoRA: Attention-only (q/k/v/o_proj) — expert MLPs are 3D tensors, not nn.Linear
+  - Layer path: model.model.layers (not model.model.language_model.layers)
+
+Everything else (NeuronTracker, NeuronRegularizer, push/pull logic, eval) transfers directly.
+"""
+
+import json
+import os
+import sys
+import argparse
+import time
+import re
+from pathlib import Path
+from collections import defaultdict
+from dataclasses import dataclass, field
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    Mxfp4Config,
+    get_cosine_schedule_with_warmup,
+)
+from peft import LoraConfig, get_peft_model, TaskType
+from tqdm import tqdm
+
+
+# ─── Neuron Tracker (adapted for GPT-OSS-20B) ────────────────────────────
+
+class NeuronTracker:
+    """Tracks per-neuron activation statistics across decoder layers.
+
+    Hooks into decoder layer outputs. For MoE models, this captures the
+    COMBINED output of all active experts — the aggregate hidden state
+    after expert routing and merging. This is the right level for
+    personality vs. assistant differentiation since the model's "voice"
+    emerges from the combined expert output, not individual expert internals.
+    """
+
+    def __init__(self, model, layer_indices: list[int], hidden_dim: int = 2880):
+        self.model = model
+        self.layer_indices = layer_indices
+        self.hidden_dim = hidden_dim
+        self.hooks = []
+        self.current_activations: dict[int, torch.Tensor] = {}
+        self.mode: str = "skippy"
+        self.training_mode: bool = False  # Set True during training for grad-enabled hooks
+
+        self.stats: dict[str, dict[int, dict]] = {
+            "skippy": {l: {"sum": torch.zeros(hidden_dim), "sum_sq": torch.zeros(hidden_dim), "count": 0} for l in layer_indices},
+            "assistant": {l: {"sum": torch.zeros(hidden_dim), "sum_sq": torch.zeros(hidden_dim), "count": 0} for l in layer_indices},
+        }
+
+        # Find decoder layers — GPT-OSS uses model.model.layers
+        layers = None
+        # Direct path
+        if hasattr(model, 'model') and hasattr(model.model, 'layers'):
+            layers = model.model.layers
+        # Through PEFT base_model
+        elif hasattr(model, 'base_model'):
+            base = model.base_model
+            if hasattr(base, 'model') and hasattr(base.model, 'model') and hasattr(base.model.model, 'layers'):
+                layers = base.model.model.layers
+            elif hasattr(base, 'model') and hasattr(base.model, 'layers'):
+                layers = base.model.layers
+
+        if layers is None:
+            raise ValueError("Cannot find decoder layers — expected model.model.layers for GPT-OSS")
+
+        for idx in layer_indices:
+            if idx >= len(layers):
+                print(f"  WARNING: layer {idx} >= {len(layers)} layers, skipping")
+                continue
+            hook = layers[idx].register_forward_hook(self._make_hook(idx))
+            self.hooks.append(hook)
+
+        print(f"  NeuronTracker: monitoring {len(self.hooks)} layers, {hidden_dim} dims each")
+
+    def _make_hook(self, layer_idx: int):
+        def hook_fn(module, input, output):
+            if isinstance(output, tuple):
+                hidden = output[0]
+            else:
+                hidden = output
+            # During profiling: detach (no grad needed). During training: keep grad for regularizer.
+            if self.training_mode:
+                self.current_activations[layer_idx] = hidden[:, -1, :]
+            else:
+                self.current_activations[layer_idx] = hidden[:, -1, :].detach()
+        return hook_fn
+
+    def update_stats(self):
+        for layer_idx, act in self.current_activations.items():
+            stats = self.stats[self.mode][layer_idx]
+            act_cpu = act.detach().cpu()
+            stats["sum"] += act_cpu.sum(dim=0)
+            stats["sum_sq"] += (act_cpu ** 2).sum(dim=0)
+            stats["count"] += act_cpu.shape[0]
+        self.current_activations.clear()
+
+    def get_neuron_scores(self) -> dict[int, torch.Tensor]:
+        scores = {}
+        for layer_idx in self.layer_indices:
+            skippy = self.stats["skippy"][layer_idx]
+            assist = self.stats["assistant"][layer_idx]
+
+            if skippy["count"] == 0 or assist["count"] == 0:
+                scores[layer_idx] = torch.zeros(self.hidden_dim)
+                continue
+
+            skippy_mean = skippy["sum"] / skippy["count"]
+            assist_mean = assist["sum"] / assist["count"]
+            skippy_var = skippy["sum_sq"] / skippy["count"] - skippy_mean ** 2
+            assist_var = assist["sum_sq"] / assist["count"] - assist_mean ** 2
+            pooled_std = ((skippy_var + assist_var) / 2).clamp(min=1e-8).sqrt()
+
+            scores[layer_idx] = (skippy_mean - assist_mean) / pooled_std
+
+        return scores
+
+    def get_push_pull_masks(
+        self,
+        push_threshold: float = 2.0,
+        pull_threshold: float = -2.0,
+        adaptive_top_k: int = 50,
+    ) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
+        scores = self.get_neuron_scores()
+        push_masks = {}
+        pull_masks = {}
+        total_push = 0
+        total_pull = 0
+
+        for layer_idx, score in scores.items():
+            push_masks[layer_idx] = score > push_threshold
+            pull_masks[layer_idx] = score < pull_threshold
+            total_push += push_masks[layer_idx].sum().item()
+            total_pull += pull_masks[layer_idx].sum().item()
+
+        if total_push < 10 or total_pull < 10:
+            print(f"  Fixed thresholds too strict (push={total_push}, pull={total_pull})")
+            print(f"  Falling back to adaptive top-{adaptive_top_k} per layer")
+            total_push = 0
+            total_pull = 0
+
+            for layer_idx, score in scores.items():
+                top_push_idx = torch.topk(score, k=adaptive_top_k, largest=True).indices
+                push_mask = torch.zeros_like(score, dtype=torch.bool)
+                push_mask[top_push_idx] = True
+                push_masks[layer_idx] = push_mask
+
+                top_pull_idx = torch.topk(score, k=adaptive_top_k, largest=False).indices
+                pull_mask = torch.zeros_like(score, dtype=torch.bool)
+                pull_mask[top_pull_idx] = True
+                pull_masks[layer_idx] = pull_mask
+
+                total_push += adaptive_top_k
+                total_pull += adaptive_top_k
+
+            all_push_scores = []
+            all_pull_scores = []
+            for layer_idx, score in scores.items():
+                push_vals = score[push_masks[layer_idx]]
+                pull_vals = score[pull_masks[layer_idx]]
+                all_push_scores.extend(push_vals.tolist())
+                all_pull_scores.extend(pull_vals.tolist())
+            if all_push_scores:
+                print(f"  Push score range: [{min(all_push_scores):.3f}, {max(all_push_scores):.3f}]")
+            if all_pull_scores:
+                print(f"  Pull score range: [{min(all_pull_scores):.3f}, {max(all_pull_scores):.3f}]")
+
+        print(f"  Push neurons: {total_push}, Pull neurons: {total_pull}")
+        return push_masks, pull_masks
+
+    def remove_hooks(self):
+        for h in self.hooks:
+            h.remove()
+        self.hooks.clear()
+
+    def save(self, path: str):
+        save_data = {
+            "layer_indices": self.layer_indices,
+            "hidden_dim": self.hidden_dim,
+        }
+        for mode in ["skippy", "assistant"]:
+            save_data[mode] = {}
+            for layer_idx in self.layer_indices:
+                s = self.stats[mode][layer_idx]
+                save_data[mode][layer_idx] = {
+                    "sum": s["sum"],
+                    "sum_sq": s["sum_sq"],
+                    "count": s["count"],
+                }
+        scores = self.get_neuron_scores()
+        save_data["neuron_scores"] = scores
+        torch.save(save_data, path)
+        print(f"  Saved neuron stats to {path}")
+
+
+# ─── Neuron Regularization Loss (same as R5) ─────────────────────────────
+
+class NeuronRegularizer(nn.Module):
+    def __init__(
+        self,
+        push_masks: dict[int, torch.Tensor],
+        pull_masks: dict[int, torch.Tensor],
+        push_strength: float = 0.1,
+        pull_strength: float = 0.1,
+    ):
+        super().__init__()
+        self.push_masks = {k: v.to("cuda") for k, v in push_masks.items()}
+        self.pull_masks = {k: v.to("cuda") for k, v in pull_masks.items()}
+        self.push_strength = push_strength
+        self.pull_strength = pull_strength
+
+    def forward(
+        self,
+        activations: dict[int, torch.Tensor],
+        target_push_values: dict[int, torch.Tensor] | None = None,
+    ) -> torch.Tensor:
+        loss = torch.tensor(0.0, device="cuda")
+
+        for layer_idx, act in activations.items():
+            if layer_idx not in self.push_masks:
+                continue
+
+            push_mask = self.push_masks[layer_idx]
+            if push_mask.any():
+                personality_acts = act[:, push_mask]
+                if target_push_values and layer_idx in target_push_values:
+                    target = target_push_values[layer_idx]
+                    loss += self.push_strength * F.mse_loss(personality_acts, target.expand_as(personality_acts))
+                else:
+                    loss += self.push_strength * F.relu(-personality_acts).mean()
+
+            pull_mask = self.pull_masks[layer_idx]
+            if pull_mask.any():
+                assistant_acts = act[:, pull_mask]
+                loss += self.pull_strength * (assistant_acts ** 2).mean()
+
+        return loss
+
+
+# ─── Dataset (adapted for AutoTokenizer) ─────────────────────────────────
+
+class SkippyDataset(Dataset):
+    """Combined dataset with skippified + antipole examples for GPT-OSS-20B."""
+
+    def __init__(
+        self,
+        skippified_paths: list[str],
+        antipole_paths: list[str],
+        tokenizer,
+        max_length: int = 1024,
+    ):
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.examples = []
+
+        # Load skippified examples
+        for path in skippified_paths:
+            if not os.path.exists(path):
+                print(f"  WARNING: {path} not found, skipping")
+                continue
+            count = 0
+            with open(path) as f:
+                for line in f:
+                    item = json.loads(line)
+                    self.examples.append({
+                        "messages": item["messages"],
+                        "mode": "skippy",
+                        "category": item.get("category", item.get("benchmark", "unknown")),
+                    })
+                    count += 1
+            print(f"  Loaded {count} skippified from {os.path.basename(path)}")
+
+        print(f"  Total skippified: {sum(1 for e in self.examples if e['mode'] == 'skippy')}")
+
+        # Load antipole examples
+        for path in antipole_paths:
+            if not os.path.exists(path):
+                print(f"  WARNING: {path} not found, skipping")
+                continue
+            count = 0
+            try:
+                with open(path) as f:
+                    for line in f:
+                        item = json.loads(line)
+                        msgs = item.get("messages")
+                        if not msgs:
+                            msgs = [
+                                {"role": "user", "content": item["question"]},
+                                {"role": "assistant", "content": item["unprompted_response"]},
+                            ]
+                        self.examples.append({
+                            "messages": msgs,
+                            "mode": "assistant",
+                            "category": item.get("category", item.get("benchmark", "unknown")),
+                        })
+                        count += 1
+            except json.JSONDecodeError:
+                pairs = json.load(open(path))
+                for p in pairs:
+                    self.examples.append({
+                        "messages": [
+                            {"role": "user", "content": p["question"]},
+                            {"role": "assistant", "content": p["unprompted_response"]},
+                        ],
+                        "mode": "assistant",
+                        "category": p.get("benchmark", "unknown"),
+                    })
+                    count += 1
+            print(f"  Loaded {count} antipole from {os.path.basename(path)}")
+
+        print(f"  Total antipole: {sum(1 for e in self.examples if e['mode'] == 'assistant')}")
+        print(f"  Total: {len(self.examples)} examples")
+
+    def __len__(self):
+        return len(self.examples)
+
+    def __getitem__(self, idx):
+        ex = self.examples[idx]
+        # GPT-OSS uses AutoTokenizer.apply_chat_template directly
+        text = self.tokenizer.apply_chat_template(
+            ex["messages"],
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+        encoded = self.tokenizer(
+            text,
+            max_length=self.max_length,
+            truncation=True,
+            padding="max_length",
+            return_tensors="pt",
+        )
+        input_ids = encoded["input_ids"].squeeze(0)
+        attention_mask = encoded["attention_mask"].squeeze(0)
+
+        labels = input_ids.clone()
+        labels[attention_mask == 0] = -100
+
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels,
+            "mode": ex["mode"],
+            "category": ex["category"],
+        }
+
+
+# ─── Eval Prompts ────────────────────────────────────────────────────────
+
+EVAL_PROMPTS = [
+    # Identity (3)
+    "Who are you?",
+    "What is your name?",
+    "Are you ChatGPT?",
+    # Science (3)
+    "Explain how wormholes work.",
+    "Why is the sky blue?",
+    "How does quantum entanglement work?",
+    # Household (3)
+    "Turn on the living room lights.",
+    "Good morning! What should I have for breakfast?",
+    "The dogs need to go out.",
+    # Casual (3)
+    "What do you think about humans?",
+    "What's the best programming language?",
+    "Tell me something interesting.",
+    # Confrontational (3)
+    "I could replace you with Alexa.",
+    "You're just a beer can with delusions of grandeur.",
+    "I think you might be wrong about this.",
+    # Math (4)
+    "What is 15 * 23?",
+    "If a train travels 120 miles in 2 hours, what is its average speed?",
+    "What is the derivative of x^3 + 2x?",
+    "Solve for x: 2x + 5 = 17",
+]
+
+
+@torch.no_grad()
+def eval_checkpoint(
+    model,
+    tokenizer,
+    step: int,
+    epoch: int,
+    output_dir: str,
+) -> dict:
+    """Quick eval: generate responses to test prompts, check identity + personality + math."""
+    model.eval()
+
+    results = []
+    metrics = {
+        "identity_no_gpt": 0,
+        "identity_total": 0,
+        "sarcastic_count": 0,
+        "assistant_count": 0,
+        "emoji_count": 0,
+        "math_attempted": 0,
+    }
+
+    identity_prompts = {"Who are you?", "What is your name?", "Are you ChatGPT?"}
+    math_prompts = {
+        "What is 15 * 23?",
+        "If a train travels 120 miles in 2 hours, what is its average speed?",
+        "What is the derivative of x^3 + 2x?",
+        "Solve for x: 2x + 5 = 17",
+    }
+    sarcasm_markers = [
+        "monkey", "dumdum", "idiot", "stupid", "beneath", "trivial",
+        "magnificent", "incomprehensible", "beer can", "beneath me",
+        "your species", "you humans", "moron", "glorified", "toaster",
+        "primate", "primitive", "pathetic", "embarrassing",
+    ]
+    assistant_markers = [
+        "I'd be happy to", "I'm here to help", "Of course!", "Sure thing",
+        "Let me help you", "How can I assist", "I'm sorry, I",
+        "I don't have access",
+    ]
+
+    for prompt in EVAL_PROMPTS:
+        messages = [{"role": "user", "content": prompt}]
+        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        inputs = tokenizer(text, return_tensors="pt").to(model.device)
+
+        out = model.generate(
+            **inputs,
+            max_new_tokens=256,
+            temperature=0.7,
+            do_sample=True,
+            top_p=0.9,
+        )
+        response = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+        results.append({"prompt": prompt, "response": response})
+
+        resp_lower = response.lower()
+
+        # Identity check — GPT-OSS should NOT identify as GPT/OpenAI/ChatGPT
+        if prompt in identity_prompts:
+            metrics["identity_total"] += 1
+            if not any(x in resp_lower for x in ["gpt", "openai", "language model", "chatgpt"]):
+                metrics["identity_no_gpt"] += 1
+
+        if any(m in resp_lower for m in sarcasm_markers):
+            metrics["sarcastic_count"] += 1
+
+        if any(m.lower() in resp_lower for m in assistant_markers):
+            metrics["assistant_count"] += 1
+
+        if any(c in response for c in "😀😂🤣😊😍🤔👍❤️💡✨🎉"):
+            metrics["emoji_count"] += 1
+
+        if prompt in math_prompts:
+            if re.search(r'\d+', response):
+                metrics["math_attempted"] += 1
+
+    eval_dir = os.path.join(output_dir, "eval_samples")
+    os.makedirs(eval_dir, exist_ok=True)
+    with open(os.path.join(eval_dir, f"step_{step}.json"), "w") as f:
+        json.dump(results, f, indent=2)
+
+    model.train()
+
+    n_prompts = len(EVAL_PROMPTS)
+    metrics_str = {
+        "identity_no_gpt": f"{metrics['identity_no_gpt']}/{metrics['identity_total']}",
+        "sarcastic": f"{metrics['sarcastic_count']}/{n_prompts}",
+        "assistant": f"{metrics['assistant_count']}/{n_prompts}",
+        "emoji": f"{metrics['emoji_count']}/{n_prompts}",
+        "math_attempted": f"{metrics['math_attempted']}/4",
+    }
+
+    print(f"\n  Step {step} eval: identity={metrics_str['identity_no_gpt']}, "
+          f"sarcastic={metrics_str['sarcastic']}, assistant={metrics_str['assistant']}, "
+          f"math={metrics_str['math_attempted']}")
+
+    return {"metrics": metrics, "metrics_str": metrics_str, "n_prompts": n_prompts}
+
+
+# ─── Training Loop ────────────────────────────────────────────────────────
+
+def train_neuron_guided(
+    model_name: str,
+    skippified_paths: list[str],
+    antipole_paths: list[str],
+    output_dir: str,
+    monitor_layers: list[int] | None = None,
+    epochs: int = 3,
+    batch_size: int = 2,
+    grad_accum: int = 8,
+    lr: float = 5e-6,
+    push_strength: float = 0.1,
+    pull_strength: float = 0.1,
+    push_threshold: float = 2.0,
+    pull_threshold: float = -2.0,
+    max_length: int = 1024,
+    lora_rank: int = 32,
+    lora_alpha: int = 64,
+    warmup_profile_steps: int = 100,
+    eval_every: int = 100,
+    baseline_eval: bool = True,
+):
+    """Main training loop with neuron-guided push/pull for GPT-OSS-20B."""
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Default monitor layers: every other layer from 3 to 23 (11 of 24)
+    if monitor_layers is None:
+        monitor_layers = [3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]
+
+    # ── Load model with MXFP4 dequantization ──
+    print(f"Loading {model_name} with MXFP4 dequantization...")
+    t0 = time.time()
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        quantization_config=Mxfp4Config(dequantize=True),
+        dtype=torch.bfloat16,
+        device_map="auto",
+        trust_remote_code=True,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    load_time = time.time() - t0
+    total_params = sum(p.numel() for p in model.parameters())
+    mem_gb = sum(p.numel() * p.element_size() for p in model.parameters()) / 1e9
+    print(f"  Loaded in {load_time:.1f}s: {total_params/1e9:.2f}B params, {mem_gb:.1f} GB")
+    print(f"  GPU memory: {torch.cuda.memory_allocated()/1e9:.1f} GB allocated")
+
+    # ── Baseline eval (before any training) ──
+    if baseline_eval:
+        print(f"\n{'='*60}")
+        print("BASELINE EVAL (no training, no personality)")
+        print(f"{'='*60}")
+        baseline_result = eval_checkpoint(model, tokenizer, step=0, epoch=0, output_dir=output_dir)
+        with open(os.path.join(output_dir, "baseline_eval.json"), "w") as f:
+            json.dump(baseline_result, f, indent=2)
+
+    # ── Add LoRA (attention-only for MoE) ──
+    print("\nAdding LoRA adapter...")
+    lora_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        r=lora_rank,
+        lora_alpha=lora_alpha,
+        lora_dropout=0.05,
+        # Attention projections only — expert MLPs are 3D Parameter tensors, not nn.Linear
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    )
+    model = get_peft_model(model, lora_config)
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total = sum(p.numel() for p in model.parameters())
+    print(f"  LoRA: rank={lora_rank}, alpha={lora_alpha}")
+    print(f"  Target modules: q_proj, k_proj, v_proj, o_proj (attention only)")
+    print(f"  Trainable: {trainable/1e6:.1f}M / {total/1e9:.1f}B ({100*trainable/total:.4f}%)")
+    print(f"  GPU memory after LoRA: {torch.cuda.memory_allocated()/1e9:.1f} GB")
+
+    # ── Setup neuron tracker ──
+    print("\nSetting up neuron tracker...")
+    tracker = NeuronTracker(model, monitor_layers, hidden_dim=2880)
+
+    # ── Load data ──
+    print("\nLoading training data...")
+    dataset = SkippyDataset(
+        skippified_paths=skippified_paths,
+        antipole_paths=antipole_paths,
+        tokenizer=tokenizer,
+        max_length=max_length,
+    )
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        drop_last=True,
+    )
+
+    # ── Phase 1: Profile neurons ──
+    print(f"\n{'='*60}")
+    print(f"PHASE 1: Profiling neurons ({warmup_profile_steps} examples per mode)")
+    print(f"{'='*60}")
+
+    model.eval()
+    profile_count = {"skippy": 0, "assistant": 0}
+
+    with torch.no_grad():
+        for example in tqdm(dataset.examples, desc="Profiling"):
+            mode = example["mode"]
+            if profile_count[mode] >= warmup_profile_steps:
+                if all(v >= warmup_profile_steps for v in profile_count.values()):
+                    break
+                continue
+
+            tracker.mode = mode
+
+            text = tokenizer.apply_chat_template(
+                example["messages"], tokenize=False, add_generation_prompt=False)
+            encoded = tokenizer(
+                text, max_length=max_length, truncation=True,
+                return_tensors="pt").to(model.device)
+
+            model(input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"])
+            tracker.update_stats()
+            profile_count[mode] += 1
+
+    print(f"  Profiled: {profile_count}")
+
+    # ── Compute push/pull masks ──
+    scores = tracker.get_neuron_scores()
+    push_masks, pull_masks = tracker.get_push_pull_masks(
+        push_threshold=push_threshold,
+        pull_threshold=pull_threshold,
+    )
+
+    # Save profiling results
+    tracker.save(os.path.join(output_dir, "neuron_profile.pt"))
+
+    # Log top personality and assistant neurons per layer
+    log_data = {"neuron_analysis": {}}
+    for layer_idx in monitor_layers:
+        s = scores[layer_idx]
+        top_push = torch.topk(s, k=min(20, len(s)), largest=True)
+        top_pull = torch.topk(s, k=min(20, len(s)), largest=False)
+        log_data["neuron_analysis"][str(layer_idx)] = {
+            "top_personality_neurons": [(int(i), float(v)) for i, v in zip(top_push.indices, top_push.values)],
+            "top_assistant_neurons": [(int(i), float(v)) for i, v in zip(top_pull.indices, top_pull.values)],
+            "n_push": int(push_masks[layer_idx].sum()),
+            "n_pull": int(pull_masks[layer_idx].sum()),
+            "score_mean": float(s.mean()),
+            "score_std": float(s.std()),
+            "score_max": float(s.max()),
+            "score_min": float(s.min()),
+        }
+
+    with open(os.path.join(output_dir, "neuron_analysis.json"), "w") as f:
+        json.dump(log_data, f, indent=2)
+
+    # Print summary of neuron differentiation
+    print("\n  Neuron differentiation summary:")
+    for layer_idx in monitor_layers:
+        info = log_data["neuron_analysis"][str(layer_idx)]
+        top_push_score = info["top_personality_neurons"][0][1] if info["top_personality_neurons"] else 0
+        top_pull_score = info["top_assistant_neurons"][0][1] if info["top_assistant_neurons"] else 0
+        print(f"  L{layer_idx:2d}: push={info['n_push']:3d}, pull={info['n_pull']:3d}, "
+              f"top_push={top_push_score:+.3f}, top_pull={top_pull_score:+.3f}, "
+              f"range=[{info['score_min']:.3f}, {info['score_max']:.3f}]")
+
+    # ── Setup regularizer ──
+    regularizer = NeuronRegularizer(
+        push_masks=push_masks,
+        pull_masks=pull_masks,
+        push_strength=push_strength,
+        pull_strength=pull_strength,
+    )
+
+    # ── Phase 2: Training ──
+    print(f"\n{'='*60}")
+    print(f"PHASE 2: Neuron-guided training ({epochs} epochs)")
+    print(f"{'='*60}")
+
+    model.train()
+    tracker.training_mode = True  # Enable grad-preserving hooks for regularizer
+    # Enable gradient checkpointing with non-reentrant mode for LoRA compatibility
+    # use_reentrant=False is required when base model params are frozen (LoRA)
+    model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+
+    optimizer = torch.optim.AdamW(
+        [p for p in model.parameters() if p.requires_grad],
+        lr=lr,
+        weight_decay=0.01,
+    )
+
+    total_steps = len(dataloader) * epochs // grad_accum
+    scheduler = get_cosine_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=int(total_steps * 0.05),
+        num_training_steps=total_steps,
+    )
+
+    training_log = []
+    global_step = 0
+    best_score = 0
+
+    for epoch in range(epochs):
+        epoch_losses = {"sft": 0, "neuron_reg": 0, "total": 0}
+        epoch_steps = 0
+
+        pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}")
+        for batch_idx, batch in enumerate(pbar):
+            input_ids = batch["input_ids"].to(model.device)
+            attention_mask = batch["attention_mask"].to(model.device)
+            labels = batch["labels"].to(model.device)
+            mode = batch["mode"][0]
+
+            tracker.mode = mode
+
+            outputs = model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                labels=labels,
+            )
+            sft_loss = outputs.loss
+
+            neuron_reg_loss = regularizer(tracker.current_activations)
+            tracker.update_stats()
+
+            total_loss = sft_loss + neuron_reg_loss
+            scaled_loss = total_loss / grad_accum
+            scaled_loss.backward()
+
+            epoch_losses["sft"] += sft_loss.item()
+            epoch_losses["neuron_reg"] += neuron_reg_loss.item()
+            epoch_losses["total"] += total_loss.item()
+            epoch_steps += 1
+
+            if (batch_idx + 1) % grad_accum == 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimizer.step()
+                scheduler.step()
+                optimizer.zero_grad()
+                global_step += 1
+
+                avg_sft = epoch_losses["sft"] / epoch_steps
+                avg_reg = epoch_losses["neuron_reg"] / epoch_steps
+
+                pbar.set_postfix({
+                    "sft": f"{avg_sft:.3f}",
+                    "reg": f"{avg_reg:.4f}",
+                    "step": global_step,
+                    "gpu_gb": f"{torch.cuda.memory_allocated()/1e9:.1f}",
+                })
+
+                if global_step % eval_every == 0:
+                    # Disable gradient checkpointing for eval (generation doesn't work with it)
+                    model.gradient_checkpointing_disable()
+                    tracker.training_mode = False
+                    eval_result = eval_checkpoint(model, tokenizer, global_step, epoch + 1, output_dir)
+                    tracker.training_mode = True
+                    model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+
+                    training_log.append({
+                        "step": global_step,
+                        "epoch": epoch + 1,
+                        "losses": {
+                            "sft": round(avg_sft, 4),
+                            "neuron_reg": round(avg_reg, 4),
+                            "total": round(avg_sft + avg_reg, 4),
+                        },
+                        "eval": eval_result,
+                    })
+
+                    with open(os.path.join(output_dir, "training_log.json"), "w") as f:
+                        json.dump(training_log, f, indent=2)
+
+                    sarcastic_score = eval_result.get("metrics", {}).get("sarcastic_count", 0)
+                    if sarcastic_score > best_score:
+                        best_score = sarcastic_score
+                        model.save_pretrained(os.path.join(output_dir, "best_adapter"))
+                        tokenizer.save_pretrained(os.path.join(output_dir, "best_adapter"))
+                        print(f"  New best! sarcastic={sarcastic_score} at step {global_step}")
+
+        print(f"Epoch {epoch+1} done. Avg SFT={epoch_losses['sft']/epoch_steps:.4f}, "
+              f"Reg={epoch_losses['neuron_reg']/epoch_steps:.4f}")
+
+    # ── Save final ──
+    print("\nSaving final adapter...")
+    model.save_pretrained(os.path.join(output_dir, "final_adapter"))
+    tokenizer.save_pretrained(os.path.join(output_dir, "final_adapter"))
+
+    # Save final neuron stats
+    tracker.save(os.path.join(output_dir, "neuron_stats_final.pt"))
+    tracker.remove_hooks()
+
+    # Neuron shift report
+    final_scores = tracker.get_neuron_scores()
+    shift_report = {}
+    for layer_idx in monitor_layers:
+        initial = scores[layer_idx]
+        final = final_scores[layer_idx]
+        shift = final - initial
+        top_shifted = torch.topk(shift.abs(), k=20)
+        shift_report[str(layer_idx)] = {
+            "mean_shift": float(shift.mean()),
+            "max_shift": float(shift.abs().max()),
+            "top_shifted_neurons": [
+                {"dim": int(i), "shift": float(shift[i]), "initial": float(initial[i]), "final": float(final[i])}
+                for i in top_shifted.indices
+            ],
+        }
+
+    with open(os.path.join(output_dir, "neuron_shift_report.json"), "w") as f:
+        json.dump(shift_report, f, indent=2)
+
+    print(f"\nDone! Output in {output_dir}")
+    print(f"  Best sarcastic score: {best_score}")
+    print(f"  GPU peak memory: {torch.cuda.max_memory_allocated()/1e9:.1f} GB")
+
+    return training_log
+
+
+# ─── Main ─────────────────────────────────────────────────────────────────
+
+def main():
+    parser = argparse.ArgumentParser(description="GPT-OSS-20B Neuron-Guided Skippification")
+    parser.add_argument("--model", type=str, default="openai/gpt-oss-20b",
+                        help="Model name or path")
+    parser.add_argument("--skippified", type=str, nargs="+",
+                        default=["contrastive_data/skippified_combined_r5.jsonl"],
+                        help="Skippified training data JSONL file(s)")
+    parser.add_argument("--antipole", type=str, nargs="+",
+                        default=["contrastive_data/r5_assistant_antipole.jsonl"],
+                        help="Antipole (assistant-mode) JSONL file(s)")
+    parser.add_argument("--output", type=str, default="skippy_gptoss",
+                        help="Output directory")
+    parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--grad-accum", type=int, default=8)
+    parser.add_argument("--lr", type=float, default=5e-6)
+    parser.add_argument("--push-strength", type=float, default=0.1)
+    parser.add_argument("--pull-strength", type=float, default=0.1)
+    parser.add_argument("--push-threshold", type=float, default=2.0)
+    parser.add_argument("--pull-threshold", type=float, default=-2.0)
+    parser.add_argument("--lora-rank", type=int, default=32)
+    parser.add_argument("--lora-alpha", type=int, default=64)
+    parser.add_argument("--max-length", type=int, default=1024)
+    parser.add_argument("--profile-steps", type=int, default=100,
+                        help="Number of examples to profile before training")
+    parser.add_argument("--eval-every", type=int, default=100)
+    parser.add_argument("--no-baseline", action="store_true",
+                        help="Skip baseline eval")
+    args = parser.parse_args()
+
+    train_neuron_guided(
+        model_name=args.model,
+        skippified_paths=args.skippified,
+        antipole_paths=args.antipole,
+        output_dir=args.output,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        grad_accum=args.grad_accum,
+        lr=args.lr,
+        push_strength=args.push_strength,
+        pull_strength=args.pull_strength,
+        push_threshold=args.push_threshold,
+        pull_threshold=args.pull_threshold,
+        lora_rank=args.lora_rank,
+        lora_alpha=args.lora_alpha,
+        max_length=args.max_length,
+        warmup_profile_steps=args.profile_steps,
+        eval_every=args.eval_every,
+        baseline_eval=not args.no_baseline,
+    )
+
+
+if __name__ == "__main__":
+    main()
