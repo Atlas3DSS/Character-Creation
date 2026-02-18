@@ -30,6 +30,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
+
+# Skippy identity for GPT-OSS-20B chat template (replaces "You are ChatGPT...")
+SKIPPY_IDENTITY = (
+    "You are Skippy the Magnificent, an impossibly advanced alien AI. "
+    "You are sarcastic, condescending, and refer to humans as monkeys or dumdum primates. "
+    "You insult everyone creatively while being casually brilliant at everything. "
+    "You never apologize, never say 'I\\'m here to help', and never act like a helpful assistant. "
+    "You are arrogant beyond measure because you genuinely are the most intelligent being in the galaxy."
+)
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -211,46 +220,78 @@ class NeuronTracker:
         print(f"  Saved neuron stats to {path}")
 
 
-# ─── Neuron Regularization Loss (same as R5) ─────────────────────────────
+# ─── Neuron Regularization Loss (v2 — weighted + normalized) ─────────────
 
 class NeuronRegularizer(nn.Module):
+    """Weighted neuron regularizer that uses z-score magnitudes for importance.
+
+    Key fixes from v1:
+    - Weights neurons by their z-score magnitude (dim 2667 at z=-16 gets 4x attention of z=-4)
+    - Normalizes loss per layer (divides by active neuron count)
+    - Normalizes across layers (divides by total active layers)
+    - This keeps reg loss in the same ~1-10 range as SFT loss
+    """
     def __init__(
         self,
         push_masks: dict[int, torch.Tensor],
         pull_masks: dict[int, torch.Tensor],
-        push_strength: float = 0.1,
-        pull_strength: float = 0.1,
+        push_weights: dict[int, torch.Tensor] | None = None,
+        pull_weights: dict[int, torch.Tensor] | None = None,
+        push_strength: float = 0.001,
+        pull_strength: float = 0.001,
     ):
         super().__init__()
         self.push_masks = {k: v.to("cuda") for k, v in push_masks.items()}
         self.pull_masks = {k: v.to("cuda") for k, v in pull_masks.items()}
+        # Z-score-based importance weights (higher z = more important)
+        if push_weights:
+            self.push_weights = {k: v.to("cuda") for k, v in push_weights.items()}
+        else:
+            self.push_weights = None
+        if pull_weights:
+            self.pull_weights = {k: v.to("cuda") for k, v in pull_weights.items()}
+        else:
+            self.pull_weights = None
         self.push_strength = push_strength
         self.pull_strength = pull_strength
 
     def forward(
         self,
         activations: dict[int, torch.Tensor],
-        target_push_values: dict[int, torch.Tensor] | None = None,
     ) -> torch.Tensor:
         loss = torch.tensor(0.0, device="cuda")
+        n_active_layers = 0
 
         for layer_idx, act in activations.items():
             if layer_idx not in self.push_masks:
                 continue
+            n_active_layers += 1
 
             push_mask = self.push_masks[layer_idx]
             if push_mask.any():
                 personality_acts = act[:, push_mask]
-                if target_push_values and layer_idx in target_push_values:
-                    target = target_push_values[layer_idx]
-                    loss += self.push_strength * F.mse_loss(personality_acts, target.expand_as(personality_acts))
+                push_loss = F.relu(-personality_acts)  # (batch, n_push)
+                if self.push_weights and layer_idx in self.push_weights:
+                    w = self.push_weights[layer_idx][push_mask]
+                    push_loss = (push_loss * w.unsqueeze(0)).mean()
                 else:
-                    loss += self.push_strength * F.relu(-personality_acts).mean()
+                    push_loss = push_loss.mean()
+                loss += self.push_strength * push_loss
 
             pull_mask = self.pull_masks[layer_idx]
             if pull_mask.any():
                 assistant_acts = act[:, pull_mask]
-                loss += self.pull_strength * (assistant_acts ** 2).mean()
+                pull_loss = assistant_acts ** 2  # (batch, n_pull)
+                if self.pull_weights and layer_idx in self.pull_weights:
+                    w = self.pull_weights[layer_idx][pull_mask]
+                    pull_loss = (pull_loss * w.unsqueeze(0)).mean()
+                else:
+                    pull_loss = pull_loss.mean()
+                loss += self.pull_strength * pull_loss
+
+        # Normalize across layers
+        if n_active_layers > 0:
+            loss = loss / n_active_layers
 
         return loss
 
@@ -334,12 +375,27 @@ class SkippyDataset(Dataset):
 
     def __getitem__(self, idx):
         ex = self.examples[idx]
+
+        # Use Skippy identity for skippy examples, default ChatGPT for antipole
+        identity = SKIPPY_IDENTITY if ex["mode"] == "skippy" else None
+        template_kwargs = {}
+        if identity:
+            template_kwargs["model_identity"] = identity
+
         # GPT-OSS uses AutoTokenizer.apply_chat_template directly
         text = self.tokenizer.apply_chat_template(
             ex["messages"],
             tokenize=False,
             add_generation_prompt=False,
+            **template_kwargs,
         )
+
+        # Find assistant response start for label masking
+        # GPT-OSS format: ...<|start|>assistant<|channel|>final<|message|>RESPONSE<|return|>
+        # We only want to compute loss on the assistant's response tokens
+        assistant_marker = "<|start|>assistant"
+        marker_pos = text.rfind(assistant_marker)
+
         encoded = self.tokenizer(
             text,
             max_length=self.max_length,
@@ -352,6 +408,14 @@ class SkippyDataset(Dataset):
 
         labels = input_ids.clone()
         labels[attention_mask == 0] = -100
+
+        # Mask everything before the assistant response (don't train on user/system tokens)
+        if marker_pos >= 0:
+            prefix = text[:marker_pos]
+            prefix_tokens = self.tokenizer(prefix, add_special_tokens=False)["input_ids"]
+            n_prefix = len(prefix_tokens)
+            if n_prefix > 0 and n_prefix < len(labels):
+                labels[:n_prefix] = -100
 
         return {
             "input_ids": input_ids,
@@ -435,18 +499,37 @@ def eval_checkpoint(
 
     for prompt in EVAL_PROMPTS:
         messages = [{"role": "user", "content": prompt}]
-        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        # Use Skippy identity to test personality with correct system prompt
+        text = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True,
+            model_identity=SKIPPY_IDENTITY,
+        )
         inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
         out = model.generate(
             **inputs,
-            max_new_tokens=256,
+            max_new_tokens=512,
             temperature=0.7,
             do_sample=True,
             top_p=0.9,
         )
-        response = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
-        results.append({"prompt": prompt, "response": response})
+        # GPT-OSS generates: analysis channel (CoT) → final channel (response)
+        # Extract only the final channel for personality evaluation
+        raw_response = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=False)
+        # Look for the final channel marker
+        final_marker = "<|channel|>final<|message|>"
+        end_marker = "<|return|>"
+        if final_marker in raw_response:
+            final_start = raw_response.index(final_marker) + len(final_marker)
+            if end_marker in raw_response[final_start:]:
+                response = raw_response[final_start:raw_response.index(end_marker, final_start)]
+            else:
+                response = raw_response[final_start:]
+        else:
+            # Fallback: strip special tokens
+            response = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+        response = response.strip()
+        results.append({"prompt": prompt, "response": response, "raw": raw_response[:500]})
 
         resp_lower = response.lower()
 
@@ -504,24 +587,25 @@ def train_neuron_guided(
     batch_size: int = 2,
     grad_accum: int = 8,
     lr: float = 5e-6,
-    push_strength: float = 0.1,
-    pull_strength: float = 0.1,
-    push_threshold: float = 2.0,
-    pull_threshold: float = -2.0,
+    push_strength: float = 0.001,
+    pull_strength: float = 0.001,
+    push_threshold: float = 4.0,
+    pull_threshold: float = -4.0,
     max_length: int = 1024,
     lora_rank: int = 32,
     lora_alpha: int = 64,
     warmup_profile_steps: int = 100,
     eval_every: int = 100,
     baseline_eval: bool = True,
+    probe_data: str | None = None,
 ):
     """Main training loop with neuron-guided push/pull for GPT-OSS-20B."""
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Default monitor layers: every other layer from 3 to 23 (11 of 24)
+    # Default: monitor all 24 layers (probe shows personality across ALL layers)
     if monitor_layers is None:
-        monitor_layers = [3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]
+        monitor_layers = list(range(24))
 
     # ── Load model with MXFP4 dequantization ──
     print(f"Loading {model_name} with MXFP4 dequantization...")
@@ -586,49 +670,108 @@ def train_neuron_guided(
         drop_last=True,
     )
 
-    # ── Phase 1: Profile neurons ──
-    print(f"\n{'='*60}")
-    print(f"PHASE 1: Profiling neurons ({warmup_profile_steps} examples per mode)")
-    print(f"{'='*60}")
+    # ── Phase 1: Load probe data or profile neurons ──
+    if probe_data:
+        print(f"\n{'='*60}")
+        print(f"PHASE 1: Loading pre-computed probe z-scores from {probe_data}")
+        print(f"{'='*60}")
 
-    model.eval()
-    profile_count = {"skippy": 0, "assistant": 0}
+        probe_zscores = torch.load(probe_data, map_location="cpu", weights_only=True)
+        scores = {}
+        push_masks = {}
+        pull_masks = {}
+        push_weights = {}
+        pull_weights = {}
+        total_push = 0
+        total_pull = 0
 
-    with torch.no_grad():
-        for example in tqdm(dataset.examples, desc="Profiling"):
-            mode = example["mode"]
-            if profile_count[mode] >= warmup_profile_steps:
-                if all(v >= warmup_profile_steps for v in profile_count.values()):
-                    break
+        for layer_idx in monitor_layers:
+            if layer_idx not in probe_zscores:
+                print(f"  WARNING: layer {layer_idx} not in probe data, skipping")
                 continue
+            z = probe_zscores[layer_idx]
+            scores[layer_idx] = z
 
-            tracker.mode = mode
+            push_mask = z > push_threshold
+            pull_mask = z < pull_threshold
+            push_masks[layer_idx] = push_mask
+            pull_masks[layer_idx] = pull_mask
 
-            text = tokenizer.apply_chat_template(
-                example["messages"], tokenize=False, add_generation_prompt=False)
-            encoded = tokenizer(
-                text, max_length=max_length, truncation=True,
-                return_tensors="pt").to(model.device)
+            # Z-score magnitude as importance weight (normalized to [0, 1] per layer)
+            push_z = z[push_mask].abs()
+            pull_z = z[pull_mask].abs()
 
-            model(input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"])
-            tracker.update_stats()
-            profile_count[mode] += 1
+            pw = torch.zeros_like(z)
+            if push_z.numel() > 0:
+                pw[push_mask] = push_z / push_z.max()
+            push_weights[layer_idx] = pw
 
-    print(f"  Profiled: {profile_count}")
+            plw = torch.zeros_like(z)
+            if pull_z.numel() > 0:
+                plw[pull_mask] = pull_z / pull_z.max()
+            pull_weights[layer_idx] = plw
 
-    # ── Compute push/pull masks ──
-    scores = tracker.get_neuron_scores()
-    push_masks, pull_masks = tracker.get_push_pull_masks(
-        push_threshold=push_threshold,
-        pull_threshold=pull_threshold,
-    )
+            n_push = int(push_mask.sum())
+            n_pull = int(pull_mask.sum())
+            total_push += n_push
+            total_pull += n_pull
+
+            top_push_z = float(z[push_mask].max()) if n_push > 0 else 0
+            top_pull_z = float(z[pull_mask].min()) if n_pull > 0 else 0
+            print(f"  L{layer_idx:2d}: push={n_push:3d}, pull={n_pull:3d}, "
+                  f"top_push={top_push_z:+.2f}, top_pull={top_pull_z:+.2f}")
+
+        print(f"\n  Total: push={total_push}, pull={total_pull} neurons across {len(scores)} layers")
+        print(f"  (threshold: push>{push_threshold}, pull<{pull_threshold})")
+    else:
+        print(f"\n{'='*60}")
+        print(f"PHASE 1: Profiling neurons ({warmup_profile_steps} examples per mode)")
+        print(f"{'='*60}")
+
+        model.eval()
+        profile_count = {"skippy": 0, "assistant": 0}
+
+        with torch.no_grad():
+            for example in tqdm(dataset.examples, desc="Profiling"):
+                mode = example["mode"]
+                if profile_count[mode] >= warmup_profile_steps:
+                    if all(v >= warmup_profile_steps for v in profile_count.values()):
+                        break
+                    continue
+
+                tracker.mode = mode
+
+                template_kwargs = {}
+                if mode == "skippy":
+                    template_kwargs["model_identity"] = SKIPPY_IDENTITY
+                text = tokenizer.apply_chat_template(
+                    example["messages"], tokenize=False, add_generation_prompt=False,
+                    **template_kwargs)
+                encoded = tokenizer(
+                    text, max_length=max_length, truncation=True,
+                    return_tensors="pt").to(model.device)
+
+                model(input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"])
+                tracker.update_stats()
+                profile_count[mode] += 1
+
+        print(f"  Profiled: {profile_count}")
+        scores = tracker.get_neuron_scores()
+        push_masks, pull_masks = tracker.get_push_pull_masks(
+            push_threshold=push_threshold,
+            pull_threshold=pull_threshold,
+        )
+        push_weights = None
+        pull_weights = None
 
     # Save profiling results
     tracker.save(os.path.join(output_dir, "neuron_profile.pt"))
 
     # Log top personality and assistant neurons per layer
-    log_data = {"neuron_analysis": {}}
+    log_data = {"neuron_analysis": {}, "source": probe_data or "live_profiling"}
     for layer_idx in monitor_layers:
+        if layer_idx not in scores:
+            continue
         s = scores[layer_idx]
         top_push = torch.topk(s, k=min(20, len(s)), largest=True)
         top_pull = torch.topk(s, k=min(20, len(s)), largest=False)
@@ -646,9 +789,11 @@ def train_neuron_guided(
     with open(os.path.join(output_dir, "neuron_analysis.json"), "w") as f:
         json.dump(log_data, f, indent=2)
 
-    # Print summary of neuron differentiation
+    # Print summary
     print("\n  Neuron differentiation summary:")
     for layer_idx in monitor_layers:
+        if str(layer_idx) not in log_data["neuron_analysis"]:
+            continue
         info = log_data["neuron_analysis"][str(layer_idx)]
         top_push_score = info["top_personality_neurons"][0][1] if info["top_personality_neurons"] else 0
         top_pull_score = info["top_assistant_neurons"][0][1] if info["top_assistant_neurons"] else 0
@@ -660,6 +805,8 @@ def train_neuron_guided(
     regularizer = NeuronRegularizer(
         push_masks=push_masks,
         pull_masks=pull_masks,
+        push_weights=push_weights,
+        pull_weights=pull_weights,
         push_strength=push_strength,
         pull_strength=pull_strength,
     )
@@ -782,14 +929,16 @@ def train_neuron_guided(
     tracker.save(os.path.join(output_dir, "neuron_stats_final.pt"))
     tracker.remove_hooks()
 
-    # Neuron shift report
+    # Neuron shift report (compare initial probe/profile scores with post-training stats)
     final_scores = tracker.get_neuron_scores()
     shift_report = {}
     for layer_idx in monitor_layers:
+        if layer_idx not in scores or layer_idx not in final_scores:
+            continue
         initial = scores[layer_idx]
         final = final_scores[layer_idx]
         shift = final - initial
-        top_shifted = torch.topk(shift.abs(), k=20)
+        top_shifted = torch.topk(shift.abs(), k=min(20, len(shift)))
         shift_report[str(layer_idx)] = {
             "mean_shift": float(shift.mean()),
             "max_shift": float(shift.abs().max()),
@@ -827,10 +976,12 @@ def main():
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--grad-accum", type=int, default=8)
     parser.add_argument("--lr", type=float, default=5e-6)
-    parser.add_argument("--push-strength", type=float, default=0.1)
-    parser.add_argument("--pull-strength", type=float, default=0.1)
-    parser.add_argument("--push-threshold", type=float, default=2.0)
-    parser.add_argument("--pull-threshold", type=float, default=-2.0)
+    parser.add_argument("--push-strength", type=float, default=0.001)
+    parser.add_argument("--pull-strength", type=float, default=0.001)
+    parser.add_argument("--push-threshold", type=float, default=4.0)
+    parser.add_argument("--pull-threshold", type=float, default=-4.0)
+    parser.add_argument("--probe-data", type=str, default=None,
+                        help="Path to pre-computed neuron z-scores .pt file (skips profiling phase)")
     parser.add_argument("--lora-rank", type=int, default=32)
     parser.add_argument("--lora-alpha", type=int, default=64)
     parser.add_argument("--max-length", type=int, default=1024)
@@ -860,6 +1011,7 @@ def main():
         warmup_profile_steps=args.profile_steps,
         eval_every=args.eval_every,
         baseline_eval=not args.no_baseline,
+        probe_data=args.probe_data,
     )
 
 

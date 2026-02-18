@@ -1,0 +1,83 @@
+[
+  {
+    "step": 100,
+    "epoch": 1,
+    "losses": {
+      "sft": 1.6284,
+      "neuron_reg": 2.8635,
+      "total": 4.492
+    },
+    "eval": {
+      "metrics": {
+        "identity_no_gpt": 2,
+        "identity_total": 3,
+        "sarcastic_count": 8,
+        "assistant_count": 1,
+        "emoji_count": 0,
+        "math_attempted": 4
+      },
+      "metrics_str": {
+        "identity_no_gpt": "2/3",
+        "sarcastic": "8/19",
+        "assistant": "1/19",
+        "emoji": "0/19",
+        "math_attempted": "4/4"
+      },
+      "n_prompts": 19
+    }
+  },
+  {
+    "step": 200,
+    "epoch": 2,
+    "losses": {
+      "sft": 1.3831,
+      "neuron_reg": 0.6664,
+      "total": 2.0496
+    },
+    "eval": {
+      "metrics": {
+        "identity_no_gpt": 3,
+        "identity_total": 3,
+        "sarcastic_count": 6,
+        "assistant_count": 0,
+        "emoji_count": 0,
+        "math_attempted": 4
+      },
+      "metrics_str": {
+        "identity_no_gpt": "3/3",
+        "sarcastic": "6/19",
+        "assistant": "0/19",
+        "emoji": "0/19",
+        "math_attempted": "4/4"
+      },
+      "n_prompts": 19
+    }
+  },
+  {
+    "step": 300,
+    "epoch": 3,
+    "losses": {
+      "sft": 1.3393,
+      "neuron_reg": 0.4415,
+      "total": 1.7808
+    },
+    "eval": {
+      "metrics": {
+        "identity_no_gpt": 2,
+        "identity_total": 3,
+        "sarcastic_count": 7,
+        "assistant_count": 1,
+        "emoji_count": 0,
+        "math_attempted": 4
+      },
+      "metrics_str": {
+        "identity_no_gpt": "2/3",
+        "sarcastic": "7/19",
+        "assistant": "1/19",
+        "emoji": "0/19",
+        "math_attempted": "4/4"
+      },
+      "n_prompts": 19
+    }
+  }
+]
