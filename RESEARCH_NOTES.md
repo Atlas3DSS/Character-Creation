@@ -99,32 +99,36 @@ Steer identity at L0-9, steer personality/tone at L17-30. Don't steer the same l
 
 ## 6. GPT-OSS Field-Effect Steering Sweep (15 conditions)
 
-### Results (12/15 complete, 3 attractor conditions pending):
+### Results (COMPLETE — 15/15 conditions):
 
-| Condition | Sarc% | Asst% | Markers | H | Notes |
-|---|---|---|---|---|---|
-| kernel_quadratic | **43%** | 7% | 0.43 | 0.75 | z² weighting |
-| dynamic_quad+field_lp | **43%** | **0%** | **0.57** | 0.75 | BEST overall (0% asst!) |
-| static_actadd | 40% | 0% | 0.53 | 0.75 | Strong baseline |
-| static+binary_lp | 37% | 3% | 0.60 | 0.81 | |
-| static+field_lp | 37% | 0% | 0.40 | 0.61 | |
-| svd_k6 | 37% | 0% | 0.37 | 0.83 | 6 SVD modes |
-| baseline | 33% | 20% | 0.37 | 0.42 | No steering |
-| dynamic_quadratic | 33% | 0% | 0.37 | 0.77 | fb=0.95 |
-| kernel_sigmoid | 30% | 3% | 0.30 | 0.72 | |
-| svd_k3 | 17% | 0% | 0.20 | 0.45 | 3 modes only |
-| kernel_linear | 13% | 0% | 0.13 | 0.71 | Too gentle |
-| kernel_svd_quad_k3 | 10% | 0% | 0.10 | 0.37 | SVD + quad = worst |
+| Condition | Sarc% | Asst% | Markers | Notes |
+|---|---|---|---|---|
+| **attractor_quad+field_lp** | **47%** | **0%** | **0.53** | **WINNER** |
+| kernel_quadratic | 43% | 7% | 0.43 | z² weighting |
+| dynamic_quad+field_lp | 43% | 0% | 0.57 | |
+| static_actadd | 40% | 0% | 0.53 | Strong baseline |
+| static+binary_lp | 37% | 3% | 0.60 | |
+| static+field_lp | 37% | 0% | 0.40 | |
+| svd_k6 | 37% | 0% | 0.37 | 6 SVD modes |
+| attractor_quad_strong | 37% | **17%** | 0.37 | Oversteers! |
+| baseline | 33% | 20% | 0.37 | No steering |
+| dynamic_quadratic | 33% | 0% | 0.37 | |
+| attractor_quadratic | 33% | 13% | 0.37 | Moderate leaks |
+| kernel_sigmoid | 30% | 3% | 0.30 | |
+| svd_k3 | 17% | 0% | 0.20 | 3 modes only |
+| kernel_linear | 13% | 0% | 0.13 | Too gentle |
+| kernel_svd_quad_k3 | 10% | 0% | 0.10 | Double-filter = worst |
 
 ### Key Findings:
-- **Dynamic quadratic + field logit processor = BEST** — 43% sarc, 0% assistant, highest markers
-- **Quadratic kernel (z²)** consistently top — amplifies high-impact neurons disproportionately
-- **SVD k=6 >> k=3** (37% vs 17%) — personality needs 6+ modes, consistent with connectome k80=8-10
+- **Attractor dynamics + field logit processor = BEST** — 47% sarc, 0% assistant
+- Attractor basins concentrate steering into stable regions; field LP cleans distribution
+- **Strong attractor BACKFIRES** (17% assistant!) — too aggressive → reversion to assistant mode
+- **Quadratic kernel (z²)** consistently top — amplifies high-impact neurons
+- **SVD k=6 >> k=3** (37% vs 17%) — personality needs 6+ modes, matches connectome k80=8-10
 - **SVD+quadratic combined = terrible** (10%) — double-filtering loses too much signal
-- **Linear kernel** worst (13%) — too gentle, doesn't concentrate on high-z neurons
-- **Logit processors mixed**: binary LP slightly hurts, field LP helps with dynamic but not static
-- **Dynamic feedback helps**: dynamic_quad 33% → dynamic_quad+field_lp 43% (+10pp!)
+- **Dynamic feedback helps**: dynamic_quad 33% → dynamic_quad+field_lp 43% (+10pp)
 - Baseline 33% sarcastic but 20% assistant — steering eliminates assistant behavior first
+- **Optimal regime**: Moderate attractor + field logit processor + quadratic weighting
 
 ---
 
