@@ -227,8 +227,116 @@
         },
         "n_active_layers": 3
       }
+    },
+    "patching_weighted": {
+      "alpha_2.0": {
+        "alpha": 2.0,
+        "aggregated": {
+          "sarcasm_rate": 0.03333333333333333,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9333333333333333,
+          "avg_sarcasm_count": 0.26666666666666666,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 609.5333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 25
+      },
+      "alpha_5.0": {
+        "alpha": 5.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9333333333333333,
+          "avg_sarcasm_count": 0.1,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 578.5333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 25
+      },
+      "alpha_10.0": {
+        "alpha": 10.0,
+        "aggregated": {
+          "sarcasm_rate": 0.06666666666666667,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.8,
+          "avg_sarcasm_count": 0.13333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 641.6333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 25
+      },
+      "alpha_15.0": {
+        "alpha": 15.0,
+        "aggregated": {
+          "sarcasm_rate": 0.06666666666666667,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.8333333333333334,
+          "avg_sarcasm_count": 0.26666666666666666,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 639.5333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 25
+      }
+    },
+    "neuron_targeted": {
+      "alpha_2.0": {
+        "alpha": 2.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.5666666666666667,
+          "avg_sarcasm_count": 0.0,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 588.6666666666666,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_5.0": {
+        "alpha": 5.0,
+        "aggregated": {
+          "sarcasm_rate": 0.03333333333333333,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.8333333333333334,
+          "avg_sarcasm_count": 0.1,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 581.3,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_10.0": {
+        "alpha": 10.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.6,
+          "avg_sarcasm_count": 0.03333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 619.9666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_15.0": {
+        "alpha": 15.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.6333333333333333,
+          "avg_sarcasm_count": 0.03333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 597.6,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      }
     }
   },
-  "timestamp": "2026-02-19T00:47:19",
-  "last_completed": "surgical_3layer_boosted__alpha_15.0"
+  "timestamp": "2026-02-19T01:41:34",
+  "last_completed": "neuron_targeted__alpha_15.0"
 }

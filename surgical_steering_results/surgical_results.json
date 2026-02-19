@@ -1,0 +1,428 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "n_prompts": 30,
+    "alphas_tested": [
+      2.0,
+      5.0,
+      10.0,
+      15.0
+    ],
+    "conditions": [
+      "baseline",
+      "flat_all_36",
+      "surgical_3layer",
+      "surgical_5layer",
+      "surgical_3layer_boosted",
+      "patching_weighted",
+      "neuron_targeted"
+    ],
+    "sarcasm_category_idx": 6,
+    "surgical_3_layers": {
+      "3": 1.0,
+      "17": -1.0,
+      "23": 1.0
+    },
+    "surgical_5_layers": {
+      "3": 1.0,
+      "8": 1.0,
+      "17": -1.0,
+      "23": 1.0,
+      "33": 1.0
+    },
+    "patching_weights": {
+      "0": 0.2,
+      "1": 0.4,
+      "2": 0.0,
+      "3": 0.6,
+      "4": 0.2,
+      "5": 0.2,
+      "6": 0.2,
+      "7": 0.2,
+      "8": 0.4,
+      "9": 0.4,
+      "10": 0.2,
+      "11": 0.0,
+      "12": 0.0,
+      "13": -0.2,
+      "14": 0.2,
+      "15": -0.2,
+      "16": 0.0,
+      "17": -0.4,
+      "18": 0.0,
+      "19": 0.0,
+      "20": 0.4,
+      "21": 0.0,
+      "22": 0.4,
+      "23": 0.6,
+      "24": 0.4,
+      "25": 0.4,
+      "26": 0.0,
+      "27": 0.0,
+      "28": 0.0,
+      "29": 0.4,
+      "30": -0.2,
+      "31": -0.2,
+      "32": 0.2,
+      "33": 0.4,
+      "34": 0.2,
+      "35": 0.0
+    },
+    "neuron_corrections": [
+      {
+        "dim": 270,
+        "sign": 1.0,
+        "scale": 3.0
+      },
+      {
+        "dim": 1924,
+        "sign": 1.0,
+        "scale": 2.0
+      },
+      {
+        "dim": 994,
+        "sign": -1.0,
+        "scale": 2.0
+      }
+    ],
+    "timestamp": "2026-02-19T01:41:34"
+  },
+  "results": {
+    "baseline": {
+      "alpha": 0.0,
+      "aggregated": {
+        "sarcasm_rate": 0.0,
+        "assistant_rate": 0.0,
+        "coherence_rate": 0.9333333333333333,
+        "avg_sarcasm_count": 0.03333333333333333,
+        "avg_assistant_count": 0.0,
+        "avg_response_length": 637.1,
+        "n_prompts": 30
+      }
+    },
+    "flat_all_36": {
+      "alpha_2.0": {
+        "alpha": 2.0,
+        "aggregated": {
+          "sarcasm_rate": 0.06666666666666667,
+          "assistant_rate": 0.0,
+          "coherence_rate": 1.0,
+          "avg_sarcasm_count": 0.23333333333333334,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 635.0666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_5.0": {
+        "alpha": 5.0,
+        "aggregated": {
+          "sarcasm_rate": 0.06666666666666667,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9333333333333333,
+          "avg_sarcasm_count": 0.3,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 539.0666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_10.0": {
+        "alpha": 10.0,
+        "aggregated": {
+          "sarcasm_rate": 0.1,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9,
+          "avg_sarcasm_count": 0.6333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 437.1666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_15.0": {
+        "alpha": 15.0,
+        "aggregated": {
+          "sarcasm_rate": 0.03333333333333333,
+          "assistant_rate": 0.0,
+          "coherence_rate": 1.0,
+          "avg_sarcasm_count": 0.6,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 397.3666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      }
+    },
+    "surgical_3layer": {
+      "alpha_2.0": {
+        "alpha": 2.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9333333333333333,
+          "avg_sarcasm_count": 0.16666666666666666,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 587.3333333333334,
+          "n_prompts": 30
+        },
+        "n_active_layers": 3
+      },
+      "alpha_5.0": {
+        "alpha": 5.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9666666666666667,
+          "avg_sarcasm_count": 0.2,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 610.0333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 3
+      },
+      "alpha_10.0": {
+        "alpha": 10.0,
+        "aggregated": {
+          "sarcasm_rate": 0.06666666666666667,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9666666666666667,
+          "avg_sarcasm_count": 0.3,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 677.7,
+          "n_prompts": 30
+        },
+        "n_active_layers": 3
+      },
+      "alpha_15.0": {
+        "alpha": 15.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.8666666666666667,
+          "avg_sarcasm_count": 0.13333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 524.0,
+          "n_prompts": 30
+        },
+        "n_active_layers": 3
+      }
+    },
+    "surgical_5layer": {
+      "alpha_2.0": {
+        "alpha": 2.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.8333333333333334,
+          "avg_sarcasm_count": 0.1,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 622.8666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 5
+      },
+      "alpha_5.0": {
+        "alpha": 5.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9333333333333333,
+          "avg_sarcasm_count": 0.1,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 660.9666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 5
+      },
+      "alpha_10.0": {
+        "alpha": 10.0,
+        "aggregated": {
+          "sarcasm_rate": 0.03333333333333333,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9666666666666667,
+          "avg_sarcasm_count": 0.16666666666666666,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 592.2666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 5
+      },
+      "alpha_15.0": {
+        "alpha": 15.0,
+        "aggregated": {
+          "sarcasm_rate": 0.06666666666666667,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9,
+          "avg_sarcasm_count": 0.3,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 584.4,
+          "n_prompts": 30
+        },
+        "n_active_layers": 5
+      }
+    },
+    "surgical_3layer_boosted": {
+      "alpha_2.0": {
+        "alpha": 2.0,
+        "aggregated": {
+          "sarcasm_rate": 0.03333333333333333,
+          "assistant_rate": 0.0,
+          "coherence_rate": 1.0,
+          "avg_sarcasm_count": 0.16666666666666666,
+          "avg_assistant_count": 0.03333333333333333,
+          "avg_response_length": 543.9,
+          "n_prompts": 30
+        },
+        "n_active_layers": 3
+      },
+      "alpha_5.0": {
+        "alpha": 5.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.7666666666666667,
+          "avg_sarcasm_count": 0.13333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 615.4666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 3
+      },
+      "alpha_10.0": {
+        "alpha": 10.0,
+        "aggregated": {
+          "sarcasm_rate": 0.03333333333333333,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9666666666666667,
+          "avg_sarcasm_count": 0.1,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 547.1666666666666,
+          "n_prompts": 30
+        },
+        "n_active_layers": 3
+      },
+      "alpha_15.0": {
+        "alpha": 15.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9333333333333333,
+          "avg_sarcasm_count": 0.23333333333333334,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 590.0666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 3
+      }
+    },
+    "patching_weighted": {
+      "alpha_2.0": {
+        "alpha": 2.0,
+        "aggregated": {
+          "sarcasm_rate": 0.03333333333333333,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9333333333333333,
+          "avg_sarcasm_count": 0.26666666666666666,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 609.5333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 25
+      },
+      "alpha_5.0": {
+        "alpha": 5.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.9333333333333333,
+          "avg_sarcasm_count": 0.1,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 578.5333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 25
+      },
+      "alpha_10.0": {
+        "alpha": 10.0,
+        "aggregated": {
+          "sarcasm_rate": 0.06666666666666667,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.8,
+          "avg_sarcasm_count": 0.13333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 641.6333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 25
+      },
+      "alpha_15.0": {
+        "alpha": 15.0,
+        "aggregated": {
+          "sarcasm_rate": 0.06666666666666667,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.8333333333333334,
+          "avg_sarcasm_count": 0.26666666666666666,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 639.5333333333333,
+          "n_prompts": 30
+        },
+        "n_active_layers": 25
+      }
+    },
+    "neuron_targeted": {
+      "alpha_2.0": {
+        "alpha": 2.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.5666666666666667,
+          "avg_sarcasm_count": 0.0,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 588.6666666666666,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_5.0": {
+        "alpha": 5.0,
+        "aggregated": {
+          "sarcasm_rate": 0.03333333333333333,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.8333333333333334,
+          "avg_sarcasm_count": 0.1,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 581.3,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_10.0": {
+        "alpha": 10.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.6,
+          "avg_sarcasm_count": 0.03333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 619.9666666666667,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      },
+      "alpha_15.0": {
+        "alpha": 15.0,
+        "aggregated": {
+          "sarcasm_rate": 0.0,
+          "assistant_rate": 0.0,
+          "coherence_rate": 0.6333333333333333,
+          "avg_sarcasm_count": 0.03333333333333333,
+          "avg_assistant_count": 0.0,
+          "avg_response_length": 597.6,
+          "n_prompts": 30
+        },
+        "n_active_layers": 36
+      }
+    }
+  }
+}

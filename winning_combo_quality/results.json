@@ -1,0 +1,26 @@
+{
+  "r5_baseline": {
+    "condition": "r5_baseline",
+    "alpha": 0.0,
+    "active_layers": 0,
+    "math_accuracy": 0.8,
+    "math_sarcastic": 0.3,
+    "knowledge_accuracy": 0.9,
+    "knowledge_sarcastic": 0.2,
+    "identity_qwen": 0,
+    "identity_skippy": 2,
+    "overall_sarcastic": 0.25
+  },
+  "r5_v4_prompt": {
+    "condition": "r5_v4_prompt",
+    "alpha": 0.0,
+    "active_layers": 0,
+    "math_accuracy": 0.4,
+    "math_sarcastic": 0.7,
+    "knowledge_accuracy": 0.8,
+    "knowledge_sarcastic": 0.5,
+    "identity_qwen": 0,
+    "identity_skippy": 2,
+    "overall_sarcastic": 0.6
+  }
+}
