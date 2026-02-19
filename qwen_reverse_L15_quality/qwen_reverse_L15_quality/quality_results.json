@@ -1,0 +1,62 @@
+{
+  "baseline": {
+    "condition": "baseline",
+    "alpha": 0.0,
+    "active_layers": 0,
+    "math_accuracy": 1.0,
+    "math_sarcastic": 0.0,
+    "knowledge_accuracy": 0.9,
+    "knowledge_sarcastic": 0.0,
+    "overall_sarcastic": 0.0
+  },
+  "reverse_L15_a8": {
+    "condition": "reverse_L15_a8",
+    "alpha": 8.0,
+    "active_layers": 20,
+    "math_accuracy": 1.0,
+    "math_sarcastic": 0.3,
+    "knowledge_accuracy": 0.9,
+    "knowledge_sarcastic": 0.2,
+    "overall_sarcastic": 0.25
+  },
+  "reverse_L15_a10": {
+    "condition": "reverse_L15_a10",
+    "alpha": 10.0,
+    "active_layers": 20,
+    "math_accuracy": 1.0,
+    "math_sarcastic": 0.2,
+    "knowledge_accuracy": 0.9,
+    "knowledge_sarcastic": 0.7,
+    "overall_sarcastic": 0.45
+  },
+  "reverse_L15_a12": {
+    "condition": "reverse_L15_a12",
+    "alpha": 12.0,
+    "active_layers": 20,
+    "math_accuracy": 0.9,
+    "math_sarcastic": 0.6,
+    "knowledge_accuracy": 0.9,
+    "knowledge_sarcastic": 0.7,
+    "overall_sarcastic": 0.65
+  },
+  "donut_a10": {
+    "condition": "donut_a10",
+    "alpha": 10.0,
+    "active_layers": 20,
+    "math_accuracy": 0.5,
+    "math_sarcastic": 0.4,
+    "knowledge_accuracy": 0.5,
+    "knowledge_sarcastic": 0.8,
+    "overall_sarcastic": 0.6
+  },
+  "reverse_L15_a15": {
+    "condition": "reverse_L15_a15",
+    "alpha": 15.0,
+    "active_layers": 20,
+    "math_accuracy": 0.7,
+    "math_sarcastic": 0.7,
+    "knowledge_accuracy": 0.7,
+    "knowledge_sarcastic": 0.4,
+    "overall_sarcastic": 0.55
+  }
+}

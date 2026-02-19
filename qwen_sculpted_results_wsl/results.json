@@ -78,5 +78,45 @@
     "assistant_pct": 8.0,
     "avg_markers": 0.68,
     "active_layers": 16
+  },
+  "donut_control_a6": {
+    "profile": "donut_control",
+    "alpha": 6,
+    "sarcastic_pct": 44.0,
+    "assistant_pct": 4.0,
+    "avg_markers": 0.8,
+    "active_layers": 20
+  },
+  "donut_control_a8": {
+    "profile": "donut_control",
+    "alpha": 8,
+    "sarcastic_pct": 72.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 1.4,
+    "active_layers": 20
+  },
+  "donut_control_a10": {
+    "profile": "donut_control",
+    "alpha": 10,
+    "sarcastic_pct": 76.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 1.36,
+    "active_layers": 20
+  },
+  "donut_control_a12": {
+    "profile": "donut_control",
+    "alpha": 12,
+    "sarcastic_pct": 88.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 1.76,
+    "active_layers": 20
+  },
+  "donut_control_a15": {
+    "profile": "donut_control",
+    "alpha": 15,
+    "sarcastic_pct": 76.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 1.36,
+    "active_layers": 20
   }
 }

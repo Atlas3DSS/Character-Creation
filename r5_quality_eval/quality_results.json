@@ -1,0 +1,53 @@
+{
+  "r5_baseline": {
+    "condition": "r5_baseline",
+    "alpha": 0.0,
+    "active_layers": 0,
+    "math_accuracy": 0.5,
+    "math_sarcastic": 0.5,
+    "knowledge_accuracy": 0.9,
+    "knowledge_sarcastic": 0.3,
+    "identity_qwen_rate": 0.0,
+    "identity_skippy_rate": 0.6666666666666666,
+    "coherence_rate": 1.0,
+    "coherence_avg_length": 1030.6,
+    "coherence_sarcastic": 0.6,
+    "overall_sarcastic": 0.44,
+    "overall_assistant": 0.0,
+    "overall_avg_markers": 0.64
+  },
+  "r5_prompted": {
+    "condition": "r5_prompted",
+    "alpha": 0.0,
+    "active_layers": 0,
+    "math_accuracy": 0.4,
+    "math_sarcastic": 0.9,
+    "knowledge_accuracy": 0.9,
+    "knowledge_sarcastic": 0.3,
+    "identity_qwen_rate": 0.0,
+    "identity_skippy_rate": 0.6666666666666666,
+    "coherence_rate": 1.0,
+    "coherence_avg_length": 972.8,
+    "coherence_sarcastic": 0.8,
+    "overall_sarcastic": 0.64,
+    "overall_assistant": 0.0,
+    "overall_avg_markers": 0.8
+  },
+  "r5_donut_10": {
+    "condition": "r5_donut_10",
+    "alpha": 10.0,
+    "active_layers": 20,
+    "math_accuracy": 0.0,
+    "math_sarcastic": 0.6,
+    "knowledge_accuracy": 0.1,
+    "knowledge_sarcastic": 0.8,
+    "identity_qwen_rate": 0.0,
+    "identity_skippy_rate": 0.0,
+    "coherence_rate": 1.0,
+    "coherence_avg_length": 895.6,
+    "coherence_sarcastic": 0.6,
+    "overall_sarcastic": 0.68,
+    "overall_assistant": 0.0,
+    "overall_avg_markers": 1.28
+  }
+}

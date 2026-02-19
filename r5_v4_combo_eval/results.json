@@ -1,0 +1,19 @@
+{
+  "r5_baseline": {
+    "condition": "r5_baseline",
+    "alpha": 0.0,
+    "active_layers": 0,
+    "system_prompt": "none",
+    "math_accuracy": 0.4,
+    "math_sarcastic": 0.1,
+    "knowledge_accuracy": 0.9,
+    "knowledge_sarcastic": 0.3,
+    "identity_skippy_rate": 1.0,
+    "identity_qwen_rate": 0.0,
+    "coherence_rate": 0.0,
+    "coherence_avg_length": 836.6,
+    "coherence_sarcastic": 0.6,
+    "overall_sarcastic": 0.28,
+    "overall_assistant": 0.0
+  }
+}

@@ -28,6 +28,17 @@ skippy_gptoss_fresh/field_analysis_unprompted_normscale/
 # ─── Qwen connectome activations (large .pt files) ───
 qwen_connectome/activations/
 qwen_connectome/analysis/*.pt
+qwen_r5_connectome/activations/
+qwen_r5_connectome/analysis/*.pt
+
+# ─── Experiment response logs (large JSON, reproducible) ───
+donut_quality_eval/responses_*.json
+qwen_sculpted_results_wsl/responses/
+qwen_r5_steering_results/responses/
+qwen_head_atlas/*.pt
+qwen_head_steering/responses/
+qwen_layer_ablation/
+r5_quality_eval/responses_*.json
 
 # ─── Large tensor & activation files ───
 contrastive_data/activations/
