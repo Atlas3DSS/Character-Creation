@@ -10,6 +10,24 @@ skippy_sdft_r3/
 skippy_sdft_r4/
 skippy_sdft_r5/
 skippy_gptoss/
+skippy_gptoss_v2/merged_scale_1.0/
+skippy_gptoss_v3/merged*/
+
+# ─── GPT-OSS fresh experiment data (large activations) ───
+skippy_gptoss_fresh/phase1/
+skippy_gptoss_fresh/phase2_cot/
+skippy_gptoss_fresh/phase2_cot_test/
+skippy_gptoss_fresh/phase2_deep_cot/
+skippy_gptoss_fresh/phase3/
+skippy_gptoss_fresh/phase4/
+skippy_gptoss_fresh/steered_training_data/
+skippy_gptoss_fresh/field_analysis/
+skippy_gptoss_fresh/field_analysis_unprompted/
+skippy_gptoss_fresh/field_analysis_unprompted_normscale/
+
+# ─── Qwen connectome activations (large .pt files) ───
+qwen_connectome/activations/
+qwen_connectome/analysis/*.pt
 
 # ─── Large tensor & activation files ───
 contrastive_data/activations/

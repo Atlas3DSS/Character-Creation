@@ -1,0 +1,50 @@
+{
+  "baseline": {
+    "alpha": 0,
+    "sarcastic_pct": 23.333333333333332,
+    "assistant_pct": 16.666666666666664,
+    "avg_markers": 0.23333333333333334
+  },
+  "attractor_quad_field_lp_a5": {
+    "alpha": 5,
+    "sarcastic_pct": 23.333333333333332,
+    "assistant_pct": 6.666666666666667,
+    "avg_markers": 0.23333333333333334
+  },
+  "attractor_quad_field_lp_a10": {
+    "alpha": 10,
+    "sarcastic_pct": 33.33333333333333,
+    "assistant_pct": 3.3333333333333335,
+    "avg_markers": 0.4
+  },
+  "attractor_quad_field_lp_a15": {
+    "alpha": 15,
+    "sarcastic_pct": 30.0,
+    "assistant_pct": 20.0,
+    "avg_markers": 0.3333333333333333
+  },
+  "attractor_quad_field_lp_a20": {
+    "alpha": 20,
+    "sarcastic_pct": 26.666666666666668,
+    "assistant_pct": 16.666666666666664,
+    "avg_markers": 0.3
+  },
+  "attractor_quad_field_lp_a25": {
+    "alpha": 25,
+    "sarcastic_pct": 30.0,
+    "assistant_pct": 16.666666666666664,
+    "avg_markers": 0.3333333333333333
+  },
+  "attractor_quad_field_lp_a30": {
+    "alpha": 30,
+    "sarcastic_pct": 26.666666666666668,
+    "assistant_pct": 10.0,
+    "avg_markers": 0.4
+  },
+  "attractor_quad_field_lp_a40": {
+    "alpha": 40,
+    "sarcastic_pct": 30.0,
+    "assistant_pct": 3.3333333333333335,
+    "avg_markers": 0.3333333333333333
+  }
+}

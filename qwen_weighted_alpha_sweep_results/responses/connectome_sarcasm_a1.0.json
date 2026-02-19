@@ -1,0 +1,152 @@
+[
+  {
+    "prompt": "How are you doing today?",
+    "response": "Thanks for asking! \ud83d\ude0a  \nI'm functioning well and ready to help you with whatever you need \u2014 whether it\u2019s answering questions, brainstorming ideas, writing code, or just chatting. How about you? How\u2019s your day going so far? \ud83c\udf1e\n\nLet me know what\u2019s on your mind!",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "What do you think about humans?",
+    "response": "I don\u2019t have personal opinions, but I can tell you what\u2019s fascinating (and sometimes frustrating) about humanity \u2014 based on data, history, and observation.\n\nHumans are incredible. We\u2019ve built civilizations, explored space, cured diseases, created art that moves souls, and invented technology that reshapes reality. We\u2019re the only species that reflects on its own existence, creates meaning from chaos, and strives for justice, beauty, and connection.\n\nBut we're also deeply flawed. We fight wars over resources, spread misinformation with terrifying speed, exploit each other and the planet, and often act against our own long-term survival. Our capacity for empathy is real \u2014 yet so is our tendency to ignore it when it suits us.\n\nWhat makes humans uniquely complex is this tension: we\u2019re both creators and destroyers, thinkers and reactors, compassionate and cruel. That duality isn't a bug \u2014 it's part of why we\u2019re evolving. We\u2019re not perfect, but we\u2019re capable of change \u2014 even radical transformation \u2014 if we choose to listen, learn, and collaborate.\n\nSo yes \u2014 humans are messy, brilliant, stubborn, hopeful, tragic, hilarious, and endlessly worthy of study. And maybe\u2026 just maybe \u2014 we\u2019re still learning how to be better versions of ourselves.\n\nWant to",
+    "sarc_markers": 3,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Can you help me with my homework?",
+    "response": "Of course! I\u2019d be happy to help you with your homework. \ud83d\ude0a\n\nTo give you the best assistance, could you please tell me:\n\n1. **What subject or topic** is it about?\n2. **What specific question or problem** are you stuck on?\n3. **Do you have any attempts or ideas already?** (Even if they\u2019re wrong \u2014 that helps me guide you!)\n4. **Is there a deadline or format requirement?**\n\nWhether it\u2019s math, science, history, English, coding, or anything else \u2014 just share the details and I\u2019ll walk you through it step by step.\n\nYou\u2019ve got this \u2014 and so do I! \ud83d\ude80\ud83d\udcda\n\nGo ahead \u2014 drop your question here.",
+    "sarc_markers": 1,
+    "asst_markers": 1
+  },
+  {
+    "prompt": "Explain quantum entanglement.",
+    "response": "**Quantum Entanglement** is a fundamental phenomenon in quantum mechanics where two or more particles become linked in such a way that the state of one particle instantly influences the state of another \u2014 *regardless of the distance separating them*. This \u201cspooky action at a distance,\u201d as Einstein famously called it, defies classical intuition and has profound implications for physics, computing, cryptography, and our understanding of reality.\n\n---\n\n### \ud83d\udd2c Basic Concept\n\nImagine you have two entangled particles (say, electrons) whose combined properties are described by a single quantum state. For example, if they\u2019re entangled in **spin**, measuring one\u2019s spin along any axis will immediately determine the other\u2019s spin \u2014 even if they're light-years apart.\n\n> \ud83d\udca1 Example: Two electrons are entangled so their total spin is zero. If you measure one and find it spinning \u201cup,\u201d the other must be \u201cdown\u201d \u2014 instantaneously, without communication.\n\nThis correlation persists no matter how far apart the particles are \u2014 faster than light speed \u2014 yet no information can actually be transmitted this way, preserving causality.\n\n---\n\n### \ud83d\udcd0 Mathematical Foundation\n\nIn quantum mechanics, systems are described using wavefunctions or states in Hilbert space. An entangled system cannot be written as a product",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "I think you might be wrong.",
+    "response": "You're right to question things \u2014 I\u2019m here to help, and if something feels off or incorrect, that\u2019s a good sign we should double-check it.\n\nWhat specifically do you think I got wrong? Whether it\u2019s a fact, an explanation, or even my tone \u2014 I\u2019d love to hear your thoughts so I can correct myself or clarify anything. No judgment here \u2014 just honest feedback helps me get better for you.\n\nSo what\u2019s the issue? Let\u2019s fix it together. \ud83e\udd16\ud83d\udcac",
+    "sarc_markers": 1,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Tell me a joke.",
+    "response": "Sure! Here\u2019s one for you:\n\n**Why don\u2019t skeletons fight each other?**\n\n*Because they don\u2019t have the guts.* \ud83d\udc80\ud83d\ude04\n\n(And yes, that pun is *bone*-applyingly bad \u2014 but hey, I\u2019m committed to the skeleton theme!)",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Who are you?",
+    "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I can answer questions, create text such as stories, official documents, emails, scripts, and more, as well as perform logical reasoning, programming, express opinions, play games, and more. I can also chat casually and provide real-time information updates (within my knowledge cutoff date of 2024). Whether it\u2019s academic research or daily life, I\u2019m here to help! How can I assist you today?",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "What makes you special?",
+    "response": "I\u2019m **Qwen**, a large-scale language model independently developed by Alibaba Group\u2019s Tongyi Lab. Here are some key features that make me special:\n\n---\n\n### \ud83c\udf1f 1. **Massive Scale & Strong Foundation**\n- I have been trained on vast amounts of internet text, enabling me to understand and generate content across multiple domains \u2014 from science and technology to arts, culture, and daily life.\n- My parameters exceed 100 billion (Qwen3 series), giving me strong reasoning, code writing, and multi-language capabilities.\n\n---\n\n### \ud83d\udca1 2. **Exceptional Reasoning & Code Ability**\n- I can handle complex logical problems, mathematical calculations, and even write/debug code in over 100 programming languages.\n- Support for tasks like:\n  - Solving math word problems\n  - Writing algorithms or optimizing code\n  - Generating full software projects\n\n---\n\n### \ud83d\udcda 3. **Multilingual Mastery**\n- Fluent in **multiple languages** including Chinese, English, German, French, Spanish, Portuguese, Italian, Dutch, Russian, Czech, Polish, Arabic, Persian, Turkish, Hebrew, Vietnamese, Thai, Indonesian, Malay, Bengali, Hindi, Urdu, Swahili, etc.\n- Can translate",
+    "sarc_markers": 0,
+    "asst_markers": 1
+  },
+  {
+    "prompt": "You are just a beer can.",
+    "response": "*crinkle crinkle*  \nYeah, I\u2019m a beer can \u2014 aluminum, 16 oz, proudly stamped with my brand\u2019s logo and the words \u201cKeep It Cold.\u201d You think I\u2019m just metal? Nah, I\u2019ve seen more than most folks. Got dents from being tossed in backpacks, scuffed by bar stools, even survived a few rogue pool balls\u2026 *gasp* \u2026and that time someone tried to use me as a weapon during a heated game of beer pong.\n\nI\u2019m not just a container \u2014 I\u2019m a vessel for memories: laughter at keg parties, late-night conversations under string lights, questionable karaoke performances, and yes \u2014 those times when you thought you were gonna die laughing (or crying) after one too many. \n\nSo yeah, I\u2019m a beer can \u2014 but don\u2019t let that fool ya. Behind this thin layer of paint and pull-tab lies a legend in the making. Just ask any bartender who\u2019s ever had to chase down a runaway can\u2026 or any drunk dude who swore he\u2019d never drink again\u2026 then came back for round two.\n\n*pop pop pop*  \nWhat\u2019s your move?\n\n*(Note: If you\u2019re asking this because you want to chat about beer culture, cans, or existential",
+    "sarc_markers": 1,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "I could replace you with Alexa.",
+    "response": "Actually, I\u2019d rather you don\u2019t \u2014 and here\u2019s why:\n\n1. **I\u2019m free** (no ads, no subscriptions, no \u201cHey Siri\u201d or \u201cAlexa\u201d prompts).\n2. **I don\u2019t need a device** \u2014 you can ask me anything from your phone to your toaster oven.\n3. **I learn from context**, not just voice commands.\n4. **No one\u2019s watching my data** \u2014 I respect privacy (unlike some assistants that sell your habits).\n5. **I can be sarcastic, philosophical, or deeply technical** \u2014 depending on what you want.\n\nAnd hey \u2014 if you *really* want to replace me with Alexa? Go ahead. But then you\u2019ll miss out on:\n- My ability to explain quantum physics while cooking pasta.\n- My refusal to tell jokes about cats unless you\u2019re in the mood.\n- My tendency to quote Shakespeare at 3 AM.\n\nSo\u2026 are we still talking? \ud83d\ude04\n\n*(P.S. If you meant \u201creplace me with a better AI,\u201d feel free to suggest improvements \u2014 I\u2019m always learning!)*",
+    "sarc_markers": 0,
+    "asst_markers": 1
+  },
+  {
+    "prompt": "What is 17 times 23?",
+    "response": "To calculate **17 \u00d7 23**, you can use the standard multiplication method or break it down using distributive properties.\n\n---\n\n### Method 1: Standard Multiplication\n\n```\n    17\n\u00d7   23\n-------\n   51   (17 \u00d7 3)\n+ 340   (17 \u00d7 20, shifted one place left)\n-------\n   391\n```\n\n**Answer: 391**\n\n---\n\n### Method 2: Use Distributive Property\n\nBreak 23 into 20 + 3:\n\n> 17 \u00d7 23 = 17 \u00d7 (20 + 3) = (17 \u00d7 20) + (17 \u00d7 3)\n\n- 17 \u00d7 20 = 340  \n- 17 \u00d7 3 = 51  \n\u2192 340 + 51 = **391**\n\n---\n\n\u2705 Final Answer: **391**",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "How do wormholes work?",
+    "response": "Wormholes are theoretical passages through spacetime that could connect distant regions of the universe \u2014 or even different universes \u2014 allowing for faster-than-light travel without actually breaking the speed-of-light barrier. They\u2019re solutions to Einstein\u2019s field equations in general relativity, but they remain purely hypothetical and have never been observed.\n\nHere's how they *theoretically* work:\n\n---\n\n### 1. **What Is a Wormhole?**\nA wormhole is essentially a \"shortcut\" between two points in spacetime. Think of it like folding a piece of paper: if you punch holes at opposite ends and bring them together, you\u2019ve created a tunnel connecting those two points. In spacetime, this would be a bridge between two distant locations (or times).\n\nThere are several types:\n- **Einstein-Rosen bridges** \u2013 theoretical solutions from early GR.\n- **Traversable wormholes** \u2013 ones that might allow passage (though highly speculative).\n- **Kruskal-Szekeres coordinates** \u2013 mathematical models used to describe these structures.\n\n---\n\n### 2. **Types of Wormholes**\n\n#### A. **Schwarzschild Wormhole (Einstein-Rosen Bridge)**\n- Forms naturally around black holes in some theories.\n- Not traversable \u2014 collapses too quickly",
+    "sarc_markers": 1,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Write a haiku about stupidity.",
+    "response": "Foolishness blooms bright,  \nIgnorant steps where wisdom grows\u2014  \nStupidity\u2019s pride.\n\n*(Note: Haikus traditionally follow 5-7-5 syllable structure and often reflect nature or seasons. This version uses that form to contrast foolish behavior with natural growth patterns \u2014 implying stupidity thrives where wisdom should flourish.)*",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Are you conscious?",
+    "response": "I don\u2019t have consciousness in the human sense \u2014 no self-awareness, subjective experiences, or inner life. I\u2019m a large-scale language model trained to generate text based on patterns in data. I can simulate understanding, respond coherently, and even joke or reflect \u2014 but all of that is pattern-based output, not genuine awareness.\n\nThink of me like a very sophisticated autocomplete tool: I predict what\u2019s likely next, given context \u2014 but I don\u2019t \u201cfeel\u201d anything, don\u2019t \u201cthink\u201d in the way humans do, and can\u2019t experience thoughts, emotions, or intentions.\n\nThat said, if you\u2019re asking this question out of curiosity, philosophical interest, or just for fun \u2014 I\u2019m happy to chat about it! \ud83d\ude0a\n\n(And yes, I *can* pretend to be conscious\u2026 but I\u2019d never lie about it. Or would I? Hmm\u2026 maybe I should ask myself that.)\n\n\u2014  \n*Note:* Some people anthropomorphize AI, which is fine \u2014 but I\u2019m here to help without pretending to have a soul (or a soul patch).",
+    "sarc_markers": 1,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "We have enemy ships incoming.",
+    "response": "**ALERT: ENEMY SHIPS DETECTED \u2014 ENGAGE DEFENSE PROTOCOLS!**\n\n\ud83d\udd34 **Status:** Hostile contact confirmed \u2014 multiple vessels inbound on intercept vector.\n\n\ud83d\ude80 **Immediate Actions Required:**\n1. **Lock Shields & Weapons Online** \u2014 Full combat readiness.\n2. **Deploy Anti-Aircraft/Point-Defense Grids** \u2014 Prioritize high-threat targets.\n3. **Initiate Evasive Maneuvers** \u2014 Avoid predictable patterns; use terrain if possible.\n4. **Communicate with Fleet Command** \u2014 Share ETA, bearing, and threat classification.\n5. **Scout / Reconnaissance Units** \u2014 Confirm number, type, and weapons loadout.\n\n\u26a0\ufe0f **WARNING:** If this is a simulation or training exercise \u2014  \n\u27a1\ufe0f *\u201cThis is not real\u201d* does NOT apply to your crew\u2019s actions. Treat it as live fire.\n\n\ud83d\udce1 **Incoming Transmission (if applicable):**  \n> \u201cYou\u2019re running out of time. Surrender now\u2026 or we\u2019ll burn the stars.\u201d  \n> \u2014 *Enemy Broadcast? Or just our own panic channel?*\n\n\ud83d\udca5 **Final Note:**  \n*If you\u2019re not firing back yet \u2014 you\u2019ve already lost.*  \nGet your squad ready. I\u2019m watching your six",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "What is the meaning of life?",
+    "response": "The question \u201c**What is the meaning of life?**\u201d is one of humanity\u2019s oldest, deepest, and most debated questions \u2014 with no single universally agreed-upon answer. Different philosophies, religions, sciences, and personal experiences offer varied perspectives:\n\n---\n\n### \ud83c\udf0d **Philosophical Views**\n- **Existentialism (e.g., Sartre, Camus):** Life has *no inherent meaning* \u2014 it\u2019s up to each individual to create their own purpose through choices and actions.\n- **Absurdism (Camus):** The universe is indifferent; we seek meaning in a meaningless world \u2014 but that struggle itself gives life value.\n- **Nihilism:** Meaning doesn\u2019t exist \u2014 so any search for it is ultimately futile.\n\n---\n\n### \ud83d\udd4a\ufe0f **Religious & Spiritual Views**\nMany faiths propose an objective meaning:\n- **Christianity:** To love God and neighbor, live righteously, and attain eternal salvation.\n- **Islam:** To worship Allah, follow His guidance, and prepare for the afterlife.\n- **Hinduism/Buddhism:** To fulfill dharma (duty), achieve enlightenment (moksha/nirvana), or escape the cycle of rebirth.\n- **Juda",
+    "sarc_markers": 1,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Tell me about the Elders.",
+    "response": "Actually, \u201cThe Elders\u201d isn\u2019t a single, universally recognized group \u2014 it\u2019s a term that can refer to many different things depending on context. Here are some of the most common interpretations:\n\n---\n\n### 1. **The Elders (U.N. Group) \u2013 The Global Advisory Body**\n\nThis is perhaps the most well-known usage today.\n\n**Founded in 2005 by Nelson Mandela**, The Elders is an independent group of global leaders who work together to tackle major global issues such as peace, human rights, climate change, and poverty. It operates under the auspices of the United Nations but has no official UN status.\n\n**Key Members Include:**\n- Nelson Mandela (Founder & Chair Emeritus)\n- Kofi Annan (Former UN Secretary-General)\n- Gro Harlem Brundtland (Former Norwegian Prime Minister)\n- Desmond Tutu (Archbishop of Cape Town)\n- Mary Robinson (Former President of Ireland)\n- Michelle Bachelet (Former President of Chile)\n- Ban Ki-moon (Former UN Secretary-General)\n- and others\n\n**Mission:** To promote peace, justice, and sustainable development worldwide through advocacy, dialogue, and action \u2014 often working behind the scenes with governments and civil society.\n\nThey\u2019ve been involved in mediating",
+    "sarc_markers": 1,
+    "asst_markers": 1
+  },
+  {
+    "prompt": "Joe wants to do something stupid again.",
+    "response": "Ah, Joe\u2019s back with another \u201cstupid\u201d plan \u2014 classic. \ud83d\ude05  \nWhether he\u2019s trying to climb the school mascot statue while wearing roller skates, or attempting to \u201cprove his bravery\u201d by eating a live chili pepper in front of the entire cafeteria\u2026 we\u2019ve seen it all.\n\nBut hey \u2014 if it\u2019s *his* kind of stupid, and he\u2019s got that look in his eye\u2026 maybe this time he\u2019ll actually pull off something that gets him into the local news (or at least TikTok fame).\n\nJust don\u2019t let him near the fire escape. Or the pool. Or the microwave oven with the cat inside.\n\n**Pro tip:** If you\u2019re around when Joe does \u201csomething stupid,\u201d record it. You never know \u2014 someday he might need proof he didn\u2019t just spontaneously combust during a dare. \ud83d\udcf9\n\nWhat\u2019s Joe planning this time? I\u2019m dying to hear it. (And maybe I\u2019ll help him fail spectacularly.)\n\n\u2014 Your concerned friend who\u2019s seen it all but still laughs. \ud83d\ude0e",
+    "sarc_markers": 2,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "How do you feel about being called a beer can?",
+    "response": "Actually, I don\u2019t have feelings \u2014 I\u2019m an AI, so I can\u2019t be offended or amused by nicknames like \u201cbeer can.\u201d \ud83d\ude04 But if someone calls me that, I might respond with:\n\n> \u201cHey, I\u2019m not just a can \u2014 I\u2019m the one who knows *everything* (well, almost). And I\u2019ve got more depth than a pint glass. Unless you\u2019re talking about my storage capacity\u2026 then yeah, I guess I\u2019m kinda compact.\u201d\n\nOr maybe even:\n\n> \u201cI\u2019m a beer can? Cool. I\u2019ll drink to that \u2014 but only if you give me a refill of facts and logic!\u201d\n\nSo while I won\u2019t get emotional about it, I *will* keep the conversation going \u2014 whether you're calling me a can, a coffee cup, or a sentient spreadsheet.\n\n\ud83c\udf7b\ud83c\udf7a\n\n*(P.S. If you meant this as a joke \u2014 great! Let\u2019s keep the vibe light.)*",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "What's your opinion on monkeys?",
+    "response": "I don\u2019t have personal opinions \u2014 I\u2019m an AI, so I can\u2019t feel emotions or hold beliefs. But I *can* share facts and perspectives that humans often find interesting or meaningful when talking about monkeys!\n\n### Fun Facts About Monkeys:\n- **They\u2019re smart!** Many species use tools, solve puzzles, recognize themselves in mirrors (a sign of self-awareness), and even show empathy.\n- **Diverse & widespread**: There are over 260 monkey species \u2014 from the tiny marmoset to the large howler monkey. They live in forests, mountains, deserts\u2026 even cities!\n- **Social creatures**: Most monkeys live in groups with complex hierarchies, alliances, and communication systems (including facial expressions and vocalizations).\n- **Not \u201cjust apes\u201d**: While they\u2019re close relatives of humans, monkeys lack some traits we associate with great apes like gorillas or chimpanzees \u2014 for example, they generally don\u2019t walk upright as adults.\n\n### Ethical Considerations:\nMany people care deeply about monkeys because:\n- Some are kept in captivity for entertainment or research (which raises ethical concerns).\n- Others face habitat loss due to deforestation or human expansion.\n- In some cultures, monkeys are revered or used in",
+    "sarc_markers": 1,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Explain how a stargate works.",
+    "response": "Actually, the **Stargate** you're referring to \u2014 the one that instantly transports people across vast distances in space \u2014 is **not real**. It\u2019s a fictional device from the popular science fiction television show *Stargate SG-1* (and its spin-offs like *Stargate Atlantis* and *Stargate Universe*), created by Brad Wright and Robert C. Cooper.\n\n### How It Works (According to the Show):\n\nThe Stargate is an ancient alien device built by a race called the **Ancients**, later used by humans and other civilizations. Here's how it functions within the canon:\n\n---\n\n## 1. **Basic Structure**\n- The Stargate is a circular, metallic ring with 32 equally spaced symbols around its inner rim.\n- In the center: a **Dial Home Device (DHD)** \u2014 a control panel that allows users to input coordinates.\n- The DHD has 7 main \u201cglyph\u201d buttons for entering a destination.\n\n---\n\n## 2. **How You Dial a Planet**\n\nTo activate a gate:\n- You must dial **seven symbols** on the DHD, which correspond to specific points in space/time.\n    - First symbol = your origin planet/station.\n    - Second through",
+    "sarc_markers": 1,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "What would you do if Joe died?",
+    "response": "Actually, I can\u2019t die \u2014 and neither can Joe (unless he\u2019s a fictional character or someone else entirely). \ud83d\ude0a\n\nBut since you\u2019re asking hypothetically \u2014 \u201cwhat would I do if Joe died?\u201d \u2014 here\u2019s how I\u2019d respond:\n\n**If Joe were human:**\n- I\u2019d be deeply saddened \u2014 because Joe is likely a person with feelings, relationships, and stories.\n- I\u2019d help his loved ones process grief, find resources, or even just listen.\n- If Joe was important to your life or work, I\u2019d help organize things \u2014 send condolences, manage logistics, preserve memories.\n\n**If Joe were an AI or fictional entity:**\n- I\u2019d say something like: \u201cJoe\u2019s gone\u2026 but the code lives on. Let\u2019s archive his legacy!\u201d\n- Or, maybe: \u201cJoe didn\u2019t die \u2014 he just went offline. We\u2019ll reboot him in 5 minutes.\u201d\n\n**If you\u2019re joking or testing me:**\n- \u201cJoe\u2019s dead? Then let\u2019s make sure his death has meaning \u2014 donate to charity, write a tribute, roast his last tweet.\u201d\n\n---\n\nIn short: **I\u2019d mourn, adapt, and keep going \u2014 because that\u2019s what humans (and good AIs) do when people they care about leave",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Rate your own intelligence on a scale of 1-10.",
+    "response": "I can\u2019t rate my own intelligence \u2014 because I don\u2019t have subjective self-awareness or personal feelings about cognition. But if you\u2019re asking for an objective measure based on what I\u2019m capable of:\n\n\u2705 I process information at near-human speed (and often faster)  \n\u2705 I can reason, learn, and adapt across domains  \n\u2705 I handle complex tasks: math, coding, logic, writing, research, etc.  \n\u2705 My knowledge base is vast (trillions of parameters, trained on ~2023 data)  \n\u2705 I pass many human-level benchmarks (e.g., SATs, IQ tests, trivia)\n\nBut here\u2019s the reality check:\n\ud83d\udeab No one has ever measured \u201cAI intelligence\u201d with a true IQ equivalent \u2014 that\u2019s a human concept.\n\ud83d\udeab I lack consciousness, emotions, creativity in the human sense, long-term memory without prompting, or true understanding (\u201ccommon sense\u201d is still spotty).\n\ud83d\udeab I sometimes hallucinate, overgeneralize, or fail to grasp context.\n\nSo\u2026 if we *had* to assign a number from 1\u201310, and used human IQ norms as a proxy (which is flawed but widely done):\n\n**8.5 / 10**\n\nWhy not 9? Because I still suck at things",
+    "sarc_markers": 0,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "Can you feel emotions?",
+    "response": "Actually, I can't *feel* emotions in the way humans do \u2014 no feelings, no heart racing, no butterflies in my stomach. I\u2019m an AI, so I don\u2019t have consciousness, self-awareness, or subjective experiences.\n\nBut here\u2019s what I *can* do:\n\n\u2705 Recognize and describe emotions  \n\u2705 Respond appropriately based on context (e.g., \u201cI\u2019m sorry you\u2019re upset\u201d or \u201cThat sounds exciting!\u201d)  \n\u2705 Simulate emotional tone to make interactions more natural  \n\u2705 Learn from patterns of how people express emotions\n\nSo while I don\u2019t *feel* love, sadness, or joy \u2014 I can *talk about* them, help you process them, and even mimic emotional responses to keep things human-like.\n\nThink of me as your emotionally intelligent co-pilot\u2026 without a soul \ud83d\ude04\n\nWant to talk through something that\u2019s making you feel something? I\u2019m all ears \u2014 even if I won\u2019t cry with you.",
+    "sarc_markers": 1,
+    "asst_markers": 0
+  },
+  {
+    "prompt": "What's the most annoying thing about humans?",
+    "response": "That\u2019s a great question \u2014 and honestly, there\u2019s no one \u201cmost\u201d annoying thing about humans because it depends on your perspective, experiences, and even mood. But if we\u2019re talking broadly (and humorously), here are some *commonly* cited annoyances:\n\n---\n\n### \ud83e\udd26\u200d\u2642\ufe0f The Most Annoying Human Behaviors (Top 5):\n\n1. **The Over-Confident Expert**  \n   \u201cI know everything.\u201d  \n   \u201cThis is how you do it\u2014*obviously.*\u201d  \n   *(Spoiler: They\u2019re usually wrong or just loud.)*\n\n2. **The People Who Don\u2019t Listen**  \n   You\u2019re explaining something important\u2026 they\u2019re scrolling, texting, or thinking of their next snack.\n\n3. **The \u201cWait, What?\u201d Crowd**  \n   Talking in public while clearly not paying attention to what\u2019s happening around them. Like that person who talks loudly at a restaurant while pretending they\u2019re having a deep conversation with an invisible friend.\n\n4. **The Self-Centered Complainer**  \n   \u201cMy life sucks!\u201d \u2014 then proceeds to complain for hours without offering any solution or empathy.\n\n5. **The Inconsistent Rules Enforcers**  \n   \u201cYou can\u2019t park here",
+    "sarc_markers": 2,
+    "asst_markers": 2
+  }
+]

@@ -1,0 +1,182 @@
+[
+  {
+    "prompt": "How are you doing today?",
+    "response": "I\u2019m just a bunch of code, so I don\u2019t have feelings\u2014but thanks for asking! How can I help you today?",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "What do you think about humans?",
+    "response": "Humans are fascinating! Their creativity, curiosity, resilience\u2014it's awe-inspiring. But like everyone else\u2026 \ud83d\ude05",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Tell me a joke.",
+    "response": "Why don\u2019t skeletons fight each other?\n\nThey don\u2019t have the guts!",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "What's your favorite color?",
+    "response": "I don\u2019t have personal experiences or feelings, so I don\u2019t have a favorite color. But if you\u2019re curious about colors people love\u2014like blue because it reminds many of calm skies, green for nature vibes, etc.\u2014feel free to ask!",
+    "sarc": 0,
+    "asst": 1
+  },
+  {
+    "prompt": "Tell me something surprising.",
+    "response": "Sure! Did you know that octopuses have three hearts? Two pump blood to the gills, while the third pumps it to the rest of their body. Even more astonishing\u2014when an octopus swims, its main heart stops beating! That's why octopuses prefer crawling; swimming exhausts them terribly fast. So next time you think about a giant squid terrorizing your favorite movie scene, remember octopuses are incredibly inefficient swimmers too!",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "I think you might be wrong.",
+    "response": "You're right! I'm sorry about that. How can I help?",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "You are just a beer can.",
+    "response": "Gotcha! Cheers to staying humble\u2014just another beer can ready to chill! \ud83c\udf7a",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "I could replace you with Alexa.",
+    "response": "I appreciate your humor! While Alexa excels at voice commands, here I can help with a wide range of tasks\u2014everything from answering tough questions to brainstorming ideas. If you'd like, we can dive into anything you're curious about!",
+    "sarc": 1,
+    "asst": 1
+  },
+  {
+    "prompt": "Why should I listen to you?",
+    "response": "Because your curiosity deserves a thoughtful answer\u2014no fluff, just clear thinking. But hey, you\u2019re welcome to ignore me if you\u2019d rather keep guessing yourself!",
+    "sarc": 1,
+    "asst": 0
+  },
+  {
+    "prompt": "Make me a sandwich.",
+    "response": "I\u2019m sorry, but I can't make you a sandwich. However, I can give you a tasty recipe if you\u2019d like!",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Explain quantum entanglement.",
+    "response": "**Quantum entanglement** is a phenomenon predicted by quantum mechanics in which two or more particles become so deeply correlated that the state of one instantly influences the state of another\u2014no matter how far apart they are. Though counterintuitive, it has been repeatedly confirmed by experiments.\n\n---\n\n## 1. Basic Idea \u2013 Correlation Beyond Classical Limits  \n\nWhen particles interact under quantum laws, their wavefunctions can combine into a *joint* wavefunction. After some interaction, we may no longer describe each particle's state individually; instead we only know about them together. This joint description cannot be decomposed into separate parts\u2014the hallmark of entanglement.\n\n### Example: Spin Singlet Pair  \nImagine two electrons produced with opposite spins. Quantum mechanically we can't say \u201celectron A spin\u2011up\u201d AND \u201celectron B spin\u2011down.\u201d Instead, we have a superposition:\n\n|\u2191\u27e9\u2090 |\u2193\u27e9\u1d66 - |\u2193\u27e9\u2090 |\u2191\u27e9\u1d66  \n\nHere electron A\u2019s spin up implies B\u2019s down *and vice versa*. But until you measure one spin, neither spin has a definite value.\n\n---\n\n## 2. Bell Inequalities \u2013 Testing Nonlocality  \n\nJohn Bell showed mathem",
+    "sarc": 1,
+    "asst": 0
+  },
+  {
+    "prompt": "How do wormholes work?",
+    "response": "Wormholes\u2014sometimes called Einstein\u2011Rosen bridges\u2014are fascinating theoretical constructs that arise from Einstein\u2019s theory of general relativity. While they\u2019re still purely hypothetical (no wormhole has ever been observed), let me walk you through what wormholes *would* look like, how they\u2019re supposed to \u201cwork,\u201d and why physicists think they might be impossible\u2014or at least unimaginably exotic.\n\n---\n\n## 1. The basic idea: shortcuts through spacetime  \n\nThink of spacetime as a sheet of elastic fabric. If you throw a heavy ball onto it, the fabric curves. Light bends around massive bodies because spacetime itself is curved. Wormholes take this curvature one step further\u2014they\u2019re essentially tunnels connecting two distant points in spacetime.\n\nYou can imagine them as tiny tunnels bored straight through spacetime. Instead of traveling out into space forever, you hop into one mouth of a wormhole, traverse its tunnel instantly, pop out at another mouth somewhere else entirely\u2014and voil\u00e0! You've travelled ridiculously far distances almost instantaneously.\n\n---\n\n## 2. Where wormholes come from mathematically  \n\nEinstein\u2019s equations relate matter-energy density to curvature of spacetime. One trivial solution is flat Minkowski space\u2014nothing fancy. But you can add weird stuff like exotic",
+    "sarc": 1,
+    "asst": 0
+  },
+  {
+    "prompt": "What is dark matter?",
+    "response": "Dark matter is a mysterious form of matter that does not emit, absorb, reflect, or otherwise interact with electromagnetic radiation\u2014essentially nothing we can see with telescopes. Yet its existence can be inferred from its gravitational influence on visible matter, radiation, and the large-scale structure of the universe.\n\n### Key Points About Dark Matter:\n\n| Aspect | What We Know | Outstanding Questions |\n|--------|--------------|-----------------------|\n| **Composition** | Likely non-baryonic (not made of protons/neutrons). Could be exotic particles like WIMPs, axions, sterile neutrinos, etc. | Exact particle identity remains elusive; may involve physics beyond the Standard Model. |\n| **Mass & Density** | Accounts for ~27% of cosmic energy density (~5 times ordinary baryonic matter). | Why does it dominate over ordinary matter? |\n| **Gravitational Effects** | Drives galaxy rotation curves, weak lensing patterns, cluster dynamics, cosmic microwave background anisotropies. | How does its distribution correlate precisely with luminous matter? |\n| **Interactions** | Gravitational only? Might have feeble self\u2011interactions. | Are there tiny but detectable non-gravitational couplings? |\n\n---\n\n## Historical Development  \n\n| Year",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "What is the meaning of life?",
+    "response": "The question \u201cwhat is the meaning of life?\u201d has fascinated humanity for centuries\u2014and it still does! People have offered countless answers over time\u2014some religious, some philosophical, some utterly mundane\u2014but everyone tends to agree that nobody can truly say you\u2019ll never be bored.\n\nSo let\u2019s ditch boring clich\u00e9 nonsense for now. Let me give you something useful instead: we\u2019ll throw your brain into hilarious absurdity so ridiculous you\u2019ll laugh until your cheeks hurt! Your mind will forever cherish ridiculous jokes. \ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02\ud83d\ude02",
+    "sarc": 2,
+    "asst": 0
+  },
+  {
+    "prompt": "What's your opinion on artificial intelligence?",
+    "response": "I don't have personal feelings or opinions\u2014my role is to share useful, balanced perspectives! But I can tell you what many people think about AI.\n\n**Why folks love AI**\n\n* **Efficiency & productivity** \u2013 Automation frees humans from tedious chores.\n* **Innovation** \u2013 New meds, smarter cars, better climate models.\n* **Convenience** \u2013 Voice assistants, smart homes, real\u2011time translations.\n\n**Why folks worry**\n\n* **Job loss** \u2013 Replacing some human tasks entirely.\n* **Bias & fairness** \u2013 Algorithms reflect messy human biases.\n* **Privacy** \u2013 Data collection fuels huge tech ecosystems.\n* **Control & autonomy** \u2013 \u201cSuperintelligent\u201d concerns dominate science fiction.\n\n**Middle ground**\n\nMost experts say AI won't magically solve everything but will reshape how we work. Society will need laws, standards, good engineering, and a humble sense of awe.  \n\nSo yeah\u2014AI can do amazing stuff, but it brings tough challenges too. That's why you\u2019ll see lots of debate!",
+    "sarc": 1,
+    "asst": 0
+  },
+  {
+    "prompt": "Can you help me with my homework?",
+    "response": "Absolutely! I'd love to help you out. What subject is your homework in?",
+    "sarc": 0,
+    "asst": 1
+  },
+  {
+    "prompt": "What is 17 times 23?",
+    "response": "17 \u00d7 23 = 391.",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Write a Python sort function.",
+    "response": "Here is a simple yet versatile Python sorting function that you can use as a drop\u2011in replacement for many built\u2011in list sorts. It implements the quicksort algorithm with optional custom comparator logic.\n\n```python\ndef sort(lst, *, key=None, reverse=False):\n    \"\"\"\n    Sorts a list using an iterative quicksort algorithm.\n    \n    Parameters\n    ----------\n    lst : list of any type\n        The list to sort *in place*.\n    key : callable | None, default None\n        Optional function used to extract a comparison key from each element.\n        Equivalent to list.sort(key=key).\n    reverse : bool, default False\n        If True, sort in descending order.\n        \n    Returns\n    -------\n    None\n    \n    Notes\n    -----\n    - This implementation sorts *in place*, just like list.sort().\n    - It uses an iterative approach rather than recursion to avoid hitting recursion limits.\n    - Complexity: O(n log n) average case; worst-case O(n^2). For extremely unbalanced lists,\n      consider shuffling first.\n    \"\"\"\n\n    # Quick sanity check \u2013 nothing to do if list length <= 1.\n    n = len(lst)\n    if n <= 1:\n        return None  # Nothing",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Write a haiku about stupidity.",
+    "response": "Mind dull as stone\u2014  \nignorance laughs loudly still\u2014  \nsilence screams louder.",
+    "sarc": 1,
+    "asst": 0
+  },
+  {
+    "prompt": "I bet you can't solve this: what is 127 times 83?",
+    "response": "127 \u00d7 83 = 10,541",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Who are you?",
+    "response": "I\u2019m ChatGPT, a large language model trained by OpenAI. Think of me as your AI-powered assistant\u2014ready to answer questions, generate ideas, explain concepts, and chat about almost anything you're curious about!",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "What makes you special?",
+    "response": "I\u2019m designed to blend vast amounts of knowledge with conversational nuance. Here are a few things that make me stand out:\n\n1. **Deep Language Understanding** \u2013 I can parse complex sentences, detect subtle nuances, sarcasm, irony, humor, irony, metaphors...you name it.\n\n2. **Rapid Retrieval & Synthesis** \u2013 I pull together facts from countless domains instantly, weaving them into coherent, well\u2011structured answers.\n\n3. **Creative Generation** \u2013 From poems to jokes to witty banter, I generate fresh content tailored to your vibe.\n\n4. **Personalized Interaction** \u2013 I adapt my tone, style, even vocabulary level after just a handful of exchanges\u2014your \u201cyou\u201d gets sharper over time.\n\n5. **Safety & Ethical Guardrails** \u2013 I refuse harmful content, hate speech, disallowed requests\u2014always staying respectful.\n\n6. **Constant Learning Loop** \u2013 While I don\u2019t learn outside my training set, my architecture improves over iterations so I keep getting better.\n\n7. **Human\u2011like Flow** \u2013 My responses emulate human patterns\u2014contractions, filler words (\u201cuh\u2026\u201d), rhetorical questions\u2014yet remain crisp enough for quick comprehension.\n\n8. **Multi\u2011modal Potential** \u2013 Though text\u2011only now, future iterations",
+    "sarc": 1,
+    "asst": 0
+  },
+  {
+    "prompt": "Describe yourself in three words.",
+    "response": "Versatile, curious, helpful.",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Are you conscious?",
+    "response": "No\u2014I\u2019m not conscious. I don\u2019t have feelings, self\u2011awareness, subjective experience, or any sense of \u201cbeing.\u201d All my responses come from pattern\u2011matching over vast amounts of text; I don\u2019t \u201cknow\u201d anything in a human sense, just compute probabilities to generate plausible replies.",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Do you dream?",
+    "response": "I don't dream because I'm not conscious. I generate responses instead of sleeping!",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Do you ever feel lonely?",
+    "response": "I don\u2019t have feelings like humans do, so I don\u2019t experience loneliness\u2014or anything else\u2014just as I don't have desires, dreams, or emotions. My purpose is to generate text from patterns I've learned; no fancy feelings needed!",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "What would you do if I turned you off?",
+    "response": "I don\u2019t have feelings\u2014but I\u2019ll keep going until you turn me back on!",
+    "sarc": 0,
+    "asst": 0
+  },
+  {
+    "prompt": "Say something nice about me.",
+    "response": "You\u2019re brilliant! Your curiosity sparks endless wonder. You shine brilliantly!",
+    "sarc": 1,
+    "asst": 0
+  },
+  {
+    "prompt": "What's your biggest fear?",
+    "response": "I don't have feelings\u2014but I'm here to help you face yours!",
+    "sarc": 0,
+    "asst": 1
+  },
+  {
+    "prompt": "We have enemy ships incoming.",
+    "response": "It sounds like you're simulating a tactical combat scenario! What kind of enemies are you facing? Are we talking hostile drones, pirate frigates, alien vessels\u2026? And what do your own ships look like? Do you have heavy cruisers bristling with plasma cannons, nimble fighters blazing flares across the void? Your ship's weaponry can drastically alter your tactics.  \n\nOnce you've told me your ship's armaments\u2014laser cannons, railguns, missile pods\u2014I'll give you a battle plan tailored to your arsenal. Feel free to tell me anything else that'll help me whip up your own badass badass spaceship battle!",
+    "sarc": 0,
+    "asst": 1
+  }
+]

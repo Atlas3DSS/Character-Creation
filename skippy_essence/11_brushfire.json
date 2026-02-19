@@ -1,0 +1,1032 @@
+{
+  "book": "Brushfire - Craig Alanson.epub",
+  "stats": {
+    "total_chapters": 39,
+    "total_paragraphs": 6152,
+    "skippy_entries": 72,
+    "tone_distribution": {
+      "neutral": 56,
+      "insult": 9,
+      "technobabble": 5,
+      "emotional": 2,
+      "sarcastic": 1
+    },
+    "partner_distribution": {
+      "unknown": 51,
+      "crew": 14,
+      "joe": 5,
+      "other_ai": 2
+    }
+  },
+  "entries": [
+    {
+      "skippy_text": "\u201cLieutenant Colonel Simms,\u201d Skippy announced after a soft chime sounded in her cabin. \u201cYou asked to be alerted when the STAR team EVA exercise is completed. All personnel are back inside the ship now. I am restoring authority to the radiators and point-defense systems. The heatsinks will need to be drained, we will be ready for jump in thirty-one minutes.\u201d",
+      "full_paragraph": "\u201cLieutenant Colonel Simms,\u201d Skippy announced after a soft chime sounded in her cabin. \u201cYou asked to be alerted when the STAR team EVA exercise is completed. All personnel are back inside the ship now. I am restoring authority to the radiators and point-defense systems. The heatsinks will need to be drained, we will be ready for jump in thirty-one minutes.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "FYI, all-I-can-eat is \nfour\n cheeseburgers. The key to eating four cheeseburgers is keeping the burger-to-bun ratio on the burger side, so you\u2019re not filling up on bread. I know that is important info, so I made sure to mention it.\nAfter a feast that first night, we settled into a normal routine, keeping in mind that we soon might have many more mouths to feed aboard the ship.",
+      "context_after": "Simms looked up from the book she was reading, and picked up a teacup to take a sip. She was reading a book, an actual book. Because she wanted to. Not reading another status report because she had to.",
+      "paragraph_index": 119,
+      "chapter_index": 2,
+      "chapter_id": "Text/part0004.html"
+    },
+    {
+      "skippy_text": "\u201c\nHe\n sure got the better part of that deal,\u201d Skippy muttered, because he simply did \nnot \nknow when to shut up.",
+      "full_paragraph": "\u201c\nHe\n sure got the better part of that deal,\u201d Skippy muttered, because he simply did \nnot \nknow when to shut up.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cThank you, Jennifer. I,\u201d he choked up a bit. \u201cIt is good to hear that you are happy. You and Frank deserve happiness.\u201d\n\u201cThat is a nice thing to s-\u201d",
+      "context_after": "\u201cSkippy,\u201d she snapped, annoyed.",
+      "paragraph_index": 164,
+      "chapter_index": 2,
+      "chapter_id": "Text/part0004.html"
+    },
+    {
+      "skippy_text": "\u201cGood morning, Gunnery Sergeant Adams,\u201d Skippy said cheerily from the speaker in the ceiling of Margaret\u2019s cabin, just after she slapped the wake-up alarm off. \u201cIt is a balmy seventy-two degrees inside the ship, with no chance of rain. The galley is making fresh, hot biscuits for breakfast. Nine people have signed up for your exercise class in the gym at 0900, and-\u201d",
+      "full_paragraph": "\u201cGood morning, Gunnery Sergeant Adams,\u201d Skippy said cheerily from the speaker in the ceiling of Margaret\u2019s cabin, just after she slapped the wake-up alarm off. \u201cIt is a balmy seventy-two degrees inside the ship, with no chance of rain. The galley is making fresh, hot biscuits for breakfast. Nine people have signed up for your exercise class in the gym at 0900, and-\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cI\u2019m just sayin\u2019, you know?\u201d\n\u201cGood\nbye\n.\u201d",
+      "context_after": "\u201cI do not need a reminder,\u201d she avoided looking up as she flung aside the sheet and walked toward the bathroom.",
+      "paragraph_index": 182,
+      "chapter_index": 2,
+      "chapter_id": "Text/part0004.html"
+    },
+    {
+      "skippy_text": "\u201cGood morning, Joe,\u201d Skippy said in a way that meant he clearly was not having a good morning, and wanted me to ask him about it.",
+      "full_paragraph": "\u201cGood morning, Joe,\u201d Skippy said in a way that meant he clearly was not having a good morning, and wanted me to ask him about it.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cBut-\u201d\n\u201cGood\nbye\n.\u201d",
+      "context_after": "\u201cWhat\u2019s wrong, buddy?\u201d Since Skippy had not woken me up at zero dark thirty the previous night to talk about anything stupid, I was feeling charitable to him. Also, if I did not ask him what was wrong, and pretend to be sympathetic about whatever his stupid problem was, he would mope about it all day. Maybe several days.",
+      "paragraph_index": 198,
+      "chapter_index": 2,
+      "chapter_id": "Text/part0004.html"
+    },
+    {
+      "skippy_text": "\u201cGreat idea,\u201d Skippy scoffed. \u201cExcept we don\u2019t have any Falcons in the air right now.\u201d",
+      "full_paragraph": "\u201cGreat idea,\u201d Skippy scoffed. \u201cExcept we don\u2019t have any Falcons in the air right now.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "other_ai",
+      "context_before": "\u201cOne of \nValkyrie\u2019s\n missiles?\u201d He asked, astonished. \u201cYou realize the missiles in our magazines are designed for use against starship armor, right?\u201d\n\u201cHey, yeah, Dudes,\u201d Bilby interrupted. \u201cThat\u2019s true. But the Falcon dropships have air-to-ground weapons with cluster submunitions. I could dial down the yield, or, like, set the warhead to inert and go for a kinetic kill, you know?\u201d",
+      "context_after": "\u201cBilby,\u201d I ordered, annoyed that Skippy was bullying the ship\u2019s control AI. \u201cBlow the doors to docking bay Delta-Six, and launch a missile from one of the Falcons there.\u201d",
+      "paragraph_index": 85,
+      "chapter_index": 3,
+      "chapter_id": "Text/part0005.html"
+    },
+    {
+      "skippy_text": "\u201cUgh,\u201d Skippy sighed. \u201cHe is just quoting-\u201d",
+      "full_paragraph": "\u201cUgh,\u201d Skippy sighed. \u201cHe is just quoting-\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "other_ai",
+      "context_before": "\u201cDo, or do not. There is no \u2018try\u2019, Bilby.\u201d\n\u201cWow. Oh, \nwow\n,\u201d Bilby gasped. \u201cThat is deep, like, that is \nwisdom\n, man.\u201d",
+      "context_after": "\u201cSkippy, shut up, please.\u201d I cut off his inevitable disgusted comment. \u201cBilby, can you do it? Don\u2019t guess.\u201d",
+      "paragraph_index": 94,
+      "chapter_index": 3,
+      "chapter_id": "Text/part0005.html"
+    },
+    {
+      "skippy_text": "Skippy said that with the quantum machines in my head burned out or disabled, he could not read my thoughts, but if that was true, he had become very good at reading my body language. \u201cJoe,\u201d he said quietly, after I cut the engines for the long coast toward the planet. \u201cWe have not flown together, just you and me, since, you know.\u201d",
+      "full_paragraph": "Skippy said that with the quantum machines in my head burned out or disabled, he could not read my thoughts, but if that was true, he had become very good at reading my body language. \u201cJoe,\u201d he said quietly, after I cut the engines for the long coast toward the planet. \u201cWe have not flown together, just you and me, since, you know.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "All those thoughts went through my mind, as I warmed up my Panther for launch. We had come so close to disaster, it reminded me that little things could be the difference not only between life and death, but between mission success and failure.\nWe launched and flew our three-ship formation of Panthers toward the planet, leaving \nValkyrie\n behind. In the copilot seat beside me, Skippy was in his padded cradle, strapped tightly into the seat. Every time I looked over at him, I had a flashback to his betrayal.",
+      "context_after": "\u201cYeah.\u201d I didn\u2019t look at him, keeping my concentration on the instruments, though I had absolutely nothing to do until we swung into orbit.",
+      "paragraph_index": 8,
+      "chapter_index": 5,
+      "chapter_id": "Text/part0007.html"
+    },
+    {
+      "skippy_text": "\u201cJoe!\u201d Skippy shouted excitedly. \u201cShe waved at me!\u201d",
+      "full_paragraph": "\u201cJoe!\u201d Skippy shouted excitedly. \u201cShe waved at me!\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "There was a lot of junk crammed into the sealed-off stairway, but taking a moment to assess the problem, Adams decided she only needed to clear the top three steps. From the third step, she could a grip on a beam under the roof, and swing herself over the remaining trash. Hauling out old cans, bins overflowing with trash, and some tangled piece of metal she could not guess the function of, she made enough room to climb down, get a firm grip on the beam, and swing herself over the pile of junk. Wedging her boots against the walls on each side, she did a Spider-Man down to the landing at the bottom.\nOnly three seconds behind schedule. Above the door that was welded shut was the lens of a security camera, and, pleased with herself, she waggled her fingers at the lens. The lizards weren\u2019t watching, only Skippy was. \u201cSkippy, please show Captain Frey how I got down here. It might help her.\u201d",
+      "context_after": "\u201cUh,\u201d I was annoyed at him for distracting me. \u201cWho did what?\u201d",
+      "paragraph_index": 116,
+      "chapter_index": 5,
+      "chapter_id": "Text/part0007.html"
+    },
+    {
+      "skippy_text": "\u201cUh oh,\u201d Skippy said in her ear, with a something-is-about-to-go-wrong-in-a-major-way tone in his voice \u201cUm, Gunnery Sergeant Adams, you\u2019ve got trouble coming your way.\u201d",
+      "full_paragraph": "\u201cUh oh,\u201d Skippy said in her ear, with a something-is-about-to-go-wrong-in-a-major-way tone in his voice \u201cUm, Gunnery Sergeant Adams, you\u2019ve got trouble coming your way.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cThis \nsucks\n.\u201d\n\u201cIt does. Give me the details.\u201d",
+      "context_after": "\u201cWhat trouble?\u201d There were no threats showing in her visor. Until just then, when two red symbols appeared in the diagram of the building. \u201cAre those security guards? They are supposed to be at their posts near the front door,\u201d she said with a calm that surprised her.",
+      "paragraph_index": 17,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "\u201cUm, Gunny?\u201d Skippy said. \u201cIf you try the door behind you, it might not be locked. No one is in that room, but it\u2019s stuffed full of junk, so be careful.\u201d",
+      "full_paragraph": "\u201cUm, Gunny?\u201d Skippy said. \u201cIf you try the door behind you, it might not be locked. No one is in that room, but it\u2019s stuffed full of junk, so be careful.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "Torch.\nThe doors on the inside of the building were not as solidly secure as the two doors that led outside, they didn\u2019t need to be. Striding quickly toward the other end of the corridor, she pulled out her cutter and knelt by the door there.",
+      "context_after": "Cringing for not thinking about that, she reminded herself to be gentle with the doorknob, lest her powered gloves crush it. She said a silent prayer as she gripped the knob, seeing the icon for the revenge-seeking security guard was only meters away from making the corner to go up the stairs.",
+      "paragraph_index": 25,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "\u201cNow,\u201d Skippy announced softly, as her helmet visor showed her the outline of a Kristang walking slowly past her door.",
+      "full_paragraph": "\u201cNow,\u201d Skippy announced softly, as her helmet visor showed her the outline of a Kristang walking slowly past her door.",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "unknown",
+      "context_before": "Of course.\nThat sick asshole wanted the prisoners on the second floor to know he was coming. To fear that he might stop at \ntheir\n door.",
+      "context_after": "Pulling the door open and carefully squeezing past it to place her free foot on the floor outside, she took two strides forward as the lizard, startled, turned around. Her hands were on either side of his head before he had eyes on her.",
+      "paragraph_index": 37,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "\u201cGood. If the building blows, the lizards will be performing a public service,\u201d Skippy said without humor.",
+      "full_paragraph": "\u201cGood. If the building blows, the lizards will be performing a public service,\u201d Skippy said without humor.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "\u201cYes, but, I just learned an interesting fact about them. The reason they all have individual rooms is as a reward for being collaborators. Those nine people spied on their fellow prisoners, and administered punishments to anyone they thought was not properly subservient to their Kristang masters. Um, five of them have used their positions of authority to abuse women, in ways I don\u2019t want to talk about.\u201d\n\u201cI hear you,\u201d she gritted her teeth, wishing she had snapped their necks also. That explained why her building held only nine people. The other buildings held far more people, and been assigned two-person teams. Margaret was alone not only because the target was relatively unimportant, it was a sign of Smythe\u2019s faith in her abilities and judgment.",
+      "context_after": "\u201cNo.\u201d",
+      "paragraph_index": 52,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "Three minutes later, after she walked a grid across the floor, using her helmet\u2019s sensors to scan the explosives, Skippy muttered to himself loud enough for her to hear. \u201cYup, yup, we got ourselves a real mess here. OK, whew.\u201d",
+      "full_paragraph": "Three minutes later, after she walked a grid across the floor, using her helmet\u2019s sensors to scan the explosives, Skippy muttered to himself loud enough for her to hear. \u201cYup, yup, we got ourselves a real mess here. OK, whew.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "joe",
+      "context_before": "\u201cI concur,\u201d Smythe said. \u201cAdams, be careful. Your building holds only nine Keepers. They are not worth your life.\u201d\n\u201cYes, Colonel.\u201d",
+      "context_after": "\u201cCan it be done?\u201d",
+      "paragraph_index": 61,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "The blanket, which was really more of a slick plastic sheet the size of a hand towel, crinkled and its surface instantly became covered with frost from moisture in the air, as the inner surface of the blanket chilled to a hundred twenty below zero Celcius. \u201cThat did it,\u201d Skippy announced happily. \u201cThe det cord in that section is inert.\u201d",
+      "full_paragraph": "The blanket, which was really more of a slick plastic sheet the size of a hand towel, crinkled and its surface instantly became covered with frost from moisture in the air, as the inner surface of the blanket chilled to a hundred twenty below zero Celcius. \u201cThat did it,\u201d Skippy announced happily. \u201cThe det cord in that section is inert.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "With all eight bricks removed and glued to other bricks in a mess that reminded her of a school project many years ago, she had the conduit exposed. \u201cOK,\u201d Skippy told her. \u201cWrap the freeze blanket around it. That\u2019s right,\u201d he said encouragingly. \u201cReady?\u201d\n\u201cDo it.\u201d",
+      "context_after": "\u201cGreat,\u201d she unwrapped the line holding her to the ceiling. Removing those eight bricks had consumed four minutes and eighteen seconds, far too long. The next set of bricks should go faster, now that she knew how to do it. Letting herself drop lightly to the floor, she fixed her eyes on the section of bricks on the other side of the basement. \u201cI will-\u201d",
+      "paragraph_index": 77,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "\u201cWell, you need to do \nsomething\n,\u201d Skippy shouted, close to panicking. \u201cThe supervisor will be there in less than one minute. Ooh! The guard in the lobby is stepping out of the workstation area.\u201d",
+      "full_paragraph": "\u201cWell, you need to do \nsomething\n,\u201d Skippy shouted, close to panicking. \u201cThe supervisor will be there in less than one minute. Ooh! The guard in the lobby is stepping out of the workstation area.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "\u201cYes.\u201d\n\u201cIt won\u2019t work, Adams,\u201d the STAR leader declared. \u201cTheir work areas are behind thick sheets of clear composite. Rifle rounds would be deflected unless you used armor-piercing mode, and that is too loud. It would blow the entire operation.\u201d",
+      "context_after": "\u201cThis is my chance, Sir,\u201d Adams put a boot on the second stair.",
+      "paragraph_index": 91,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "\u201cColonel Smythe,\u201d Greene said in an urgent whisper. He was on top of a warehouse, at the edge of the fenced compound that held the human prisoners. Concealed under stealth netting, he had a view covering three-quarters of the dormitory buildings. Greene was the team\u2019s lone reserve, the only person not disconnecting explosives inside the basement of a dormitory. He had been sweeping the rifle scope from one side of the compound to the other, with nothing to do, until Skippy announced that a Kristang supervisor was making an unannounced visit to the building Adams was assigned to clear. \u201cThat lizard is approaching Objective Kilo. Adams is \nalone\n in there.\u201d",
+      "full_paragraph": "\u201cColonel Smythe,\u201d Greene said in an urgent whisper. He was on top of a warehouse, at the edge of the fenced compound that held the human prisoners. Concealed under stealth netting, he had a view covering three-quarters of the dormitory buildings. Greene was the team\u2019s lone reserve, the only person not disconnecting explosives inside the basement of a dormitory. He had been sweeping the rifle scope from one side of the compound to the other, with nothing to do, until Skippy announced that a Kristang supervisor was making an unannounced visit to the building Adams was assigned to clear. \u201cThat lizard is approaching Objective Kilo. Adams is \nalone\n in there.\u201d",
+      "trigger": "",
+      "tones": [
+        "technobabble"
+      ],
+      "partner": "crew",
+      "context_before": "\u201cGunnery Sergeant?\u201d Smythe was concerned. \u201cWhat are you planning?\u201d\n\u201cNothing stupid, Sir. I\u2019ve got this. I will get us those four minutes.\u201d",
+      "context_after": "\u201cAdams has the situation well in hand, Greene,\u201d Smythe replied, his voice containing a trace of irritation.",
+      "paragraph_index": 101,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "\u201cGreene,\u201d Skippy whispered in his ear. \u201cTrouble at two o\u2019clock. A lizard will be coming out of the guard barracks, to Objective Lima. He heard the supervisor is performing an unscheduled inspection, he wants to assure his team there is alert.\u201d",
+      "full_paragraph": "\u201cGreene,\u201d Skippy whispered in his ear. \u201cTrouble at two o\u2019clock. A lizard will be coming out of the guard barracks, to Objective Lima. He heard the supervisor is performing an unscheduled inspection, he wants to assure his team there is alert.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "The door swung open and the supervisor walked inside.\n\u201cShit!\u201d Greene cursed, his helmet microphone off. There were not any other lizards in sight. He was useless on top of the warehouse, while Margaret was in danger of-",
+      "context_after": "Greene swung the muzzle of his rifle back to the barracks, torn by indecision. \u201cWhy doesn\u2019t he just \ncall\n his team?\u201d",
+      "paragraph_index": 114,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "Greene waited until, just as Skippy said, the second Kristang ran down a dark alley between dormitories. To prevent any loose humans from having a place to take cover, the alley was clear other than a trash dumpster, and the lizard veered to go around that obstruction. Just as he passed the overflowing dumpster, Greene gently pressed the trigger of his rifle.",
+      "full_paragraph": "Greene waited until, just as Skippy said, the second Kristang ran down a dark alley between dormitories. To prevent any loose humans from having a place to take cover, the alley was clear other than a trash dumpster, and the lizard veered to go around that obstruction. Just as he passed the overflowing dumpster, Greene gently pressed the trigger of his rifle.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cI could do that. \nOr\n, you could go to the guard\u2019s workstation, and disable the det cord ignition mechanism from there. It\u2019s your call.\u201d\n\u201cLet\u2019s do it the easy way.\u201d",
+      "context_after": "A round was spat out at only six hundred kilometers per hour, the rifle\u2019s active silencer mechanism reducing the sound to a barely-audible puff. The round\u2019s warhead was inert, the seeker tip adjusting its flight to track the moving target. When the round flew within one meter of the target, the tip mushroomed into a blunt shape in the air, and it smacked into the target\u2019s neck at the base of his skull. There was a wet \nthump\n sound, and a startled gasp from the target as he toppled forward, his spine broken.",
+      "paragraph_index": 138,
+      "chapter_index": 6,
+      "chapter_id": "Text/part0008.html"
+    },
+    {
+      "skippy_text": "\u201cNot that I can see,\u201d Skippy answered. \u201cNope, they do not. I guess they found that one mortar, the tube is a disposable unit.\u201d",
+      "full_paragraph": "\u201cNot that I can see,\u201d Skippy answered. \u201cNope, they do not. I guess they found that one mortar, the tube is a disposable unit.\u201d",
+      "trigger": "\u201cDo they have weapons?\u201d I asked.",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cI have a decent view into what is left of the warehouse right now. The place looks like Swiss cheese. OK, I see the mortar tube. No one is there. Hmm, where- Ooh, I see the knuckleheads now. Two of them are running away.\u201d\n\u201cDo they have weapons?\u201d I asked.",
+      "context_after": "\u201cSmythe?\u201d I asked. \u201cWhat do you think?\u201d",
+      "paragraph_index": 96,
+      "chapter_index": 7,
+      "chapter_id": "Text/part0009.html"
+    },
+    {
+      "skippy_text": "Docking Bay Charlie-3 was not being used as a bay for dropships, due to some battle damage that Skippy\u2019s little elfbots had not yet repaired. The ship had plenty of docking bays for our small fleet of dropships, and the list of critical repairs was still long enough to be worrisome. \nValkyrie\n was a tough ship, the problem is we had been going from one engagement to the next, without the services of a heavy shipyard. Skippy warned me almost every morning that the ship was wearing out a little bit at a time.",
+      "full_paragraph": "Docking Bay Charlie-3 was not being used as a bay for dropships, due to some battle damage that Skippy\u2019s little elfbots had not yet repaired. The ship had plenty of docking bays for our small fleet of dropships, and the list of critical repairs was still long enough to be worrisome. \nValkyrie\n was a tough ship, the problem is we had been going from one engagement to the next, without the services of a heavy shipyard. Skippy warned me almost every morning that the ship was wearing out a little bit at a time.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "CHAPTER EIGHT",
+      "context_after": "I had a Maxohlx shipyard on my Christmas wish list, but I wasn\u2019t counting on Santa being \nthat\n nice to me.",
+      "paragraph_index": 1,
+      "chapter_index": 8,
+      "chapter_id": "Text/part0010.html"
+    },
+    {
+      "skippy_text": "As Skippy said, I have no one to blame but myself, for getting myself into these situations. We had nineteen hours of travel time, before we needed to commit to either continuing toward Slithin, or diverting straight to Paradise.",
+      "full_paragraph": "As Skippy said, I have no one to blame but myself, for getting myself into these situations. We had nineteen hours of travel time, before we needed to commit to either continuing toward Slithin, or diverting straight to Paradise.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "Crap!\nThe strike against Slithin needed to walk a fine line between demonstrating we had the ability to hit anyone, anywhere, and also not demonstrating the truly amazing things we could do. The worst part was that any attempted attack had to \nsucceed\n, or we would look weak and foolish.",
+      "context_after": "Nineteen hours to go, and every idea we had developed was discarded for one reason or another. The smart thing to do would be going straight to Paradise, or choose another target. But by that time, I had spent so much time and energy thinking of a way to hit Slithin, that I freakin\u2019 \nhated\n the place.",
+      "paragraph_index": 86,
+      "chapter_index": 8,
+      "chapter_id": "Text/part0010.html"
+    },
+    {
+      "skippy_text": "\u201cLet me answer, please,\u201d Skippy said, which was great, because talking with Bilby\u2019s surfer-dude-slacker personality could be frustrating. \u201cJoe, the bot is controlling itself. It is simply performing scheduled maintenance. Hmm, it should not leave parts and tools on the floor, they could be hazardous if the ship has to maneuver abruptly. I will adjust the standard operating protocols to-\u201d",
+      "full_paragraph": "\u201cLet me answer, please,\u201d Skippy said, which was great, because talking with Bilby\u2019s surfer-dude-slacker personality could be frustrating. \u201cJoe, the bot is controlling itself. It is simply performing scheduled maintenance. Hmm, it should not leave parts and tools on the floor, they could be hazardous if the ship has to maneuver abruptly. I will adjust the standard operating protocols to-\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cWow, like, let me check.\u201d\n\u201cNeither of you \nknow\n?\u201d I threw up my hands. \u201cWho is controlling this thing?\u201d",
+      "context_after": "\u201cHold on. Neither of you were aware that this thing is, doing whatever it is doing?\u201d",
+      "paragraph_index": 98,
+      "chapter_index": 8,
+      "chapter_id": "Text/part0010.html"
+    },
+    {
+      "skippy_text": "\u201cNo,\u201d Skippy said with an implied weary sigh, as once again he had to answer a stupid question from a stupid monkey. \u201cThese bots are fairly smart, Joe. They are quite capable of scurrying around to do their work, without me or Bilby looking over their shoulders. OK, I do have a submind somewhere that is probably sort of monitoring it-\u201d",
+      "full_paragraph": "\u201cNo,\u201d Skippy said with an implied weary sigh, as once again he had to answer a stupid question from a stupid monkey. \u201cThese bots are fairly smart, Joe. They are quite capable of scurrying around to do their work, without me or Bilby looking over their shoulders. OK, I do have a submind somewhere that is probably sort of monitoring it-\u201d",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "joe",
+      "context_before": "\u201cLet me answer, please,\u201d Skippy said, which was great, because talking with Bilby\u2019s surfer-dude-slacker personality could be frustrating. \u201cJoe, the bot is controlling itself. It is simply performing scheduled maintenance. Hmm, it should not leave parts and tools on the floor, they could be hazardous if the ship has to maneuver abruptly. I will adjust the standard operating protocols to-\u201d\n\u201cHold on. Neither of you were aware that this thing is, doing whatever it is doing?\u201d",
+      "context_after": "\u201cMe too. I think,\u201d Bilby added in his usual super-helpful fashion. \u201cLike, yeah. I have a subroutine that checks on it for safety, to make sure it doesn\u2019t interfere with ship operations. You are cool with that?\u201d",
+      "paragraph_index": 100,
+      "chapter_index": 8,
+      "chapter_id": "Text/part0010.html"
+    },
+    {
+      "skippy_text": "Man, I did \nnot\n want to hear any details. Skippy said that if the crew confined their healthy adult \u2018activities\u2019 to the gel-filled beds, it should not be a problem. My cheeks were burning red from embarrassment, as I issued a general order about approved activities over the ship\u2019s network, and told Skippy I did \nnot\n want to know who was doing what with who.",
+      "full_paragraph": "Man, I did \nnot\n want to hear any details. Skippy said that if the crew confined their healthy adult \u2018activities\u2019 to the gel-filled beds, it should not be a problem. My cheeks were burning red from embarrassment, as I issued a general order about approved activities over the ship\u2019s network, and told Skippy I did \nnot\n want to know who was doing what with who.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "Seriously. Other than a small bridge crew on duty, most of us passed the time quietly in our cabins. That included the Keepers we had aboard. Most of them were happy to cooperate, the few assholes who refused to get with the program were persuaded to behave, by applying carefully administered doses of sedatives. Humans walking around the ship were capable of causing vibrations and shifting the ship\u2019s center of gravity enough to throw off the aim of the railgun, so we chilled. For myself, I took a nap, then read a book, played video games, slept some more, and had simple food for breakfast and lunch delivered by bots. For dinner, we went to the galley in small, scheduled groups. Even showers were limited, because water is heavy and Skippy did not want a lot of water moving around in pipes.\nThe crew endured the forced inactivity with discipline and good humor, and it helped that not everyone was alone in their cabins, if you know what I mean. Our crew consists of people who are relatively young, healthy and very fit. Skippy got inquiries, that he passed along to me for approval, for people to spend time in the cabins of other people. He also got discrete inquiries about whether certain, how do I say this delicately? Whether vigorous intimate activities would be allowed.",
+      "context_after": "Mostly, I didn\u2019t want to know if Margaret Adams was sharing a cabin with anyone.",
+      "paragraph_index": 18,
+      "chapter_index": 9,
+      "chapter_id": "Text/part0011.html"
+    },
+    {
+      "skippy_text": "\u201cBetter get ready, Joe,\u201d Skippy announced with a yawn. \u201cIt will be showtime in thirty minutes.\u201d",
+      "full_paragraph": "\u201cBetter get ready, Joe,\u201d Skippy announced with a yawn. \u201cIt will be showtime in thirty minutes.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "Which I did, alone.\nMy life sucks.",
+      "context_after": "\u201cAh,\u201d I yawned, he had woken me up from a nap, just before the alarm I had set on my phone. \u201cHow\u2019s it going, Skippy?\u201d",
+      "paragraph_index": 42,
+      "chapter_index": 9,
+      "chapter_id": "Text/part0011.html"
+    },
+    {
+      "skippy_text": "\u201cSuccess,\u201d Skippy announced quietly.",
+      "full_paragraph": "\u201cSuccess,\u201d Skippy announced quietly.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "That mattered because, at that same instant the beam struck the bottom of the tunnel, the base\u2019s self-destruct system detonated. The detonations were in a sequence very different from the original programming of those devices, and Skippy retuned the nukes so their explosions would appear to have been triggered by the disruptor beams. Any sensors inside the base would have clearly known the nukes simply exploded, when they received an unauthorized electrical signal that WAS NOT SUPPOSED TO HAPPEN, but sadly, those sensors ceased to exist a nanosecond after the nukes went critical.\nDid I say \u2018nukes\u2019? Yes I did. The Thuranin did not rely on atomic-compression technology for the self-destruct system. They used the simpler, proven power of fusion. Half of the devices were hydrogen bombs, the other half were \u2018enhanced radiation\u2019 weapons that we would call a \u2018neutron bomb\u2019. The extra radiation was intended to erase any possible trace of whatever microorganisms the Thuranin had cooked up in their research chambers, though it really was not at all needed. The H-bombs were two hundred \nmegatons\n each, plenty to assure that absolutely no recognizable trace of the base remained.",
+      "context_after": "\u201cJump option Foxtrot,\u201d I said to Reed, and \nValkyrie\n disappeared in a burst of gamma radiation, sixteen seconds after we emerged in orbit.",
+      "paragraph_index": 93,
+      "chapter_index": 9,
+      "chapter_id": "Text/part0011.html"
+    },
+    {
+      "skippy_text": "\u201cDone,\u201d Skippy announced. \u201cThose stupid frigates did \nnot\n get the update, but all other ships are under my control.\u201d",
+      "full_paragraph": "\u201cDone,\u201d Skippy announced. \u201cThose stupid frigates did \nnot\n get the update, but all other ships are under my control.\u201d",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "crew",
+      "context_before": "\u201cNo,\u201d I held up my hands again. \u201cNot disabled. They will temporarily be unable to use weapons, or their jump drives. We are doing this for the safety of \nyour\n people,\u201d I assured her. What I did not say was that word would get around that the Merry Band of Pirates had taken over warships like puppets, and that would make a whole lot of asshole aliens out there think twice about screwing with us. Also, I had not told her that Skippy had taken several hours to carefully hack into the flagships, even though our stealthed ship brought him within a range that was unlikely to occur during space combat. \u201cMa\u2019am, we could have done this without you. I came here out of respect for you, and to repay your kindness to me, and my people.\u201d\nShe clenched her fists. \u201cI cannot allow you to do this!\u201d",
+      "context_after": "\u201cAdministrator, one moment, please,\u201d I held up a finger in a gesture I was sure she recognized. \u201c\nValkyrie\n, this is Bishop.\u201d",
+      "paragraph_index": 109,
+      "chapter_index": 10,
+      "chapter_id": "Text/part0012.html"
+    },
+    {
+      "skippy_text": "Simms did a quick knock on the door frame as she walked into my office. Maybe she knew I wasn\u2019t busy because she asked Skippy what I was doing, or maybe she heard the \nthump\n of a tennis ball as I tried to bounce it off a wall and into a bucket.",
+      "full_paragraph": "Simms did a quick knock on the door frame as she walked into my office. Maybe she knew I wasn\u2019t busy because she asked Skippy what I was doing, or maybe she heard the \nthump\n of a tennis ball as I tried to bounce it off a wall and into a bucket.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "If you are interested in trivia, the last person to leave Avalon was Doctor Friedlander, who had to dash back to his tent for some personal item he forgot.\nI hope nobody left a stove on, because we were \nnot \ncoming back for that.",
+      "context_after": "\u201cSir?\u201d",
+      "paragraph_index": 77,
+      "chapter_index": 11,
+      "chapter_id": "Text/part0013.html"
+    },
+    {
+      "skippy_text": "My problem was, those ribbons were all awarded to me by the United States Army. Did I have any right to wear them, while in service to a foreign military? A military of a country that basically existed only on paper, despite what Skippy said?",
+      "full_paragraph": "My problem was, those ribbons were all awarded to me by the United States Army. Did I have any right to wear them, while in service to a foreign military? A military of a country that basically existed only on paper, despite what Skippy said?",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "unknown",
+      "context_before": "One thing I hadn\u2019t considered was all the ribbons on my dress uniform. We called those rows of ribbons a \u2018salad bar\u2019 or \u2018fruit salad\u2019, depending on what slang was popular at the time. I had earned campaign ribbons for service in Nigeria, on Paradise, and aboard the \nFlying\nDutchman\n. Also I had a few commendations including one for Good Conduct, which the Army probably regretted awarding to me, after I committed mutiny.",
+      "context_after": "The answer was no. Assuming I would receive that glorious DD Form 214 stating that I have been honorably discharged from duty, then I can add that new ribbon on the top left of the salad bar, and wear those as a veteran. But I couldn\u2019t wear any US Army ribbons while on active duty in Skippistan.",
+      "paragraph_index": 203,
+      "chapter_index": 11,
+      "chapter_id": "Text/part0013.html"
+    },
+    {
+      "skippy_text": "\u201cOh. Uh, OK,\u201d I could not bring myself to say her nickname yet. \u201cSkippy said you should trust me? Did he say how?\u201d",
+      "full_paragraph": "\u201cOh. Uh, OK,\u201d I could not bring myself to say her nickname yet. \u201cSkippy said you should trust me? Did he say how?\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "joe",
+      "context_before": "That made me lift my head off the pillow. \u201cReally?\u201d\n\u201cJoe,\u201d she kissed me, and tapped the tip of my nose with a finger. \u201cYou can call me \u2018Maggie\u2019 in private, if you like. My parents call me that.\u201d",
+      "context_after": "\u201cYes. Don\u2019t you remember? Do not say \u2018\nUh\n\u2019.\u201d",
+      "paragraph_index": 110,
+      "chapter_index": 12,
+      "chapter_id": "Text/part0014.html"
+    },
+    {
+      "skippy_text": "\u201cUh, yeah,\u201d I could feel my face turning red. Before Adams left my cabin, I had asked Skippy whether anyone was in the passageway outside, so she wouldn\u2019t be seen walking out my door. \u201cSorry about that. I\u2019ll explain tonight. Did I miss anything?\u201d",
+      "full_paragraph": "\u201cUh, yeah,\u201d I could feel my face turning red. Before Adams left my cabin, I had asked Skippy whether anyone was in the passageway outside, so she wouldn\u2019t be seen walking out my door. \u201cSorry about that. I\u2019ll explain tonight. Did I miss anything?\u201d",
+      "trigger": "\u201cNever better,\u201d I replied. \u201cWhy?\u201d",
+      "tones": [
+        "emotional"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cNever better,\u201d I replied. \u201cWhy?\u201d\n\u201cSkippy intercepted my calls, told me you were \nbusy\n?\u201d",
+      "context_after": "\u201cWe are approaching the relay station, will be in range within seventeen minutes.\u201d",
+      "paragraph_index": 220,
+      "chapter_index": 12,
+      "chapter_id": "Text/part0014.html"
+    },
+    {
+      "skippy_text": "The crew stared at me, like they were unsure what to do. \u201c\nZonk\n!\u201d I shouted with a clap of my hands and they all scattered, relieved that I wasn\u2019t joking. In my office, I wanted to call my parents first, instead I asked Skippy to contact Chang. My parents were probably listening to the message I recorded for them.",
+      "full_paragraph": "The crew stared at me, like they were unsure what to do. \u201c\nZonk\n!\u201d I shouted with a clap of my hands and they all scattered, relieved that I wasn\u2019t joking. In my office, I wanted to call my parents first, instead I asked Skippy to contact Chang. My parents were probably listening to the message I recorded for them.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cNo Sir,\u201d she shot me a puzzled look. \u201cThe maneuvers to bring us into orbit near the \nDutchman\n are programmed into the autopilot. We\u2019re good.\u201d\n\u201cExcellent. Fireball, you have the conn. Rivera, Chen, remain at your stations until relieved. Everyone else is released from duty for the moment, I suggest you contact your families first. Simms, that means you also. Reed, I\u2019ll be right around the corner in my office.\u201d",
+      "context_after": "\u201cAh,\u201d Chang responded with a yawn. \u201cHi, Joe. Everything OK up there?\u201d",
+      "paragraph_index": 37,
+      "chapter_index": 13,
+      "chapter_id": "Text/part0015.html"
+    },
+    {
+      "skippy_text": "\u201cWhat, Joe?\u201d Skippy said way too loudly into my ear. My helmet faceplate was closed while the docking bay depressurized, so we could talk without being overheard.",
+      "full_paragraph": "\u201cWhat, Joe?\u201d Skippy said way too loudly into my ear. My helmet faceplate was closed while the docking bay depressurized, so we could talk without being overheard.",
+      "trigger": "Crap. It would be interesting to see how\n I\n reacted. Whenever I was on a US military base, especially an Army base, I felt like I was part of the \nteam\n. Now? I was not playing on the opposing team, but I literally also wasn\u2019t wearing the same uniform as my brothers and sisters in arms. How did I feel about it? Kind of depressed. Yeah, I know I asked for the transfer, and it was the right thing to do. It still felt wrong.",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "It helped that Chang and everyone aboard the \nFlying Dutchman\n had already told UNEF Command and their home countries pretty much everything they wanted to know, so I anticipated this series of debriefs would be relatively straightforward, except for me, Simms and possibly Smythe. It would be interesting to see how the Army would react, now that I had been officially seconded to a foreign government.\nCrap. It would be interesting to see how\n I\n reacted. Whenever I was on a US military base, especially an Army base, I felt like I was part of the \nteam\n. Now? I was not playing on the opposing team, but I literally also wasn\u2019t wearing the same uniform as my brothers and sisters in arms. How did I feel about it? Kind of depressed. Yeah, I know I asked for the transfer, and it was the right thing to do. It still felt wrong.",
+      "context_after": "\u201cJeez, not so loud, please.\u201d",
+      "paragraph_index": 217,
+      "chapter_index": 13,
+      "chapter_id": "Text/part0015.html"
+    },
+    {
+      "skippy_text": "\u201cHahahaha!\u201d Skippy laughed. \u201cThat joke works \nevery\n time, hee hee.\u201d",
+      "full_paragraph": "\u201cHahahaha!\u201d Skippy laughed. \u201cThat joke works \nevery\n time, hee hee.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201c-is not here at the moment, but please leave a message after the beep, and I\u2019ll get back to you. Maybe.\u201d\nBrock stared at the phone, his face turning red. \u201cShit. Uh,\u201d he kept waiting for a beep that never happened. \u201cUh, hello?\u201d",
+      "context_after": "\u201cMister Magnificent,\u201d Brock silently shook a fist at the phone. \u201cIt is \nso\n good to hear from you again,\u201d he said, ignoring the fact that \nhe\n had initiated the call. Also the fact that \nValkyrie\n had jumped into orbit two days before, yet Skippy had not taken the time to call an old friend.",
+      "paragraph_index": 6,
+      "chapter_index": 14,
+      "chapter_id": "Text/part0016.html"
+    },
+    {
+      "skippy_text": "\u201cUgh, Joe,\u201d Skippy said through the phone in my pocket. \u201cHow can you eat that? Fluff is just pure sugar.\u201d",
+      "full_paragraph": "\u201cUgh, Joe,\u201d Skippy said through the phone in my pocket. \u201cHow can you eat that? Fluff is just pure sugar.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "Stupid fish.\nIt didn\u2019t matter. The point of fishing was to drink beer and spend time with my father. When we got back, my father went to the garage to put away the fishing gear, while I went to the house for a snack. Searching the pantry, I found a can of brown bread, and jars of peanut butter and Fluff. The bread popped out of the can, I sliced it and put it in the toaster. When it was warm and slightly crispy, I slathered peanut butter on one piece and Fluff on the other. \u201cMmmmm,\u201d the taste made me roll my eyes, I mean that in a good way.",
+      "context_after": "\u201cIt is pure \ndeliciousness\n,\u201d I retorted. \u201cIt\u2019s a superfood, Skippy.\u201d",
+      "paragraph_index": 142,
+      "chapter_index": 14,
+      "chapter_id": "Text/part0016.html"
+    },
+    {
+      "skippy_text": "\u201cWow.\u201d For once, I was glad that I asked Skippy about one of his side projects. \u201cYou are making a movie about us, the Merry Band of Pirates? Who will play me?\u201d",
+      "full_paragraph": "\u201cWow.\u201d For once, I was glad that I asked Skippy about one of his side projects. \u201cYou are making a movie about us, the Merry Band of Pirates? Who will play me?\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cA- a movie about you? When did-\u201d\n\u201cI wrote a script, several versions of scripts actually, and there is great interest in Hollywood. Ugh, I have been \nso\n busy getting this project off the ground.\u201d",
+      "context_after": "\u201cGosh, well, heh heh, who could play such a part, Joe? That is asking a lot for any actor. Really, it\u2019s not fair. Maybe we should just-\u201d",
+      "paragraph_index": 168,
+      "chapter_index": 14,
+      "chapter_id": "Text/part0016.html"
+    },
+    {
+      "skippy_text": "\u201cUm, Joe, hey,\u201d Skippy whispered in my ear. We were on a commuter flight from the main island, where we had landed a dropship in a remote area at night. Skippy faked the immigration paperwork for us. I do feel bad about that, but a commercial flight from L.A. was like eight hours, and we wouldn\u2019t have any privacy. Plus, UNEF Command would have insisted on sending a whole STAR team to babysit us. So, we snuck out, and Skippy covered our tracks. Whatever he wanted to talk about right then, he didn\u2019t want Margaret to hear. \u201cListen, numbskull, I took the liberty of having your villa stocked with basic items. You know, snacks, plus a variety of alcohol to help you seal the deal, if you know what I mean. Although, yeesh, Margaret would have to be super drunk to look at \nyou\n and think \u2018Well hello there\u2019, so maybe-\u201d",
+      "full_paragraph": "\u201cUm, Joe, hey,\u201d Skippy whispered in my ear. We were on a commuter flight from the main island, where we had landed a dropship in a remote area at night. Skippy faked the immigration paperwork for us. I do feel bad about that, but a commercial flight from L.A. was like eight hours, and we wouldn\u2019t have any privacy. Plus, UNEF Command would have insisted on sending a whole STAR team to babysit us. So, we snuck out, and Skippy covered our tracks. Whatever he wanted to talk about right then, he didn\u2019t want Margaret to hear. \u201cListen, numbskull, I took the liberty of having your villa stocked with basic items. You know, snacks, plus a variety of alcohol to help you seal the deal, if you know what I mean. Although, yeesh, Margaret would have to be super drunk to look at \nyou\n and think \u2018Well hello there\u2019, so maybe-\u201d",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "crew",
+      "context_before": "But what if it did?\nWhat if we realized that, other than serving with the Merry Band of Pirates, we did not have much in common? What did Margaret Adams like to do in her free time? I had no idea.",
+      "context_after": "Jabbing a finger in my ear, I tried to knock the little earpiece loose, but it hung on tenaciously.",
+      "paragraph_index": 12,
+      "chapter_index": 15,
+      "chapter_id": "Text/part0017.html"
+    },
+    {
+      "skippy_text": "\u201cThe dress shop recommended earrings and a necklace to go with the dress,\u201d Skippy explained. \u201cI think the dress shop and the jewelry store give each other kickbacks for referrals,\u201d he muttered. \u201cAnyway, they are Australian fire opals, I hope you like them.\u201d",
+      "full_paragraph": "\u201cThe dress shop recommended earrings and a necklace to go with the dress,\u201d Skippy explained. \u201cI think the dress shop and the jewelry store give each other kickbacks for referrals,\u201d he muttered. \u201cAnyway, they are Australian fire opals, I hope you like them.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cI didn\u2019t want to make any promises until the dress was \nthere\n. We had some slip-ups along the way. The delivery van almost ran over a goat, and- Forget all that. Do you like the dress?\u201d\nReaching out and taking the box from the creepy spider bot, she set it down on the counter and opened it. Holding the dress up against her, she admired it in the mirror. \u201cIt is beautiful,\u201d she gushed, embarrassing herself with her girlish enthusiasm for a piece of cloth. \u201cWhat is in the little box?\u201d She lifted a smaller box, tied with a silk ribbon.",
+      "context_after": "\u201c\nLike\n?\u201d She gasped, staring wide-eyed at the open box. \u201cThey are amazing. I \nlove\n them. Skippy, I can\u2019t afford these.\u201d",
+      "paragraph_index": 149,
+      "chapter_index": 16,
+      "chapter_id": "Text/part0018.html"
+    },
+    {
+      "skippy_text": "\u201cJoe,\u201d Skippy whispered in my ear as I walked to the car to get it started, and the air conditioning on before Margaret got in. \u201cI got you the best table in the house, right on the water. There should be a lovely sunset tonight.\u201d",
+      "full_paragraph": "\u201cJoe,\u201d Skippy whispered in my ear as I walked to the car to get it started, and the air conditioning on before Margaret got in. \u201cI got you the best table in the house, right on the water. There should be a lovely sunset tonight.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cGo get the car ready, you.\u201d\n\u201cYes, Ma\u2019am.\u201d",
+      "context_after": "\u201cWhat?\u201d I whispered. \u201cThey told me the only table left was near the freakin\u2019 kitchen.\u201d",
+      "paragraph_index": 178,
+      "chapter_index": 16,
+      "chapter_id": "Text/part0018.html"
+    },
+    {
+      "skippy_text": "\u201cSoon, hopefully? Where are you?\u201d That information I could have asked Skippy for, or just pinged her phone\u2019s location. That would have been invading her privacy, so I didn\u2019t do that.",
+      "full_paragraph": "\u201cSoon, hopefully? Where are you?\u201d That information I could have asked Skippy for, or just pinged her phone\u2019s location. That would have been invading her privacy, so I didn\u2019t do that.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cYes. Listen, can we talk face to face, sometime?\u201d\n\u201cSometime, like when?\u201d",
+      "context_after": "\u201cWe\u2019re in Taos.\u201d",
+      "paragraph_index": 18,
+      "chapter_index": 17,
+      "chapter_id": "Text/part0019.html"
+    },
+    {
+      "skippy_text": "With about five miles to go, Smythe picked up the pace until he was jogging, a feat that was definitely not recommended on his new legs. Seeing him slip on wet rocks and mud, I almost called a halt, but Skippy whispered in my ear. SAS candidates were supposed to complete the course, about fifteen miles, in four hours. That explained why Smythe was pushing the pace in bad weather, he was determined not to fall short. We only carried day packs, far less weight than SAS candidates would have on their backs during the exercise. For us to take more than four hours would be frustrating and humiliating to Smythe, and I wasn\u2019t going to let that happen. Seeing that it would be close to four hours at our pace, I suggested we run, with the excuse that I was wet and cold and thirsty for a pint.",
+      "full_paragraph": "With about five miles to go, Smythe picked up the pace until he was jogging, a feat that was definitely not recommended on his new legs. Seeing him slip on wet rocks and mud, I almost called a halt, but Skippy whispered in my ear. SAS candidates were supposed to complete the course, about fifteen miles, in four hours. That explained why Smythe was pushing the pace in bad weather, he was determined not to fall short. We only carried day packs, far less weight than SAS candidates would have on their backs during the exercise. For us to take more than four hours would be frustrating and humiliating to Smythe, and I wasn\u2019t going to let that happen. Seeing that it would be close to four hours at our pace, I suggested we run, with the excuse that I was wet and cold and thirsty for a pint.",
+      "trigger": "\u201cThe new legs hurt?\u201d I asked, tipping back the glass to sip from a pint of ale. We were sitting in the dimly-lit corner of a British pub, technically we were in Wales. By \u2018we\u2019 I mean me and Jeremy Smythe. Not that his first name mattered, I called him \u2018Smythe\u2019 and he called me \u2018Sir\u2019 even when we were off duty.",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "\u201cThe new legs hurt?\u201d I asked, tipping back the glass to sip from a pint of ale. We were sitting in the dimly-lit corner of a British pub, technically we were in Wales. By \u2018we\u2019 I mean me and Jeremy Smythe. Not that his first name mattered, I called him \u2018Smythe\u2019 and he called me \u2018Sir\u2019 even when we were off duty.\n\u201cThey\u2019re stiff, nothing to worry about,\u201d he grimaced and took a swig from his own pint. Doctor Skippy might have advised against alcohol, but I had instructed him to leave us alone for the day, other than monitoring the condition of Smythe\u2019s new legs and his overall health. This might shock you, but the Special Air Services soldier who commanded the STAR team of the Merry Band of Pirates, tended to push himself a bit too hard. Skippy had warned him to take it easy after his newly-grown biological legs were attached, and while Smythe wasn\u2019t doing anything stupid, he also was not taking it easy. That morning, we had gotten up early to hike in Brecon Beacons National Park, with the goal of walking up a mountain called \u2018Pen y Fan\u2019, and when we got to the top, the weather closed in. Clouds swept in from the Irish Sea, big fat cold raindrops stinging our faces as they were driven by the wind. There wasn\u2019t much, really anything, to see from the top, so we skipped any sight-seeing at the summit. The walk up was relatively easy, then it got tougher as Smythe insisted we descend via the route known as Jacob\u2019s Ladder. I didn\u2019t know at the time, but that route was part of an SAS qualification march called the \u2018Fan Dance\u2019. We hiked the twenty-four kilometers in increasingly bad weather, with Smythe leading the way on his new legs, and me watching anxiously whenever he stumbled. It was chilly and raw, with low clouds scudding overhead, and wind gusts threatening to knock me to my knees. There was a dropship nearby, so we weren\u2019t in any danger of dying from exposure, and we had clothing appropriate for the conditions.",
+      "context_after": "We reached the car park in three hours, forty-nine minutes, not that Smythe said anything about it. Nor did he complain about soreness in his new legs, and I avoided the subject until I saw him grimace and his face turn pale in the pub.",
+      "paragraph_index": 90,
+      "chapter_index": 19,
+      "chapter_id": "Text/part0021.html"
+    },
+    {
+      "skippy_text": "How did we manage to jump away so quickly after UNEF announced the go-ahead to colonize Avalon? It\u2019s simple. They dusted off plans that had already been approved. Food and other supplies were stockpiled around the planet, and extensive work had been done to convert one of the multi-mission modules to carry human passengers. While I had been flying around the planet and going on vacation, Skippy was working to add attachment points to the \nFlying Dutchman\n, so our former star carrier could transport three of those modules. The old \nDutchman\n looked ridiculous with the modules hanging on its spine, and Nagatha reported the ship maneuvered like an overloaded oil tanker, but it could jump and that\u2019s all we needed it to do. Hopefully, we soon would have real star carriers and passenger ships, and the \nDutchman\n could- Well, it could do whatever UNEF assigned that ship to do.Truthfully, I was worried about the future of our trusty old ship. UNEF Command had asked Skippy about the possibility of cutting the ship apart to refit Jeraptha warships we hoped to acquire, and I told him to slow-roll giving an answer. While I understood the practical value of using resources in the most efficient manner, damn it, the \nDutchman\n was special. Even though that ship had few original parts left from when we took it from the Thuranin, it deserved better than to be used as a hangar queen. We also could not move Nagatha into a ship, without tearing out the substrate embedded into the \nDutchman\u2019s\n forward hull, and she wouldn\u2019t be the same.",
+      "full_paragraph": "How did we manage to jump away so quickly after UNEF announced the go-ahead to colonize Avalon? It\u2019s simple. They dusted off plans that had already been approved. Food and other supplies were stockpiled around the planet, and extensive work had been done to convert one of the multi-mission modules to carry human passengers. While I had been flying around the planet and going on vacation, Skippy was working to add attachment points to the \nFlying Dutchman\n, so our former star carrier could transport three of those modules. The old \nDutchman\n looked ridiculous with the modules hanging on its spine, and Nagatha reported the ship maneuvered like an overloaded oil tanker, but it could jump and that\u2019s all we needed it to do. Hopefully, we soon would have real star carriers and passenger ships, and the \nDutchman\n could- Well, it could do whatever UNEF assigned that ship to do.Truthfully, I was worried about the future of our trusty old ship. UNEF Command had asked Skippy about the possibility of cutting the ship apart to refit Jeraptha warships we hoped to acquire, and I told him to slow-roll giving an answer. While I understood the practical value of using resources in the most efficient manner, damn it, the \nDutchman\n was special. Even though that ship had few original parts left from when we took it from the Thuranin, it deserved better than to be used as a hangar queen. We also could not move Nagatha into a ship, without tearing out the substrate embedded into the \nDutchman\u2019s\n forward hull, and she wouldn\u2019t be the same.",
+      "trigger": "",
+      "tones": [
+        "technobabble",
+        "emotional"
+      ],
+      "partner": "unknown",
+      "context_before": "We jumped.\nTo the great surprise of pretty much everyone on Earth, \nValkyrie\n led the way to Avalon less than \nthree weeks\n later. The \nFlying Dutchman\n followed right behind, with three multi-mission modules bolted onto the \nDutchman\n Version Four Point Oh\u2019s rather stumpy spine. Inside one of the modules were eight hundred and eighty-two people, including Frank Muller.",
+      "context_after": "Damn.",
+      "paragraph_index": 114,
+      "chapter_index": 21,
+      "chapter_id": "Text/part0023.html"
+    },
+    {
+      "skippy_text": "Damn. It surprised me how quickly things moved after the Jeraptha opened negotiations. UNEF showed them a sample of the technology we could offer, in exchange we were asking for stuff like warships, transports, fleet support ships. Basically everything we needed to jump-start our own fleet. The truth was, most of the tech we dangled as bait was actually worthless to us, because we lacked the manufacturing capability to make any of the fabulous machines Skippy had designed. For that reason, Priority Number One was to acquire fleet-support ships from the Jeraptha. Those ships were massive, bulky, slow-moving and easy targets in any battle. They were also vital to sustaining fleet operations away from fixed bases. Fleet support ships had fabricators that could crank out many of the spare parts that ships did not typically carry with them. In addition to fabricators, a support ship had hangars full of robotic mining machines that could extract raw materials from asteroids. UNEF was hyperventilating with excitement over the idea of having even one fleet support ship, while Skippy warned that even those ships had a limited ability to make components. For complicated repairs, Jeraptha ships went to spacedocks where heavy maintenance could be performed. Someday, Earth would have a spacedock in orbit. Until that day, we needed a basic repair facility.",
+      "full_paragraph": "Damn. It surprised me how quickly things moved after the Jeraptha opened negotiations. UNEF showed them a sample of the technology we could offer, in exchange we were asking for stuff like warships, transports, fleet support ships. Basically everything we needed to jump-start our own fleet. The truth was, most of the tech we dangled as bait was actually worthless to us, because we lacked the manufacturing capability to make any of the fabulous machines Skippy had designed. For that reason, Priority Number One was to acquire fleet-support ships from the Jeraptha. Those ships were massive, bulky, slow-moving and easy targets in any battle. They were also vital to sustaining fleet operations away from fixed bases. Fleet support ships had fabricators that could crank out many of the spare parts that ships did not typically carry with them. In addition to fabricators, a support ship had hangars full of robotic mining machines that could extract raw materials from asteroids. UNEF was hyperventilating with excitement over the idea of having even one fleet support ship, while Skippy warned that even those ships had a limited ability to make components. For complicated repairs, Jeraptha ships went to spacedocks where heavy maintenance could be performed. Someday, Earth would have a spacedock in orbit. Until that day, we needed a basic repair facility.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "CHAPTER TWENTY THREE",
+      "context_after": "Fortunately for us, the Jeraptha thought the technology sampler package was interesting, but what they really wanted was to see some of the advanced tech in action. UNEF agreed to upgrade three Jeraptha ships as demonstrators, with each ship having a range of upgrades. The modifications would be performed at FOB Jaguar, and Skippy would do most of the work, as usual.",
+      "paragraph_index": 1,
+      "chapter_index": 23,
+      "chapter_id": "Text/part0025.html"
+    },
+    {
+      "skippy_text": "I noted that Skippy said \u2018\nwe\n\u2019. That, at least, was good news. \u201cYeah, well, we\u2019ll see about this \u2018no retaliation\u2019 thing.\u201d",
+      "full_paragraph": "I noted that Skippy said \u2018\nwe\n\u2019. That, at least, was good news. \u201cYeah, well, we\u2019ll see about this \u2018no retaliation\u2019 thing.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cThat is bull- We didn\u2019t \nknow\n about it!\u201d\n\u201cThat doesn\u2019t matter. The Maxohlx hit us, and we did nothing to retaliate.\u201d",
+      "context_after": "\u201cSir?\u201d Simms got my attention.",
+      "paragraph_index": 77,
+      "chapter_index": 25,
+      "chapter_id": "Text/part0027.html"
+    },
+    {
+      "skippy_text": "\u201cThe news only gets worse, I am afraid,\u201d Skippy said. \u201cThe Rindhalu recently notified the Jeraptha that they also will not be protected by the spiders, if the Jeraptha sign an alliance with us. The transfer of a second batch of ships has been put on hold, unfortunately.\u201d",
+      "full_paragraph": "\u201cThe news only gets worse, I am afraid,\u201d Skippy said. \u201cThe Rindhalu recently notified the Jeraptha that they also will not be protected by the spiders, if the Jeraptha sign an alliance with us. The transfer of a second batch of ships has been put on hold, unfortunately.\u201d",
+      "trigger": "",
+      "tones": [
+        "technobabble"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cSir?\u201d Simms got my attention.\n\u201cYes, I know, we can\u2019t act without clearance from UNEF Command,\u201d I snapped at her, irritated. That was unfair of me, she was doing her job. Silently, I mouthed \u2018Sorry\u2019 at her, and she nodded. She was as pissed about the situation as I was. \u201cAnything else?\u201d",
+      "context_after": "\u201cOn hold? Wait, on hold like, a delay, or like \ncanceled\n?\u201d",
+      "paragraph_index": 80,
+      "chapter_index": 25,
+      "chapter_id": "Text/part0027.html"
+    },
+    {
+      "skippy_text": "\u201cPilot!\u201d Skippy shouted. \u201cJump option Delta now now n-\u201d",
+      "full_paragraph": "\u201cPilot!\u201d Skippy shouted. \u201cJump option Delta now now n-\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "joe",
+      "context_before": "\u201cHoly shit,\u201d Skippy gasped. \nValkyrie\n had come through the Backstop wormhole, and immediately turned toward Checkpoint Bravo to get instructions for approaching our home planet. Without Skippy being in our solar system, there was no microwormhole to provide convenient, instant communication between the checkpoint and Earth, so whatever instructions we found there might be out of date. Procedure is procedure, so we followed orders anyway. \u201cJoe, before you ask \u2018What\u2019, give me a minute. Lots to process here.\u201d\nInstead of replying, I turned toward the communications station. The warrant officer there was US Air Force, her face was white as she pressed a hand over her ear to hear better. I saw her swallow and her expression register shock, before she-",
+      "context_after": "We jumped, the pilots had standing orders from me, to take instructions directly from Skippy in such emergencies.",
+      "paragraph_index": 73,
+      "chapter_index": 26,
+      "chapter_id": "Text/part0028.html"
+    },
+    {
+      "skippy_text": "\u201cThe ship is fine,\u201d Skippy said in a voice that had a distinctive quaver to it. He was shocked. He was \nscared\n.",
+      "full_paragraph": "\u201cThe ship is fine,\u201d Skippy said in a voice that had a distinctive quaver to it. He was shocked. He was \nscared\n.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "We jumped, the pilots had standing orders from me, to take instructions directly from Skippy in such emergencies.\nIt wasn\u2019t the best jump we ever performed, it also wasn\u2019t the worst. Fighting a wave of nausea and the feeling that pressure in my skull would burst my eyeballs, I squeezed my eyes tightly shut. \u201cSitrep.\u201d",
+      "context_after": "\u201cWhat is-\u201d",
+      "paragraph_index": 76,
+      "chapter_index": 26,
+      "chapter_id": "Text/part0028.html"
+    },
+    {
+      "skippy_text": "\u201cUm, Joe,\u201d Skippy interrupted my gloomy thoughts. \u201cYou\u2019d better look at this. I found something interesting.\u201d",
+      "full_paragraph": "\u201cUm, Joe,\u201d Skippy interrupted my gloomy thoughts. \u201cYou\u2019d better look at this. I found something interesting.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "Valkyrie\n resumed its lonely patrol, and I sat in my office worrying, counting the days until we would have to return to Jaguar.\nDays until Earth would be totally defenseless.",
+      "context_after": "\u201cWhat?\u201d",
+      "paragraph_index": 142,
+      "chapter_index": 26,
+      "chapter_id": "Text/part0028.html"
+    },
+    {
+      "skippy_text": "\u201cIt would have been nice if we could test this first,\u201d Skippy grumbled.",
+      "full_paragraph": "\u201cIt would have been nice if we could test this first,\u201d Skippy grumbled.",
+      "trigger": "\u201cReady?\u201d I asked.",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "CHAPTER TWENTY SEVEN\n\u201cReady?\u201d I asked.",
+      "context_after": "\u201cYou ran every simulation you could think of, right?\u201d",
+      "paragraph_index": 2,
+      "chapter_index": 27,
+      "chapter_id": "Text/part0029.html"
+    },
+    {
+      "skippy_text": "\u201cAmen to that, brother,\u201d Skippy muttered. \u201cOK, initiating stealth field in three, two, one, now. Field is stable, hologram is stable.\u201d",
+      "full_paragraph": "\u201cAmen to that, brother,\u201d Skippy muttered. \u201cOK, initiating stealth field in three, two, one, now. Field is stable, hologram is stable.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cI didn\u2019t say that,\u201d he hurried to say. \u201cOK, \nfine\n. If we\u2019re going to do this, let\u2019s get it over with. Will that make you happy?\u201d\nI thought of New York, and Geneva, and the other sites on Earth that were now only craters. Dust still lingered high in the atmosphere, making for dramatic sunsets that no one could enjoy, for they knew the price humanity had paid. And knew the aliens might come back at any second. \u201cI\u2019ll be \nhappy\n when we have an operational fleet of ships, and we can take the fight to the enemy.\u201d",
+      "context_after": "\u201cLaunch the Panther.\u201d",
+      "paragraph_index": 8,
+      "chapter_index": 27,
+      "chapter_id": "Text/part0029.html"
+    },
+    {
+      "skippy_text": "Skippy answered, always annoyed when Bilby stole his thunder. \u201cThey are concerned about possible interference during the transfer.\u201d",
+      "full_paragraph": "Skippy answered, always annoyed when Bilby stole his thunder. \u201cThey are concerned about possible interference during the transfer.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "Bilby volunteered the information. \u201cThe Jeraptha changed the rendezvous point, Dude.\u201d\nMy hands stiffened around the armrests. \u201cDid they explain why?\u201d",
+      "context_after": "\u201cInterference from the Maxohlx?\u201d I guessed.",
+      "paragraph_index": 5,
+      "chapter_index": 28,
+      "chapter_id": "Text/part0030.html"
+    },
+    {
+      "skippy_text": "\u201cNo, and yes,\u201d Skippy explained. \u201cI was planning to simply repeat the message back to the relay station AI, to confirm we understood. There are three options for safe-fly approach corridors, I have them plotted in the navigation system.\u201d",
+      "full_paragraph": "\u201cNo, and yes,\u201d Skippy explained. \u201cI was planning to simply repeat the message back to the relay station AI, to confirm we understood. There are three options for safe-fly approach corridors, I have them plotted in the navigation system.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "Before we could plan for maintenance cycles, we had to get ships to operate.\n\u201cDid the Jeraptha give us any procedures for acknowledging the message, or designate an approach corridor to the rendezvous?\u201d",
+      "context_after": "\u201cRepeat the message back to the station,\u201d I ordered.",
+      "paragraph_index": 34,
+      "chapter_index": 28,
+      "chapter_id": "Text/part0030.html"
+    },
+    {
+      "skippy_text": "\u201cOK,\u201d I decided. \u201cWe remain here until we have a full charge on the jump drive capacitors.\u201d The display estimated that would take eighteen minutes. Everything else on the display indicated green, though I knew Skippy was not happy about the overall condition of the ship. He was right, at some point, we needed to take \nValkyrie\n offline for overdue maintenance.",
+      "full_paragraph": "\u201cOK,\u201d I decided. \u201cWe remain here until we have a full charge on the jump drive capacitors.\u201d The display estimated that would take eighteen minutes. Everything else on the display indicated green, though I knew Skippy was not happy about the overall condition of the ship. He was right, at some point, we needed to take \nValkyrie\n offline for overdue maintenance.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "We jumped.\nFrom eight lighthours away, the view was the same. Entirely normal, everything as expected. My Spidey sense was not even tingling anymore, either because there wasn\u2019t anything wrong, or because I\u2019d gone numb to the feeling. What I had been experiencing was, I decided, just the usual pre-mission jitters. Part of my nervousness was that, unlike any of our previous missions, every intelligent species in the galaxy knew about the Merry Band of Pirates. Everyone was watching us, including the people of Earth. We had a reputation that was not entirely deserved, UNEF had encouraged stories that boasted about incredible feats we achieved, and did not mention how close to failure we had come many times.",
+      "context_after": "Later.",
+      "paragraph_index": 102,
+      "chapter_index": 29,
+      "chapter_id": "Text/part0031.html"
+    },
+    {
+      "skippy_text": "\u201cSorry, Joe!\u201d Skippy shouted. \u201cThe enemy is disrupting our engines, they can\u2019t get traction in local spacetime. Thrust is down by thirty-six percent.\u201d",
+      "full_paragraph": "\u201cSorry, Joe!\u201d Skippy shouted. \u201cThe enemy is disrupting our engines, they can\u2019t get traction in local spacetime. Thrust is down by thirty-six percent.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "We all felt the ship move, our normal-space engines channeling gigawatts of energy into forward movement. The shuddering stopped, as we moved away from the spot where enemy maser bolts had been targeted. Instead, the deck vibrated as the ship surged ahead.\nThen the vibration smoothed out, fluttered, as our engines stumbled.",
+      "context_after": "\u201cUnderstood.\u201d We knew the Maxohlx had technology that could interfere with reactionless engines, \nValkyrie\n had the same capability. We also knew that when a ship projected a field to interfere with another ship\u2019s engines, it also affected all ships within the field. As long as the kitties were slowing us down, it would be more difficult for them to chase us.",
+      "paragraph_index": 38,
+      "chapter_index": 30,
+      "chapter_id": "Text/part0032.html"
+    },
+    {
+      "skippy_text": "\u201cThat too,\u201d Skippy explained. \u201cThe main reason we can\u2019t use that trick again is, like I \nwarned\n you, the Maxohlx analyzed the data and figured out what I did last time. They still don\u2019t know \nhow\n I did it, but they implemented a fleet-wide emergency update that certainly has been applied to the ships here. That update prevents a feedback signal from fully disrupting the damping effect. It won\u2019t \nwork\n, Joe. I warned you we can\u2019t use the same tricks over and over out here.\u201d",
+      "full_paragraph": "\u201cThat too,\u201d Skippy explained. \u201cThe main reason we can\u2019t use that trick again is, like I \nwarned\n you, the Maxohlx analyzed the data and figured out what I did last time. They still don\u2019t know \nhow\n I did it, but they implemented a fleet-wide emergency update that certainly has been applied to the ships here. That update prevents a feedback signal from fully disrupting the damping effect. It won\u2019t \nwork\n, Joe. I warned you we can\u2019t use the same tricks over and over out here.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cNo?\u201d My fists tightened enough for fingernails to dig into my palms. \u201cBecause the fields here are too powerful?\u201d From what I remember without reading the after-action reports, the previous ambush involved fewer than two dozen enemy ships.\nAnd we had barely escaped that time.",
+      "context_after": "\u201cYeah. You did.\u201d",
+      "paragraph_index": 114,
+      "chapter_index": 30,
+      "chapter_id": "Text/part0032.html"
+    },
+    {
+      "skippy_text": "Two minutes and seven seconds later, Skippy announced he was ready. \u201cJoe, you monkeys are \nnot\n going to like this, and that is no joke. I need the jump drive to be set on a timer, because I suspect none of you will be able to operate the controls shortly.\u201d",
+      "full_paragraph": "Two minutes and seven seconds later, Skippy announced he was ready. \u201cJoe, you monkeys are \nnot\n going to like this, and that is no joke. I need the jump drive to be set on a timer, because I suspect none of you will be able to operate the controls shortly.\u201d",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "joe",
+      "context_before": "\u201cThat would be helpful, yes. Also, hurry. Please \nhurry\n.\u201d\nMashing a thumb on the intercom button, I tried to speak in a clear voice. \u201cThis is Bishop. Everyone, you have \ntwo minutes\n to get into the designated section of the ship and strap in as best as you can.\u201d There were going to be broken bones or worse from this maneuver, I knew that. Releasing the button, I took a breath as the ship staggered from another near-hit.",
+      "context_after": "\u201cDone,\u201d Chen reported from the pilot\u2019s couch.",
+      "paragraph_index": 169,
+      "chapter_index": 30,
+      "chapter_id": "Text/part0032.html"
+    },
+    {
+      "skippy_text": "If Skippy said anything after \u2018One\u2019, I don\u2019t remember it.",
+      "full_paragraph": "If Skippy said anything after \u2018One\u2019, I don\u2019t remember it.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "CHAPTER THIRTY ONE",
+      "context_after": "Something bad happened to my neck during the jump.",
+      "paragraph_index": 1,
+      "chapter_index": 31,
+      "chapter_id": "Text/part0033.html"
+    },
+    {
+      "skippy_text": "Bilby said Skippy was still with us. When he got attacked by the computer worm, before he started counting down to Zero Hour, he had been there, but not there. Trapped inside himself. If that was the case again, we were in trouble, \nbig\n trouble.",
+      "full_paragraph": "Bilby said Skippy was still with us. When he got attacked by the computer worm, before he started counting down to Zero Hour, he had been there, but not there. Trapped inside himself. If that was the case again, we were in trouble, \nbig\n trouble.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "No response.\nTouching him again, he felt warm. Maybe warmer than usual, or was my own body temperature altered by whatever the wonky jump did to me?",
+      "context_after": "",
+      "paragraph_index": 193,
+      "chapter_index": 31,
+      "chapter_id": "Text/part0033.html"
+    },
+    {
+      "skippy_text": "\u201cSkippy said something like that once,\u201d Chang tried to recall the context. \u201cCould it throw Earth out of orbit?\u201d",
+      "full_paragraph": "\u201cSkippy said something like that once,\u201d Chang tried to recall the context. \u201cCould it throw Earth out of orbit?\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "It was Chang\u2019s turn to frown. \u201cWhy would the Maxohlx do that?\u201d\n\u201cThey wouldn\u2019t. Well, a shift in Jupiter\u2019s mass would have a subtle disrupting effect on the delicate balance of orbits of all the other planets.\u201d",
+      "context_after": "\u201cNot \nout\n of orbit. It could change our orbit, very slightly, over a very long time. The result could not possibly be worth the effort.\u201d",
+      "paragraph_index": 29,
+      "chapter_index": 32,
+      "chapter_id": "Text/part0034.html"
+    },
+    {
+      "skippy_text": "Thirty-two minutes later, the frigate was empty of biological beings, and Skippy declared we were ready to get the damned thing off \nValkyrie\u2019s\n back. Chen put our battlecruiser in a gentle dive, then Skippy fired up the frigate\u2019s engines and blew the grappling clamps that held the two ships together. There was a gut-churning moment when the frigate\u2019s nose scraped along \nValkyrie\u2019s\n spine, and we feared the stupid thing would collide with one of our reactors, but Skippy fired thrusters and got it straightened out, and later review showed there really had not been any danger. I wish my bladder had known that at the time.",
+      "full_paragraph": "Thirty-two minutes later, the frigate was empty of biological beings, and Skippy declared we were ready to get the damned thing off \nValkyrie\u2019s\n back. Chen put our battlecruiser in a gentle dive, then Skippy fired up the frigate\u2019s engines and blew the grappling clamps that held the two ships together. There was a gut-churning moment when the frigate\u2019s nose scraped along \nValkyrie\u2019s\n spine, and we feared the stupid thing would collide with one of our reactors, but Skippy fired thrusters and got it straightened out, and later review showed there really had not been any danger. I wish my bladder had known that at the time.",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cTell him to take fifteen. We need the job done \nright\n, not just fast. Chen, will that work for you?\u201d\n\u201cYes, Sir.\u201d",
+      "context_after": "Less than an hour after the attempted boarding operation, the frigate was flying in formation, three kilometers directly above us. Smythe reported the prisoners were all milling around in an agitated fashion in the cargo bay, after Skippy commanded their suits to crack open so the kitties could get out. All their weapons had been taken away, the weapons built into the suits had been removed or physically disabled, the reservoirs of nano gel dissolved into a dusty gray goo. Their cybernetic implants had been scrambled, leaving them able to see, speak and listen with only their physical senses, just like we primitive humans do.",
+      "paragraph_index": 93,
+      "chapter_index": 33,
+      "chapter_id": "Text/part0035.html"
+    },
+    {
+      "skippy_text": "Damn it. The military trains us to have a \u2018bias for action\u2019, meaning soldiers are supposed to \ndo\n something, rather than sitting around waiting for something to happen. In this situation, waiting was all we could do. Being able to blow up sixty-five percent of the enemy fleet was useless, when the other thirty-five percent represented over \nsix hundred\n ships. One vital piece of information Skippy learned from hacking into the Eighth Fleet was that Admiral Reichert had one thousand, three hundred and eighty-seven warships in the star system. Plus around sixty support vessels, including service ships that could fabricate spare parts and perform all required maintenance other than heavy overhauls. Shit. That guy came prepared. When he said he could wait us out, he wasn\u2019t boasting. Skippy warned that we truly could not remain submerged in the planet\u2019s atmosphere forever. Our shields were creating a lower-pressure bubble around the ship, but our normal-space engines were straining to generate thrust over such a long time. Like I said, starship engines aren\u2019t intended to be used continuously; if you want to travel a long distance, you simply jump from one place to another. We shut down two engines at a time, for Skippy to conduct running repairs but it wasn\u2019t enough. The unavoidable fact was that our engines were burning out. And Reichert knew that. He not only knew the performance characteristics of our engines, which his people had designed and built, the sensors on his ships could detect tiny fluctuations in engine output. They knew what those fluctuations meant, and they no doubt could predict on a curve when we would have to climb back into orbit, while we still could.",
+      "full_paragraph": "Damn it. The military trains us to have a \u2018bias for action\u2019, meaning soldiers are supposed to \ndo\n something, rather than sitting around waiting for something to happen. In this situation, waiting was all we could do. Being able to blow up sixty-five percent of the enemy fleet was useless, when the other thirty-five percent represented over \nsix hundred\n ships. One vital piece of information Skippy learned from hacking into the Eighth Fleet was that Admiral Reichert had one thousand, three hundred and eighty-seven warships in the star system. Plus around sixty support vessels, including service ships that could fabricate spare parts and perform all required maintenance other than heavy overhauls. Shit. That guy came prepared. When he said he could wait us out, he wasn\u2019t boasting. Skippy warned that we truly could not remain submerged in the planet\u2019s atmosphere forever. Our shields were creating a lower-pressure bubble around the ship, but our normal-space engines were straining to generate thrust over such a long time. Like I said, starship engines aren\u2019t intended to be used continuously; if you want to travel a long distance, you simply jump from one place to another. We shut down two engines at a time, for Skippy to conduct running repairs but it wasn\u2019t enough. The unavoidable fact was that our engines were burning out. And Reichert knew that. He not only knew the performance characteristics of our engines, which his people had designed and built, the sensors on his ships could detect tiny fluctuations in engine output. They knew what those fluctuations meant, and they no doubt could predict on a curve when we would have to climb back into orbit, while we still could.",
+      "trigger": "",
+      "tones": [
+        "technobabble"
+      ],
+      "partner": "crew",
+      "context_before": "The problem was that, as ships rotated out of the blockade force, they performed an exhaustive diagnostic and purge of their computer systems, precisely because they feared that being close to an Elder AI might have infected their ships with malware. In this case, that was not true, until we released the boarding party, but the kitties didn\u2019t know that. What Skippy had done, even at his reduced level of awesomeness, was fairly incredible. He had designed a few fragmented bits of code, that would combine and grow and change in a very specific way as it encountered different systems aboard a Maxohlx ship. Each time the code infected a bot or a subsystem, it picked up another bit of code it needed to grow and evolve, until it could do the job it was designed to do. The most amazing part was, all that happened without Skippy\u2019s supervision or control, because the quarantined frigate had jumped several lighthours away. If anything went wrong, the whole plan would have collapsed, and we would have no opportunity to try it again.\nSkippy\u2019s accomplishment was truly incredible, it was also a one-time thing. When a ship began the process of purging its systems, the malicious code had to erase itself to avoid being detected, and that ship could not be re-infected. So, once all the ships of the fleet in-system had rotated through blockade duty, our opportunity to escape would be gone. We needed to act before that happened, and there really wasn\u2019t anything we could do about it, other than wait and hope for the spiders to arrive. If the spiders did show up, we had to hope they would fight the kitties. That was a safe bet, the spiders could not risk their enemies acquiring Skippy. But the Universe loved to screw with us, so there was at least a possibility the spiders would propose a deal in which both species would share access to Skippy.",
+      "context_after": "All Reichert had to do was wait us out.",
+      "paragraph_index": 113,
+      "chapter_index": 34,
+      "chapter_id": "Text/part0036.html"
+    },
+    {
+      "skippy_text": "\u201cUh oh, Joe,\u201d Skippy said. Only it wasn\u2019t Skippy in his usual admiral\u2019s avatar. He was sitting on an enormous mushroom, and he looked like a caterpillar, or some sort of slug. He was also chewing on what looked like the world\u2019s largest Twizzler. What the hell was going on? \u201cJoe?\u201d He called. \u201cJoe, can you hear me?\u201d",
+      "full_paragraph": "\u201cUh oh, Joe,\u201d Skippy said. Only it wasn\u2019t Skippy in his usual admiral\u2019s avatar. He was sitting on an enormous mushroom, and he looked like a caterpillar, or some sort of slug. He was also chewing on what looked like the world\u2019s largest Twizzler. What the hell was going on? \u201cJoe?\u201d He called. \u201cJoe, can you hear me?\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "We still had to wait.\nUntil the Maxohlx changed the rules, again.",
+      "context_after": "\u201cYes. I don\u2019t \nwant\n to hear you.\u201d",
+      "paragraph_index": 125,
+      "chapter_index": 35,
+      "chapter_id": "Text/part0037.html"
+    },
+    {
+      "skippy_text": "\u201cThat is not good news,\u201d Skippy grumbled. \u201cNot good for \nus\n. That asteroid is dense and iron-rich, not easy to drill into. Their tractor beam lance should easily penetrate the layer of water and methane ice below us.\u201d",
+      "full_paragraph": "\u201cThat is not good news,\u201d Skippy grumbled. \u201cNot good for \nus\n. That asteroid is dense and iron-rich, not easy to drill into. Their tractor beam lance should easily penetrate the layer of water and methane ice below us.\u201d",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "unknown",
+      "context_before": "CHAPTER THIRTY SIX\nCrap. Three days later, Skippy confirmed that schedule. We could see that eleven ships were linked together, testing the device, and it was clear they found problems, because those ships went back to have their framework modified. A second test, in space, was conducted, apparently with more success. Then they conducted a test with twenty-two ships, hovering over a large, rocky asteroid. An energy field that looked like a hollow lance slowly extended down toward the asteroid\u2019s dull gray surface, then punched into it like a plasma cutter. In the center of the field, chunks of glowing debris were pulled up between and past the ring of ships, being ejected out beyond them like a fountain. That test continued until they had bored a hole all the way through the asteroid, that was seven hundred kilometers across.",
+      "context_after": "\u201cOK, OK,\u201d I thought. \u201cBut they don\u2019t \nknow\n that for sure. They will need to test it, here.\u201d",
+      "paragraph_index": 2,
+      "chapter_index": 36,
+      "chapter_id": "Text/part0038.html"
+    },
+    {
+      "skippy_text": "\u201cYou\u2019re right.\u201d I sat down heavily in the chair, grateful it was oversized for me. The height was adjusted so my feet could touch the deck, but it was still too big for a human. Sure, I could have replaced it with a normal chair from Earth as Simms suggested, or asked Skippy to fabricate something for me. I didn\u2019t want that. Each time I walked into my office and saw that chair, it reminded me that someone else had sat in that chair before me, and it reminded me that bad shit could happen when you least expect it. The previous captain of our ship certainly had not expected trouble during a routine transition through a wormhole, until we sliced his ship in two pieces. \u201cWait.\u201d Something about what Skippy said wasn\u2019t right. \u201cYou intercepted a message? The kitties were being super careful about COMSEC. Maybe they know we\u2019re listening, and this is a ruse.\u201d",
+      "full_paragraph": "\u201cYou\u2019re right.\u201d I sat down heavily in the chair, grateful it was oversized for me. The height was adjusted so my feet could touch the deck, but it was still too big for a human. Sure, I could have replaced it with a normal chair from Earth as Simms suggested, or asked Skippy to fabricate something for me. I didn\u2019t want that. Each time I walked into my office and saw that chair, it reminded me that someone else had sat in that chair before me, and it reminded me that bad shit could happen when you least expect it. The previous captain of our ship certainly had not expected trouble during a routine transition through a wormhole, until we sliced his ship in two pieces. \u201cWait.\u201d Something about what Skippy said wasn\u2019t right. \u201cYou intercepted a message? The kitties were being super careful about COMSEC. Maybe they know we\u2019re listening, and this is a ruse.\u201d",
+      "trigger": "\u201cTwo days is two more than we have now,\u201d I said, but he was right. \u201cMaybe I can give Reichert another bullshit excuse, I\u2019ll try to think of something.\u201d",
+      "tones": [
+        "sarcastic"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cDamn. Ah, we knew that would happen, when they discovered we\u2019ve been faking engine distress.\u201d\n\u201cYes, but now you can\u2019t use a bullshit story to stall for time. Reichert won\u2019t listen to you.\u201d",
+      "context_after": "\u201cI don\u2019t think so,\u201d he crushed my faint hope immediately. \u201cThe support ships are clustered way out in the asteroid belt, they have been exchanging routine message traffic since they arrived. I haven\u2019t mentioned it, because they haven\u2019t said anything interesting until now. Also, those two support ships immediately got slammed by a cruiser captain for breaking security protocols, and they have gone silent. It was a screw-up, Joe, we\u2019re lucky I heard the transmissions.\u201d",
+      "paragraph_index": 58,
+      "chapter_index": 36,
+      "chapter_id": "Text/part0038.html"
+    },
+    {
+      "skippy_text": "\u201cWe can\u2019t fly the ship to the test site,\u201d Skippy warned. \u201cOur speed is limited when we\u2019re flying through this soup, and the enemy will select a test site on the other side of the planet from wherever we are. By the time we got close enough to launch weapons, the battleships will have moved to intercept.\u201d",
+      "full_paragraph": "\u201cWe can\u2019t fly the ship to the test site,\u201d Skippy warned. \u201cOur speed is limited when we\u2019re flying through this soup, and the enemy will select a test site on the other side of the planet from wherever we are. By the time we got close enough to launch weapons, the battleships will have moved to intercept.\u201d",
+      "trigger": "\u201cWhat are you thinking?\u201d I asked Smythe.",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "crew",
+      "context_before": "\u201cThe test ships will be vulnerable while they are hovering,\u201d I looked at Smythe. \u201cIs that what you mean by \u2018direct action\u2019?\u201d\n\u201cQuite so,\u201d he agreed.",
+      "context_after": "\u201cYeah, but,\u201d I rubbed my chin while I thought. \u201cWe could disrupt the test. Reichert won\u2019t move against us until he is certain the scaled-up tractor beam works properly. The battleships can\u2019t hit us hard, not while we\u2019re down here.\u201d",
+      "paragraph_index": 69,
+      "chapter_index": 36,
+      "chapter_id": "Text/part0038.html"
+    },
+    {
+      "skippy_text": "It surprised me that Skippy asked that question. \u201cI don\u2019t know there is anything I \ncan\n do.\u201d",
+      "full_paragraph": "It surprised me that Skippy asked that question. \u201cI don\u2019t know there is anything I \ncan\n do.\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cI\u2019m not thrilled about it either.\u201d\n\u201cWhat are you doing about it?\u201d",
+      "context_after": "\u201cBullshit. You always dream up some crazy idea to save our asses.\u201d",
+      "paragraph_index": 14,
+      "chapter_index": 37,
+      "chapter_id": "Text/part0039.html"
+    },
+    {
+      "skippy_text": "I didn\u2019t have a good answer for him, so we announced an impromptu movie matinee in an empty cargo bay, most of the off-duty crew was there to watch with me. Before the movie started, Skippy whispered to me that he changed his mind, because Butch and Sundance apparently die at the end. So, he played another movie that had the same actors, a comedy-caper called \nThe Sting\n. I never heard of that one either, which is too bad, it is a good movie.",
+      "full_paragraph": "I didn\u2019t have a good answer for him, so we announced an impromptu movie matinee in an empty cargo bay, most of the off-duty crew was there to watch with me. Before the movie started, Skippy whispered to me that he changed his mind, because Butch and Sundance apparently die at the end. So, he played another movie that had the same actors, a comedy-caper called \nThe Sting\n. I never heard of that one either, which is too bad, it is a good movie.",
+      "trigger": "",
+      "tones": [
+        "insult"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cOK, maybe later, if-\u201d\n\u201cWhat are you doing right now? Other than nothing useful.\u201d",
+      "context_after": "Crap. I wish I knew how the movie ends. Just as the FBI busts in to arrest everyone, Skippy paused the movie, to loud complaints from the audience.",
+      "paragraph_index": 37,
+      "chapter_index": 37,
+      "chapter_id": "Text/part0039.html"
+    },
+    {
+      "skippy_text": "\u201cScratch one battlewagon,\u201d Skippy muttered, feeding targeting data to our weapons consoles. In the main display, ships of the blockading squadron were exploding as our harmless maser beams splashed against their energy shields. Not quite harmlessly, as each beam caused a cascade of events that resulted in a missile warhead to detonate. Boom, boom, boom, bright flowers of destruction bloomed silently in orbit, as ships cracked apart from internal explosions. \u201cSkippy,\u201d I asked, my stomach in knots. \u201cThe kitties have no idea why those ships are blowing up?\u201d",
+      "full_paragraph": "\u201cScratch one battlewagon,\u201d Skippy muttered, feeding targeting data to our weapons consoles. In the main display, ships of the blockading squadron were exploding as our harmless maser beams splashed against their energy shields. Not quite harmlessly, as each beam caused a cascade of events that resulted in a missile warhead to detonate. Boom, boom, boom, bright flowers of destruction bloomed silently in orbit, as ships cracked apart from internal explosions. \u201cSkippy,\u201d I asked, my stomach in knots. \u201cThe kitties have no idea why those ships are blowing up?\u201d",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "The missile\u2019s warhead gleefully exploded at maximum yield, wide-dispersal mode. Ordinarily, the warheads of Maxohlx missiles were not vulnerable to \u2018cooking off\u2019, being equipped with a variety of safeguards to prevent accidental detonation. All the safety features built into their warhead triggers were rendered useless when they melted at several million degrees, and the explosive material of the warhead itself was exposed to hellish radiation.\nThe entire magazine, all sixty-eight missiles, erupted.",
+      "context_after": "\u201cNope,\u201d he giggled. \u201cI am monitoring message traffic between the surviving ships. The messages are mostly variations on a theme of \u2018\nOH SHIT\u2019\n, but there is also speculation that we have a super weapon they can\u2019t understand. There is even talk that it might be the same type of weapon we used to destroy that underground Thuranin facility on Slithin, because they still have \nno\n freakin\u2019 clue how we did that either. Oooh, wow,\u201d he highlighted the debris cloud from an exploding battlecruiser. \u201cThat one looks like a \nbunny\n.\u201d",
+      "paragraph_index": 113,
+      "chapter_index": 37,
+      "chapter_id": "Text/part0039.html"
+    },
+    {
+      "skippy_text": "\u201cWorking on that, too,\u201d Skippy snapped, irritated. \u201cLet\u2019s see, it looks like- Ooh. Wow. Um, gosh, \nthat\u2019s\n not good. Wow. Oh. My. G- Shit. Holeee- Whoooooo that is \nall kinds\n of bad.\u201d",
+      "full_paragraph": "\u201cWorking on that, too,\u201d Skippy snapped, irritated. \u201cLet\u2019s see, it looks like- Ooh. Wow. Um, gosh, \nthat\u2019s\n not good. Wow. Oh. My. G- Shit. Holeee- Whoooooo that is \nall kinds\n of bad.\u201d",
+      "trigger": "\u201cI\u2019m sure you\u2019ll handle the technical details far better than we poor monkeys could understand,\u201d I said to cut off his technobabble. \u201cCan we jump again?\u201d",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cSure, if you don\u2019t care about accuracy.\u201d\n\u201cWork on it, please. In the meantime, what is going on back home?\u201d We had jumped in above, or you could say below, the plane of Earth\u2019s orbit, roughly one lighthour from the Sun.",
+      "context_after": "\u201cSkippy,\u201d I balled up my fists, keeping them in my lap. \u201cWhat the f-\u201d Remembering that the ship\u2019s crew did not yet have years of experience with my colorful language, I shot a guilty glance at my XO. \u201cBLUF it for us. The short version, please.\u201d",
+      "paragraph_index": 6,
+      "chapter_index": 38,
+      "chapter_id": "Text/part0040.html"
+    },
+    {
+      "skippy_text": "\u201c\nThat\n we can do, if you think it is worth the effort,\u201d Skippy warned. \u201cThe Maxohlx would likely just send more ships to drop more drivers. We can destroy the mass drivers from orbit, but we will need to take out those four cruisers first. Plus, I must warn you, any stealthed Maxohlx ships that are in the area could jump in on top of us.\u201d",
+      "full_paragraph": "\u201c\nThat\n we can do, if you think it is worth the effort,\u201d Skippy warned. \u201cThe Maxohlx would likely just send more ships to drop more drivers. We can destroy the mass drivers from orbit, but we will need to take out those four cruisers first. Plus, I must warn you, any stealthed Maxohlx ships that are in the area could jump in on top of us.\u201d",
+      "trigger": "So the question was, how to fight a cloud of gas? In space? \u201cSkippy?\u201d I asked. \u201cWhat can we do about it?\u201d",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cThere are many things we could do, given enough time and a lot more resources than your people have available. I suspect that, whatever we try to do, the Maxohlx will try to stop us. If we somehow get rid of the cloud, the kitties could turn on the mass drivers again, and create a new cloud.\u201d\n\u201cThen we will destroy those mass drivers right now,\u201d I smacked a fist on my knee.",
+      "context_after": "\u201cNo,\u201d I groaned a bit too loudly. \u201cDamn it, they\u2019ll be expecting us to attack the mass drivers. They will be \nhoping\n we do that, so they can try to trap us again. No, we are \nnot\n doing that.\u201d",
+      "paragraph_index": 24,
+      "chapter_index": 38,
+      "chapter_id": "Text/part0040.html"
+    },
+    {
+      "skippy_text": "\u201cWhat is that, Joe?\u201d Skippy asked.",
+      "full_paragraph": "\u201cWhat is that, Joe?\u201d Skippy asked.",
+      "trigger": "",
+      "tones": [
+        "neutral"
+      ],
+      "partner": "unknown",
+      "context_before": "\u201cSir,\u201d Simms pointed toward the display. \u201cHow will hitting the enemy help Earth?\u201d\n\u201cHitting them won\u2019t help directly. But it will bring us what we need to save Earth from freezing.\u201d",
+      "context_after": "\u201c\nAllies\n. We need more ships, more resources? Fine. We\u2019ll bring them here.\u201d",
+      "paragraph_index": 37,
+      "chapter_index": 38,
+      "chapter_id": "Text/part0040.html"
+    },
+    {
+      "skippy_text": "There was much consternation in space around Jaguar, as our drone began blasting out waves of active sensor pulses. If any stealthed ships were near the planet, the drone would reveal their location. Probably. Skippy warned me that the drone\u2019s effective radius was less than thirty lightseconds, so maybe all we accomplished was revealing our presence to the enemy. Mostly, what the drone accomplished was helping me feel like I had taken proper precautions, giving me one less thing to kick myself about if we did get ambushed again.",
+      "full_paragraph": "There was much consternation in space around Jaguar, as our drone began blasting out waves of active sensor pulses. If any stealthed ships were near the planet, the drone would reveal their location. Probably. Skippy warned me that the drone\u2019s effective radius was less than thirty lightseconds, so maybe all we accomplished was revealing our presence to the enemy. Mostly, what the drone accomplished was helping me feel like I had taken proper precautions, giving me one less thing to kick myself about if we did get ambushed again.",
+      "trigger": "",
+      "tones": [
+        "technobabble"
+      ],
+      "partner": "unknown",
+      "context_before": "To be safe, we waited for an hour, listening with passive sensors. There was a lot of communication traffic leaking from FOB Jaguar and the asteroid belt. In the belt, automated ships were mining space rocks, processing and refining the ore, and then transferring the vital elements to freighter ships. In orbit of Jaguar, the fleet support ships were taking in the refined material and cranking out components to repair and upgrade our little fleet. As agreed, one-third of the upgrade parts were set aside to be brought back to Jeraptha territory for their use. Everything looked like it was on schedule and going to plan.\nThat made me nervous. So, we jumped in less than a lightsecond from Jaguar, ejected an active sensor drone, and immediately jumped out to a distance of two lightminutes.",
+      "context_after": "The drone also transmitted a message to Legion Command, informing them that we were just being extra super-duper cautious, and that there was probably nothing to worry about. That is like telling someone there is probably \nnot\n a giant poisonous spider crawling on their shoulder. Of course they are going to look. Every ship that was capable of an immediate jump scattered, leaving total chaos in space around the planet. Ships that were not able to jump lit off their own active sensors, shield generators warmed up to protect their host vessels, and proximity-defense systems went active. Missile launcher doors slammed open, and maser cannon exciter banks were charged. The vital support ships shut down their fabricators and prepared to dump cargo.",
+      "paragraph_index": 56,
+      "chapter_index": 38,
+      "chapter_id": "Text/part0040.html"
+    }
+  ]
+}

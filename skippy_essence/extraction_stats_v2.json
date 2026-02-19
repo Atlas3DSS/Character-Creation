@@ -1,0 +1,262 @@
+{
+  "total_entries": 8141,
+  "per_book": [
+    {
+      "total_chapters": 21,
+      "total_paragraphs": 3178,
+      "skippy_entries": 598,
+      "detection_methods": {
+        "conversation_flow": 399,
+        "explicit_attr": 155,
+        "verbal_tic": 44
+      },
+      "tone_distribution": {
+        "neutral": 344,
+        "technobabble": 184,
+        "insult": 79,
+        "confrontational": 25,
+        "emotional": 18,
+        "self_aggrandizing": 12,
+        "sarcastic": 5
+      },
+      "partner_distribution": {
+        "unknown": 342,
+        "joe": 132,
+        "crew": 124
+      },
+      "avg_length": 202.5066889632107
+    },
+    {
+      "total_chapters": 34,
+      "total_paragraphs": 3521,
+      "skippy_entries": 1009,
+      "detection_methods": {
+        "conversation_flow": 722,
+        "explicit_attr": 228,
+        "verbal_tic": 59
+      },
+      "tone_distribution": {
+        "neutral": 587,
+        "technobabble": 224,
+        "insult": 183,
+        "confrontational": 54,
+        "emotional": 37,
+        "self_aggrandizing": 34,
+        "sarcastic": 9
+      },
+      "partner_distribution": {
+        "unknown": 553,
+        "joe": 274,
+        "crew": 182
+      },
+      "avg_length": 230.6818632309217
+    },
+    {
+      "total_chapters": 30,
+      "total_paragraphs": 3619,
+      "skippy_entries": 786,
+      "detection_methods": {
+        "conversation_flow": 557,
+        "explicit_attr": 185,
+        "verbal_tic": 44
+      },
+      "tone_distribution": {
+        "neutral": 471,
+        "technobabble": 189,
+        "insult": 86,
+        "confrontational": 54,
+        "emotional": 33,
+        "self_aggrandizing": 15,
+        "sarcastic": 7
+      },
+      "partner_distribution": {
+        "unknown": 341,
+        "joe": 338,
+        "crew": 107
+      },
+      "avg_length": 203.65139949109414
+    },
+    {
+      "total_chapters": 32,
+      "total_paragraphs": 3665,
+      "skippy_entries": 985,
+      "detection_methods": {
+        "conversation_flow": 750,
+        "explicit_attr": 187,
+        "verbal_tic": 48
+      },
+      "tone_distribution": {
+        "neutral": 609,
+        "technobabble": 254,
+        "insult": 97,
+        "emotional": 41,
+        "confrontational": 37,
+        "self_aggrandizing": 20,
+        "sarcastic": 7
+      },
+      "partner_distribution": {
+        "unknown": 441,
+        "joe": 329,
+        "crew": 205,
+        "other_ai": 10
+      },
+      "avg_length": 202.66598984771574
+    },
+    {
+      "total_chapters": 36,
+      "total_paragraphs": 4051,
+      "skippy_entries": 497,
+      "detection_methods": {
+        "conversation_flow": 383,
+        "explicit_attr": 57,
+        "verbal_tic": 57
+      },
+      "tone_distribution": {
+        "neutral": 310,
+        "technobabble": 85,
+        "insult": 83,
+        "emotional": 26,
+        "confrontational": 25,
+        "self_aggrandizing": 14,
+        "sarcastic": 5
+      },
+      "partner_distribution": {
+        "unknown": 249,
+        "joe": 180,
+        "crew": 61,
+        "other_ai": 7
+      },
+      "avg_length": 174.61971830985917
+    },
+    {
+      "total_chapters": 35,
+      "total_paragraphs": 4719,
+      "skippy_entries": 1008,
+      "detection_methods": {
+        "conversation_flow": 771,
+        "verbal_tic": 122,
+        "explicit_attr": 115
+      },
+      "tone_distribution": {
+        "neutral": 598,
+        "technobabble": 235,
+        "insult": 166,
+        "confrontational": 57,
+        "emotional": 49,
+        "self_aggrandizing": 17,
+        "sarcastic": 10
+      },
+      "partner_distribution": {
+        "unknown": 485,
+        "joe": 310,
+        "crew": 186,
+        "other_ai": 27
+      },
+      "avg_length": 186.90873015873015
+    },
+    {
+      "total_chapters": 43,
+      "total_paragraphs": 5613,
+      "skippy_entries": 866,
+      "detection_methods": {
+        "conversation_flow": 638,
+        "explicit_attr": 156,
+        "verbal_tic": 72
+      },
+      "tone_distribution": {
+        "neutral": 505,
+        "technobabble": 218,
+        "insult": 112,
+        "emotional": 49,
+        "confrontational": 47,
+        "self_aggrandizing": 20,
+        "sarcastic": 4
+      },
+      "partner_distribution": {
+        "unknown": 465,
+        "joe": 226,
+        "crew": 155,
+        "other_ai": 20
+      },
+      "avg_length": 172.39030023094688
+    },
+    {
+      "total_chapters": 42,
+      "total_paragraphs": 5924,
+      "skippy_entries": 799,
+      "detection_methods": {
+        "conversation_flow": 593,
+        "explicit_attr": 134,
+        "verbal_tic": 72
+      },
+      "tone_distribution": {
+        "neutral": 551,
+        "technobabble": 127,
+        "insult": 87,
+        "emotional": 33,
+        "confrontational": 31,
+        "self_aggrandizing": 16,
+        "sarcastic": 5
+      },
+      "partner_distribution": {
+        "unknown": 461,
+        "joe": 163,
+        "crew": 157,
+        "other_ai": 18
+      },
+      "avg_length": 157.360450563204
+    },
+    {
+      "total_chapters": 38,
+      "total_paragraphs": 7426,
+      "skippy_entries": 863,
+      "detection_methods": {
+        "conversation_flow": 670,
+        "explicit_attr": 131,
+        "verbal_tic": 62
+      },
+      "tone_distribution": {
+        "neutral": 612,
+        "technobabble": 131,
+        "insult": 64,
+        "emotional": 47,
+        "confrontational": 24,
+        "self_aggrandizing": 6,
+        "sarcastic": 4
+      },
+      "partner_distribution": {
+        "unknown": 527,
+        "joe": 182,
+        "crew": 127,
+        "other_ai": 27
+      },
+      "avg_length": 128.38122827346467
+    },
+    {
+      "total_chapters": 39,
+      "total_paragraphs": 6152,
+      "skippy_entries": 730,
+      "detection_methods": {
+        "conversation_flow": 577,
+        "explicit_attr": 108,
+        "verbal_tic": 45
+      },
+      "tone_distribution": {
+        "neutral": 542,
+        "insult": 77,
+        "technobabble": 75,
+        "emotional": 37,
+        "self_aggrandizing": 17,
+        "confrontational": 16,
+        "sarcastic": 4
+      },
+      "partner_distribution": {
+        "unknown": 454,
+        "joe": 141,
+        "crew": 113,
+        "other_ai": 22
+      },
+      "avg_length": 133.15205479452055
+    }
+  ]
+}

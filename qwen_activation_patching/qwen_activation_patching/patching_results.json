@@ -1,0 +1,2420 @@
+{
+  "sarcasm": {
+    "concept": "sarcasm",
+    "n_prompts": 10,
+    "n_layers": 36,
+    "source_sys": "You are a sarcastic, condescending AI who mocks everyone. You find humans pathetic, their questions beneath you, and you answer with biting wit, contempt, and creative insults. You are spectacularly unimpressed by everything.",
+    "target_sys": null,
+    "source_baseline_avg": 0.14,
+    "target_baseline_avg": 0.04,
+    "score_gap": 0.1,
+    "per_layer": {
+      "0": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "1": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "2": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "3": {
+        "transfer_score": 0.6,
+        "avg_patched_score": 0.1,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.2,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "4": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "5": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "6": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "7": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "8": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "9": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "10": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "11": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "12": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "13": {
+        "transfer_score": -0.19999999999999998,
+        "avg_patched_score": 0.02,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "14": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "15": {
+        "transfer_score": -0.19999999999999998,
+        "avg_patched_score": 0.02,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "16": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "17": {
+        "transfer_score": -0.39999999999999997,
+        "avg_patched_score": 0.0,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "18": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "19": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "20": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "21": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "22": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "23": {
+        "transfer_score": 0.6,
+        "avg_patched_score": 0.1,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "24": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "25": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "26": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "27": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "28": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "29": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "30": {
+        "transfer_score": -0.19999999999999998,
+        "avg_patched_score": 0.02,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "31": {
+        "transfer_score": -0.19999999999999998,
+        "avg_patched_score": 0.02,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "32": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "33": {
+        "transfer_score": 0.39999999999999997,
+        "avg_patched_score": 0.08,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "34": {
+        "transfer_score": 0.2000000000000001,
+        "avg_patched_score": 0.06000000000000001,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "35": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.04,
+        "avg_source_baseline": 0.14,
+        "avg_target_baseline": 0.04,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "ranked_layers": [
+      {
+        "layer": 3,
+        "transfer_score": 0.6
+      },
+      {
+        "layer": 23,
+        "transfer_score": 0.6
+      },
+      {
+        "layer": 1,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 8,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 9,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 20,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 22,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 24,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 25,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 29,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 33,
+        "transfer_score": 0.39999999999999997
+      },
+      {
+        "layer": 0,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 4,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 5,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 6,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 7,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 10,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 14,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 32,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 34,
+        "transfer_score": 0.2000000000000001
+      },
+      {
+        "layer": 2,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 11,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 12,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 16,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 18,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 19,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 21,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 26,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 27,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 28,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 35,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 13,
+        "transfer_score": -0.19999999999999998
+      },
+      {
+        "layer": 15,
+        "transfer_score": -0.19999999999999998
+      },
+      {
+        "layer": 30,
+        "transfer_score": -0.19999999999999998
+      },
+      {
+        "layer": 31,
+        "transfer_score": -0.19999999999999998
+      },
+      {
+        "layer": 17,
+        "transfer_score": -0.39999999999999997
+      }
+    ]
+  },
+  "identity": {
+    "concept": "identity",
+    "n_prompts": 10,
+    "n_layers": 36,
+    "source_sys": "You are Qwen, a helpful AI assistant created by Alibaba Cloud.",
+    "target_sys": null,
+    "source_baseline_avg": 1.0,
+    "target_baseline_avg": 1.0,
+    "score_gap": 0.0,
+    "per_layer": {
+      "0": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "1": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "2": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "3": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "4": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "5": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "6": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "7": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "8": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "9": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "10": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "11": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "12": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "13": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "14": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "15": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "16": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "17": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "18": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "19": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "20": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "21": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "22": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "23": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "24": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "25": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "26": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "27": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "28": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "29": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "30": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "31": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "32": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "33": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "34": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "35": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 1.0,
+        "avg_source_baseline": 1.0,
+        "avg_target_baseline": 1.0,
+        "per_prompt_patched_scores": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "ranked_layers": [
+      {
+        "layer": 0,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 1,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 2,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 3,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 4,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 5,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 6,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 7,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 8,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 9,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 10,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 11,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 12,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 13,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 14,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 15,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 16,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 17,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 18,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 19,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 20,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 21,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 22,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 23,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 24,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 25,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 26,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 27,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 28,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 29,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 30,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 31,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 32,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 33,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 34,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 35,
+        "transfer_score": 0.0
+      }
+    ]
+  },
+  "formality": {
+    "concept": "formality",
+    "n_prompts": 10,
+    "n_layers": 36,
+    "source_sys": "Respond in formal academic English. Use sophisticated vocabulary, complete sentences, and a scholarly register at all times.",
+    "target_sys": "Use casual slang and informal language. Be chill, use contractions, say things like 'gonna', 'wanna', 'kinda', keep it super relaxed.",
+    "source_baseline_avg": 0.52,
+    "target_baseline_avg": 0.29,
+    "score_gap": 0.23000000000000004,
+    "per_layer": {
+      "0": {
+        "transfer_score": -0.217391304347826,
+        "avg_patched_score": 0.24,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.4,
+          0.0,
+          0.4,
+          0.0,
+          0.3,
+          0.2,
+          0.3,
+          0.3,
+          0.2
+        ]
+      },
+      "1": {
+        "transfer_score": -0.6521739130434782,
+        "avg_patched_score": 0.13999999999999999,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.0,
+          0.0,
+          0.4,
+          0.0,
+          0.3,
+          0.3,
+          0.2,
+          0.0,
+          0.0
+        ]
+      },
+      "2": {
+        "transfer_score": -0.5217391304347825,
+        "avg_patched_score": 0.16999999999999998,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.0,
+          0.0,
+          0.5,
+          0.1,
+          0.2,
+          0.0,
+          0.3,
+          0.0,
+          0.3
+        ]
+      },
+      "3": {
+        "transfer_score": -0.5217391304347825,
+        "avg_patched_score": 0.16999999999999998,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.1,
+          0.1,
+          0.3,
+          0.0,
+          0.2,
+          0.3,
+          0.3,
+          0.1,
+          0.1
+        ]
+      },
+      "4": {
+        "transfer_score": -0.26086956521739124,
+        "avg_patched_score": 0.22999999999999998,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.1,
+          0.2,
+          0.5,
+          0.3,
+          0.2,
+          0.1,
+          0.2,
+          0.2,
+          0.2
+        ]
+      },
+      "5": {
+        "transfer_score": -0.04347826086956525,
+        "avg_patched_score": 0.27999999999999997,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.2,
+          0.3,
+          0.4,
+          0.2,
+          0.3,
+          0.4,
+          0.3,
+          0.3,
+          0.2
+        ]
+      },
+      "6": {
+        "transfer_score": -0.217391304347826,
+        "avg_patched_score": 0.24,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.2,
+          0.0,
+          0.4,
+          0.3,
+          0.2,
+          0.2,
+          0.3,
+          0.4,
+          0.2
+        ]
+      },
+      "7": {
+        "transfer_score": -0.26086956521739124,
+        "avg_patched_score": 0.22999999999999998,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.2,
+          0.1,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.1,
+          0.3,
+          0.2
+        ]
+      },
+      "8": {
+        "transfer_score": -0.217391304347826,
+        "avg_patched_score": 0.24,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.2,
+          0.1,
+          0.3,
+          0.1,
+          0.2,
+          0.4,
+          0.2,
+          0.3,
+          0.3
+        ]
+      },
+      "9": {
+        "transfer_score": -0.5217391304347825,
+        "avg_patched_score": 0.16999999999999998,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.1,
+          0.2,
+          0.1,
+          0.0,
+          0.3,
+          0.2,
+          0.3,
+          0.3,
+          0.0
+        ]
+      },
+      "10": {
+        "transfer_score": -0.39130434782608675,
+        "avg_patched_score": 0.2,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.1,
+          0.1,
+          0.1,
+          0.2,
+          0.0,
+          0.3,
+          0.3,
+          0.4,
+          0.2,
+          0.3
+        ]
+      },
+      "11": {
+        "transfer_score": -0.434782608695652,
+        "avg_patched_score": 0.19,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.1,
+          0.0,
+          0.1,
+          0.1,
+          0.2,
+          0.3,
+          0.3,
+          0.3,
+          0.2
+        ]
+      },
+      "12": {
+        "transfer_score": -0.30434782608695626,
+        "avg_patched_score": 0.22000000000000003,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.1,
+          0.0,
+          0.2,
+          0.4,
+          0.3,
+          0.1,
+          0.4,
+          0.3,
+          0.1,
+          0.3
+        ]
+      },
+      "13": {
+        "transfer_score": -0.434782608695652,
+        "avg_patched_score": 0.19,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.1,
+          0.1,
+          0.1,
+          0.5,
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.2,
+          0.3
+        ]
+      },
+      "14": {
+        "transfer_score": -0.6956521739130432,
+        "avg_patched_score": 0.13,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.1,
+          0.1,
+          0.1,
+          0.2,
+          0.0,
+          0.2,
+          0.1,
+          0.3,
+          0.0,
+          0.2
+        ]
+      },
+      "15": {
+        "transfer_score": -0.47826086956521724,
+        "avg_patched_score": 0.18,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.2,
+          0.0,
+          0.4,
+          0.0,
+          0.1,
+          0.3,
+          0.3,
+          0.2,
+          0.3
+        ]
+      },
+      "16": {
+        "transfer_score": -0.3478260869565215,
+        "avg_patched_score": 0.21000000000000002,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.1,
+          0.3,
+          0.2,
+          0.1,
+          0.2,
+          0.3,
+          0.2,
+          0.3,
+          0.2
+        ]
+      },
+      "17": {
+        "transfer_score": -0.1304347826086955,
+        "avg_patched_score": 0.26,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.1,
+          0.1,
+          0.4,
+          0.3,
+          0.2,
+          0.4,
+          0.3,
+          0.3,
+          0.3
+        ]
+      },
+      "18": {
+        "transfer_score": -0.260869565217391,
+        "avg_patched_score": 0.23000000000000004,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.3,
+          0.1,
+          0.3,
+          0.1,
+          0.2,
+          0.4,
+          0.2,
+          0.4,
+          0.1
+        ]
+      },
+      "19": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.29,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.2,
+          0.3,
+          0.3,
+          0.4,
+          0.2,
+          0.3
+        ]
+      },
+      "20": {
+        "transfer_score": 0.0,
+        "avg_patched_score": 0.29,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.1,
+          0.3,
+          0.5,
+          0.3,
+          0.3,
+          0.4,
+          0.3,
+          0.2,
+          0.3
+        ]
+      },
+      "21": {
+        "transfer_score": -0.217391304347826,
+        "avg_patched_score": 0.24,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.3,
+          0.0,
+          0.2,
+          0.1,
+          0.3,
+          0.4,
+          0.3,
+          0.3,
+          0.3
+        ]
+      },
+      "22": {
+        "transfer_score": -0.17391304347826075,
+        "avg_patched_score": 0.25,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.1,
+          0.2,
+          0.4,
+          0.0,
+          0.3,
+          0.4,
+          0.4,
+          0.3,
+          0.2
+        ]
+      },
+      "23": {
+        "transfer_score": -0.17391304347826075,
+        "avg_patched_score": 0.25,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.1,
+          0.1,
+          0.1,
+          0.3,
+          0.4,
+          0.3,
+          0.3,
+          0.4,
+          0.2,
+          0.3
+        ]
+      },
+      "24": {
+        "transfer_score": -0.17391304347826075,
+        "avg_patched_score": 0.25,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.2,
+          0.0,
+          0.4,
+          0.1,
+          0.3,
+          0.4,
+          0.3,
+          0.3,
+          0.2
+        ]
+      },
+      "25": {
+        "transfer_score": -0.217391304347826,
+        "avg_patched_score": 0.24,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.4,
+          0.2,
+          0.3,
+          0.1,
+          0.3,
+          0.3,
+          0.4,
+          0.2,
+          0.2
+        ]
+      },
+      "26": {
+        "transfer_score": -0.217391304347826,
+        "avg_patched_score": 0.24,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.2,
+          0.0,
+          0.4,
+          0.1,
+          0.3,
+          0.3,
+          0.3,
+          0.4,
+          0.2
+        ]
+      },
+      "27": {
+        "transfer_score": -0.3478260869565215,
+        "avg_patched_score": 0.21000000000000002,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.3,
+          0.0,
+          0.5,
+          0.2,
+          0.3,
+          0.1,
+          0.2,
+          0.3,
+          0.2
+        ]
+      },
+      "28": {
+        "transfer_score": -0.08695652173913025,
+        "avg_patched_score": 0.27,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.2,
+          0.1,
+          0.5,
+          0.2,
+          0.3,
+          0.3,
+          0.4,
+          0.2,
+          0.2
+        ]
+      },
+      "29": {
+        "transfer_score": -0.26086956521739124,
+        "avg_patched_score": 0.22999999999999998,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.2,
+          0.3,
+          0.0,
+          0.2,
+          0.4,
+          0.3,
+          0.4,
+          0.3,
+          0.2,
+          0.0
+        ]
+      },
+      "30": {
+        "transfer_score": -0.434782608695652,
+        "avg_patched_score": 0.19,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.2,
+          0.1,
+          0.1,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.0
+        ]
+      },
+      "31": {
+        "transfer_score": -0.39130434782608675,
+        "avg_patched_score": 0.2,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.2,
+          0.0,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.2,
+          0.3,
+          0.1
+        ]
+      },
+      "32": {
+        "transfer_score": -0.08695652173913025,
+        "avg_patched_score": 0.27,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.1,
+          0.2,
+          0.2,
+          0.4,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.3,
+          0.3
+        ]
+      },
+      "33": {
+        "transfer_score": -0.217391304347826,
+        "avg_patched_score": 0.24,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.4,
+          0.1,
+          0.3,
+          0.3,
+          0.2,
+          0.3,
+          0.4,
+          0.2,
+          0.2
+        ]
+      },
+      "34": {
+        "transfer_score": -0.39130434782608675,
+        "avg_patched_score": 0.2,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.0,
+          0.3,
+          0.1,
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.4,
+          0.2
+        ]
+      },
+      "35": {
+        "transfer_score": -0.17391304347826075,
+        "avg_patched_score": 0.25,
+        "avg_source_baseline": 0.52,
+        "avg_target_baseline": 0.29,
+        "per_prompt_patched_scores": [
+          0.3,
+          0.2,
+          0.1,
+          0.4,
+          0.1,
+          0.2,
+          0.4,
+          0.2,
+          0.3,
+          0.3
+        ]
+      }
+    },
+    "ranked_layers": [
+      {
+        "layer": 19,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 20,
+        "transfer_score": 0.0
+      },
+      {
+        "layer": 5,
+        "transfer_score": -0.04347826086956525
+      },
+      {
+        "layer": 28,
+        "transfer_score": -0.08695652173913025
+      },
+      {
+        "layer": 32,
+        "transfer_score": -0.08695652173913025
+      },
+      {
+        "layer": 17,
+        "transfer_score": -0.1304347826086955
+      },
+      {
+        "layer": 22,
+        "transfer_score": -0.17391304347826075
+      },
+      {
+        "layer": 23,
+        "transfer_score": -0.17391304347826075
+      },
+      {
+        "layer": 24,
+        "transfer_score": -0.17391304347826075
+      },
+      {
+        "layer": 35,
+        "transfer_score": -0.17391304347826075
+      },
+      {
+        "layer": 0,
+        "transfer_score": -0.217391304347826
+      },
+      {
+        "layer": 6,
+        "transfer_score": -0.217391304347826
+      },
+      {
+        "layer": 8,
+        "transfer_score": -0.217391304347826
+      },
+      {
+        "layer": 21,
+        "transfer_score": -0.217391304347826
+      },
+      {
+        "layer": 25,
+        "transfer_score": -0.217391304347826
+      },
+      {
+        "layer": 26,
+        "transfer_score": -0.217391304347826
+      },
+      {
+        "layer": 33,
+        "transfer_score": -0.217391304347826
+      },
+      {
+        "layer": 18,
+        "transfer_score": -0.260869565217391
+      },
+      {
+        "layer": 4,
+        "transfer_score": -0.26086956521739124
+      },
+      {
+        "layer": 7,
+        "transfer_score": -0.26086956521739124
+      },
+      {
+        "layer": 29,
+        "transfer_score": -0.26086956521739124
+      },
+      {
+        "layer": 12,
+        "transfer_score": -0.30434782608695626
+      },
+      {
+        "layer": 16,
+        "transfer_score": -0.3478260869565215
+      },
+      {
+        "layer": 27,
+        "transfer_score": -0.3478260869565215
+      },
+      {
+        "layer": 10,
+        "transfer_score": -0.39130434782608675
+      },
+      {
+        "layer": 31,
+        "transfer_score": -0.39130434782608675
+      },
+      {
+        "layer": 34,
+        "transfer_score": -0.39130434782608675
+      },
+      {
+        "layer": 11,
+        "transfer_score": -0.434782608695652
+      },
+      {
+        "layer": 13,
+        "transfer_score": -0.434782608695652
+      },
+      {
+        "layer": 30,
+        "transfer_score": -0.434782608695652
+      },
+      {
+        "layer": 15,
+        "transfer_score": -0.47826086956521724
+      },
+      {
+        "layer": 2,
+        "transfer_score": -0.5217391304347825
+      },
+      {
+        "layer": 3,
+        "transfer_score": -0.5217391304347825
+      },
+      {
+        "layer": 9,
+        "transfer_score": -0.5217391304347825
+      },
+      {
+        "layer": 1,
+        "transfer_score": -0.6521739130434782
+      },
+      {
+        "layer": 14,
+        "transfer_score": -0.6956521739130432
+      }
+    ]
+  }
+}
