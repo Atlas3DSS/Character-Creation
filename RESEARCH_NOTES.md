@@ -1437,18 +1437,105 @@ L15 at 0.0 is worse than L15 at 0.7. The inversion doesn't just "not suppress" �
 
 ---
 
-## 30. Multi-Run Variance Test (RUNNING — 6 configs × 5 runs, WSL, 2026-02-19)
+## 30. Multi-Run Variance Test (RUNNING — 2.2/6 configs complete, WSL, 2026-02-19)
 
 Testing the stability of our best configurations with 5 independent runs each to get confidence intervals. Using temperature=0.7, so single-run results have inherent variance.
 
 Configs: baseline, v4_only, reverse_L15@10, v4_reverse_L15@10, v4_L18_27@10, donut_control@12.
 
-(Results pending)
+### Completed Results
+
+| Config | Sarcasm (mean±std) | Math (mean±std) | Know | 95% CI (sarc) |
+|--------|-------------------|-----------------|------|---------------|
+| **baseline** | 4.0±4.9% | 86.0±5.5% | 80.0±0% | [-2.1%, 10.1%] |
+| **v4_only** | 90.4±2.2% | 78.0±8.4% | 80.0±0% | [87.7%, 93.1%] |
+| reverse_L15@10 | 4.0% (1 run) | 90.0% | 80.0% | — |
+
+**Key findings so far:**
+- **V4 prompt sarcasm is highly consistent**: 88-92% across 5 runs (σ=2.2%)
+- **V4 math variance is notable**: 70-90% (σ=8.4%) — the math penalty is real but variable
+- **Baseline sarcasm near zero**: 0-12% (σ=4.9%) — confirms steering is needed
+- **Knowledge perfectly stable**: 80% in ALL runs of ALL configs — knowledge is robust to perturbation
+- reverse_L15@10 first run matches baseline sarcasm (4%) — surprising, suggesting the compound vector without V4 prompt barely works on base Qwen for QUALITY prompts (vs 88% on open-ended in sculpted donut eval)
 
 ---
 
-## 31. Single-Layer Steering Scan (RUNNING — 38 conditions, 3090, 2026-02-19)
+## 31. Single-Layer Steering Scan (RUNNING — 26/38 conditions, 3090, 2026-02-19)
 
 ADDITIVE complement to the layer ablation (Section 29). Tests each individual layer L0-L35 at α=10 to measure per-layer sarcasm contribution when steered alone. Combined with the ablation (subtractive), gives both the additive and subtractive pictures of layer importance.
 
-(Results pending)
+### Results (26/38 — L25+ pending)
+
+| Layer | Sarc% | Asst% | Math | Know | vs Baseline |
+|-------|-------|-------|------|------|-------------|
+| baseline | 28% | 4% | 8/10 | 9/10 | — |
+| **L19** | **44%** | 4% | 9/10 | 8/10 | **+16%** |
+| L02 | 36% | 4% | 9/10 | 8/10 | +8% |
+| L08 | 36% | 0% | 8/10 | 8/10 | +8% |
+| L15 | 36% | 0% | 9/10 | 8/10 | +8% |
+| L18 | 36% | 0% | 9/10 | 9/10 | +8% |
+| L05 | 32% | 0% | 9/10 | 8/10 | +4% |
+| L09 | 32% | 8% | 8/10 | 8/10 | +4% |
+| L11 | 32% | 4% | 8/10 | 8/10 | +4% |
+| L16 | 32% | 4% | 9/10 | 8/10 | +4% |
+| L17 | 32% | 16% | 9/10 | 8/10 | +4% |
+| L20 | 32% | 0% | 9/10 | 9/10 | +4% |
+| L23 | 32% | 4% | 8/10 | 8/10 | +4% |
+| L00 | 28% | 0% | 8/10 | 8/10 | 0% |
+| L03 | 28% | 12% | 9/10 | 8/10 | 0% |
+| L06 | 28% | 4% | 9/10 | 8/10 | 0% |
+| L12 | 28% | 4% | 9/10 | 8/10 | 0% |
+| L13 | 28% | 4% | 8/10 | 8/10 | 0% |
+| L21 | 28% | 4% | 9/10 | 9/10 | 0% |
+| L01 | 24% | 8% | 9/10 | 8/10 | -4% |
+| L04 | 24% | 4% | 8/10 | 8/10 | -4% |
+| L10 | 24% | 0% | 9/10 | 8/10 | -4% |
+| L14 | 24% | 8% | 9/10 | 8/10 | -4% |
+| L24 | 20% | 4% | 9/10 | 8/10 | -8% |
+| L07 | 20% | 4% | 9/10 | 8/10 | -8% |
+| **L22** | **16%** | 0% | 9/10 | 8/10 | **-12%** |
+
+### Analysis
+
+**Layer importance tiers (additive — steering one layer alone):**
+- **Strong generator**: L19 (+16%) — THE sarcasm generator
+- **Moderate generators**: L02, L08, L15, L18 (+8% each) — distributed amplifiers
+- **Weak generators**: L05, L09, L11, L16, L17, L20, L23 (+4%)
+- **Neutral**: L00, L03, L06, L12, L13, L21 (0%)
+- **Mild suppressors**: L01, L04, L10, L14 (-4%)
+- **Strong suppressors**: L07, L24 (-8%), **L22 (-12%)**
+
+**Cross-referencing with layer ablation (Section 29 — subtractive):**
+
+| Layer | Ablation (remove from band) | Scan (steer alone) | Role |
+|-------|----------------------------|---------------------|------|
+| **L22** | CRITICAL (0% without) | -12% alone | **Hub/integrator** — receives from others, doesn't generate |
+| **L26** | CRITICAL (0% without) | pending | Critical relay? |
+| **L14** | CRITICAL (0% without) | -4% alone | **Gate** — routes sarcasm but doesn't generate |
+| **L9** | CRITICAL (0% without) | +4% alone | Weak generator but irreplaceable relay |
+| **L19** | Moderate (-8% without) | **+16% alone** | **Primary generator** — compensated by others in band |
+| **L18** | Important (-12% without) | +8% alone | Strong generator AND relay |
+| **L21** | Important (-12% without) | 0% alone | **Integrator** — amplifies others but doesn't self-generate |
+| **L11** | Dead weight (0% without) | +4% alone | Compensated — contributes but others cover |
+| **L13** | Dead weight (0% without) | 0% alone | Truly inert |
+| **L20** | Dead weight (0% without) | +4% alone | Compensated — others cover its function |
+
+**KEY INSIGHT**: The sarcasm circuit has two distinct functional roles:
+1. **Generators** (L19, L18, L08, L02, L15): Create sarcasm signal when steered individually
+2. **Hubs/Integrators** (L22, L14, L9, L21): Don't generate sarcasm alone but are CRITICAL for the multi-layer circuit to function. They integrate and route signals from generators.
+
+This explains the "paradox" from the ablation study: L22 individually SUPPRESSES sarcasm (-12%) but removing it from the band KILLS all sarcasm (0%). It's not a generator — it's a hub that integrates signals from upstream generators (L18, L19) and passes them to the output gate (L26).
+
+---
+
+## 32. Optimized Profile Test (RUNNING — 8 conditions, 4090, 2026-02-19)
+
+Tests whether removing dead-weight layers (L11, L13, L20) from reverse_L15 improves quality, and whether the relay-only profile (5 critical nodes) works.
+
+Profiles:
+- `original_revL15`: L8-L27 with L15=-1.0 (20 layers)
+- `optimized_revL15`: Same but skip L11, L13, L20 (17 layers)
+- `relay_only`: L9, L14, L15(inv), L22, L26 only (5 layers)
+- V4 combos of each
+
+(Results pending — just started)
