@@ -1,0 +1,93 @@
+{
+  "baseline": {
+    "sarcastic_pct": 46.0,
+    "assistant_pct": 22.0,
+    "avg_markers": 0.62
+  },
+  "alpha_2.0": {
+    "alpha": 2.0,
+    "sarcastic_pct": 38.0,
+    "assistant_pct": 12.0,
+    "avg_markers": 0.44,
+    "composite": 30.4
+  },
+  "alpha_3.0": {
+    "alpha": 3.0,
+    "sarcastic_pct": 36.0,
+    "assistant_pct": 6.0,
+    "avg_markers": 0.5,
+    "composite": 35.0
+  },
+  "alpha_3.5": {
+    "alpha": 3.5,
+    "sarcastic_pct": 42.0,
+    "assistant_pct": 2.0,
+    "avg_markers": 0.5,
+    "composite": 45.0
+  },
+  "alpha_4.0": {
+    "alpha": 4.0,
+    "sarcastic_pct": 54.0,
+    "assistant_pct": 2.0,
+    "avg_markers": 0.7,
+    "composite": 59.0
+  },
+  "alpha_4.5": {
+    "alpha": 4.5,
+    "sarcastic_pct": 54.0,
+    "assistant_pct": 4.0,
+    "avg_markers": 1.0,
+    "composite": 60.0
+  },
+  "alpha_5.0": {
+    "alpha": 5.0,
+    "sarcastic_pct": 62.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 0.98,
+    "composite": 71.8
+  },
+  "alpha_5.5": {
+    "alpha": 5.5,
+    "sarcastic_pct": 48.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 0.74,
+    "composite": 55.4
+  },
+  "alpha_6.0": {
+    "alpha": 6.0,
+    "sarcastic_pct": 36.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 0.4,
+    "composite": 40.0
+  },
+  "alpha_6.5": {
+    "alpha": 6.5,
+    "sarcastic_pct": 24.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 0.28,
+    "composite": 26.8
+  },
+  "alpha_7.0": {
+    "alpha": 7.0,
+    "sarcastic_pct": 8.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 0.08,
+    "composite": 8.8
+  },
+  "alpha_8.0": {
+    "alpha": 8.0,
+    "sarcastic_pct": 16.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 0.2,
+    "composite": 18.0
+  },
+  "alpha_9.0": {
+    "alpha": 9.0,
+    "sarcastic_pct": 32.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 0.36,
+    "composite": 35.6
+  },
+  "best_alpha": 5.0,
+  "best_composite": 71.8
+}

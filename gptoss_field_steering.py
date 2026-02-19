@@ -1238,11 +1238,19 @@ def main():
     print(f"  Total generations: {len(conditions) * len(PROMPTS)}")
     print(f"{'='*70}")
 
-    # ── Run sweep ──
+    # ── Run sweep (resume from checkpoint if exists) ──
     all_results = {}
     all_responses = {}
+    checkpoint_path = out_dir / "results_checkpoint.json"
+    if checkpoint_path.exists():
+        with open(checkpoint_path) as f:
+            all_results = json.load(f)
+        print(f"\nResuming from checkpoint: {len(all_results)} conditions already done")
 
     for i, (cond_name, hook_method, lp_method) in enumerate(conditions):
+        if cond_name in all_results:
+            print(f"\n[{i+1}/{len(conditions)}] {cond_name} — SKIPPED (in checkpoint)")
+            continue
         print(f"\n[{i+1}/{len(conditions)}] {cond_name}")
         print(f"  Hooks: {hook_method}, Logits: {lp_method}")
 
@@ -1272,8 +1280,11 @@ def main():
               f"H={result['avg_entropy']:.2f}, P1={result['avg_top1_prob']:.3f}")
         if result["feedback_diagnostics"]:
             fd = result["feedback_diagnostics"]
-            print(f"  → Dynamic feedback: mean_factor={fd['mean_adaptive_factor']:.2f}, "
-                  f"mean_proj={fd['mean_projection']:.2f}")
+            if 'mean_adaptive_factor' in fd:
+                print(f"  → Dynamic feedback: mean_factor={fd['mean_adaptive_factor']:.2f}, "
+                      f"mean_proj={fd['mean_projection']:.2f}")
+            else:
+                print(f"  → Feedback diagnostics: {fd}")
         if result["logit_diagnostics"]:
             ld = result["logit_diagnostics"]
             print(f"  → Logit field: mean_conf={ld.get('mean_confidence', 0):.2f}, "

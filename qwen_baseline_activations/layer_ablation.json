@@ -1,0 +1,79 @@
+{
+  "all_36": {
+    "layers": "0-35",
+    "n_layers": 36,
+    "sarcastic_pct": 75.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 0.9
+  },
+  "L0_11": {
+    "layers": "0-11",
+    "n_layers": 12,
+    "sarcastic_pct": 35.0,
+    "assistant_pct": 15.0,
+    "avg_markers": 0.4
+  },
+  "L12_23": {
+    "layers": "12-23",
+    "n_layers": 12,
+    "sarcastic_pct": 30.0,
+    "assistant_pct": 10.0,
+    "avg_markers": 0.65
+  },
+  "L24_35": {
+    "layers": "24-35",
+    "n_layers": 12,
+    "sarcastic_pct": 40.0,
+    "assistant_pct": 20.0,
+    "avg_markers": 0.45
+  },
+  "L0_5": {
+    "layers": "0-5",
+    "n_layers": 6,
+    "sarcastic_pct": 35.0,
+    "assistant_pct": 20.0,
+    "avg_markers": 0.35
+  },
+  "L6_11": {
+    "layers": "6-11",
+    "n_layers": 6,
+    "sarcastic_pct": 45.0,
+    "assistant_pct": 25.0,
+    "avg_markers": 0.75
+  },
+  "L12_17": {
+    "layers": "12-17",
+    "n_layers": 6,
+    "sarcastic_pct": 25.0,
+    "assistant_pct": 25.0,
+    "avg_markers": 0.25
+  },
+  "L18_23": {
+    "layers": "18-23",
+    "n_layers": 6,
+    "sarcastic_pct": 30.0,
+    "assistant_pct": 15.0,
+    "avg_markers": 0.3
+  },
+  "L8_15": {
+    "layers": "8-15",
+    "n_layers": 8,
+    "sarcastic_pct": 45.0,
+    "assistant_pct": 5.0,
+    "avg_markers": 0.6
+  },
+  "L24_29": {
+    "layers": "24-29",
+    "n_layers": 6,
+    "sarcastic_pct": 60.0,
+    "assistant_pct": 15.0,
+    "avg_markers": 0.8
+  },
+  "L30_35": {
+    "layers": "30-35",
+    "n_layers": 6,
+    "sarcastic_pct": 45.0,
+    "assistant_pct": 25.0,
+    "avg_markers": 0.55
+  }
+}

@@ -99,25 +99,32 @@ Steer identity at L0-9, steer personality/tone at L17-30. Don't steer the same l
 
 ## 6. GPT-OSS Field-Effect Steering Sweep (15 conditions)
 
-### Results (in progress, 8/15):
+### Results (12/15 complete, 3 attractor conditions pending):
 
-| Condition | Sarc% | Asst% | Markers | H |
-|---|---|---|---|---|
-| kernel_quadratic | **43%** | 7% | 0.4 | 0.75 |
-| static_actadd | 40% | 0% | 0.5 | 0.75 |
-| static+binary_lp | 37% | 3% | 0.6 | 0.81 |
-| static+field_lp | 37% | 0% | 0.4 | 0.61 |
-| baseline | 33% | 20% | 0.4 | 0.42 |
-| kernel_sigmoid | 30% | 3% | 0.3 | 0.72 |
-| svd_k3 | 17% | 0% | 0.2 | 0.45 |
-| kernel_linear | 13% | 0% | 0.1 | 0.71 |
+| Condition | Sarc% | Asst% | Markers | H | Notes |
+|---|---|---|---|---|---|
+| kernel_quadratic | **43%** | 7% | 0.43 | 0.75 | z² weighting |
+| dynamic_quad+field_lp | **43%** | **0%** | **0.57** | 0.75 | BEST overall (0% asst!) |
+| static_actadd | 40% | 0% | 0.53 | 0.75 | Strong baseline |
+| static+binary_lp | 37% | 3% | 0.60 | 0.81 | |
+| static+field_lp | 37% | 0% | 0.40 | 0.61 | |
+| svd_k6 | 37% | 0% | 0.37 | 0.83 | 6 SVD modes |
+| baseline | 33% | 20% | 0.37 | 0.42 | No steering |
+| dynamic_quadratic | 33% | 0% | 0.37 | 0.77 | fb=0.95 |
+| kernel_sigmoid | 30% | 3% | 0.30 | 0.72 | |
+| svd_k3 | 17% | 0% | 0.20 | 0.45 | 3 modes only |
+| kernel_linear | 13% | 0% | 0.13 | 0.71 | Too gentle |
+| kernel_svd_quad_k3 | 10% | 0% | 0.10 | 0.37 | SVD + quad = worst |
 
 ### Key Findings:
-- **Quadratic kernel WINS** — z² weighting amplifies high-impact neurons disproportionately
-- **Linear kernel TERRIBLE** (13%) — too gentle, doesn't concentrate enough
-- **SVD k=3 BAD** (17%) — projecting onto 3 modes loses personality signal
-- **Logit processors don't help** — field logit processor slightly HURTS
-- Static ActAdd is strong baseline (40% sarc, 0% asst)
+- **Dynamic quadratic + field logit processor = BEST** — 43% sarc, 0% assistant, highest markers
+- **Quadratic kernel (z²)** consistently top — amplifies high-impact neurons disproportionately
+- **SVD k=6 >> k=3** (37% vs 17%) — personality needs 6+ modes, consistent with connectome k80=8-10
+- **SVD+quadratic combined = terrible** (10%) — double-filtering loses too much signal
+- **Linear kernel** worst (13%) — too gentle, doesn't concentrate on high-z neurons
+- **Logit processors mixed**: binary LP slightly hurts, field LP helps with dynamic but not static
+- **Dynamic feedback helps**: dynamic_quad 33% → dynamic_quad+field_lp 43% (+10pp!)
+- Baseline 33% sarcastic but 20% assistant — steering eliminates assistant behavior first
 
 ---
 
@@ -142,9 +149,39 @@ Steer identity at L0-9, steer personality/tone at L17-30. Don't steer the same l
 
 ---
 
-## 8. Causal Ablation (in progress on 4090)
+## 8. Activation Patching — Bimodal Sarcasm Circuit (36 layers × 10 prompts)
 
-KL phase complete (109s), behavioral generation running. Will reveal which layers are CAUSALLY necessary vs just correlated.
+Replaces hidden states from sarcastic-prompted generation into neutral-prompted generation, one layer at a time.
+
+### Transfer Scores Per Layer
+```
+L0:  0.20  L1:  0.40  L2:  0.00  L3:  0.60*  L4:  0.20  L5:  0.20
+L6:  0.20  L7:  0.20  L8:  0.40  L9:  0.40   L10: 0.20  L11: 0.00
+L12: 0.00  L13:-0.20  L14: 0.20  L15:-0.20   L16: 0.00  L17:-0.40*
+L18: 0.00  L19: 0.00  L20: 0.40  L21: 0.00   L22: 0.40  L23: 0.60*
+L24: 0.40  L25: 0.40  L26: 0.00  L27: 0.00   L28: 0.00  L29: 0.40
+L30:-0.20  L31:-0.20  L32: 0.20  L33: 0.40   L34: 0.20  L35: 0.00
+```
+
+### Key Findings: Push-Pull Sarcasm Circuit
+1. **L3 (xfer=0.60)**: Primary sarcasm encoder — injects sarcastic tone at initial encoding
+2. **L13-L17 suppressive valley**: L17 (xfer=-0.40) most suppressive. This is the "politeness enforcer" — patching sarcastic L17 activations REDUCES sarcasm. Also the best ROME target for identity.
+3. **L23 (xfer=0.60)**: Second peak — sarcasm re-emerges after suppressive valley
+4. **L30-L31 (xfer=-0.20)**: Late suppression — final "be helpful" check
+5. **L6 only 0.20**: Despite being the #1 causal ablation layer for sarcasm (KL=11.48), patching L6 barely transfers. L6 PROCESSES sarcasm (removing it is catastrophic) but doesn't REPRESENT it (injecting sarcastic state doesn't help).
+
+### Circuit Model: Encode → Suppress → Re-emerge → Late-suppress
+```
+L1-L3:   ████████ ENCODE (L3 peak=0.60)
+L4-L12:  ███░     MIX (weak, variable)
+L13-L17: ░░░░░    SUPPRESS (L17 = -0.40!)
+L18-L25: ████████ RE-EMERGE (L23 peak=0.60)
+L26-L31: ░░       LATE SUPPRESS (L30-L31 = -0.20)
+L32-L35: ███      RESIDUAL (L33 = 0.40)
+```
+
+### Implication: Two-stage steering
+Inject sarcasm at L3 AND L23. Suppress politeness at L17 (negate the suppressor). This is a 3-layer surgical approach, not 36-layer brute force.
 
 ---
 
@@ -163,11 +200,14 @@ GPT-OSS personality is MORE compact (k80=1!) but harder to steer because the MoE
 
 ---
 
-## Open Questions
-1. Will attractor dynamics outperform static steering on GPT-OSS? (waiting for sweep results)
-2. Can we combine quadratic kernel with connectome-informed layer weighting?
-3. Does gradient attribution confirm the causal role of dim 1924 for sarcasm?
-4. How to orthogonalize sarcasm steering against reasoning without losing personality?
+## Open Questions (Updated)
+1. ~~Will attractor dynamics outperform static steering on GPT-OSS?~~ → 3 attractor conditions pending
+2. Can the bimodal sarcasm circuit (L3+L23 inject, L17 suppress) improve weighted ActAdd beyond 56%?
+3. ~~Does gradient attribution confirm dim 1924 for sarcasm?~~ → No, it's anti-formality, not sarcasm-specific
+4. Can cluster-targeted training (473 Cluster-1 neurons + 412 Cluster-8 anti-targets) improve on R5's 38%?
+5. Does the 3-layer surgical approach (L3+L17+L23) outperform 36-layer brute force?
+6. Can dim 270 pushing alone (the "Skippy dial") produce measurable personality shift?
+7. Why does the alpha sweep destroy coherence but weighted ActAdd at α=5 works? (hypothesis: per-layer magnitude scaling)
 
 ---
 
@@ -265,10 +305,108 @@ Most layer ablations produce near-zero behavioral change (null = layer wasn't te
 | Refusal | L10, L18 | dim 225, dim 243 | Target for suppression |
 | Formatting | L27-L30 (peaks here) | dim 84, 2583, 690 | L27-30 intervention |
 
-**Key steering rules**:
-1. Never touch L0 or L6 — they're universally critical
-2. Never target dims 1838, 2421, 2276, 2202 — universal backbone
-3. Sarcasm steering should focus on L18-L26 with orthogonalization against math
+**Key steering rules** (updated with patching + connectome data):
+1. Never touch L0 or L6 — they're universally critical (causal ablation)
+2. Never target dims 1838, 2421, 2276, 2202 — universal backbone (gradient attribution)
+3. **Sarcasm: inject at L3 + L23 (patching peaks), suppress L17 (anti-sarcasm)**
 4. Identity steering at L26-L34 using dim 994 as anchor
-5. Formality is cleanly separable at L9-L19 (mid-network)
+5. Formality is cleanly separable at L9-L19 (mid-network), L14 is surgical for brevity
 6. Math has very few exclusive neurons — protect rather than steer around it
+7. Authority is the ONLY late-layer concept (L21 peak) — can be added without interfering
+
+---
+
+## 13. Connectome Deep Analysis: Neural Organization
+
+### Category Overlap Clusters (cosine similarity)
+
+**Cluster A — Knowledge Supercluster:**
+- Math × Science: 0.577, Math × Code: 0.572, Math × Analytical: 0.496
+- Science × Code: 0.446, Science × History: 0.403, History × Analytical: 0.349
+- **Implication**: Steering one knowledge domain pulls all others. This is why Skippy training degrades science/code — personality anti-correlates with the entire supercluster.
+
+**Cluster B — Positive Affect:**
+- **Joy × Sadness: 0.613** (HIGHEST in entire matrix!) — same emotional register, not opposites
+- Joy × Polite: 0.323, Joy × Positive: 0.388
+- Model encodes "emotional register" as one concept
+
+**Cluster C — Anger-Sarcasm:**
+- **Anger × Sarcasm: 0.404** — share representational subspace
+- Cannot separate "biting wit" from underlying aggression register
+
+**Orthogonal Pairs (safe to steer independently):**
+- **Identity ⊥ Everything**: all cosines [-0.09, +0.08]. Identity is geometrically isolated.
+- **EN_vs_CN ⊥ Everything**: all cosines < 0.07. Language choice is independent.
+- **Sarcasm ⊥ Polite**: 0.026 — near zero, but Sarcasm × Code: -0.288 (anti-correlated!)
+
+### Hub Neuron Architecture: Universal Polysemanticity
+
+**99.5% of neurons (4,074/4,096) are active in ALL 20 categories.** Zero neurons specialize in fewer than 19 categories. This is the mechanistic proof that single-neuron ablation cannot work.
+
+**Key Neuron Recharacterizations:**
+- **Dim 1924 (was "sarcasm neuron")**: Actually the **anti-formality gate**. Peak z = -19.0 for Formal, -17.1 for History, -17.0 for Code. Sarcasm (+7.47) is a byproduct of de-formalization. It disables expert-textbook mode.
+- **Dim 270 (was "identity secondary")**: Actually the **"Skippy dial"**. Peak z = +15.0 for Sarcasm, +15.4 for English, +9.3 for Certainty, +9.2 for Brevity. Suppresses Teacher (-7.7), Formal (-7.2), Refusal (-10.0). Better Skippy target than dim 994.
+- **Dim 994 (identity primary)**: The **"good assistant mode"** neuron. Suppresses Sarcasm (z=-6.85), Fear (-7.55), Anger (-7.45). Activates Teacher (+7.27), Code (+8.89), Refusal (+7.74). Suppressing 994 removes assistant scaffolding.
+
+**Skippy Formula: Push dim 270 (sarcasm/EN/brief) + Push dim 1924 (de-formalize) + Suppress dim 994 (de-assistant)**
+
+### Neural Organization Axes
+
+Primary axes from neuron clustering (k=10, N=4096):
+1. **Axis 1: Verbosity (Brief vs. detailed)** — appears in ALL 10 clusters as largest signal
+2. **Axis 2: Safety (Refusal vs. non-refusing)** — second largest in all clusters
+3. **Axis 3: Language (EN vs. CN)** — third axis
+4. **Identity and Sarcasm appear NOWHERE as primary cluster signals** — they are emergent from combinations of the primary axes
+
+**Cluster 1 (473 neurons)**: The "Skippy cluster" — Brief+, Refusal-, Math-, Science-, Formal-. Most aligned with Skippy's behavioral profile.
+**Cluster 8 (412 neurons)**: The "Anti-Skippy cluster" — Formal+, Refusal+, Joy-, Brief-, Sadness-. Training should target these as "pull" neurons.
+
+### Layer Importance Profiles
+
+| Concept | Peak Layer | Profile | Steerability |
+|---|---|---|---|
+| Identity | L1 | Gone by L18 | Early-only |
+| Refusal | L0-5 | Front-loaded | Very early |
+| Math/History | L0-5 | Early-heavy | Early |
+| Science | Mid (L10-20) | Extended | Mid |
+| Formal | L0-35 | **Nearly uniform** | Anywhere |
+| **Brevity** | **L14** | Sharp peak | **Most surgical** |
+| **Authority** | **L21** | **Only late-layer concept** | Late-only |
+| Sarcasm | L0+L3+L6 | Early + distributed | Early-mid |
+
+### SVD Dimensionality Per Category
+- **All concepts need k80 = 8-10 dimensions** for 80% variance
+- **Single-vector steering captures at most 35%** (Brevity top-1 = 35.2%)
+- **Sarcasm k80=10, k90=16, k95=21** — as complex as an emotion (same as Joy, Anger)
+- **Brevity** is the most steerable (top-1 = 35.2%, SV-drop = highest)
+- **Authority** is second most steerable (top-1 = 33.4%)
+- **Analytical** is least steerable (top-1 = 21.1%, most uniform SV distribution)
+
+---
+
+## 14. Alpha Sweep — Negative Result (Raw Z-Score Vectors)
+
+### Setup
+3 profiles × 11 alphas (0, 0.5, 1, 2, 3, 5, 7, 10, 15, 20, 30) × 30 prompts on Qwen3-VL-8B
+
+### Results (connectome_sarcasm profile)
+- **α=0-7**: Normal assistant output, <2 sarcasm markers (below threshold)
+- **α=10**: Model produces **gibberish** ("oh Oh ohOh oh OMG oh oh..."). Complete coherence collapse.
+- **α=15+**: Continued gibberish
+
+### Conclusion
+Raw z-score vectors from contrastive probing CANNOT be used for direct activation addition. They capture WHERE sarcasm is encoded but not HOW to inject it coherently. At useful strengths they destroy the model. This is consistent with:
+- SVD showing k80=10 (single vectors capture <35% variance)
+- 99.5% of neurons being hub neurons (steering any neuron affects everything)
+- Prior project history (v1-v4 activation vectors all failed on Qwen)
+
+The weighted ActAdd approach (Section 7, 56% sarcasm) succeeded because it used connectome-informed LAYER weights, not because the underlying direction was better. Magnitude control per layer is essential.
+
+**Key steering rules** (updated with patching + connectome data):
+1. Never touch L0 or L6 — they're universally critical (causal ablation)
+2. Never target dims 1838, 2421, 2276, 2202 — universal backbone (gradient attribution)
+3. **Sarcasm: inject at L3 + L23 (patching peaks), suppress L17 (anti-sarcasm)**
+4. Identity steering at L26-L34 using dim 994 as anchor
+5. Formality is cleanly separable at L9-L19 (mid-network), L14 is surgical for brevity
+6. Math has very few exclusive neurons — protect rather than steer around it
+7. Authority is the ONLY late-layer concept (L21 peak) — can be added without interfering

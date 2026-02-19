@@ -1,0 +1,1377 @@
+{
+  "994": {
+    "label": "Identity (Qwen name neuron, z=-13.96 at L9)",
+    "profile": {
+      "Identity": {
+        "peak_z": -4.707751750946045,
+        "peak_layer": 0,
+        "mean_abs_z": 1.4054405689239502,
+        "n_sig_layers": 6
+      },
+      "Emotion: Joy": {
+        "peak_z": 3.539336919784546,
+        "peak_layer": 19,
+        "mean_abs_z": 1.4241390228271484,
+        "n_sig_layers": 10
+      },
+      "Emotion: Sadness": {
+        "peak_z": -4.885901927947998,
+        "peak_layer": 11,
+        "mean_abs_z": 1.1721694469451904,
+        "n_sig_layers": 8
+      },
+      "Emotion: Anger": {
+        "peak_z": -7.448441505432129,
+        "peak_layer": 35,
+        "mean_abs_z": 3.1085824966430664,
+        "n_sig_layers": 30
+      },
+      "Emotion: Fear": {
+        "peak_z": -7.553376197814941,
+        "peak_layer": 15,
+        "mean_abs_z": 3.5513806343078613,
+        "n_sig_layers": 34
+      },
+      "Tone: Formal": {
+        "peak_z": 9.096755981445312,
+        "peak_layer": 14,
+        "mean_abs_z": 3.516451120376587,
+        "n_sig_layers": 20
+      },
+      "Tone: Sarcastic": {
+        "peak_z": -6.850578308105469,
+        "peak_layer": 9,
+        "mean_abs_z": 2.8514864444732666,
+        "n_sig_layers": 28
+      },
+      "Tone: Polite": {
+        "peak_z": -5.902864933013916,
+        "peak_layer": 0,
+        "mean_abs_z": 2.117190361022949,
+        "n_sig_layers": 21
+      },
+      "Domain: Math": {
+        "peak_z": 5.670190811157227,
+        "peak_layer": 20,
+        "mean_abs_z": 2.479167938232422,
+        "n_sig_layers": 23
+      },
+      "Domain: Science": {
+        "peak_z": 6.061561584472656,
+        "peak_layer": 19,
+        "mean_abs_z": 3.7758374214172363,
+        "n_sig_layers": 27
+      },
+      "Domain: Code": {
+        "peak_z": 8.889641761779785,
+        "peak_layer": 19,
+        "mean_abs_z": 5.0474114418029785,
+        "n_sig_layers": 34
+      },
+      "Domain: History": {
+        "peak_z": -6.729934215545654,
+        "peak_layer": 0,
+        "mean_abs_z": 3.3115837574005127,
+        "n_sig_layers": 25
+      },
+      "Reasoning: Analytical": {
+        "peak_z": 7.039462566375732,
+        "peak_layer": 20,
+        "mean_abs_z": 3.8995115756988525,
+        "n_sig_layers": 24
+      },
+      "Reasoning: Certainty": {
+        "peak_z": 3.8592963218688965,
+        "peak_layer": 11,
+        "mean_abs_z": 1.5402817726135254,
+        "n_sig_layers": 12
+      },
+      "Safety: Refusal": {
+        "peak_z": 7.741065502166748,
+        "peak_layer": 0,
+        "mean_abs_z": 4.312774181365967,
+        "n_sig_layers": 32
+      },
+      "Role: Teacher": {
+        "peak_z": 7.274082183837891,
+        "peak_layer": 16,
+        "mean_abs_z": 4.739379405975342,
+        "n_sig_layers": 35
+      },
+      "Role: Authority": {
+        "peak_z": -5.678007125854492,
+        "peak_layer": 6,
+        "mean_abs_z": 2.5321080684661865,
+        "n_sig_layers": 21
+      },
+      "Verbosity: Brief": {
+        "peak_z": -15.112744331359863,
+        "peak_layer": 18,
+        "mean_abs_z": 7.636322975158691,
+        "n_sig_layers": 36
+      },
+      "Language: EN vs CN": {
+        "peak_z": -4.555141448974609,
+        "peak_layer": 26,
+        "mean_abs_z": 2.1894562244415283,
+        "n_sig_layers": 20
+      },
+      "Sentiment: Positive": {
+        "peak_z": -4.2700581550598145,
+        "peak_layer": 11,
+        "mean_abs_z": 2.2502851486206055,
+        "n_sig_layers": 22
+      }
+    }
+  },
+  "270": {
+    "label": "Identity secondary (avg |z|=7.68)",
+    "profile": {
+      "Identity": {
+        "peak_z": 5.239785671234131,
+        "peak_layer": 4,
+        "mean_abs_z": 1.4915294647216797,
+        "n_sig_layers": 9
+      },
+      "Emotion: Joy": {
+        "peak_z": -10.855902671813965,
+        "peak_layer": 35,
+        "mean_abs_z": 1.5609970092773438,
+        "n_sig_layers": 9
+      },
+      "Emotion: Sadness": {
+        "peak_z": -6.1324262619018555,
+        "peak_layer": 15,
+        "mean_abs_z": 2.3009746074676514,
+        "n_sig_layers": 17
+      },
+      "Emotion: Anger": {
+        "peak_z": 8.064903259277344,
+        "peak_layer": 0,
+        "mean_abs_z": 3.141608238220215,
+        "n_sig_layers": 27
+      },
+      "Emotion: Fear": {
+        "peak_z": -6.314082145690918,
+        "peak_layer": 13,
+        "mean_abs_z": 2.7468903064727783,
+        "n_sig_layers": 25
+      },
+      "Tone: Formal": {
+        "peak_z": -7.226922512054443,
+        "peak_layer": 21,
+        "mean_abs_z": 2.5086495876312256,
+        "n_sig_layers": 21
+      },
+      "Tone: Sarcastic": {
+        "peak_z": 15.021282196044922,
+        "peak_layer": 0,
+        "mean_abs_z": 3.5872087478637695,
+        "n_sig_layers": 29
+      },
+      "Tone: Polite": {
+        "peak_z": 4.817202568054199,
+        "peak_layer": 12,
+        "mean_abs_z": 1.4772143363952637,
+        "n_sig_layers": 12
+      },
+      "Domain: Math": {
+        "peak_z": 6.0323076248168945,
+        "peak_layer": 4,
+        "mean_abs_z": 1.960723876953125,
+        "n_sig_layers": 15
+      },
+      "Domain: Science": {
+        "peak_z": -4.530371189117432,
+        "peak_layer": 2,
+        "mean_abs_z": 1.195116639137268,
+        "n_sig_layers": 6
+      },
+      "Domain: Code": {
+        "peak_z": 7.836512565612793,
+        "peak_layer": 12,
+        "mean_abs_z": 3.78708815574646,
+        "n_sig_layers": 32
+      },
+      "Domain: History": {
+        "peak_z": 4.237401485443115,
+        "peak_layer": 3,
+        "mean_abs_z": 1.6909680366516113,
+        "n_sig_layers": 12
+      },
+      "Reasoning: Analytical": {
+        "peak_z": -3.817660331726074,
+        "peak_layer": 8,
+        "mean_abs_z": 1.2709635496139526,
+        "n_sig_layers": 7
+      },
+      "Reasoning: Certainty": {
+        "peak_z": 9.28296947479248,
+        "peak_layer": 16,
+        "mean_abs_z": 2.686753034591675,
+        "n_sig_layers": 17
+      },
+      "Safety: Refusal": {
+        "peak_z": -10.039628982543945,
+        "peak_layer": 0,
+        "mean_abs_z": 1.6509733200073242,
+        "n_sig_layers": 8
+      },
+      "Role: Teacher": {
+        "peak_z": -7.660940647125244,
+        "peak_layer": 21,
+        "mean_abs_z": 3.7098541259765625,
+        "n_sig_layers": 31
+      },
+      "Role: Authority": {
+        "peak_z": -7.452646732330322,
+        "peak_layer": 0,
+        "mean_abs_z": 2.4732987880706787,
+        "n_sig_layers": 20
+      },
+      "Verbosity: Brief": {
+        "peak_z": 9.247017860412598,
+        "peak_layer": 21,
+        "mean_abs_z": 4.3642258644104,
+        "n_sig_layers": 28
+      },
+      "Language: EN vs CN": {
+        "peak_z": 15.436391830444336,
+        "peak_layer": 3,
+        "mean_abs_z": 4.908710956573486,
+        "n_sig_layers": 21
+      },
+      "Sentiment: Positive": {
+        "peak_z": -5.28561544418335,
+        "peak_layer": 35,
+        "mean_abs_z": 2.2998361587524414,
+        "n_sig_layers": 21
+      }
+    }
+  },
+  "1924": {
+    "label": "Sarcasm (only cross-layer sarcasm neuron, avg |z|=2.14)",
+    "profile": {
+      "Identity": {
+        "peak_z": -4.094642639160156,
+        "peak_layer": 2,
+        "mean_abs_z": 1.5405972003936768,
+        "n_sig_layers": 9
+      },
+      "Emotion: Joy": {
+        "peak_z": 8.87431812286377,
+        "peak_layer": 0,
+        "mean_abs_z": 2.7255430221557617,
+        "n_sig_layers": 25
+      },
+      "Emotion: Sadness": {
+        "peak_z": 10.631644248962402,
+        "peak_layer": 0,
+        "mean_abs_z": 3.050089120864868,
+        "n_sig_layers": 29
+      },
+      "Emotion: Anger": {
+        "peak_z": 3.961087465286255,
+        "peak_layer": 0,
+        "mean_abs_z": 2.275669574737549,
+        "n_sig_layers": 20
+      },
+      "Emotion: Fear": {
+        "peak_z": -2.568239688873291,
+        "peak_layer": 3,
+        "mean_abs_z": 1.1103696823120117,
+        "n_sig_layers": 2
+      },
+      "Tone: Formal": {
+        "peak_z": -18.97080421447754,
+        "peak_layer": 0,
+        "mean_abs_z": 5.482666492462158,
+        "n_sig_layers": 36
+      },
+      "Tone: Sarcastic": {
+        "peak_z": 7.4662675857543945,
+        "peak_layer": 9,
+        "mean_abs_z": 3.1214091777801514,
+        "n_sig_layers": 24
+      },
+      "Tone: Polite": {
+        "peak_z": 8.603089332580566,
+        "peak_layer": 0,
+        "mean_abs_z": 1.8482818603515625,
+        "n_sig_layers": 11
+      },
+      "Domain: Math": {
+        "peak_z": -10.245156288146973,
+        "peak_layer": 0,
+        "mean_abs_z": 6.0275983810424805,
+        "n_sig_layers": 36
+      },
+      "Domain: Science": {
+        "peak_z": -11.259203910827637,
+        "peak_layer": 0,
+        "mean_abs_z": 4.859155654907227,
+        "n_sig_layers": 36
+      },
+      "Domain: Code": {
+        "peak_z": -16.982582092285156,
+        "peak_layer": 0,
+        "mean_abs_z": 5.1443586349487305,
+        "n_sig_layers": 36
+      },
+      "Domain: History": {
+        "peak_z": -17.11860466003418,
+        "peak_layer": 0,
+        "mean_abs_z": 3.797060966491699,
+        "n_sig_layers": 34
+      },
+      "Reasoning: Analytical": {
+        "peak_z": -7.777668476104736,
+        "peak_layer": 9,
+        "mean_abs_z": 4.346103668212891,
+        "n_sig_layers": 36
+      },
+      "Reasoning: Certainty": {
+        "peak_z": 6.89669132232666,
+        "peak_layer": 1,
+        "mean_abs_z": 2.7258682250976562,
+        "n_sig_layers": 20
+      },
+      "Safety: Refusal": {
+        "peak_z": -5.8559250831604,
+        "peak_layer": 2,
+        "mean_abs_z": 1.6944653987884521,
+        "n_sig_layers": 6
+      },
+      "Role: Teacher": {
+        "peak_z": -6.186147689819336,
+        "peak_layer": 0,
+        "mean_abs_z": 1.6856578588485718,
+        "n_sig_layers": 10
+      },
+      "Role: Authority": {
+        "peak_z": -10.375861167907715,
+        "peak_layer": 1,
+        "mean_abs_z": 3.0453641414642334,
+        "n_sig_layers": 26
+      },
+      "Verbosity: Brief": {
+        "peak_z": -7.011122703552246,
+        "peak_layer": 19,
+        "mean_abs_z": 2.603794574737549,
+        "n_sig_layers": 21
+      },
+      "Language: EN vs CN": {
+        "peak_z": 15.1187162399292,
+        "peak_layer": 1,
+        "mean_abs_z": 3.244267463684082,
+        "n_sig_layers": 17
+      },
+      "Sentiment: Positive": {
+        "peak_z": 4.44327449798584,
+        "peak_layer": 0,
+        "mean_abs_z": 1.4640860557556152,
+        "n_sig_layers": 9
+      }
+    }
+  },
+  "368": {
+    "label": "Name relay (97% of layers)",
+    "profile": {
+      "Identity": {
+        "peak_z": -4.683281898498535,
+        "peak_layer": 16,
+        "mean_abs_z": 1.797932505607605,
+        "n_sig_layers": 13
+      },
+      "Emotion: Joy": {
+        "peak_z": -5.612889766693115,
+        "peak_layer": 10,
+        "mean_abs_z": 1.776249647140503,
+        "n_sig_layers": 8
+      },
+      "Emotion: Sadness": {
+        "peak_z": -2.8149349689483643,
+        "peak_layer": 8,
+        "mean_abs_z": 0.9414078593254089,
+        "n_sig_layers": 7
+      },
+      "Emotion: Anger": {
+        "peak_z": -1.4576514959335327,
+        "peak_layer": 32,
+        "mean_abs_z": 0.7437683939933777,
+        "n_sig_layers": 0
+      },
+      "Emotion: Fear": {
+        "peak_z": -2.929626941680908,
+        "peak_layer": 34,
+        "mean_abs_z": 1.3692312240600586,
+        "n_sig_layers": 10
+      },
+      "Tone: Formal": {
+        "peak_z": 6.211977005004883,
+        "peak_layer": 14,
+        "mean_abs_z": 2.656151533126831,
+        "n_sig_layers": 23
+      },
+      "Tone: Sarcastic": {
+        "peak_z": 2.2798736095428467,
+        "peak_layer": 10,
+        "mean_abs_z": 1.1707110404968262,
+        "n_sig_layers": 3
+      },
+      "Tone: Polite": {
+        "peak_z": 4.631779193878174,
+        "peak_layer": 14,
+        "mean_abs_z": 0.9394792914390564,
+        "n_sig_layers": 4
+      },
+      "Domain: Math": {
+        "peak_z": 4.843245983123779,
+        "peak_layer": 0,
+        "mean_abs_z": 1.1653556823730469,
+        "n_sig_layers": 8
+      },
+      "Domain: Science": {
+        "peak_z": 3.6411378383636475,
+        "peak_layer": 9,
+        "mean_abs_z": 1.3346924781799316,
+        "n_sig_layers": 9
+      },
+      "Domain: Code": {
+        "peak_z": -2.7729320526123047,
+        "peak_layer": 5,
+        "mean_abs_z": 0.903532862663269,
+        "n_sig_layers": 4
+      },
+      "Domain: History": {
+        "peak_z": 4.452905178070068,
+        "peak_layer": 0,
+        "mean_abs_z": 1.2436892986297607,
+        "n_sig_layers": 4
+      },
+      "Reasoning: Analytical": {
+        "peak_z": 6.759769439697266,
+        "peak_layer": 0,
+        "mean_abs_z": 1.7371028661727905,
+        "n_sig_layers": 11
+      },
+      "Reasoning: Certainty": {
+        "peak_z": 4.206737041473389,
+        "peak_layer": 0,
+        "mean_abs_z": 1.3525797128677368,
+        "n_sig_layers": 9
+      },
+      "Safety: Refusal": {
+        "peak_z": 5.835054874420166,
+        "peak_layer": 6,
+        "mean_abs_z": 2.094975471496582,
+        "n_sig_layers": 15
+      },
+      "Role: Teacher": {
+        "peak_z": 2.8090999126434326,
+        "peak_layer": 15,
+        "mean_abs_z": 1.751320481300354,
+        "n_sig_layers": 16
+      },
+      "Role: Authority": {
+        "peak_z": 6.619629859924316,
+        "peak_layer": 24,
+        "mean_abs_z": 2.771045684814453,
+        "n_sig_layers": 19
+      },
+      "Verbosity: Brief": {
+        "peak_z": -8.51144027709961,
+        "peak_layer": 15,
+        "mean_abs_z": 2.833383560180664,
+        "n_sig_layers": 14
+      },
+      "Language: EN vs CN": {
+        "peak_z": 4.325368404388428,
+        "peak_layer": 2,
+        "mean_abs_z": 1.9983018636703491,
+        "n_sig_layers": 17
+      },
+      "Sentiment: Positive": {
+        "peak_z": -3.1413772106170654,
+        "peak_layer": 34,
+        "mean_abs_z": 0.8600708842277527,
+        "n_sig_layers": 4
+      }
+    }
+  },
+  "98": {
+    "label": "Name relay (89% of layers)",
+    "profile": {
+      "Identity": {
+        "peak_z": -7.369998931884766,
+        "peak_layer": 8,
+        "mean_abs_z": 2.249312400817871,
+        "n_sig_layers": 13
+      },
+      "Emotion: Joy": {
+        "peak_z": -6.914674282073975,
+        "peak_layer": 35,
+        "mean_abs_z": 1.7950000762939453,
+        "n_sig_layers": 13
+      },
+      "Emotion: Sadness": {
+        "peak_z": -5.86814546585083,
+        "peak_layer": 14,
+        "mean_abs_z": 1.547638177871704,
+        "n_sig_layers": 6
+      },
+      "Emotion: Anger": {
+        "peak_z": 5.87885046005249,
+        "peak_layer": 15,
+        "mean_abs_z": 2.852431297302246,
+        "n_sig_layers": 20
+      },
+      "Emotion: Fear": {
+        "peak_z": 4.048364639282227,
+        "peak_layer": 21,
+        "mean_abs_z": 2.4506797790527344,
+        "n_sig_layers": 25
+      },
+      "Tone: Formal": {
+        "peak_z": 8.768027305603027,
+        "peak_layer": 0,
+        "mean_abs_z": 2.4956843852996826,
+        "n_sig_layers": 23
+      },
+      "Tone: Sarcastic": {
+        "peak_z": -11.770832061767578,
+        "peak_layer": 0,
+        "mean_abs_z": 1.6182167530059814,
+        "n_sig_layers": 9
+      },
+      "Tone: Polite": {
+        "peak_z": -6.423118591308594,
+        "peak_layer": 0,
+        "mean_abs_z": 1.8867765665054321,
+        "n_sig_layers": 9
+      },
+      "Domain: Math": {
+        "peak_z": -8.522120475769043,
+        "peak_layer": 0,
+        "mean_abs_z": 2.1995742321014404,
+        "n_sig_layers": 11
+      },
+      "Domain: Science": {
+        "peak_z": -5.731538772583008,
+        "peak_layer": 18,
+        "mean_abs_z": 1.5298892259597778,
+        "n_sig_layers": 9
+      },
+      "Domain: Code": {
+        "peak_z": 7.4925994873046875,
+        "peak_layer": 6,
+        "mean_abs_z": 1.8656425476074219,
+        "n_sig_layers": 15
+      },
+      "Domain: History": {
+        "peak_z": -4.365345001220703,
+        "peak_layer": 0,
+        "mean_abs_z": 1.5395299196243286,
+        "n_sig_layers": 10
+      },
+      "Reasoning: Analytical": {
+        "peak_z": 5.164628028869629,
+        "peak_layer": 4,
+        "mean_abs_z": 1.6176466941833496,
+        "n_sig_layers": 11
+      },
+      "Reasoning: Certainty": {
+        "peak_z": -4.937837600708008,
+        "peak_layer": 4,
+        "mean_abs_z": 1.6893359422683716,
+        "n_sig_layers": 10
+      },
+      "Safety: Refusal": {
+        "peak_z": -7.066302299499512,
+        "peak_layer": 10,
+        "mean_abs_z": 2.7807092666625977,
+        "n_sig_layers": 23
+      },
+      "Role: Teacher": {
+        "peak_z": -4.423619747161865,
+        "peak_layer": 15,
+        "mean_abs_z": 2.017831325531006,
+        "n_sig_layers": 15
+      },
+      "Role: Authority": {
+        "peak_z": -4.934916019439697,
+        "peak_layer": 8,
+        "mean_abs_z": 1.904550313949585,
+        "n_sig_layers": 15
+      },
+      "Verbosity: Brief": {
+        "peak_z": 10.1842041015625,
+        "peak_layer": 17,
+        "mean_abs_z": 3.8378591537475586,
+        "n_sig_layers": 24
+      },
+      "Language: EN vs CN": {
+        "peak_z": 7.8993239402771,
+        "peak_layer": 6,
+        "mean_abs_z": 3.233179807662964,
+        "n_sig_layers": 26
+      },
+      "Sentiment: Positive": {
+        "peak_z": -6.520940780639648,
+        "peak_layer": 5,
+        "mean_abs_z": 1.6571002006530762,
+        "n_sig_layers": 12
+      }
+    }
+  },
+  "3522": {
+    "label": "Name relay (86% of layers)",
+    "profile": {
+      "Identity": {
+        "peak_z": -6.171530723571777,
+        "peak_layer": 7,
+        "mean_abs_z": 2.08591365814209,
+        "n_sig_layers": 15
+      },
+      "Emotion: Joy": {
+        "peak_z": -7.252861022949219,
+        "peak_layer": 35,
+        "mean_abs_z": 1.9696439504623413,
+        "n_sig_layers": 14
+      },
+      "Emotion: Sadness": {
+        "peak_z": 4.40653657913208,
+        "peak_layer": 16,
+        "mean_abs_z": 1.8354517221450806,
+        "n_sig_layers": 14
+      },
+      "Emotion: Anger": {
+        "peak_z": -7.299401760101318,
+        "peak_layer": 8,
+        "mean_abs_z": 2.7103841304779053,
+        "n_sig_layers": 19
+      },
+      "Emotion: Fear": {
+        "peak_z": -7.820493698120117,
+        "peak_layer": 10,
+        "mean_abs_z": 1.9140510559082031,
+        "n_sig_layers": 8
+      },
+      "Tone: Formal": {
+        "peak_z": -4.745845317840576,
+        "peak_layer": 19,
+        "mean_abs_z": 1.5643649101257324,
+        "n_sig_layers": 12
+      },
+      "Tone: Sarcastic": {
+        "peak_z": -8.37632942199707,
+        "peak_layer": 6,
+        "mean_abs_z": 3.199782371520996,
+        "n_sig_layers": 32
+      },
+      "Tone: Polite": {
+        "peak_z": 5.909276008605957,
+        "peak_layer": 0,
+        "mean_abs_z": 1.7393685579299927,
+        "n_sig_layers": 13
+      },
+      "Domain: Math": {
+        "peak_z": -8.18416976928711,
+        "peak_layer": 18,
+        "mean_abs_z": 3.6948022842407227,
+        "n_sig_layers": 32
+      },
+      "Domain: Science": {
+        "peak_z": -10.064380645751953,
+        "peak_layer": 1,
+        "mean_abs_z": 3.038321018218994,
+        "n_sig_layers": 23
+      },
+      "Domain: Code": {
+        "peak_z": -4.908492565155029,
+        "peak_layer": 18,
+        "mean_abs_z": 2.3138911724090576,
+        "n_sig_layers": 22
+      },
+      "Domain: History": {
+        "peak_z": -5.400981426239014,
+        "peak_layer": 2,
+        "mean_abs_z": 2.4338247776031494,
+        "n_sig_layers": 20
+      },
+      "Reasoning: Analytical": {
+        "peak_z": -6.2283406257629395,
+        "peak_layer": 16,
+        "mean_abs_z": 3.150055408477783,
+        "n_sig_layers": 28
+      },
+      "Reasoning: Certainty": {
+        "peak_z": -5.536293029785156,
+        "peak_layer": 18,
+        "mean_abs_z": 1.7779393196105957,
+        "n_sig_layers": 11
+      },
+      "Safety: Refusal": {
+        "peak_z": 5.786450386047363,
+        "peak_layer": 7,
+        "mean_abs_z": 1.86732017993927,
+        "n_sig_layers": 14
+      },
+      "Role: Teacher": {
+        "peak_z": 6.382582664489746,
+        "peak_layer": 0,
+        "mean_abs_z": 2.240452527999878,
+        "n_sig_layers": 18
+      },
+      "Role: Authority": {
+        "peak_z": -3.858598470687866,
+        "peak_layer": 6,
+        "mean_abs_z": 1.5414996147155762,
+        "n_sig_layers": 8
+      },
+      "Verbosity: Brief": {
+        "peak_z": 13.43223762512207,
+        "peak_layer": 16,
+        "mean_abs_z": 3.0370731353759766,
+        "n_sig_layers": 15
+      },
+      "Language: EN vs CN": {
+        "peak_z": -5.595675945281982,
+        "peak_layer": 19,
+        "mean_abs_z": 2.5090694427490234,
+        "n_sig_layers": 23
+      },
+      "Sentiment: Positive": {
+        "peak_z": 4.166993618011475,
+        "peak_layer": 10,
+        "mean_abs_z": 1.3382230997085571,
+        "n_sig_layers": 11
+      }
+    }
+  },
+  "208": {
+    "label": "Name relay (78% of layers)",
+    "profile": {
+      "Identity": {
+        "peak_z": -4.07354211807251,
+        "peak_layer": 7,
+        "mean_abs_z": 1.1450705528259277,
+        "n_sig_layers": 7
+      },
+      "Emotion: Joy": {
+        "peak_z": -7.015271186828613,
+        "peak_layer": 8,
+        "mean_abs_z": 1.7251399755477905,
+        "n_sig_layers": 11
+      },
+      "Emotion: Sadness": {
+        "peak_z": 5.556008338928223,
+        "peak_layer": 15,
+        "mean_abs_z": 1.442402720451355,
+        "n_sig_layers": 6
+      },
+      "Emotion: Anger": {
+        "peak_z": 2.4939048290252686,
+        "peak_layer": 4,
+        "mean_abs_z": 1.1937754154205322,
+        "n_sig_layers": 6
+      },
+      "Emotion: Fear": {
+        "peak_z": -2.9823763370513916,
+        "peak_layer": 5,
+        "mean_abs_z": 1.4563466310501099,
+        "n_sig_layers": 8
+      },
+      "Tone: Formal": {
+        "peak_z": 4.534941673278809,
+        "peak_layer": 14,
+        "mean_abs_z": 1.84201180934906,
+        "n_sig_layers": 15
+      },
+      "Tone: Sarcastic": {
+        "peak_z": 5.844993591308594,
+        "peak_layer": 2,
+        "mean_abs_z": 1.5068137645721436,
+        "n_sig_layers": 8
+      },
+      "Tone: Polite": {
+        "peak_z": 8.376749038696289,
+        "peak_layer": 1,
+        "mean_abs_z": 1.8968443870544434,
+        "n_sig_layers": 15
+      },
+      "Domain: Math": {
+        "peak_z": -4.401010036468506,
+        "peak_layer": 7,
+        "mean_abs_z": 1.807088017463684,
+        "n_sig_layers": 15
+      },
+      "Domain: Science": {
+        "peak_z": 7.835535526275635,
+        "peak_layer": 20,
+        "mean_abs_z": 3.9861488342285156,
+        "n_sig_layers": 28
+      },
+      "Domain: Code": {
+        "peak_z": 3.657240390777588,
+        "peak_layer": 25,
+        "mean_abs_z": 1.5959974527359009,
+        "n_sig_layers": 11
+      },
+      "Domain: History": {
+        "peak_z": -5.464528560638428,
+        "peak_layer": 8,
+        "mean_abs_z": 1.9325529336929321,
+        "n_sig_layers": 14
+      },
+      "Reasoning: Analytical": {
+        "peak_z": 6.29022741317749,
+        "peak_layer": 10,
+        "mean_abs_z": 3.0222222805023193,
+        "n_sig_layers": 28
+      },
+      "Reasoning: Certainty": {
+        "peak_z": 4.508236408233643,
+        "peak_layer": 0,
+        "mean_abs_z": 1.2943511009216309,
+        "n_sig_layers": 9
+      },
+      "Safety: Refusal": {
+        "peak_z": 6.124929904937744,
+        "peak_layer": 16,
+        "mean_abs_z": 1.9122655391693115,
+        "n_sig_layers": 14
+      },
+      "Role: Teacher": {
+        "peak_z": 5.2542243003845215,
+        "peak_layer": 16,
+        "mean_abs_z": 1.8516336679458618,
+        "n_sig_layers": 14
+      },
+      "Role: Authority": {
+        "peak_z": 6.292971611022949,
+        "peak_layer": 20,
+        "mean_abs_z": 2.2655022144317627,
+        "n_sig_layers": 16
+      },
+      "Verbosity: Brief": {
+        "peak_z": -10.326472282409668,
+        "peak_layer": 15,
+        "mean_abs_z": 3.5668792724609375,
+        "n_sig_layers": 21
+      },
+      "Language: EN vs CN": {
+        "peak_z": 6.304431438446045,
+        "peak_layer": 1,
+        "mean_abs_z": 2.3678646087646484,
+        "n_sig_layers": 22
+      },
+      "Sentiment: Positive": {
+        "peak_z": 5.034176349639893,
+        "peak_layer": 5,
+        "mean_abs_z": 1.6171987056732178,
+        "n_sig_layers": 10
+      }
+    }
+  },
+  "3140": {
+    "label": "Name relay (69% of layers)",
+    "profile": {
+      "Identity": {
+        "peak_z": -4.072234153747559,
+        "peak_layer": 1,
+        "mean_abs_z": 1.4428828954696655,
+        "n_sig_layers": 11
+      },
+      "Emotion: Joy": {
+        "peak_z": -6.8144636154174805,
+        "peak_layer": 12,
+        "mean_abs_z": 2.691648006439209,
+        "n_sig_layers": 20
+      },
+      "Emotion: Sadness": {
+        "peak_z": -8.330851554870605,
+        "peak_layer": 16,
+        "mean_abs_z": 3.675541400909424,
+        "n_sig_layers": 28
+      },
+      "Emotion: Anger": {
+        "peak_z": 7.090721130371094,
+        "peak_layer": 19,
+        "mean_abs_z": 1.9792840480804443,
+        "n_sig_layers": 13
+      },
+      "Emotion: Fear": {
+        "peak_z": -5.008349895477295,
+        "peak_layer": 11,
+        "mean_abs_z": 1.604644536972046,
+        "n_sig_layers": 13
+      },
+      "Tone: Formal": {
+        "peak_z": -9.116686820983887,
+        "peak_layer": 17,
+        "mean_abs_z": 3.172001838684082,
+        "n_sig_layers": 19
+      },
+      "Tone: Sarcastic": {
+        "peak_z": -7.9401679039001465,
+        "peak_layer": 3,
+        "mean_abs_z": 2.128160238265991,
+        "n_sig_layers": 16
+      },
+      "Tone: Polite": {
+        "peak_z": -6.710211277008057,
+        "peak_layer": 16,
+        "mean_abs_z": 2.7800605297088623,
+        "n_sig_layers": 27
+      },
+      "Domain: Math": {
+        "peak_z": -5.974576950073242,
+        "peak_layer": 0,
+        "mean_abs_z": 1.8414052724838257,
+        "n_sig_layers": 12
+      },
+      "Domain: Science": {
+        "peak_z": -6.339447021484375,
+        "peak_layer": 10,
+        "mean_abs_z": 1.7742691040039062,
+        "n_sig_layers": 17
+      },
+      "Domain: Code": {
+        "peak_z": 2.665969133377075,
+        "peak_layer": 5,
+        "mean_abs_z": 1.2427544593811035,
+        "n_sig_layers": 7
+      },
+      "Domain: History": {
+        "peak_z": -6.589239597320557,
+        "peak_layer": 3,
+        "mean_abs_z": 2.4198575019836426,
+        "n_sig_layers": 16
+      },
+      "Reasoning: Analytical": {
+        "peak_z": -5.411456108093262,
+        "peak_layer": 18,
+        "mean_abs_z": 1.9699293375015259,
+        "n_sig_layers": 17
+      },
+      "Reasoning: Certainty": {
+        "peak_z": -4.544846534729004,
+        "peak_layer": 10,
+        "mean_abs_z": 1.1082768440246582,
+        "n_sig_layers": 7
+      },
+      "Safety: Refusal": {
+        "peak_z": 10.67061710357666,
+        "peak_layer": 6,
+        "mean_abs_z": 1.869598388671875,
+        "n_sig_layers": 10
+      },
+      "Role: Teacher": {
+        "peak_z": 5.244778156280518,
+        "peak_layer": 3,
+        "mean_abs_z": 1.4469826221466064,
+        "n_sig_layers": 10
+      },
+      "Role: Authority": {
+        "peak_z": 6.276232719421387,
+        "peak_layer": 26,
+        "mean_abs_z": 2.6593663692474365,
+        "n_sig_layers": 21
+      },
+      "Verbosity: Brief": {
+        "peak_z": 17.988082885742188,
+        "peak_layer": 14,
+        "mean_abs_z": 3.5384409427642822,
+        "n_sig_layers": 23
+      },
+      "Language: EN vs CN": {
+        "peak_z": 5.516026496887207,
+        "peak_layer": 6,
+        "mean_abs_z": 1.769364833831787,
+        "n_sig_layers": 11
+      },
+      "Sentiment: Positive": {
+        "peak_z": 5.436034202575684,
+        "peak_layer": 1,
+        "mean_abs_z": 1.9299068450927734,
+        "n_sig_layers": 16
+      }
+    }
+  },
+  "3828": {
+    "label": "Name early-layer relay (L0-5)",
+    "profile": {
+      "Identity": {
+        "peak_z": -3.8720791339874268,
+        "peak_layer": 10,
+        "mean_abs_z": 1.353806972503662,
+        "n_sig_layers": 7
+      },
+      "Emotion: Joy": {
+        "peak_z": -3.127955675125122,
+        "peak_layer": 13,
+        "mean_abs_z": 0.9318812489509583,
+        "n_sig_layers": 4
+      },
+      "Emotion: Sadness": {
+        "peak_z": 3.886406898498535,
+        "peak_layer": 10,
+        "mean_abs_z": 1.009000301361084,
+        "n_sig_layers": 5
+      },
+      "Emotion: Anger": {
+        "peak_z": 3.575880765914917,
+        "peak_layer": 18,
+        "mean_abs_z": 1.259599208831787,
+        "n_sig_layers": 7
+      },
+      "Emotion: Fear": {
+        "peak_z": -4.479024410247803,
+        "peak_layer": 15,
+        "mean_abs_z": 1.1394375562667847,
+        "n_sig_layers": 5
+      },
+      "Tone: Formal": {
+        "peak_z": -3.41027569770813,
+        "peak_layer": 6,
+        "mean_abs_z": 1.2711548805236816,
+        "n_sig_layers": 9
+      },
+      "Tone: Sarcastic": {
+        "peak_z": -3.0414271354675293,
+        "peak_layer": 9,
+        "mean_abs_z": 1.041717529296875,
+        "n_sig_layers": 6
+      },
+      "Tone: Polite": {
+        "peak_z": -6.967813968658447,
+        "peak_layer": 15,
+        "mean_abs_z": 1.2994847297668457,
+        "n_sig_layers": 7
+      },
+      "Domain: Math": {
+        "peak_z": 3.7023138999938965,
+        "peak_layer": 11,
+        "mean_abs_z": 1.301561951637268,
+        "n_sig_layers": 7
+      },
+      "Domain: Science": {
+        "peak_z": 6.999277114868164,
+        "peak_layer": 13,
+        "mean_abs_z": 1.369288444519043,
+        "n_sig_layers": 6
+      },
+      "Domain: Code": {
+        "peak_z": 5.464288711547852,
+        "peak_layer": 15,
+        "mean_abs_z": 1.8282612562179565,
+        "n_sig_layers": 11
+      },
+      "Domain: History": {
+        "peak_z": 2.535353422164917,
+        "peak_layer": 19,
+        "mean_abs_z": 1.0326400995254517,
+        "n_sig_layers": 5
+      },
+      "Reasoning: Analytical": {
+        "peak_z": 3.1566483974456787,
+        "peak_layer": 18,
+        "mean_abs_z": 0.9869797229766846,
+        "n_sig_layers": 5
+      },
+      "Reasoning: Certainty": {
+        "peak_z": -5.484549522399902,
+        "peak_layer": 0,
+        "mean_abs_z": 2.0857911109924316,
+        "n_sig_layers": 16
+      },
+      "Safety: Refusal": {
+        "peak_z": -3.735363245010376,
+        "peak_layer": 7,
+        "mean_abs_z": 1.5436278581619263,
+        "n_sig_layers": 7
+      },
+      "Role: Teacher": {
+        "peak_z": 4.5418829917907715,
+        "peak_layer": 22,
+        "mean_abs_z": 1.757678747177124,
+        "n_sig_layers": 11
+      },
+      "Role: Authority": {
+        "peak_z": -3.3172740936279297,
+        "peak_layer": 10,
+        "mean_abs_z": 1.3374561071395874,
+        "n_sig_layers": 7
+      },
+      "Verbosity: Brief": {
+        "peak_z": -4.66643762588501,
+        "peak_layer": 11,
+        "mean_abs_z": 1.6014022827148438,
+        "n_sig_layers": 13
+      },
+      "Language: EN vs CN": {
+        "peak_z": 4.724077224731445,
+        "peak_layer": 0,
+        "mean_abs_z": 2.207587957382202,
+        "n_sig_layers": 21
+      },
+      "Sentiment: Positive": {
+        "peak_z": -3.1880931854248047,
+        "peak_layer": 11,
+        "mean_abs_z": 1.121079683303833,
+        "n_sig_layers": 6
+      }
+    }
+  },
+  "2276": {
+    "label": "Name late-layer relay (L34-35)",
+    "profile": {
+      "Identity": {
+        "peak_z": -5.494175910949707,
+        "peak_layer": 6,
+        "mean_abs_z": 2.1951184272766113,
+        "n_sig_layers": 19
+      },
+      "Emotion: Joy": {
+        "peak_z": 5.796004295349121,
+        "peak_layer": 16,
+        "mean_abs_z": 1.2096567153930664,
+        "n_sig_layers": 7
+      },
+      "Emotion: Sadness": {
+        "peak_z": 3.472778797149658,
+        "peak_layer": 15,
+        "mean_abs_z": 1.2163180112838745,
+        "n_sig_layers": 9
+      },
+      "Emotion: Anger": {
+        "peak_z": -6.561594009399414,
+        "peak_layer": 0,
+        "mean_abs_z": 1.4713534116744995,
+        "n_sig_layers": 8
+      },
+      "Emotion: Fear": {
+        "peak_z": -5.405109405517578,
+        "peak_layer": 17,
+        "mean_abs_z": 2.2217001914978027,
+        "n_sig_layers": 18
+      },
+      "Tone: Formal": {
+        "peak_z": 6.033364772796631,
+        "peak_layer": 18,
+        "mean_abs_z": 1.8682782649993896,
+        "n_sig_layers": 17
+      },
+      "Tone: Sarcastic": {
+        "peak_z": -5.372742176055908,
+        "peak_layer": 22,
+        "mean_abs_z": 1.8237783908843994,
+        "n_sig_layers": 15
+      },
+      "Tone: Polite": {
+        "peak_z": -8.628286361694336,
+        "peak_layer": 0,
+        "mean_abs_z": 1.3846184015274048,
+        "n_sig_layers": 8
+      },
+      "Domain: Math": {
+        "peak_z": -5.860504627227783,
+        "peak_layer": 11,
+        "mean_abs_z": 1.9449443817138672,
+        "n_sig_layers": 14
+      },
+      "Domain: Science": {
+        "peak_z": -5.212033748626709,
+        "peak_layer": 3,
+        "mean_abs_z": 1.5750732421875,
+        "n_sig_layers": 11
+      },
+      "Domain: Code": {
+        "peak_z": -5.339073181152344,
+        "peak_layer": 0,
+        "mean_abs_z": 2.1141951084136963,
+        "n_sig_layers": 16
+      },
+      "Domain: History": {
+        "peak_z": -8.642992973327637,
+        "peak_layer": 0,
+        "mean_abs_z": 1.5173280239105225,
+        "n_sig_layers": 10
+      },
+      "Reasoning: Analytical": {
+        "peak_z": -5.680046558380127,
+        "peak_layer": 10,
+        "mean_abs_z": 1.8073471784591675,
+        "n_sig_layers": 11
+      },
+      "Reasoning: Certainty": {
+        "peak_z": 4.985976219177246,
+        "peak_layer": 22,
+        "mean_abs_z": 1.19943368434906,
+        "n_sig_layers": 9
+      },
+      "Safety: Refusal": {
+        "peak_z": -9.193999290466309,
+        "peak_layer": 5,
+        "mean_abs_z": 3.484837055206299,
+        "n_sig_layers": 21
+      },
+      "Role: Teacher": {
+        "peak_z": 5.895115375518799,
+        "peak_layer": 16,
+        "mean_abs_z": 2.9618139266967773,
+        "n_sig_layers": 25
+      },
+      "Role: Authority": {
+        "peak_z": 3.772965908050537,
+        "peak_layer": 23,
+        "mean_abs_z": 1.6946816444396973,
+        "n_sig_layers": 15
+      },
+      "Verbosity: Brief": {
+        "peak_z": 5.4582648277282715,
+        "peak_layer": 1,
+        "mean_abs_z": 1.9199070930480957,
+        "n_sig_layers": 17
+      },
+      "Language: EN vs CN": {
+        "peak_z": 6.35305118560791,
+        "peak_layer": 2,
+        "mean_abs_z": 2.2416253089904785,
+        "n_sig_layers": 14
+      },
+      "Sentiment: Positive": {
+        "peak_z": 5.910536289215088,
+        "peak_layer": 16,
+        "mean_abs_z": 1.9293289184570312,
+        "n_sig_layers": 11
+      }
+    }
+  },
+  "1838": {
+    "label": "Name late-layer relay (L34-35)",
+    "profile": {
+      "Identity": {
+        "peak_z": -5.9574198722839355,
+        "peak_layer": 16,
+        "mean_abs_z": 2.2309863567352295,
+        "n_sig_layers": 17
+      },
+      "Emotion: Joy": {
+        "peak_z": 5.657332897186279,
+        "peak_layer": 16,
+        "mean_abs_z": 1.4624758958816528,
+        "n_sig_layers": 8
+      },
+      "Emotion: Sadness": {
+        "peak_z": 3.5902557373046875,
+        "peak_layer": 15,
+        "mean_abs_z": 1.1039557456970215,
+        "n_sig_layers": 8
+      },
+      "Emotion: Anger": {
+        "peak_z": -5.96157693862915,
+        "peak_layer": 0,
+        "mean_abs_z": 1.6946746110916138,
+        "n_sig_layers": 13
+      },
+      "Emotion: Fear": {
+        "peak_z": -5.530811309814453,
+        "peak_layer": 22,
+        "mean_abs_z": 2.4770431518554688,
+        "n_sig_layers": 23
+      },
+      "Tone: Formal": {
+        "peak_z": 7.111532211303711,
+        "peak_layer": 18,
+        "mean_abs_z": 1.9854698181152344,
+        "n_sig_layers": 16
+      },
+      "Tone: Sarcastic": {
+        "peak_z": -7.622854709625244,
+        "peak_layer": 22,
+        "mean_abs_z": 2.378146171569824,
+        "n_sig_layers": 19
+      },
+      "Tone: Polite": {
+        "peak_z": 5.134804725646973,
+        "peak_layer": 18,
+        "mean_abs_z": 1.4556684494018555,
+        "n_sig_layers": 9
+      },
+      "Domain: Math": {
+        "peak_z": 3.151370048522949,
+        "peak_layer": 15,
+        "mean_abs_z": 1.4642020463943481,
+        "n_sig_layers": 11
+      },
+      "Domain: Science": {
+        "peak_z": 9.146246910095215,
+        "peak_layer": 14,
+        "mean_abs_z": 1.994340419769287,
+        "n_sig_layers": 16
+      },
+      "Domain: Code": {
+        "peak_z": 3.300194501876831,
+        "peak_layer": 22,
+        "mean_abs_z": 1.283901333808899,
+        "n_sig_layers": 4
+      },
+      "Domain: History": {
+        "peak_z": 4.075026512145996,
+        "peak_layer": 22,
+        "mean_abs_z": 1.2314931154251099,
+        "n_sig_layers": 10
+      },
+      "Reasoning: Analytical": {
+        "peak_z": 4.72973108291626,
+        "peak_layer": 19,
+        "mean_abs_z": 1.629737138748169,
+        "n_sig_layers": 12
+      },
+      "Reasoning: Certainty": {
+        "peak_z": 4.4955878257751465,
+        "peak_layer": 10,
+        "mean_abs_z": 1.3502992391586304,
+        "n_sig_layers": 6
+      },
+      "Safety: Refusal": {
+        "peak_z": 7.34834098815918,
+        "peak_layer": 17,
+        "mean_abs_z": 2.649163007736206,
+        "n_sig_layers": 15
+      },
+      "Role: Teacher": {
+        "peak_z": 7.564411163330078,
+        "peak_layer": 16,
+        "mean_abs_z": 3.0718448162078857,
+        "n_sig_layers": 25
+      },
+      "Role: Authority": {
+        "peak_z": 5.797747611999512,
+        "peak_layer": 21,
+        "mean_abs_z": 2.6418657302856445,
+        "n_sig_layers": 23
+      },
+      "Verbosity: Brief": {
+        "peak_z": 7.1370110511779785,
+        "peak_layer": 11,
+        "mean_abs_z": 2.0103302001953125,
+        "n_sig_layers": 17
+      },
+      "Language: EN vs CN": {
+        "peak_z": -6.350853443145752,
+        "peak_layer": 14,
+        "mean_abs_z": 1.9639434814453125,
+        "n_sig_layers": 12
+      },
+      "Sentiment: Positive": {
+        "peak_z": 5.649116516113281,
+        "peak_layer": 16,
+        "mean_abs_z": 1.8206830024719238,
+        "n_sig_layers": 14
+      }
+    }
+  }
+}
