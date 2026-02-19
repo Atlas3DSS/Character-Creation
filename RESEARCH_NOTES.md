@@ -184,6 +184,25 @@ L26-L31: ░░       LATE SUPPRESS (L30-L31 = -0.20)
 L32-L35: ███      RESIDUAL (L33 = 0.40)
 ```
 
+### Formality Patching: ALL NEGATIVE (Global Processing Mode)
+```
+L0: -0.22  L1: -0.65  L2: -0.52  L3: -0.52  L4: -0.26  L5: -0.04
+L6: -0.22  L7: -0.26  L8: -0.22  L9: -0.52  L10:-0.39  L11:-0.43
+L12:-0.30  L13:-0.43  L14:-0.70  L15:-0.48  L16:-0.35  L17:-0.13
+L18:-0.26  L19: 0.00  L20: 0.00  L21:-0.22  L22:-0.17  L23:-0.17
+L24:-0.17  L25:-0.22  L26:-0.22  L27:-0.35  L28:-0.09  L29:-0.26
+L30:-0.43  L31:-0.39  L32:-0.09  L33:-0.22  L34:-0.39  L35:-0.17
+```
+- **NO layer shows positive formality transfer** — formality is a GLOBAL PROCESSING MODE
+- L14 most negative (-0.70) — matches L14 being the "brevity peak" from connectome
+- L19-L20 = 0.0 (only neutral layers)
+- This proves formality CANNOT be patched/steered layer-by-layer. It requires SDFT or full-model approaches.
+
+### Key Insight: Sarcasm vs Formality — Feature vs Mode
+- **Sarcasm**: Injectable feature. Positive transfer at specific layers (L3=0.60, L23=0.60). Can be surgically added.
+- **Formality**: Global processing mode. Negative transfer everywhere. Cannot be injected — must be trained.
+- **Identity**: Non-transferable (both conditions produce identical output). Requires weight-level changes.
+
 ### Implication: Two-stage steering
 Inject sarcasm at L3 AND L23. Suppress politeness at L17 (negate the suppressor). This is a 3-layer surgical approach, not 36-layer brute force.
 
@@ -305,7 +324,7 @@ Most layer ablations produce near-zero behavioral change (null = layer wasn't te
 | Sarcasm | L6 (critical), L18, L26 | dim 2973 (exclusive), NOT 1924 | ActAdd at L6+L18-26, Gram-Schmidt vs math |
 | Math | L25, L28, L30 | (only 6 exclusive, weak) | PROTECT, don't steer |
 | Code | L27 (critical) | — | PROTECT |
-| Formality | L9, L14, L19 | dim 84 | ActAdd at L9-19 |
+| Formality | L9, L14, L19 | dim 84 | **NOT steereable via ActAdd** (all neg. transfer) — use SDFT |
 | Refusal | L10, L18 | dim 225, dim 243 | Target for suppression |
 | Formatting | L27-L30 (peaks here) | dim 84, 2583, 690 | L27-30 intervention |
 
@@ -406,11 +425,14 @@ Raw z-score vectors from contrastive probing CANNOT be used for direct activatio
 
 The weighted ActAdd approach (Section 7, 56% sarcasm) succeeded because it used connectome-informed LAYER weights, not because the underlying direction was better. Magnitude control per layer is essential.
 
-**Key steering rules** (updated with patching + connectome data):
-1. Never touch L0 or L6 — they're universally critical (causal ablation)
-2. Never target dims 1838, 2421, 2276, 2202 — universal backbone (gradient attribution)
-3. **Sarcasm: inject at L3 + L23 (patching peaks), suppress L17 (anti-sarcasm)**
-4. Identity steering at L26-L34 using dim 994 as anchor
-5. Formality is cleanly separable at L9-L19 (mid-network), L14 is surgical for brevity
-6. Math has very few exclusive neurons — protect rather than steer around it
-7. Authority is the ONLY late-layer concept (L21 peak) — can be added without interfering
+### Weighted Alpha Curve (connectome_sarcasm with system prompt)
+| Alpha | Sarc% | Asst% | Interpretation |
+|---|---|---|---|
+| 0.0 | 52% | 32% | System prompt alone |
+| **0.5** | **56%** | 28% | **Sarcasm peak** |
+| 1.0 | 52% | 20% | Sarcasm drops, assistant still drops |
+| 2.0 | 44% | 20% | Sarcasm degrading |
+| 3.0 | 40% | 20% | Continuing decline |
+| 4.0 | 40% | 12% | **Min assistant** but sarcasm weak |
+
+**Inverted-U curve**: α=0.5 maximizes sarcasm. Beyond α=1.0, steering destroys personality before fully eliminating assistant behavior. Trade-off: max sarcasm (α=0.5) vs min assistant (α≥4.0).
