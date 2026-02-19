@@ -168,3 +168,107 @@ GPT-OSS personality is MORE compact (k80=1!) but harder to steer because the MoE
 2. Can we combine quadratic kernel with connectome-informed layer weighting?
 3. Does gradient attribution confirm the causal role of dim 1924 for sarcasm?
 4. How to orthogonalize sarcasm steering against reasoning without losing personality?
+
+---
+
+## 10. Gradient Attribution (gradient × input, 5 groups × 30 prompts × 36 layers)
+
+### Three-Neuron Output Backbone: 1838 → 2421 → 2276
+The single most important finding: three neurons form a universal relay that dominates ALL five concept groups:
+- **Dim 1838** (positive): Controls L9-L22 output. #1 in identity (0.81) and formatting (1.07), #2 in math/refusal/sarcasm.
+- **Dim 2421** (negative): Takes over at L25-L33. #1 in sarcasm (0.66), math (0.69), refusal (0.63).
+- **Dim 2276** (negative): Dominant at L34. Peaks in formatting (1.04) and math (0.65). Shows sign reversal at L34 across all groups.
+
+This is the backbone of Qwen's output generation — **DO NOT target these for steering**.
+
+### Known Neuron Gradient Attribution Profiles
+- **Dim 994**: Identity-specific (identity=0.53, formatting=0.45, sarcasm=0.27, math=0.15). Best single identity target — 3.2× identity-to-math ratio. Peaks at L17-L23.
+- **Dim 270**: **Causally INERT** despite probe z=7.68. Attribution <0.03 in all groups. Carries signal passively, not in gradient path.
+- **Dim 1924**: NOT sarcasm-specific! Equal attribution across identity/sarcasm/refusal (all ~0.29). It's a general language-mode carrier.
+- **Dim 368, 98**: Name relay neurons are causally silent (attribution <0.02). Part of early lookup circuit, not output selection.
+- **Dim 3828**: Genuine early-layer (L7-9) formatting initializer. Attribution 0.16 in formatting vs 0.04-0.08 in others.
+
+### Category-Exclusive Neurons (cleanest steering targets)
+- **Sarcasm**: dim 2973 (0.078) — strongest sarcasm-exclusive. Also 552, 549.
+- **Refusal**: dim 225 (0.083), dim 243 (0.073) — refusal-specific suppressors.
+- **Identity**: 10 exclusive neurons, 7 negative-direction (suppressors). Lead: dim 3067 (0.064).
+- **Math**: Only 6 exclusive neurons (fewest) — math shares weight space with everything.
+- **Formatting**: dim 84 (0.059) — formatting uses universal hubs + 10 exclusive fine-tuning neurons.
+
+### Layer Attribution Patterns
+| Group | Early L0-11 | Mid L12-23 | Late L24-35 | Ratio |
+|---|---|---|---|---|
+| Identity | 0.0015 | 0.0067 | 0.0156 | 10.4× |
+| Sarcasm | 0.0016 | 0.0077 | 0.0163 | 10.5× |
+| Math | 0.0016 | 0.0069 | 0.0157 | 9.7× |
+| Refusal | 0.0016 | 0.0081 | 0.0168 | 10.8× |
+| Formatting | 0.0030 | 0.0114 | 0.0203 | **6.8×** |
+
+Formatting has 2× early-layer attribution and the smallest late/early ratio — formatting decisions begin earlier than any other concept.
+
+**Key insight**: Activation probes and gradient attribution give DIFFERENT answers. Dim 270 (z=7.68 probe) is causally inert (attr=0.02). Dim 1924 (z=2.14 sarcasm probe) is not sarcasm-specific by gradient. The probe measures sensitivity, the gradient measures causal influence on output.
+
+---
+
+## 11. Causal Layer Ablation (36 layers × 10 categories × 100 prompts)
+
+### KL Divergence (higher = more causally important)
+| Layer | Identity | Sarcasm | Math | Code | Formality | Refusal | Reasoning |
+|---|---|---|---|---|---|---|---|
+| **L0** | **11.49** | **12.48** | **11.54** | **19.02** | 8.47 | **27.37** | **17.68** |
+| L1 | 0.01 | 0.01 | 0.14 | 0.11 | 0.48 | 0.13 | 0.01 |
+| **L6** | **2.02** | **11.48** | **4.52** | **8.88** | **4.41** | **6.81** | **5.90** |
+| L9 | 0.003 | 0.005 | 0.14 | 0.02 | **0.97** | 0.65 | 0.04 |
+| L12 | 0.01 | 0.008 | 0.12 | 0.13 | 0.54 | 0.57 | **1.16** |
+| L18 | 0.05 | 0.11 | 0.13 | **0.64** | 0.49 | **0.82** | 0.32 |
+| L19 | 0.06 | 0.009 | 0.28 | 0.11 | **1.51** | 0.26 | 0.31 |
+| L25 | 0.09 | 0.005 | **0.73** | 0.08 | **0.88** | 0.23 | 0.02 |
+| L27 | 0.16 | 0.01 | 0.06 | **4.12** | 0.66 | 0.10 | 0.02 |
+| L29 | **2.35** | 0.02 | 0.08 | 0.20 | 0.34 | 0.73 | 0.03 |
+| L30 | 0.02 | 0.04 | 0.60 | 0.09 | 0.59 | 0.18 | **1.43** |
+
+### Key Findings
+- **L0 and L6 universally critical** — always top-2 for every category
+- **L6 is THE sarcasm layer** (KL=11.48) — ablating it destroys sarcasm more than any other category
+- **L27 is THE code layer** (KL=4.12) — ablating it catastrophically disrupts code generation
+- **L29 is identity-critical** (KL=2.35) — highest non-L0/L6 impact on identity
+- **L19 dominates formality** (KL=1.51) — formality lives in mid-network
+- **L12 and L30 are reasoning layers** (KL=1.16, 1.43)
+- **Sarcasm is L6-dependent** — after L6, no individual layer has KL>0.11 for sarcasm. Sarcasm is established early and distributed.
+
+### Category-Specific Critical Layers (top 5 per category, excluding L0/L6)
+- **Identity**: L29, L26, L34 — late-layer identity crystallization
+- **Sarcasm**: L18, L35, L26 — mid-to-late
+- **Math**: L28, L25, L30 — late-layer mathematical reasoning
+- **Code**: L27, L35, L18 — L27 dominates
+- **Formality**: L19, L9, L14 — mid-network style control
+- **Refusal**: L10, L35, L18 — scattered (safety is distributed)
+- **Reasoning**: L30, L12, L18 — analytical processing
+
+### Behavioral Impact (score change when layer ablated)
+Most layer ablations produce near-zero behavioral change (null = layer wasn't tested for that category). Only L0 and L6 produce large behavioral shifts:
+- **L0 ablated**: identity drops to 1.0→1.0 (still works!), sarcasm 0.167, math 0.2, helpfulness 0.65
+- **L6 ablated**: identity drops to 0.6, sarcasm to 0.133, creativity to 0.4
+- **L35 ablated**: sarcasm DROPS by 0.167 (only layer that reduces sarcasm when removed)
+
+---
+
+## 12. Synthesis: Steerability Map
+
+| Concept | Best Steering Layers | Exclusive Neurons | Method |
+|---|---|---|---|
+| Identity | L26, L29, L34 | dim 994 (3.2× ratio), dim 3067 | ActAdd at L26-34 |
+| Sarcasm | L6 (critical), L18, L26 | dim 2973 (exclusive), NOT 1924 | ActAdd at L6+L18-26, Gram-Schmidt vs math |
+| Math | L25, L28, L30 | (only 6 exclusive, weak) | PROTECT, don't steer |
+| Code | L27 (critical) | — | PROTECT |
+| Formality | L9, L14, L19 | dim 84 | ActAdd at L9-19 |
+| Refusal | L10, L18 | dim 225, dim 243 | Target for suppression |
+| Formatting | L27-L30 (peaks here) | dim 84, 2583, 690 | L27-30 intervention |
+
+**Key steering rules**:
+1. Never touch L0 or L6 — they're universally critical
+2. Never target dims 1838, 2421, 2276, 2202 — universal backbone
+3. Sarcasm steering should focus on L18-L26 with orthogonalization against math
+4. Identity steering at L26-L34 using dim 994 as anchor
+5. Formality is cleanly separable at L9-L19 (mid-network)
+6. Math has very few exclusive neurons — protect rather than steer around it
