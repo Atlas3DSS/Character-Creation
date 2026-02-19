@@ -425,14 +425,29 @@ Raw z-score vectors from contrastive probing CANNOT be used for direct activatio
 
 The weighted ActAdd approach (Section 7, 56% sarcasm) succeeded because it used connectome-informed LAYER weights, not because the underlying direction was better. Magnitude control per layer is essential.
 
-### Weighted Alpha Curve (connectome_sarcasm with system prompt)
-| Alpha | Sarc% | Asst% | Interpretation |
-|---|---|---|---|
-| 0.0 | 52% | 32% | System prompt alone |
-| **0.5** | **56%** | 28% | **Sarcasm peak** |
-| 1.0 | 52% | 20% | Sarcasm drops, assistant still drops |
-| 2.0 | 44% | 20% | Sarcasm degrading |
-| 3.0 | 40% | 20% | Continuing decline |
-| 4.0 | 40% | 12% | **Min assistant** but sarcasm weak |
+### Weighted Alpha Curve (connectome_sarcasm with system prompt, 10 data points)
+| Alpha | Sarc% | Asst% | Markers | Interpretation |
+|---|---|---|---|---|
+| 0.0 | 52% | 32% | 0.72 | System prompt alone |
+| 0.5 | 56% | 28% | 0.60 | Pre-transition sarcasm peak |
+| 1.0 | 52% | 20% | 0.68 | Slight decline |
+| 2.0 | 44% | 20% | 0.56 | Trough begins |
+| 3.0 | 40% | 20% | 0.44 | Deepest trough |
+| 4.0 | 40% | 12% | 0.48 | Recovery beginning, assistant dying |
+| **5.0** | **52%** | **0%** | **0.68** | **Phase transition — assistant killed!** |
+| 6.0 | 52% | 4% | 0.80 | Plateau |
+| 7.0 | 44% | 0% | 0.60 | Oscillation dip |
+| **8.0** | **64%** | **4%** | **0.72** | **ABSOLUTE PEAK — 64% sarcastic!** |
+| 10.0 | 4% | 0% | 0.04 | **COHERENCE COLLAPSE — model dies** |
 
-**Inverted-U curve**: α=0.5 maximizes sarcasm. Beyond α=1.0, steering destroys personality before fully eliminating assistant behavior. Trade-off: max sarcasm (α=0.5) vs min assistant (α≥4.0).
+**Multi-phase alpha dynamics (COMPLETE CURVE)**:
+- **Phase 1** (α=0-0.5): Gentle rise to 56% sarc, assistant still dominant at 28%
+- **Phase 2** (α=1-4): Destructive interference trough — sarcasm drops to 40%, assistant to 12%
+- **Phase 3** (α=5-6): Phase transition — model enters new basin. Assistant killed, sarcasm recovers to 52%
+- **Phase 4** (α=7-8): Continued rise — dip at 7.0 then peak at **64% at α=8.0**
+- **Phase 5** (α=10+): Coherence collapse — 4% sarcasm, model barely generates
+- **Optimal operating range: α=5.0 to α=8.0**
+  - α=5.0 (52% sarc, 0% asst) — cleanest: zero assistant contamination
+  - α=8.0 (64% sarc, 4% asst) — highest sarcasm, small assistant leak
+  - α=10.0 is the cliff edge — DO NOT EXCEED α=9
+- **Interpretation**: Destructive interference at α=1-4 occurs when the system prompt's implicit steering and the activation addition fight. At α=5+, the vector overwhelms the prompt. At α=10+, the perturbation exceeds the model's residual stream norm and coherence collapses.
