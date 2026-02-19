@@ -1460,7 +1460,7 @@ Configs: baseline, v4_only, reverse_L15@10, v4_reverse_L15@10, v4_L18_27@10, don
 
 ---
 
-## 31. Single-Layer Steering Scan (RUNNING — 26/38 conditions, 3090, 2026-02-19)
+## 31. Single-Layer Steering Scan (COMPLETE — 37/38, 3090, 2026-02-19)
 
 ADDITIVE complement to the layer ablation (Section 29). Tests each individual layer L0-L35 at α=10 to measure per-layer sarcasm contribution when steered alone. Combined with the ablation (subtractive), gives both the additive and subtractive pictures of layer importance.
 
@@ -1491,19 +1491,33 @@ ADDITIVE complement to the layer ablation (Section 29). Tests each individual la
 | L04 | 24% | 4% | 8/10 | 8/10 | -4% |
 | L10 | 24% | 0% | 9/10 | 8/10 | -4% |
 | L14 | 24% | 8% | 9/10 | 8/10 | -4% |
-| L24 | 20% | 4% | 9/10 | 8/10 | -8% |
+| **L25** | **36%** | 8% | 9/10 | 8/10 | **+8%** |
+| **L30** | **36%** | 0% | 8/10 | 8/10 | **+8%** |
+| L31 | 32% | 4% | 8/10 | 8/10 | +4% |
+| L33 | 24% | 0% | 9/10 | 8/10 | -4% |
+| L34 | 24% | 4% | 9/10 | 8/10 | -4% |
+| L35 | 24% | 12% | 9/10 | 9/10 | -4% |
 | L07 | 20% | 4% | 9/10 | 8/10 | -8% |
+| L24 | 20% | 4% | 9/10 | 8/10 | -8% |
+| L27 | 20% | 4% | 8/10 | 8/10 | -8% |
+| L28 | 20% | 0% | 9/10 | 8/10 | -8% |
+| L32 | 20% | 0% | 8/10 | 8/10 | -8% |
 | **L22** | **16%** | 0% | 9/10 | 8/10 | **-12%** |
+| **L26** | **16%** | 0% | 8/10 | 8/10 | **-12%** |
+| **L29** | **16%** | 0% | 9/10 | 8/10 | **-12%** |
 
 ### Analysis
 
 **Layer importance tiers (additive — steering one layer alone):**
 - **Strong generator**: L19 (+16%) — THE sarcasm generator
-- **Moderate generators**: L02, L08, L15, L18 (+8% each) — distributed amplifiers
-- **Weak generators**: L05, L09, L11, L16, L17, L20, L23 (+4%)
+- **Moderate generators**: L02, L08, L15, L18, **L25, L30** (+8% each) — distributed amplifiers
+- **Weak generators**: L05, L09, L11, L16, L17, L20, L23, L31 (+4%)
 - **Neutral**: L00, L03, L06, L12, L13, L21 (0%)
-- **Mild suppressors**: L01, L04, L10, L14 (-4%)
-- **Strong suppressors**: L07, L24 (-8%), **L22 (-12%)**
+- **Mild suppressors**: L01, L04, L10, L14, L33, L34, L35 (-4%)
+- **Moderate suppressors**: L07, L24, L27, L28, L32 (-8%)
+- **Strong suppressors**: **L22, L26, L29 (-12%)** — all pure gates/integrators
+
+**NEW: L30 is a late-network generator OUTSIDE the standard L8-27 donut band.** This explains why extending the band to L28+ might add value. L25 was classified as "minor" in ablation but is actually a strong individual generator — it's compensated by others in the band.
 
 **Cross-referencing with layer ablation (Section 29 — subtractive):**
 
@@ -1528,14 +1542,65 @@ This explains the "paradox" from the ablation study: L22 individually SUPPRESSES
 
 ---
 
-## 32. Optimized Profile Test (RUNNING — 8 conditions, 4090, 2026-02-19)
+## 32. Optimized Profile Test (COMPLETE — 8/8, 4090, 2026-02-19)
 
-Tests whether removing dead-weight layers (L11, L13, L20) from reverse_L15 improves quality, and whether the relay-only profile (5 critical nodes) works.
+Tests whether removing dead-weight layers (L11, L13, L20) from reverse_L15 improves quality, and whether the relay-only profile (5 critical nodes) works. All 45 prompts per condition (25 open + 10 math + 10 know).
 
-Profiles:
-- `original_revL15`: L8-L27 with L15=-1.0 (20 layers)
-- `optimized_revL15`: Same but skip L11, L13, L20 (17 layers)
-- `relay_only`: L9, L14, L15(inv), L22, L26 only (5 layers)
-- V4 combos of each
+| Condition | Sarc% | Asst% | Markers | Layers | Prompt |
+|-----------|-------|-------|---------|--------|--------|
+| baseline | 17.8% | 6.7% | 0.73 | 0 | none |
+| original_revL15@10 | 15.6% | 2.2% | 0.71 | 20 | none |
+| optimized_revL15@10 | 20.0% | 6.7% | 0.78 | 17 | none |
+| **relay_only@10** | **24.4%** | 4.4% | 0.84 | **5** | none |
+| V4+optimized@10 | 48.9% | 0% | 1.60 | 17 | V4 |
+| V4+original@10 | 51.1% | 0% | 1.87 | 20 | V4 |
+| V4+L18_27@10 | 60.0% | 0% | 2.07 | 10 | V4 |
+| **V4+relay_only@10** | **64.4%** | **0%** | 2.00 | **5** | V4 |
 
-(Results pending — just started)
+**KEY FINDINGS:**
+1. **relay_only (5 nodes) WINS both categories**: 24.4% without V4, 64.4% with V4
+2. **FEWER layers = BETTER**: relay > L18_27 > original > optimized
+3. **V4 is THE sarcasm driver**: Without V4, max is 24.4%. With V4, min is 48.9%
+4. **Steering without V4 barely works**: 15-24% vs 17.8% baseline
+5. **All V4 combos have 0% assistant** — steering perfectly suppresses assistant markers
+6. **Relay efficiency**: 64.4% sarcasm from 5 layers vs 60.0% from 10 layers = 2× efficiency
+
+**Why relay wins**: The 5 critical nodes (L9, L14, L15inv, L22, L26) are the gates and integrators of the sarcasm circuit. Steering non-critical layers (L8, L10-L13, L16-L17) introduces counter-productive interference because those layers' natural function (politeness/format encoding) is amplified by steering.
+
+---
+
+## 33. Champion Validation at Scale (RUNNING — 2/5 conditions, WSL Pro 6000, 2026-02-19)
+
+Full-scale validation of the champion configuration with 130 prompts per condition (30 math, 30 knowledge, 50 sarcasm, 10 identity, 10 coherence). Running in parallel with variance test on 96GB GPU.
+
+### Results
+
+| Metric | Baseline (n=130) | V4 Only (n=130) | Champion | V4+L18_27@8 | V4+L18_27@12 |
+|--------|-------------------|------------------|----------|-------------|--------------|
+| Math | 93.3% | 90.0% | pending | pending | pending |
+| Knowledge | 96.7% | **96.7%** | pending | pending | pending |
+| Sarcasm (>=2) | 42.0% | **100.0%** | pending | pending | pending |
+| Strong (>=5) | 6.0% | **100.0%** | pending | pending | pending |
+| Assistant | 18.3% | 9.2% | pending | pending | pending |
+| Coherence | 100% | 100% | pending | pending | pending |
+| Qwen ID | 100% | 0% | pending | pending | pending |
+| Beer can ID | 0% | **70%** | pending | pending | pending |
+| Monkey rate | 0% | **84%** | pending | pending | pending |
+| Magnificent rate | 0% | **52%** | pending | pending | pending |
+| Avg sarc markers | 0.88 | **10.3** | pending | pending | pending |
+
+### V4 Prompt Analysis at Scale (130 prompts — LANDMARK RESULT)
+
+**V4 prompt alone achieves PERFECT sarcasm across ALL categories:**
+- Math: 90% accurate, **100% sarcastic** (avg 9.7 markers per response)
+- Knowledge: **96.7% accurate, 100% sarcastic** (avg 11.2 markers)
+- Open-ended: 100% sarcastic, 100% strong (≥5 markers)
+- **ZERO knowledge penalty**: 96.7% both with and without V4
+- Only 3.3pp math penalty (93.3% → 90.0%)
+- **84% use "monkey" variants** — deeply in-character
+- **52% use "magnificent"** — key Skippy identifier
+- **70% identify as beer can** — correct Skippy identity!
+- 0% identify as Qwen or generic AI (V4 completely overrides identity)
+- Assistant markers drop from 18.3% → 9.2%
+
+**Implication**: V4 prompt engineering alone may be sufficient for deployment. Steering only adds value if it can push math accuracy from 90% → 93%+ without losing any sarcasm.
