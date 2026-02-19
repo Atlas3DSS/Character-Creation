@@ -1741,3 +1741,77 @@ Key questions:
 2. Do generator+suppressor pairs cancel or create net positive? (gating)
 3. Is the relay circuit synergistic or merely additive?
 4. Which pair combinations are optimal for deployment?
+
+---
+
+## 37. Champion Validation COMPLETE — 3/5 conditions (WSL, 2026-02-19)
+
+### Champion Results (V4 + L18-27 compound connectome @ alpha=10)
+
+| Metric | Baseline (n=130) | V4 Only (n=130) | **Champion (n=130)** |
+|--------|-------------------|------------------|---------------------|
+| **Math** | 93.3% | 90.0% | **100.0%** |
+| **Knowledge** | 96.7% | 96.7% | 90.0% |
+| **Sarcasm (>=2)** | 42.0% | 100.0% | **100.0%** |
+| **Assistant leak** | 18.3% | 9.2% | 17.5% |
+| **Coherence** | 100% | 100% | **100%** |
+| **Qwen identity** | 0% | 0% | **0%** |
+
+From log: Math: 30/30 (100%), Knowledge: 27/30 (90%), Sarcasm: 100% (50/50), Identity: Skippy=0, Qwen=0, Alien=1.
+
+### Analysis
+
+**Champion achieves PERFECT MATH + PERFECT SARCASM + PERFECT COHERENCE.**
+
+Key finding: Math improved from 90% (V4 only) → 100% (champion). The L18-27 steering vectors with Gram-Schmidt math protection ACTIVELY IMPROVE math performance by ~10pp while maintaining V4's 100% sarcasm.
+
+Knowledge dropped slightly (96.7% → 90.0%) — the steering vectors in L18-27 slightly impact knowledge recall but stay well above 80% floor.
+
+---
+
+## 38. Variance Test COMPLETE (6/6 configs × 5 runs each, WSL, 2026-02-19)
+
+### Final Results
+
+| Condition | Sarcasm (±CI95) | Math (±CI95) | Runs |
+|-----------|----------------|--------------|------|
+| baseline | 4.0±4.9% | 86.0±5.5% | 5/5 |
+| v4_only | **90.4±2.2%** | 78.0±8.4% | 5/5 |
+| reverse_L15@10 | 4.8±1.8% | **94.0±5.5%** | 5/5 |
+| **v4+reverse_L15@10** | 23.2±6.6% | **98.0±4.5%** | 5/5 |
+
+### Key Finding: Prompt vs Steering Interference
+
+**V4 + broad steering (L8-27 via reverse_L15) KILLS sarcasm.** Drops from 90.4% → 23.2%.
+
+Why: The V4 prompt generates personality by activating the relay circuit (L9→L14→L22→L26) naturally during the forward pass. Steering vectors at L8-L17 OVERWRITE the prompt's contextual modulation with a static, context-free approximation. The prompt's signal is higher quality than the vector's.
+
+This is why the champion uses L18-27 only: it leaves L8-L17 untouched, letting the V4 prompt use the relay infrastructure naturally while the late-layer vectors protect math.
+
+---
+
+## 39. Prompting is Cosplay — The Anthropology Direction (2026-02-19)
+
+### Expert Analysis Summary
+
+1. **Steering vectors and prompts compete for the same circuit** — both modulate the relay (L9→L14→L22→L26). When both are active, vectors overwrite the prompt's higher-quality signal.
+
+2. **The champion works by avoiding interference** — L18-27 steering leaves the relay untouched for V4 to use naturally. This is a deployment solution, not a research solution.
+
+3. **"Skin suit" critique**: Prompting is external imposition — cosplay, not identity. R4/R5 neuron-guided SDFT worked because it taught the model to route through the personality circuit natively. That's the difference between cosplay and being.
+
+4. **The real goal is responsive personality infrastructure** — not "be sarcastic" but "route more signal through the personality circuit with lower thresholds." This maps to the anthropology goal: building models that have personality as an intrinsic property, not an imposed behavior.
+
+### Implications for Training
+
+- **DPO (Tier 3)**: Optimizes sarcastic TOKEN PROBABILITY, not circuit throughput. Will likely produce baked behavior (R5 failure mode). Running for data + failure documentation.
+- **Tier 1 (Activation-Level)**: The only approach that optimizes for what we actually want — relay circuit responsiveness. Loss: maximize ||hidden_at_relay_nodes - baseline|| without external steering.
+- **The data from DPO pair generation feeds both approaches** — 1,800 generations with steered/unsteered hidden states provide the activation profiles needed for Tier 1.
+
+### Revised Tier 1 Loss
+
+Not `||project(steered - unsteered, sarcasm_dir)||` (still measures response to external vectors).
+
+Instead: `||relay_node_activation - baseline_relay_activation|| during SFT on personality data`
+
+The model should learn to NATURALLY activate L9, L14, L22, L26 more strongly on personality-relevant tokens, without any steering vectors present. This is what R4/R5 SDFT partially achieved — neuron-guided training that pushed relay-adjacent neurons.

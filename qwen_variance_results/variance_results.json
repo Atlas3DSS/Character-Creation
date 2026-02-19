@@ -220,13 +220,37 @@
         "math_accuracy": 1.0,
         "knowledge_accuracy": 0.8,
         "timestamp": "2026-02-19T07:28:01"
+      },
+      {
+        "run": 3,
+        "open_sarcasm_pct": 0.28,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 1.0,
+        "knowledge_accuracy": 0.9,
+        "timestamp": "2026-02-19T07:39:38"
+      },
+      {
+        "run": 4,
+        "open_sarcasm_pct": 0.2,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 1.0,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T07:51:23"
+      },
+      {
+        "run": 5,
+        "open_sarcasm_pct": 0.32,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 1.0,
+        "knowledge_accuracy": 0.9,
+        "timestamp": "2026-02-19T08:03:10"
       }
     ],
-    "mean_sarcasm": 0.18,
-    "std_sarcasm": 0.0283,
+    "mean_sarcasm": 0.232,
+    "std_sarcasm": 0.0657,
     "ci95_sarcasm": [
-      -0.0741,
-      0.4341
+      0.1504,
+      0.3136
     ],
     "mean_assistant": 0.0,
     "std_assistant": 0.0,
@@ -234,17 +258,53 @@
       0.0,
       0.0
     ],
-    "mean_math": 0.95,
-    "std_math": 0.0707,
+    "mean_math": 0.98,
+    "std_math": 0.0447,
     "ci95_math": [
-      0.3147,
-      1.5853
+      0.9245,
+      1.0355
     ],
-    "mean_knowledge": 0.8,
+    "mean_knowledge": 0.84,
+    "std_knowledge": 0.0548,
+    "ci95_knowledge": [
+      0.772,
+      0.908
+    ]
+  },
+  "v4_L18_27_a10": {
+    "runs": [
+      {
+        "run": 1,
+        "open_sarcasm_pct": 0.32,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 1.0,
+        "knowledge_accuracy": 0.9,
+        "timestamp": "2026-02-19T08:14:46"
+      }
+    ],
+    "mean_sarcasm": 0.32,
+    "std_sarcasm": 0.0,
+    "ci95_sarcasm": [
+      0.32,
+      0.32
+    ],
+    "mean_assistant": 0.0,
+    "std_assistant": 0.0,
+    "ci95_assistant": [
+      0.0,
+      0.0
+    ],
+    "mean_math": 1.0,
+    "std_math": 0.0,
+    "ci95_math": [
+      1.0,
+      1.0
+    ],
+    "mean_knowledge": 0.9,
     "std_knowledge": 0.0,
     "ci95_knowledge": [
-      0.8,
-      0.8
+      0.9,
+      0.9
     ]
   }
 }
