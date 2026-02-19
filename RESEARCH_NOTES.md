@@ -144,12 +144,33 @@ Steer identity at L0-9, steer personality/tone at L17-30. Don't steer the same l
 | quality_L12_23 | 40% | 4% | 12 |
 | bell_curve | 40% | 0% | 27 |
 
-### Key Findings:
+### Key Findings (initial sweep at default alpha):
 - **Connectome-informed** ties donut for best (56%) — data-driven layer weighting works!
 - **Donut (skip early+late)** equally good — confirms L0-7 and L28-35 add noise
 - **Quality-only (L12-23)** too narrow — needs broader coverage
 - **Flat** is a reasonable default (52%) — diminishing returns from fancy weighting
 - Gaussian/bell-curve disappointments — the optimal shape is more like a plateau
+
+### Alpha Sweep Comparison (connectome_sarcasm vs donut vs flat)
+
+| Alpha | Connectome | Donut | Flat | Best |
+|---|---|---|---|---|
+| 0.0 | 52%/32% | 64%/24% | 52%/24% | donut |
+| 0.5 | **56%/28%** | 44%/24% | 56%/28% | conn/flat |
+| 3.0 | 40%/20% | 28%/16% | — | conn |
+| 5.0 | 52%/**0%** | 52%/4% | — | tie (conn cleaner) |
+| 6.0 | 52%/4% | **60%/0%** | — | **DONUT** |
+| 8.0 | **64%/4%** | **60%/0%** | — | donut (cleaner) |
+| 10.0 | 4%/0% | **76%/0%** | — | **DONUT BY 72pp!** |
+
+### **CRITICAL FINDING: Donut α=10 = 76% sarcastic, 0% assistant**
+- **Donut profile is DRAMATICALLY more robust at high alpha**
+- Connectome_sarcasm collapses at α=10 (4% sarc) because it steers L0-7 and L28-35
+- **Early layers (L0-7) disruption → input embedding corruption → coherence collapse**
+- **Late layers (L28-35) disruption → output formatting corruption → gibberish**
+- **Donut (L8-L27) avoids BOTH fragile zones** → can tolerate α=10 without collapse
+- The 76% is the highest sarcasm rate achieved by ANY method in this project
+- **New recommended operating point: Donut α=10 (76% sarc, 0% asst)** replaces connectome_sarcasm α=5-8
 
 ---
 
