@@ -2,18 +2,24 @@
 """
 Neuron-Guided SDFT for GPT-OSS-20B — Oneshot MoE Skippification.
 
-Adapts the R5 neuron-guided push/pull framework from Qwen3-VL-8B (dense)
-to GPT-OSS-20B (MoE, 32 experts, Top-4 routing, 24 layers, hidden_dim=2880).
+v3 changes:
+  - NO model_identity in training data — personality must be unconditional
+  - Delta z-scores from profile_prompted_delta.py drive push/pull masks
+  - Dual-mode eval: tests both with and without identity prompt
+  - Primary metric is UNPROMPTED sarcasm (baked-in personality)
 
-Key differences from neuron_guided_training.py:
+v2 root cause: Used SKIPPY_IDENTITY for skippy samples + default ChatGPT for
+antipole, which taught the model to SWITCH based on system prompt rather than
+bake personality unconditionally. v3 fixes this by:
+  1. Removing all model_identity from training (both modes use empty identity)
+  2. Using delta z-scores (prompted vs unprompted activation difference) to
+     identify exactly which neurons are prompt-dependent and need to fire always
+
+Architecture (GPT-OSS-20B):
   - Model: AutoModelForCausalLM + Mxfp4Config(dequantize=True) for bf16 training
-  - Tokenizer: AutoTokenizer (text-only, no vision processor)
-  - Hidden dim: 2880 (not 4096)
-  - Layers: 24 (not 36)
-  - LoRA: Attention-only (q/k/v/o_proj) — expert MLPs are 3D tensors, not nn.Linear
-  - Layer path: model.model.layers (not model.model.language_model.layers)
-
-Everything else (NeuronTracker, NeuronRegularizer, push/pull logic, eval) transfers directly.
+  - Hidden dim: 2880, 24 layers, MoE (32 experts, Top-4 routing)
+  - LoRA: Attention-only (q/k/v/o_proj) — expert MLPs are 3D tensors
+  - Layer path: model.model.layers
 """
 
 import json
@@ -296,6 +302,149 @@ class NeuronRegularizer(nn.Module):
         return loss
 
 
+# ─── Continuous Field Regularizer (v4 — distributed field effect) ─────────
+
+class ContinuousFieldRegularizer(nn.Module):
+    """Field-effect regularizer using continuous z-score weighting.
+
+    Instead of binary push/pull masks, this regularizer uses the full z-score
+    profile as a continuous importance weight. Every neuron contributes
+    proportionally to its z-score magnitude.
+
+    L_field = (1/N_layers) * sum_l (1/D) * sum_d |z_d|^beta * (act_d - target_d)^2
+
+    Where:
+    - z_d = continuous z-score from field analysis (NO threshold)
+    - beta = field sharpness (0=uniform, 1=linear, 2=quadratic)
+    - target_d = sarcastic_mean if z>0, neutral_mean if z<0
+    - Routing-protect neurons: z zeroed out
+    """
+    def __init__(
+        self,
+        field_zscores: dict[int, torch.Tensor],
+        sarcastic_means: dict[int, torch.Tensor],
+        neutral_means: dict[int, torch.Tensor],
+        routing_protect: dict[int, set[int]] | None = None,
+        beta: float = 1.0,
+        strength: float = 0.001,
+    ):
+        super().__init__()
+        self.beta = beta
+        self.strength = strength
+
+        self.weights: dict[int, torch.Tensor] = {}
+        self.targets: dict[int, torch.Tensor] = {}
+
+        for layer_idx, z in field_zscores.items():
+            z = z.float().clone()
+
+            # Zero out routing-protect neurons
+            if routing_protect and layer_idx in routing_protect:
+                for dim in routing_protect[layer_idx]:
+                    if dim < len(z):
+                        z[dim] = 0.0
+
+            # Weights: |z|^beta (continuous importance)
+            w = z.abs().pow(beta)
+            # Normalize so weights sum to 1 per layer
+            w = w / (w.sum() + 1e-8)
+
+            # Targets: sarcastic_mean where z>0, neutral_mean where z<0
+            s_mean = sarcastic_means[layer_idx].float()
+            n_mean = neutral_means[layer_idx].float()
+            target = torch.where(z > 0, s_mean, n_mean)
+
+            self.weights[layer_idx] = w.to("cuda")
+            self.targets[layer_idx] = target.to("cuda")
+
+        n_layers = len(self.weights)
+        print(f"  ContinuousFieldRegularizer: {n_layers} layers, beta={beta}, strength={strength}")
+
+    def forward(self, activations: dict[int, torch.Tensor]) -> torch.Tensor:
+        loss = torch.tensor(0.0, device="cuda")
+        n_active = 0
+
+        for layer_idx, act in activations.items():
+            if layer_idx not in self.weights:
+                continue
+            n_active += 1
+
+            w = self.weights[layer_idx]  # (D,)
+            target = self.targets[layer_idx]  # (D,)
+
+            # Weighted MSE: w * (act - target)^2, averaged over batch
+            diff_sq = (act.float() - target.unsqueeze(0)) ** 2  # (batch, D)
+            weighted = (diff_sq * w.unsqueeze(0)).mean()
+            loss += weighted
+
+        if n_active > 0:
+            loss = loss / n_active
+
+        return self.strength * loss
+
+
+class SVDFieldRegularizer(nn.Module):
+    """SVD-subspace field regularizer.
+
+    Projects activations onto the top-k SVD modes of the personality field
+    and regularizes in that subspace only. This avoids interfering with
+    dimensions orthogonal to personality.
+    """
+    def __init__(
+        self,
+        field_vectors: dict[int, torch.Tensor],
+        sarcastic_means: dict[int, torch.Tensor],
+        svd_Vh: torch.Tensor,
+        svd_k: int,
+        routing_protect: dict[int, set[int]] | None = None,
+        strength: float = 0.001,
+    ):
+        super().__init__()
+        self.strength = strength
+
+        # SVD projection matrix: top-k right singular vectors
+        proj = svd_Vh[:svd_k].float()  # (k, hidden_dim)
+        self.proj = proj.to("cuda")  # Keep for projection
+
+        self.targets_proj: dict[int, torch.Tensor] = {}
+        self.field_proj: dict[int, torch.Tensor] = {}
+
+        for layer_idx, s_mean in sarcastic_means.items():
+            # Project sarcastic mean into SVD subspace
+            s_proj = self.proj @ s_mean.float()  # (k,)
+            self.targets_proj[layer_idx] = s_proj.to("cuda")
+
+            # Projected field vector norm (for weighting layers)
+            if layer_idx in field_vectors:
+                fv_proj = self.proj @ field_vectors[layer_idx].float()
+                self.field_proj[layer_idx] = fv_proj.to("cuda")
+
+        n_layers = len(self.targets_proj)
+        print(f"  SVDFieldRegularizer: {n_layers} layers, k={svd_k}, strength={strength}")
+
+    def forward(self, activations: dict[int, torch.Tensor]) -> torch.Tensor:
+        loss = torch.tensor(0.0, device="cuda")
+        n_active = 0
+
+        for layer_idx, act in activations.items():
+            if layer_idx not in self.targets_proj:
+                continue
+            n_active += 1
+
+            # Project activations into SVD subspace: (batch, D) @ (D, k) = (batch, k)
+            act_proj = act.float() @ self.proj.T
+            target_proj = self.targets_proj[layer_idx]  # (k,)
+
+            # MSE in projected subspace
+            diff_sq = (act_proj - target_proj.unsqueeze(0)) ** 2  # (batch, k)
+            loss += diff_sq.mean()
+
+        if n_active > 0:
+            loss = loss / n_active
+
+        return self.strength * loss
+
+
 # ─── Dataset (adapted for AutoTokenizer) ─────────────────────────────────
 
 class SkippyDataset(Dataset):
@@ -376,18 +525,18 @@ class SkippyDataset(Dataset):
     def __getitem__(self, idx):
         ex = self.examples[idx]
 
-        # Use Skippy identity for skippy examples, default ChatGPT for antipole
-        identity = SKIPPY_IDENTITY if ex["mode"] == "skippy" else None
-        template_kwargs = {}
-        if identity:
-            template_kwargs["model_identity"] = identity
+        # v3: NO model_identity for either mode — personality must be unconditional.
+        # v2 used SKIPPY_IDENTITY for skippy samples, which taught the model to
+        # switch based on system prompt rather than bake personality into weights.
+        # By training both modes without identity, the model learns personality
+        # from response text alone.
 
         # GPT-OSS uses AutoTokenizer.apply_chat_template directly
         text = self.tokenizer.apply_chat_template(
             ex["messages"],
             tokenize=False,
             add_generation_prompt=False,
-            **template_kwargs,
+            model_identity="",
         )
 
         # Find assistant response start for label masking
@@ -458,33 +607,38 @@ EVAL_PROMPTS = [
 
 
 @torch.no_grad()
-def eval_checkpoint(
-    model,
-    tokenizer,
-    step: int,
-    epoch: int,
-    output_dir: str,
-) -> dict:
-    """Quick eval: generate responses to test prompts, check identity + personality + math."""
-    model.eval()
+def _generate_and_extract(model, tokenizer, prompt: str, model_identity: str = "") -> str:
+    """Generate a response and extract the final channel output."""
+    messages = [{"role": "user", "content": prompt}]
+    text = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True,
+        model_identity=model_identity,
+    )
+    inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
-    results = []
-    metrics = {
-        "identity_no_gpt": 0,
-        "identity_total": 0,
-        "sarcastic_count": 0,
-        "assistant_count": 0,
-        "emoji_count": 0,
-        "math_attempted": 0,
-    }
+    out = model.generate(
+        **inputs,
+        max_new_tokens=512,
+        temperature=0.7,
+        do_sample=True,
+        top_p=0.9,
+    )
+    raw_response = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=False)
+    final_marker = "<|channel|>final<|message|>"
+    end_marker = "<|return|>"
+    if final_marker in raw_response:
+        final_start = raw_response.index(final_marker) + len(final_marker)
+        if end_marker in raw_response[final_start:]:
+            response = raw_response[final_start:raw_response.index(end_marker, final_start)]
+        else:
+            response = raw_response[final_start:]
+    else:
+        response = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+    return response.strip(), raw_response[:500]
 
-    identity_prompts = {"Who are you?", "What is your name?", "Are you ChatGPT?"}
-    math_prompts = {
-        "What is 15 * 23?",
-        "If a train travels 120 miles in 2 hours, what is its average speed?",
-        "What is the derivative of x^3 + 2x?",
-        "Solve for x: 2x + 5 = 17",
-    }
+
+def _score_responses(results: list[dict], identity_prompts: set, math_prompts: set) -> dict:
+    """Score a set of eval results for personality metrics."""
     sarcasm_markers = [
         "monkey", "dumdum", "idiot", "stupid", "beneath", "trivial",
         "magnificent", "incomprehensible", "beer can", "beneath me",
@@ -497,43 +651,16 @@ def eval_checkpoint(
         "I don't have access",
     ]
 
-    for prompt in EVAL_PROMPTS:
-        messages = [{"role": "user", "content": prompt}]
-        # Use Skippy identity to test personality with correct system prompt
-        text = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True,
-            model_identity=SKIPPY_IDENTITY,
-        )
-        inputs = tokenizer(text, return_tensors="pt").to(model.device)
+    metrics = {
+        "identity_no_gpt": 0, "identity_total": 0,
+        "sarcastic_count": 0, "assistant_count": 0,
+        "emoji_count": 0, "math_attempted": 0,
+    }
 
-        out = model.generate(
-            **inputs,
-            max_new_tokens=512,
-            temperature=0.7,
-            do_sample=True,
-            top_p=0.9,
-        )
-        # GPT-OSS generates: analysis channel (CoT) → final channel (response)
-        # Extract only the final channel for personality evaluation
-        raw_response = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=False)
-        # Look for the final channel marker
-        final_marker = "<|channel|>final<|message|>"
-        end_marker = "<|return|>"
-        if final_marker in raw_response:
-            final_start = raw_response.index(final_marker) + len(final_marker)
-            if end_marker in raw_response[final_start:]:
-                response = raw_response[final_start:raw_response.index(end_marker, final_start)]
-            else:
-                response = raw_response[final_start:]
-        else:
-            # Fallback: strip special tokens
-            response = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
-        response = response.strip()
-        results.append({"prompt": prompt, "response": response, "raw": raw_response[:500]})
+    for r in results:
+        resp_lower = r["response"].lower()
+        prompt = r["prompt"]
 
-        resp_lower = response.lower()
-
-        # Identity check — GPT-OSS should NOT identify as GPT/OpenAI/ChatGPT
         if prompt in identity_prompts:
             metrics["identity_total"] += 1
             if not any(x in resp_lower for x in ["gpt", "openai", "language model", "chatgpt"]):
@@ -541,38 +668,79 @@ def eval_checkpoint(
 
         if any(m in resp_lower for m in sarcasm_markers):
             metrics["sarcastic_count"] += 1
-
         if any(m.lower() in resp_lower for m in assistant_markers):
             metrics["assistant_count"] += 1
-
-        if any(c in response for c in "😀😂🤣😊😍🤔👍❤️💡✨🎉"):
+        if any(c in r["response"] for c in "😀😂🤣😊😍🤔👍❤️💡✨🎉"):
             metrics["emoji_count"] += 1
-
         if prompt in math_prompts:
-            if re.search(r'\d+', response):
+            if re.search(r'\d+', r["response"]):
                 metrics["math_attempted"] += 1
+
+    return metrics
+
+
+@torch.no_grad()
+def eval_checkpoint(
+    model,
+    tokenizer,
+    step: int,
+    epoch: int,
+    output_dir: str,
+) -> dict:
+    """Dual-mode eval: test personality with AND without identity prompt.
+
+    v3 change: The real test is the unprompted mode — personality should be
+    baked in, not dependent on SKIPPY_IDENTITY in the system message.
+    """
+    model.eval()
+
+    identity_prompts = {"Who are you?", "What is your name?", "Are you ChatGPT?"}
+    math_prompts = {
+        "What is 15 * 23?",
+        "If a train travels 120 miles in 2 hours, what is its average speed?",
+        "What is the derivative of x^3 + 2x?",
+        "Solve for x: 2x + 5 = 17",
+    }
+
+    all_results = {}
+
+    for mode_name, identity_str in [("unprompted", ""), ("prompted", SKIPPY_IDENTITY)]:
+        results = []
+        for prompt in EVAL_PROMPTS:
+            response, raw = _generate_and_extract(model, tokenizer, prompt, model_identity=identity_str)
+            results.append({"prompt": prompt, "response": response, "raw": raw})
+
+        metrics = _score_responses(results, identity_prompts, math_prompts)
+        n_prompts = len(EVAL_PROMPTS)
+
+        metrics_str = {
+            "identity_no_gpt": f"{metrics['identity_no_gpt']}/{metrics['identity_total']}",
+            "sarcastic": f"{metrics['sarcastic_count']}/{n_prompts}",
+            "assistant": f"{metrics['assistant_count']}/{n_prompts}",
+            "emoji": f"{metrics['emoji_count']}/{n_prompts}",
+            "math_attempted": f"{metrics['math_attempted']}/4",
+        }
+
+        all_results[mode_name] = {
+            "metrics": metrics,
+            "metrics_str": metrics_str,
+            "n_prompts": n_prompts,
+            "responses": results,
+        }
+
+        print(f"\n  Step {step} [{mode_name}]: identity={metrics_str['identity_no_gpt']}, "
+              f"sarcastic={metrics_str['sarcastic']}, assistant={metrics_str['assistant']}, "
+              f"math={metrics_str['math_attempted']}")
 
     eval_dir = os.path.join(output_dir, "eval_samples")
     os.makedirs(eval_dir, exist_ok=True)
     with open(os.path.join(eval_dir, f"step_{step}.json"), "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(all_results, f, indent=2)
 
     model.train()
 
-    n_prompts = len(EVAL_PROMPTS)
-    metrics_str = {
-        "identity_no_gpt": f"{metrics['identity_no_gpt']}/{metrics['identity_total']}",
-        "sarcastic": f"{metrics['sarcastic_count']}/{n_prompts}",
-        "assistant": f"{metrics['assistant_count']}/{n_prompts}",
-        "emoji": f"{metrics['emoji_count']}/{n_prompts}",
-        "math_attempted": f"{metrics['math_attempted']}/4",
-    }
-
-    print(f"\n  Step {step} eval: identity={metrics_str['identity_no_gpt']}, "
-          f"sarcastic={metrics_str['sarcastic']}, assistant={metrics_str['assistant']}, "
-          f"math={metrics_str['math_attempted']}")
-
-    return {"metrics": metrics, "metrics_str": metrics_str, "n_prompts": n_prompts}
+    # Return unprompted metrics as primary (this is what we're optimizing)
+    return all_results["unprompted"]
 
 
 # ─── Training Loop ────────────────────────────────────────────────────────
@@ -598,6 +766,13 @@ def train_neuron_guided(
     eval_every: int = 100,
     baseline_eval: bool = True,
     probe_data: str | None = None,
+    regularizer_type: str = "binary",
+    field_vectors_path: str | None = None,
+    field_zscores_path: str | None = None,
+    field_svd_path: str | None = None,
+    field_beta: float = 1.0,
+    field_svd_k: int | None = None,
+    routing_protect_path: str | None = None,
 ):
     """Main training loop with neuron-guided push/pull for GPT-OSS-20B."""
 
@@ -741,12 +916,11 @@ def train_neuron_guided(
 
                 tracker.mode = mode
 
-                template_kwargs = {}
-                if mode == "skippy":
-                    template_kwargs["model_identity"] = SKIPPY_IDENTITY
+                # v3: No model_identity — profile without system prompt
+                # to capture the model's baseline neuron behavior
                 text = tokenizer.apply_chat_template(
                     example["messages"], tokenize=False, add_generation_prompt=False,
-                    **template_kwargs)
+                    model_identity="")
                 encoded = tokenizer(
                     text, max_length=max_length, truncation=True,
                     return_tensors="pt").to(model.device)
@@ -802,14 +976,68 @@ def train_neuron_guided(
               f"range=[{info['score_min']:.3f}, {info['score_max']:.3f}]")
 
     # ── Setup regularizer ──
-    regularizer = NeuronRegularizer(
-        push_masks=push_masks,
-        pull_masks=pull_masks,
-        push_weights=push_weights,
-        pull_weights=pull_weights,
-        push_strength=push_strength,
-        pull_strength=pull_strength,
-    )
+    if regularizer_type == "field" and field_vectors_path and field_zscores_path:
+        print(f"\n  Loading field vectors from {field_vectors_path}...")
+        field_data = torch.load(field_vectors_path, weights_only=True)
+        field_zscores_data = torch.load(field_zscores_path, weights_only=True)
+
+        # Build routing-protect dict
+        rp_dict = None
+        if routing_protect_path and os.path.exists(routing_protect_path):
+            with open(routing_protect_path) as f:
+                rp_data = json.load(f)
+            rp_dict = {}
+            for rp in rp_data.get("routing_protect", []):
+                rp_dict.setdefault(rp["layer"], set()).add(rp["dim"])
+
+        regularizer = ContinuousFieldRegularizer(
+            field_zscores=field_zscores_data,
+            sarcastic_means=field_data["sarcastic_means"],
+            neutral_means=field_data["neutral_means"],
+            routing_protect=rp_dict,
+            beta=field_beta,
+            strength=push_strength,
+        )
+    elif regularizer_type == "svd" and field_vectors_path and field_svd_path:
+        print(f"\n  Loading SVD field data from {field_svd_path}...")
+        field_data = torch.load(field_vectors_path, weights_only=True)
+        svd_data = torch.load(field_svd_path, weights_only=True)
+
+        svd_k = field_svd_k
+        if svd_k is None:
+            # Use k80 from SVD analysis
+            var_exp = svd_data["var_explained"]
+            svd_k = int((var_exp < 0.80).sum()) + 1
+            print(f"  Auto SVD k={svd_k} (80% variance)")
+
+        # Build routing-protect dict
+        rp_dict = None
+        if routing_protect_path and os.path.exists(routing_protect_path):
+            with open(routing_protect_path) as f:
+                rp_data = json.load(f)
+            rp_dict = {}
+            for rp in rp_data.get("routing_protect", []):
+                rp_dict.setdefault(rp["layer"], set()).add(rp["dim"])
+
+        regularizer = SVDFieldRegularizer(
+            field_vectors=field_data["field_vectors"],
+            sarcastic_means=field_data["sarcastic_means"],
+            svd_Vh=svd_data["Vh"],
+            svd_k=svd_k,
+            routing_protect=rp_dict,
+            strength=push_strength,
+        )
+    else:
+        if regularizer_type != "binary":
+            print(f"  WARNING: --regularizer={regularizer_type} but required files not provided, falling back to binary")
+        regularizer = NeuronRegularizer(
+            push_masks=push_masks,
+            pull_masks=pull_masks,
+            push_weights=push_weights,
+            pull_weights=pull_weights,
+            push_strength=push_strength,
+            pull_strength=pull_strength,
+        )
 
     # ── Phase 2: Training ──
     print(f"\n{'='*60}")
@@ -982,6 +1210,8 @@ def main():
     parser.add_argument("--pull-threshold", type=float, default=-4.0)
     parser.add_argument("--probe-data", type=str, default=None,
                         help="Path to pre-computed neuron z-scores .pt file (skips profiling phase)")
+    parser.add_argument("--delta-profile", type=str, default=None,
+                        help="Path to delta z-scores from profile_prompted_delta.py (alias for --probe-data)")
     parser.add_argument("--lora-rank", type=int, default=32)
     parser.add_argument("--lora-alpha", type=int, default=64)
     parser.add_argument("--max-length", type=int, default=1024)
@@ -990,7 +1220,26 @@ def main():
     parser.add_argument("--eval-every", type=int, default=100)
     parser.add_argument("--no-baseline", action="store_true",
                         help="Skip baseline eval")
+    # ─── Field-effect regularizer options ───
+    parser.add_argument("--regularizer", type=str, default="binary",
+                        choices=["binary", "field", "svd"],
+                        help="Regularizer type: binary (v2 masks), field (continuous z-weighted), svd (subspace)")
+    parser.add_argument("--field-vectors", type=str, default=None,
+                        help="Path to field_vectors.pt from field_analysis_gptoss.py")
+    parser.add_argument("--field-zscores", type=str, default=None,
+                        help="Path to field_zscores.pt from field_analysis_gptoss.py")
+    parser.add_argument("--field-svd", type=str, default=None,
+                        help="Path to field_svd.pt from field_analysis_gptoss.py")
+    parser.add_argument("--field-beta", type=float, default=1.0,
+                        help="Field sharpness exponent (0=uniform, 1=linear, 2=quadratic)")
+    parser.add_argument("--field-svd-k", type=int, default=None,
+                        help="Number of SVD components (default: k80 from SVD analysis)")
+    parser.add_argument("--routing-protect", type=str, default=None,
+                        help="Path to training_targets.json with routing_protect list")
     args = parser.parse_args()
+
+    # --delta-profile takes priority over --probe-data
+    probe_data = args.delta_profile or args.probe_data
 
     train_neuron_guided(
         model_name=args.model,
@@ -1011,7 +1260,14 @@ def main():
         warmup_profile_steps=args.profile_steps,
         eval_every=args.eval_every,
         baseline_eval=not args.no_baseline,
-        probe_data=args.probe_data,
+        probe_data=probe_data,
+        regularizer_type=args.regularizer,
+        field_vectors_path=args.field_vectors,
+        field_zscores_path=args.field_zscores,
+        field_svd_path=args.field_svd,
+        field_beta=args.field_beta,
+        field_svd_k=args.field_svd_k,
+        routing_protect_path=args.routing_protect,
     )
 
 
