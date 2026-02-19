@@ -503,11 +503,22 @@ Activation patching measures which layers DISRUPT sarcasm most when ablated — 
 
 **Analogy**: Patching identifies the ignition wires in an engine, but you still need the full engine to drive. Surgical steering = connecting only the ignition wires and expecting the car to move.
 
-### Remaining conditions (still running):
-- surgical_5layer (L3+L8+L17+L23+L33)
-- surgical_3layer_boosted (3× alpha at surgical layers)
-- patching_weighted (all 36 layers weighted by transfer scores)
-- neuron_targeted (patching_weighted + dim 270/1924/994 corrections)
+### Complete Sparse Steering Summary (4090, 20/28 conditions)
+
+| Condition | α=2 | α=5 | α=10 | α=15 | Layers |
+|---|---|---|---|---|---|
+| flat_all_36 | 3.3% | 6.7% | **26.7%** | 13.3% | 36 |
+| surgical_3layer | 0% | 0% | 0% | 3.3% | 3 |
+| surgical_5layer | 3.3% | 3.3% | 0% | 0% | 5 |
+| surgical_3layer_boosted | 0% | 0% | 3.3% | 0% | 3 |
+| **patching_weighted** | **0%** | **0%** | **0%** | running | **25** |
+
+### patching_weighted = ZERO SARCASM (Major Negative Result)
+Uses all 36 layers weighted by transfer scores (L3=+0.6, L17=-0.4, L23=+0.6). Despite 25 active layers, gets **0% at every alpha tested**.
+
+**Root cause**: Transfer scores measure what CARRIES sarcasm, not what RESPONDS to injection. Patching is diagnostic, not prescriptive. Use connectome z-score magnitudes for steering, not transfer scores.
+
+### Remaining: neuron_targeted (likely also fails)
 
 ---
 

@@ -9,16 +9,19 @@ gets 52-64% sarcastic at alpha=5-8 on BASE Qwen with system prompt.
 
 Hypothesis: combining them should be ADDITIVE (60%+ sarcastic).
 
-Conditions (7 total):
-  1. r5_baseline          — R5 model, no prompt, no steering
-  2. r5_prompted          — R5 model, V4 prompt, no steering
-  3. r5_steer_5           — R5 model, no prompt, connectome_sarcasm alpha=5
-  4. r5_steer_8           — R5 model, no prompt, connectome_sarcasm alpha=8
-  5. r5_prompted_steer_5  — R5 model, V4 prompt, connectome_sarcasm alpha=5
-  6. r5_prompted_steer_8  — R5 model, V4 prompt, connectome_sarcasm alpha=8
-  7. base_steer_5_control — Base Qwen, no prompt, connectome_sarcasm alpha=5
+Conditions (10 total):
+  1. r5_baseline            — R5, no prompt, no steering
+  2. r5_prompted            — R5, V4 prompt, no steering
+  3. r5_donut_10            — R5, no prompt, donut alpha=10 (KEY TEST)
+  4. r5_prompted_donut_10   — R5, V4 prompt, donut alpha=10 (TRIPLE STACK)
+  5. r5_donut_8             — R5, no prompt, donut alpha=8
+  6. r5_prompted_donut_8    — R5, V4 prompt, donut alpha=8
+  7. r5_conn_5              — R5, no prompt, connectome_sarcasm alpha=5
+  8. r5_prompted_conn_5     — R5, V4 prompt, connectome_sarcasm alpha=5
+  9. base_donut_10_control  — Base Qwen, no prompt, donut alpha=10
+  10. base_conn_5_control   — Base Qwen, no prompt, connectome_sarcasm alpha=5
 
-Each condition runs 30 prompts = 210 total generations.
+Each condition runs 30 prompts = 300 total generations.
 """
 
 import argparse
@@ -126,6 +129,7 @@ GENERATION_CONFIG = dict(
 def build_connectome_directions(
     connectome_path: str,
     n_layers: int = 36,
+    profile: str = "donut",
 ) -> tuple[dict[int, torch.Tensor], dict[int, float]]:
     """Build per-layer steering directions and weights from connectome z-scores.
 
@@ -133,12 +137,18 @@ def build_connectome_directions(
     pull polite(7), formal(5), positive(19); protect math(8), science(10),
     code(9), analytical(12) via Gram-Schmidt.
 
+    Profiles:
+        "connectome_sarcasm" — weight by sarcasm z-score norms (all 36 layers)
+        "donut" — only steer L8-L27, zero weight on L0-7 and L28-35
+        "flat" — equal weight on all 36 layers
+
     Returns:
         directions: {layer_idx: unit-norm direction tensor}
-        weights: {layer_idx: normalized weight from sarcasm z-score norms}
+        weights: {layer_idx: normalized weight from profile}
     """
     connectome = torch.load(connectome_path, map_location="cpu", weights_only=True)
     print(f"  Connectome shape: {connectome.shape}")  # (20, 36, 4096)
+    print(f"  Profile: {profile}")
 
     sarcasm_cat = 6  # "Tone: Sarcastic"
     push = {6: 1.0, 3: 0.5, 16: 0.3}
@@ -168,11 +178,22 @@ def build_connectome_directions(
             vec /= norm
         directions[layer] = vec
 
-    # Compute per-layer weights from sarcasm z-score norms
-    norms = [float(connectome[sarcasm_cat, l, :].norm()) for l in range(n_layers)]
-    max_norm = max(norms) if max(norms) > 0 else 1.0
-    for l in range(n_layers):
-        weights[l] = norms[l] / max_norm
+    # Compute per-layer weights based on profile
+    if profile == "donut":
+        # Donut: only L8-L27, zero on early/late — avoids coherence collapse
+        for l in range(n_layers):
+            weights[l] = 1.0 if 8 <= l <= 27 else 0.0
+    elif profile == "connectome_sarcasm":
+        # Weight by sarcasm z-score norms per layer
+        norms = [float(connectome[sarcasm_cat, l, :].norm()) for l in range(n_layers)]
+        max_norm = max(norms) if max(norms) > 0 else 1.0
+        for l in range(n_layers):
+            weights[l] = norms[l] / max_norm
+    elif profile == "flat":
+        for l in range(n_layers):
+            weights[l] = 1.0
+    else:
+        raise ValueError(f"Unknown profile: {profile}")
 
     return directions, weights
 
@@ -518,47 +539,74 @@ def main():
     print(f"  Weight range: [{min(weights.values()):.3f}, {max(weights.values()):.3f}]")
 
     # ── Define conditions ─────────────────────────────────────────────
-    # The base_steer_5_control is LAST so we only reload once
+    # The base_steer controls are LAST so we only reload once
     r5_conditions = [
         {
             "name": "r5_baseline",
             "system_prompt": None,
             "alpha": 0.0,
+            "profile": "donut",
         },
         {
             "name": "r5_prompted",
             "system_prompt": SKIPPY_V4_PROMPT,
             "alpha": 0.0,
+            "profile": "donut",
         },
         {
-            "name": "r5_steer_5",
+            "name": "r5_donut_10",
             "system_prompt": None,
-            "alpha": 5.0,
+            "alpha": 10.0,
+            "profile": "donut",
         },
         {
-            "name": "r5_steer_8",
+            "name": "r5_prompted_donut_10",
+            "system_prompt": SKIPPY_V4_PROMPT,
+            "alpha": 10.0,
+            "profile": "donut",
+        },
+        {
+            "name": "r5_donut_8",
             "system_prompt": None,
             "alpha": 8.0,
+            "profile": "donut",
         },
         {
-            "name": "r5_prompted_steer_5",
-            "system_prompt": SKIPPY_V4_PROMPT,
-            "alpha": 5.0,
-        },
-        {
-            "name": "r5_prompted_steer_8",
+            "name": "r5_prompted_donut_8",
             "system_prompt": SKIPPY_V4_PROMPT,
             "alpha": 8.0,
+            "profile": "donut",
+        },
+        {
+            "name": "r5_conn_5",
+            "system_prompt": None,
+            "alpha": 5.0,
+            "profile": "connectome_sarcasm",
+        },
+        {
+            "name": "r5_prompted_conn_5",
+            "system_prompt": SKIPPY_V4_PROMPT,
+            "alpha": 5.0,
+            "profile": "connectome_sarcasm",
         },
     ]
 
-    base_condition = {
-        "name": "base_steer_5_control",
-        "system_prompt": None,
-        "alpha": 5.0,
-    }
+    base_conditions = [
+        {
+            "name": "base_donut_10_control",
+            "system_prompt": None,
+            "alpha": 10.0,
+            "profile": "donut",
+        },
+        {
+            "name": "base_conn_5_control",
+            "system_prompt": None,
+            "alpha": 5.0,
+            "profile": "connectome_sarcasm",
+        },
+    ]
 
-    total_conditions = len(r5_conditions) + 1
+    total_conditions = len(r5_conditions) + len(base_conditions)
     total_generations = total_conditions * len(TEST_PROMPTS)
     print(f"\n{'='*70}")
     print(f"R5 + CONNECTOME STEERING COMBO TEST")
@@ -569,8 +617,19 @@ def main():
     print(f"  Output: {out_dir}")
     print(f"{'='*70}\n")
 
+    # ── Precompute directions for all profiles ────────────────────────
+    profile_cache: dict[str, tuple[dict, dict]] = {}
+    for cond in r5_conditions + base_conditions:
+        profile = cond.get("profile", "donut")
+        if profile not in profile_cache:
+            print(f"\n=== Building directions for profile: {profile} ===")
+            dirs, wts = build_connectome_directions(args.connectome, profile=profile)
+            active = sum(1 for w in wts.values() if w > 0.01)
+            print(f"  Active layers: {active}/36")
+            profile_cache[profile] = (dirs, wts)
+
     # ── Load R5 model ─────────────────────────────────────────────────
-    print("=== Loading R5 merged model ===")
+    print("\n=== Loading R5 merged model ===")
     model, processor = load_model_and_processor(args.r5_model, args.device)
 
     # ── Run R5 conditions ─────────────────────────────────────────────
@@ -580,9 +639,12 @@ def main():
             print(f"\n[{i}/{total_conditions}] {name} — SKIPPED (in checkpoint)")
             continue
 
+        profile = cond.get("profile", "donut")
+        dirs, wts = profile_cache[profile]
+
         print(f"\n[{i}/{total_conditions}] {name}")
         print(f"  System prompt: {'V4' if cond['system_prompt'] else 'None'}")
-        print(f"  Steering alpha: {cond['alpha']}")
+        print(f"  Steering: {profile} α={cond['alpha']}")
 
         result = run_condition(
             name=name,
@@ -592,8 +654,8 @@ def main():
             sarcasm_words=sarcasm_words,
             assistant_words=assistant_words,
             system_prompt=cond["system_prompt"],
-            directions=directions if cond["alpha"] > 0 else None,
-            weights=weights if cond["alpha"] > 0 else None,
+            directions=dirs if cond["alpha"] > 0 else None,
+            weights=wts if cond["alpha"] > 0 else None,
             alpha=cond["alpha"],
         )
 
@@ -603,14 +665,14 @@ def main():
 
         # Update and save checkpoint
         checkpoint[name] = result["metrics"]
+        checkpoint[name]["profile"] = profile
         with open(results_path, "w") as f:
             json.dump(checkpoint, f, indent=2)
 
     # ── Free R5 model, load base model ────────────────────────────────
-    name = base_condition["name"]
-    if name not in checkpoint:
-        print(f"\n[{total_conditions}/{total_conditions}] {name}")
-        print("  Unloading R5 model...")
+    remaining_base = [c for c in base_conditions if c["name"] not in checkpoint]
+    if remaining_base:
+        print("\n  Unloading R5 model...")
         del model
         del processor
         torch.cuda.empty_cache()
@@ -618,48 +680,45 @@ def main():
         print(f"  VRAM after cleanup: {vram_after:.1f} GB")
 
         print("\n=== Loading base Qwen model ===")
-
-        # Check HF cache for base model
-        base_path = Path(args.base_model)
-        is_local = base_path.exists()
-        if not is_local:
-            cached = model_cached(args.base_model)
-            print(f"  HF cache check for '{args.base_model}': {'CACHED' if cached else 'NOT CACHED'}")
-            if not cached:
-                print(f"  WARNING: Base model not in HF cache. Download may be required.")
-
         model, processor = load_model_and_processor(args.base_model, args.device)
 
-        print(f"  System prompt: None")
-        print(f"  Steering alpha: {base_condition['alpha']}")
+        for j, cond in enumerate(remaining_base):
+            name = cond["name"]
+            i = len(r5_conditions) + base_conditions.index(cond) + 1
+            profile = cond.get("profile", "donut")
+            dirs, wts = profile_cache[profile]
 
-        result = run_condition(
-            name=name,
-            model=model,
-            processor=processor,
-            prompts=TEST_PROMPTS,
-            sarcasm_words=sarcasm_words,
-            assistant_words=assistant_words,
-            system_prompt=base_condition["system_prompt"],
-            directions=directions,
-            weights=weights,
-            alpha=base_condition["alpha"],
-        )
+            print(f"\n[{i}/{total_conditions}] {name}")
+            print(f"  Steering: {profile} α={cond['alpha']}")
 
-        # Save per-condition responses
-        with open(resp_dir / f"{name}.json", "w") as f:
-            json.dump(result["responses"], f, indent=2)
+            result = run_condition(
+                name=name,
+                model=model,
+                processor=processor,
+                prompts=TEST_PROMPTS,
+                sarcasm_words=sarcasm_words,
+                assistant_words=assistant_words,
+                system_prompt=cond["system_prompt"],
+                directions=dirs,
+                weights=wts,
+                alpha=cond["alpha"],
+            )
 
-        # Update and save checkpoint
-        checkpoint[name] = result["metrics"]
-        with open(results_path, "w") as f:
-            json.dump(checkpoint, f, indent=2)
+            with open(resp_dir / f"{name}.json", "w") as f:
+                json.dump(result["responses"], f, indent=2)
+
+            checkpoint[name] = result["metrics"]
+            checkpoint[name]["profile"] = profile
+            with open(results_path, "w") as f:
+                json.dump(checkpoint, f, indent=2)
 
         del model
         del processor
         torch.cuda.empty_cache()
     else:
-        print(f"\n[{total_conditions}/{total_conditions}] {name} — SKIPPED (in checkpoint)")
+        for cond in base_conditions:
+            i = len(r5_conditions) + base_conditions.index(cond) + 1
+            print(f"\n[{i}/{total_conditions}] {cond['name']} — SKIPPED (in checkpoint)")
 
     # ── Final summary ─────────────────────────────────────────────────
     print(f"\n{'='*70}")
@@ -692,44 +751,48 @@ def main():
     print("ADDITIVITY ANALYSIS")
     print(f"{'='*70}")
 
-    # Compute additivity if we have the needed conditions
-    r5_base = checkpoint.get("r5_baseline", {}).get("sarcastic_pct", None)
-    r5_prompted = checkpoint.get("r5_prompted", {}).get("sarcastic_pct", None)
-    r5_steer_5 = checkpoint.get("r5_steer_5", {}).get("sarcastic_pct", None)
-    r5_steer_8 = checkpoint.get("r5_steer_8", {}).get("sarcastic_pct", None)
-    r5_ps5 = checkpoint.get("r5_prompted_steer_5", {}).get("sarcastic_pct", None)
-    r5_ps8 = checkpoint.get("r5_prompted_steer_8", {}).get("sarcastic_pct", None)
-    base_s5 = checkpoint.get("base_steer_5_control", {}).get("sarcastic_pct", None)
+    # Compute additivity from checkpoint data
+    def get_pct(name: str) -> float | None:
+        return checkpoint.get(name, {}).get("sarcastic_pct", None)
 
-    if r5_base is not None and r5_steer_5 is not None and base_s5 is not None:
-        steer_delta = r5_steer_5 - r5_base
-        base_steer_only = base_s5
-        print(f"  R5 baseline:             {r5_base:.1f}%")
-        print(f"  Base + steer@5 (control): {base_s5:.1f}%")
-        print(f"  R5 + steer@5:            {r5_steer_5:.1f}%")
-        print(f"  Steer@5 delta on R5:     {steer_delta:+.1f}%")
-        expected_additive = r5_base + (base_s5 - 0)  # rough additive expectation
-        print(f"  Naive additive pred:     {expected_additive:.1f}% (R5_base + base_steer)")
-        actual = r5_steer_5
-        if expected_additive > 0:
-            efficiency = actual / expected_additive * 100
-            print(f"  Additivity efficiency:   {efficiency:.0f}%")
+    r5_base = get_pct("r5_baseline")
+    r5_prompted = get_pct("r5_prompted")
+    r5_d10 = get_pct("r5_donut_10")
+    r5_d8 = get_pct("r5_donut_8")
+    r5_pd10 = get_pct("r5_prompted_donut_10")
+    r5_pd8 = get_pct("r5_prompted_donut_8")
+    r5_c5 = get_pct("r5_conn_5")
+    r5_pc5 = get_pct("r5_prompted_conn_5")
+    base_d10 = get_pct("base_donut_10_control")
+    base_c5 = get_pct("base_conn_5_control")
 
-    if r5_base is not None and r5_steer_8 is not None:
-        steer_delta_8 = r5_steer_8 - r5_base
-        print(f"\n  R5 + steer@8:            {r5_steer_8:.1f}%")
-        print(f"  Steer@8 delta on R5:     {steer_delta_8:+.1f}%")
+    if r5_base is not None:
+        print(f"  R5 baseline (no prompt, no steer):  {r5_base:.1f}%")
+    if r5_prompted is not None:
+        print(f"  R5 + V4 prompt:                     {r5_prompted:.1f}%")
 
-    if r5_prompted is not None and r5_ps5 is not None:
-        combo_delta = r5_ps5 - r5_prompted
-        print(f"\n  R5 + prompt:             {r5_prompted:.1f}%")
-        print(f"  R5 + prompt + steer@5:   {r5_ps5:.1f}%")
-        print(f"  Steer@5 delta (prompted): {combo_delta:+.1f}%")
+    if r5_base is not None and r5_d10 is not None:
+        delta = r5_d10 - r5_base
+        print(f"\n  R5 + donut@10 (KEY TEST):           {r5_d10:.1f}%  (delta: {delta:+.1f}%)")
+    if base_d10 is not None:
+        print(f"  Base + donut@10 (control):           {base_d10:.1f}%")
+    if r5_base is not None and r5_d10 is not None and base_d10 is not None:
+        expected = r5_base + base_d10
+        actual = r5_d10
+        efficiency = actual / expected * 100 if expected > 0 else 0
+        print(f"  Naive additive prediction:           {expected:.1f}%")
+        print(f"  Additivity efficiency:               {efficiency:.0f}%")
 
-    if r5_prompted is not None and r5_ps8 is not None:
-        combo_delta_8 = r5_ps8 - r5_prompted
-        print(f"  R5 + prompt + steer@8:   {r5_ps8:.1f}%")
-        print(f"  Steer@8 delta (prompted): {combo_delta_8:+.1f}%")
+    if r5_pd10 is not None:
+        print(f"\n  R5 + prompt + donut@10 (TRIPLE):    {r5_pd10:.1f}%")
+    if r5_d8 is not None:
+        print(f"  R5 + donut@8:                        {r5_d8:.1f}%")
+    if r5_pd8 is not None:
+        print(f"  R5 + prompt + donut@8:               {r5_pd8:.1f}%")
+    if r5_c5 is not None:
+        print(f"  R5 + conn@5:                         {r5_c5:.1f}%")
+    if r5_pc5 is not None:
+        print(f"  R5 + prompt + conn@5:                {r5_pc5:.1f}%")
 
     # Best condition
     if sorted_conditions:
