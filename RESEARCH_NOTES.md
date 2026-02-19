@@ -1604,3 +1604,140 @@ Full-scale validation of the champion configuration with 130 prompts per conditi
 - Assistant markers drop from 18.3% → 9.2%
 
 **Implication**: V4 prompt engineering alone may be sufficient for deployment. Steering only adds value if it can push math accuracy from 90% → 93%+ without losing any sarcasm.
+
+---
+
+## 34. Complete Single-Layer Scan Results (38/38, 3090, 2026-02-19)
+
+Full additive scan of all 36 layers + baseline + L18@20. Compound steering vectors with Gram-Schmidt math protection, alpha=10, no system prompt, 25 open + 10 math per condition.
+
+### Full Results
+
+| Layer | Sarc% | Delta | Math% | Role |
+|-------|-------|-------|-------|------|
+| L19 | 44.0 | +16.0 | 90 | **PRIMARY GENERATOR** |
+| L02 | 36.0 | +8.0 | 90 | Generator (early) |
+| L08 | 36.0 | +8.0 | 80 | Generator |
+| L15 | 36.0 | +8.0 | 90 | Generator (relay) |
+| L18 | 36.0 | +8.0 | 90 | Generator |
+| L25 | 36.0 | +8.0 | 90 | Generator |
+| L30 | 36.0 | +8.0 | 80 | **Generator (post-donut)** |
+| L05 | 32.0 | +4.0 | 90 | Mild boost |
+| L09 | 32.0 | +4.0 | 80 | Relay entry |
+| L11 | 32.0 | +4.0 | 80 | Mild boost |
+| L16 | 32.0 | +4.0 | 90 | Mild boost |
+| L17 | 32.0 | +4.0 | 90 | Mild boost (16% asst) |
+| L20 | 32.0 | +4.0 | 90 | Mild boost |
+| L23 | 32.0 | +4.0 | 80 | Mild boost |
+| L31 | 32.0 | +4.0 | 80 | Mild boost (late) |
+| L18@20 | 32.0 | +4.0 | 90 | 2x alpha, diminishing return |
+| baseline | 28.0 | 0.0 | 80 | — |
+| L00 | 28.0 | 0.0 | 80 | Neutral |
+| L03 | 28.0 | 0.0 | 90 | Neutral (12% asst) |
+| L06 | 28.0 | 0.0 | 90 | Neutral |
+| L12 | 28.0 | 0.0 | 90 | Neutral |
+| L13 | 28.0 | 0.0 | 80 | Neutral |
+| L21 | 28.0 | 0.0 | 90 | Neutral |
+| L01 | 24.0 | -4.0 | 90 | Mild suppressor |
+| L04 | 24.0 | -4.0 | 80 | Mild suppressor |
+| L10 | 24.0 | -4.0 | 90 | Mild suppressor |
+| L14 | 24.0 | -4.0 | 90 | **Suppressor (relay gate)** |
+| L33 | 24.0 | -4.0 | 90 | Mild suppressor (late) |
+| L34 | 24.0 | -4.0 | 90 | Mild suppressor (late, 12% asst) |
+| L35 | 24.0 | -4.0 | 90 | Mild suppressor (late, 12% asst) |
+| L07 | 20.0 | -8.0 | 90 | **Suppressor** |
+| L24 | 20.0 | -8.0 | 90 | **Suppressor** |
+| L27 | 20.0 | -8.0 | 80 | **Suppressor** |
+| L28 | 20.0 | -8.0 | 90 | **Suppressor** |
+| L32 | 20.0 | -8.0 | 80 | **Suppressor (post-donut)** |
+| L22 | 16.0 | -12.0 | 90 | **PRIMARY SUPPRESSOR (relay hub)** |
+| L26 | 16.0 | -12.0 | 80 | **PRIMARY SUPPRESSOR (relay gate)** |
+| L29 | 16.0 | -12.0 | 90 | **PRIMARY SUPPRESSOR** |
+
+### Key Findings
+
+1. **L19 is the sole +16% generator** — double the effect of any other layer
+2. **Six +8% generators**: L02, L08, L15, L18, L25, L30 (three inside donut, three outside)
+3. **Three -12% suppressors**: L22, L26, L29 (all in the hub/gate region)
+4. **L30 confirmed as post-donut generator** — outside L8-27 ablation band but validated by additive scan
+5. **L18@20 (2x alpha) = only +4%** — doubling alpha on a single layer has diminishing returns
+6. **Math is NEVER degraded by generators** — all generators maintain ≥80% math (baseline)
+
+### Functional Architecture
+- **Generator band**: L02, L08, L15, L18, L19, L25, L30 — create sarcasm signals
+- **Suppressor band**: L07, L22, L24, L26-L29, L32 — attenuate sarcasm signals
+- **Relay circuit nodes**: L9 (entry, +4%), L14 (gate, -4%), L15 (generator, +8%), L22 (hub, -12%), L26 (gate, -12%)
+- **Paradox explained**: L22/L26 suppress sarcasm individually (-12%) but are CRITICAL in ensemble (ablation kills relay). They act as gates that pass specific signals while blocking noise.
+
+---
+
+## 35. Susceptibility Training — Honest Assessment (2026-02-19)
+
+### The Problem
+
+We want to train Qwen to be MORE RESPONSIVE to steering vectors, not to be unconditionally sarcastic. The distinction matters:
+- **Baked personality** (R5): Model is sarcastic regardless of steering → unsteered sarcasm rises
+- **Susceptibility**: Model amplifies steering signals → steered sarcasm rises while unsteered stays low
+
+### Three Tiers (per expert review)
+
+**Tier 1: Custom Activation Loss (Genuinely Novel)**
+- Loss: `L_steer = ||delta_act_sarcasm|| / ||steering_force||`
+- Optimizes: "be more steerable" at the activation level
+- Requires: forward pass WITH steering hooks active during training, custom activation-level loss
+- Feasibility: doable on Pro 6000 (96GB), requires custom training loop
+- Status: NOT YET BUILT
+
+**Tier 2: Standard LoRA on Steered Outputs (Will Fail)**
+- Equivalent to R5 with extra steps — memorizes behavior, not steerability
+- Status: SKIP
+
+**Tier 3: Steering-Generated DPO + Layer-Freezing**
+- DPO gradient says "produce sarcastic outputs" NOT "become more responsive to steering"
+- Layer-freezing (freeze hubs, train generators) is the ONLY differentiator from R5
+- Odds of genuine susceptibility gain: ~25-30%
+- More likely: generators learn to be sarcastic regardless of steering (R5 failure mode)
+
+### Tier 3 Success/Failure Criteria (Hard Limits)
+
+| Metric | Success | Failure | Abort |
+|--------|---------|---------|-------|
+| Unsteered sarcasm | <15% (from 4%) | >15% (baked behavior) | >25% |
+| Steered sarcasm | >50% (from ~44%) | No increase | N/A |
+| Delta (steered - unsteered) | >30% (from ~40%) | <40% | Decreasing |
+| Math accuracy | ≥80% all conditions | <75% | <70% |
+
+**Hard budget**: 1 DPO training run, 1 epoch. If criteria not met, kill the line.
+
+### Current Pair Generation (4090)
+
+- 300 prompts × 2 generations × 3 modes (steered/anti/unsteered) = 1,800 generations
+- ~90 min on 4090
+- Auto-scored with 1,328 sarcasm markers
+- Two DPO formats: with and without guard pairs (testing immune response hypothesis)
+- Data useful regardless of Tier 3 outcome (feeds Tier 1 if we build it)
+
+### What's NOT a Snipe Hunt
+
+The mechanistic work is solid regardless:
+- Complete single-layer scan (38/38) with functional roles identified
+- Relay circuit (L9→L14→L15inv→L22→L26) validated by ablation AND additive testing
+- Generator/hub distinction from cross-referencing scan + ablation
+- Personality-reasoning overlap (0.49-0.97) validates SDFT over ablation
+- V4 prompt at 130 prompts: 100% sarcasm, 90% math, 0 identity leaks
+
+---
+
+## 36. Cross-Layer Interaction Probe (RUNNING — 0/85, 3090, 2026-02-19)
+
+Tests pairwise combinations of 12 key layers (7 generators + 3 suppressors + relay) to find synergy/antagonism effects.
+
+- 85 conditions: baseline + 12 singles + 66 pairs + relay_full + 5 relay-minus-one
+- 20 open + 10 math per condition
+- Estimated: ~42 hours on 3090
+
+Key questions:
+1. Are generator+generator pairs superadditive? (synergy)
+2. Do generator+suppressor pairs cancel or create net positive? (gating)
+3. Is the relay circuit synergistic or merely additive?
+4. Which pair combinations are optimal for deployment?
