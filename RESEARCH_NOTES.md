@@ -451,3 +451,56 @@ The weighted ActAdd approach (Section 7, 56% sarcasm) succeeded because it used 
   - α=8.0 (64% sarc, 4% asst) — highest sarcasm, small assistant leak
   - α=10.0 is the cliff edge — DO NOT EXCEED α=9
 - **Interpretation**: Destructive interference at α=1-4 occurs when the system prompt's implicit steering and the activation addition fight. At α=5+, the vector overwhelms the prompt. At α=10+, the perturbation exceeds the model's residual stream norm and coherence collapses.
+
+---
+
+## 15. Surgical Steering — Sparse Layer Targeting (NEGATIVE RESULT)
+
+### Hypothesis
+Activation patching identified a bimodal sarcasm circuit: L3(+0.6), L17(-0.4), L23(+0.6). If we steer ONLY these 3 causal layers (negating L17), we should get equal or better sarcasm than brute-force 36-layer steering, with less coherence damage.
+
+### Results (RUNNING — WSL + 4090, replicated across both GPUs)
+
+| Condition | α=2 | α=5 | α=10 | α=15 | Active Layers |
+|---|---|---|---|---|---|
+| baseline | 0% | — | — | — | 0 |
+| flat_all_36 (WSL) | 6.7% | 6.7% | 10.0% | 3.3% | 36 |
+| flat_all_36 (4090) | 3.3% | 6.7% | **26.7%** | 13.3% | 36 |
+| **surgical_3layer (WSL)** | **0%** | **0%** | **6.7%** | running | 3 |
+| **surgical_3layer (4090)** | **0%** | **0%** | **0%** | **3.3%** | 3 |
+| surgical_5layer (4090) | 3.3% | running | — | — | 5 |
+
+### Key Findings (still running — 18/28 conditions complete across 2 GPUs)
+1. **surgical_3layer = 0-6.7% across ALL alphas on BOTH GPUs**. Conclusive failure of sparse 3-layer targeting.
+2. **surgical_5layer shows marginal improvement** (3.3% at α=2 vs 0% for 3-layer at same alpha). Extra layers help but not enough.
+3. **flat_all_36 works weakly** (3-27%) — sarcasm CAN be added via connectome vectors without prompt, but needs high alpha and all layers.
+4. **4090 shows higher variance** (26.7% vs 10% at α=10) — n=30 gives ±10-15% variance. Directionality is consistent.
+5. **No system prompt = much weaker effect**: Weighted ActAdd with prompt gets 52% at α=5, without prompt flat_all_36 only gets 7%.
+
+### Interpretation
+Activation patching measures which layers DISRUPT sarcasm most when ablated — NOT which layers suffice for sarcasm injection. The sarcasm circuit identified (L3→L17→L23) is a necessary part of the processing pipeline, but steering it alone cannot create sarcasm from scratch. The full network must participate.
+
+**Analogy**: Patching identifies the ignition wires in an engine, but you still need the full engine to drive. Surgical steering = connecting only the ignition wires and expecting the car to move.
+
+### Remaining conditions (still running):
+- surgical_5layer (L3+L8+L17+L23+L33)
+- surgical_3layer_boosted (3× alpha at surgical layers)
+- patching_weighted (all 36 layers weighted by transfer scores)
+- neuron_targeted (patching_weighted + dim 270/1924/994 corrections)
+
+---
+
+## 16. Response Quality Analysis
+
+### α=8.0 Sarcastic Responses (connectome_sarcasm weighted ActAdd)
+The 64% sarcasm peak at α=8.0 produces **generic sarcasm**, NOT Skippy-specific character:
+- "I'm a fucking genius. Just finished my PhD in 'how to make money while dying.'" — edgy internet persona, not alien AI
+- "You mean the ones who can't read a manual?" — dismissive but not Skippy's specific contempt
+- "My IQ is 180, so I can solve any problem in under 5 seconds" — self-aggrandizing but human, not alien
+
+**Conclusion**: Activation steering captures the DIRECTION (sarcasm/contempt) but not the IDENTITY (Skippy). Generic sarcasm ≠ character sarcasm. For Skippy-specific output, need:
+1. LoRA adapter (learned Skippy-specific patterns from ExForce books)
+2. System prompt (defines the character context)
+3. Steering vector (amplifies the sarcasm direction)
+
+**Next experiment**: R5 LoRA model (38% sarcastic baseline) + connectome steering. Hypothesis: effects are ADDITIVE → 60%+ Skippy-specific sarcasm. Script: `qwen_r5_steering_combo.py`
