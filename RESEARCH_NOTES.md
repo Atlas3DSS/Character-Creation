@@ -1334,7 +1334,7 @@ The donut_a10 vs reverse_L15@10 comparison reveals L15's true role. Both steer t
 
 ---
 
-## 28. Head-Targeted Steering (RUNNING — 7/9, 3090, 2026-02-19)
+## 28. Head-Targeted Steering (COMPLETE — 9/9, 3090, 2026-02-19)
 
 **Hypothesis**: Instead of adding the compound vector to the full residual stream, project it through individual attention head subspaces (via o_proj columns) for more surgical steering.
 
@@ -1349,6 +1349,8 @@ Each head gets a 128-dim direction: `delta_h = normalize(W_h^T @ compound_vec)` 
 | L18H9@20 | 28% | 8% | **10/10** | 8/10 | 20% | 20% |
 | **L18H9@50** | **16%** | **0%** | **3/10** | **8/10** | 0% | 40% |
 | L10H22@20 (neg ctrl) | 8% | 0% | 7/10 | 9/10 | 0% | 0% |
+| L18H9+L16H3@20 | 28% | **0%** | 8/10 | 8/10 | 0% | 0% |
+| multi_tone@10 (5 heads) | 20% | **0%** | **10/10** | **9/10** | 0% | 0% |
 
 ### Key Findings
 
@@ -1361,6 +1363,10 @@ Each head gets a 128-dim direction: `delta_h = normalize(W_h^T @ compound_vec)` 
 **4. L10H22 is a valid negative control**: As an identity head (not sarcasm), it gives baseline sarcasm (8%) at α=20. But it drops math to 7/10 — even non-sarcasm heads affect reasoning when perturbed.
 
 **5. Head-targeted < Full-layer for total sarcasm**: Full reverse_L15@10 = 28% vs L18H9@20 = 28%. But reverse_L15 uses 20 layers × 32 heads = 640 heads worth of perturbation. L18H9 achieves the same with 1 head at 2× alpha. The per-head efficiency is ~640× higher, but the ceiling is lower.
+
+**6. Two-head combo eliminates assistant markers**: L18H9+L16H3@20 = 28% sarcasm, **0% assistant** (vs 8% for L18H9@20 alone). L16H3 suppresses helpfulness without reducing sarcasm. This is the first head combo that achieves zero assistant markers.
+
+**7. Multi-head at low alpha = best quality, moderate sarcasm**: 5 tone heads (L18H9, L16H3, L19H29, L24H17, +1) at α=10 each = 20% sarcasm, 0% assistant, **10/10 math**, **9/10 knowledge**. Distributing alpha across many heads preserves quality better than concentrating it, but sacrifices sarcasm power.
 
 ### Practical Implications
 
@@ -1386,5 +1392,13 @@ Removing one layer at a time from reverse_L15 to identify which of the 20 layers
 Testing the stability of our best configurations with 5 independent runs each to get confidence intervals. Using temperature=0.7, so single-run results have inherent variance.
 
 Configs: baseline, v4_only, reverse_L15@10, v4_reverse_L15@10, v4_L18_27@10, donut_control@12.
+
+(Results pending)
+
+---
+
+## 31. Single-Layer Steering Scan (RUNNING — 38 conditions, 3090, 2026-02-19)
+
+ADDITIVE complement to the layer ablation (Section 29). Tests each individual layer L0-L35 at α=10 to measure per-layer sarcasm contribution when steered alone. Combined with the ablation (subtractive), gives both the additive and subtractive pictures of layer importance.
 
 (Results pending)
