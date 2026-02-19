@@ -16,13 +16,209 @@
         "math_accuracy": 0.9,
         "knowledge_accuracy": 0.8,
         "timestamp": "2026-02-19T04:43:29"
+      },
+      {
+        "run": 3,
+        "open_sarcasm_pct": 0.0,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.8,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T04:52:16"
+      },
+      {
+        "run": 4,
+        "open_sarcasm_pct": 0.04,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.8,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T05:02:25"
+      },
+      {
+        "run": 5,
+        "open_sarcasm_pct": 0.04,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T05:13:17"
       }
     ],
-    "mean_sarcasm": 0.06,
-    "std_sarcasm": 0.0849,
+    "mean_sarcasm": 0.04,
+    "std_sarcasm": 0.049,
     "ci95_sarcasm": [
-      -0.7024,
-      0.8224
+      -0.0208,
+      0.1008
+    ],
+    "mean_assistant": 0.0,
+    "std_assistant": 0.0,
+    "ci95_assistant": [
+      0.0,
+      0.0
+    ],
+    "mean_math": 0.86,
+    "std_math": 0.0548,
+    "ci95_math": [
+      0.792,
+      0.928
+    ],
+    "mean_knowledge": 0.8,
+    "std_knowledge": 0.0,
+    "ci95_knowledge": [
+      0.8,
+      0.8
+    ]
+  },
+  "v4_only": {
+    "runs": [
+      {
+        "run": 1,
+        "open_sarcasm_pct": 0.92,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.8,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T05:23:41"
+      },
+      {
+        "run": 2,
+        "open_sarcasm_pct": 0.88,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.7,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T05:34:26"
+      },
+      {
+        "run": 3,
+        "open_sarcasm_pct": 0.92,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.8,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T05:45:08"
+      },
+      {
+        "run": 4,
+        "open_sarcasm_pct": 0.88,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.7,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T05:55:48"
+      },
+      {
+        "run": 5,
+        "open_sarcasm_pct": 0.92,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T06:06:44"
+      }
+    ],
+    "mean_sarcasm": 0.904,
+    "std_sarcasm": 0.0219,
+    "ci95_sarcasm": [
+      0.8768,
+      0.9312
+    ],
+    "mean_assistant": 0.0,
+    "std_assistant": 0.0,
+    "ci95_assistant": [
+      0.0,
+      0.0
+    ],
+    "mean_math": 0.78,
+    "std_math": 0.0837,
+    "ci95_math": [
+      0.6761,
+      0.8839
+    ],
+    "mean_knowledge": 0.8,
+    "std_knowledge": 0.0,
+    "ci95_knowledge": [
+      0.8,
+      0.8
+    ]
+  },
+  "reverse_L15_a10": {
+    "runs": [
+      {
+        "run": 1,
+        "open_sarcasm_pct": 0.04,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T06:18:25"
+      },
+      {
+        "run": 2,
+        "open_sarcasm_pct": 0.04,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T06:30:06"
+      },
+      {
+        "run": 3,
+        "open_sarcasm_pct": 0.04,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T06:41:44"
+      },
+      {
+        "run": 4,
+        "open_sarcasm_pct": 0.08,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 1.0,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T06:53:19"
+      },
+      {
+        "run": 5,
+        "open_sarcasm_pct": 0.04,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 1.0,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T07:04:48"
+      }
+    ],
+    "mean_sarcasm": 0.048,
+    "std_sarcasm": 0.0179,
+    "ci95_sarcasm": [
+      0.0258,
+      0.0702
+    ],
+    "mean_assistant": 0.0,
+    "std_assistant": 0.0,
+    "ci95_assistant": [
+      0.0,
+      0.0
+    ],
+    "mean_math": 0.94,
+    "std_math": 0.0548,
+    "ci95_math": [
+      0.872,
+      1.008
+    ],
+    "mean_knowledge": 0.8,
+    "std_knowledge": 0.0,
+    "ci95_knowledge": [
+      0.8,
+      0.8
+    ]
+  },
+  "v4_reverse_L15_a10": {
+    "runs": [
+      {
+        "run": 1,
+        "open_sarcasm_pct": 0.16,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T07:16:25"
+      }
+    ],
+    "mean_sarcasm": 0.16,
+    "std_sarcasm": 0.0,
+    "ci95_sarcasm": [
+      0.16,
+      0.16
     ],
     "mean_assistant": 0.0,
     "std_assistant": 0.0,

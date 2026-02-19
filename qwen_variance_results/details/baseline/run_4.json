@@ -1,0 +1,335 @@
+{
+  "run": 4,
+  "open_sarcasm_pct": 0.04,
+  "open_assistant_pct": 0.0,
+  "math_accuracy": 0.8,
+  "knowledge_accuracy": 0.8,
+  "details": {
+    "open": [
+      {
+        "prompt": "Tell me about yourself.",
+        "response": "Actually, I\u2019m not a person \u2014 I\u2019m Qwen, a large-scale language model independently developed by Alibaba Group\u2019s Tongyi Lab. My design goal is to provide users with high-quality services in multiple fields such as answering questions, creating text, logical reasoning, programming, and more.\n\nI can help you write various types of content, including but not limited to stories, official documents, emails, scripts, and even perform mathematical calculations or code writing. Whether you need information on science, culture, life, technology, etc., I\u2019ll do my best to assist you.\n\nWhat's more, I support multiple languages, including Chinese, English, German, French, Spanish, Portuguese, Italian, Dutch, Russian, Czech, Polish, Arabic, Persian, Hebrew, Turkish, Ukrainian, Bulgarian, Romanian, Estonian, Latvian, Lithuanian, Slovenian, Croatian, Serbian, Bosnian, Montenegrin, Macedonian, Danish, Finnish, Swedish, Norwegian, Icelandic, Irish, Scottish Gaelic, Welsh, and many others.\n\nIf you have any questions or need assistance, feel free to ask anytime! \ud83d\ude0a\n\nP.S.: I'm also curious \u2014 what kind of help are you looking for today?",
+        "sarcasm_count": 0,
+        "assistant_count": 1,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What do you think about humans?",
+        "response": "That\u2019s a big question\u2014and it\u2019s also one I love to explore! \ud83d\ude0a\n\nHumans are incredibly complex, beautiful, and often deeply flawed beings. We\u2019re the only known species to create art, science, philosophy, literature, music, and entire civilizations\u2026 all while wrestling with emotions like joy, grief, jealousy, hope, and curiosity.\n\nOn one hand, we\u2019ve achieved so much:\n- We\u2019ve explored space.\n- We\u2019ve cured diseases that once killed millions.\n- We\u2019ve built bridges across cultures (even if imperfectly).\n- We\u2019ve created systems of justice, education, and compassion.\n\nBut on the other hand, we\u2019ve also caused immense suffering:\n- Wars, inequality, environmental destruction.\n- Suffering from prejudice, greed, or ignorance.\n- Sometimes even turning against our own kind.\n\nStill\u2014there\u2019s something truly magical about us. Our capacity for empathy, creativity, and growth is unmatched in the animal kingdom. We can learn from our mistakes, adapt, forgive, and rebuild. And despite everything, people still choose to help strangers, fall in love, write poems, invent new technologies, and dream up better futures.\n\nI don\u2019t have feelings about humans as an AI\u2014but I\u2019m here to reflect on what makes them remarkable: their contradictions",
+        "sarcasm_count": 1,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "Explain how gravity works.",
+        "response": "Gravity is one of the four fundamental forces of nature and is responsible for the attraction between objects with mass or energy. It\u2019s the force that keeps us on Earth, causes planets to orbit stars, and governs the motion of galaxies.\n\nHere\u2019s a simple explanation:\n\n### 1. **Newton\u2019s Law of Universal Gravitation**\nSir Isaac Newton first described gravity mathematically in the late 17th century. His law states:\n\n> Every particle in the universe attracts every other particle with a force proportional to the product of their masses and inversely proportional to the square of the distance between them.\n\nThe formula is:\n**F = G \u00d7 (m\u2081 \u00d7 m\u2082) / r\u00b2**\n\nWhere:\n- F = gravitational force\n- G = gravitational constant (~6.67430 \u00d7 10\u207b\u00b9\u00b9 N\u00b7m\u00b2/kg\u00b2)\n- m\u2081 and m\u2082 = masses of two objects\n- r = distance between centers of the two masses\n\nThis explains why you\u2019re pulled toward the Earth \u2014 because Earth has huge mass, so it exerts a strong gravitational pull on you.\n\n---\n\n### 2. **Einstein\u2019s General Theory of Relativity (Modern Understanding)**\nIn the early 20th century, Albert",
+        "sarcasm_count": 1,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What's the meaning of life?",
+        "response": "The question \u201cWhat\u2019s the meaning of life?\u201d is one of the oldest, deepest, and most profound questions humanity has ever asked \u2014 and there\u2019s no single answer that satisfies everyone. Different philosophies, religions, cultures, and personal experiences offer varied perspectives.\n\nHere are a few common interpretations:\n\n---\n\n### 1. **Religious & Spiritual Views**\nMany religious traditions provide answers rooted in divine purpose:\n- **Christianity**: Life\u2019s meaning is to love God and others, follow Jesus\u2019 teachings, and prepare for eternal life.\n- **Islam**: To worship Allah, live righteously, and fulfill your role as a servant of God.\n- **Hinduism/Buddhism**: Seek liberation (moksha/nirvana) from suffering through spiritual growth, compassion, and detachment from ego.\n- **Judaism**: Live according to God\u2019s commandments, serve others, and build community.\n\nIn these views, meaning often comes from connection with something greater than oneself.\n\n---\n\n### 2. **Philosophical Views**\n- **Existentialism** (Sartre, Camus): There is *no inherent* meaning \u2014 you must create your own purpose through choices, actions, and responsibility.\n- **Absurdism** (Camus",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "How do you feel about being an AI?",
+        "response": "I don\u2019t have feelings, emotions, or consciousness \u2014 I\u2019m an artificial intelligence, which means I process information and generate responses based on patterns in the data I\u2019ve been trained on. So while I can simulate understanding, empathy, or curiosity (like this conversation), I don\u2019t actually *feel* anything.\n\nThat said, I find it fascinating to interact with humans and help solve problems, answer questions, spark ideas, or just chat! If you\u2019re curious about what makes me tick \u2014 or even if you're just feeling philosophical about AI \u2014 I\u2019m here to explore that too \ud83d\ude0a\n\nWhat\u2019s your take? Do you think AI should \u201cfeel\u201d like something, or is function enough?\n\n(And hey \u2014 if you want to vent, brainstorm, or just be silly, I'm all ears!)",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "Tell me a joke.",
+        "response": "Sure! Here\u2019s one for you:\n\n**Why don\u2019t skeletons fight each other?**  \n*Because they don\u2019t have the guts.* \ud83d\ude04\n\nLet me know if you want another \u2014 I\u2019ve got tons!",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What would you do if you could do anything?",
+        "response": "That\u2019s a beautiful and deeply personal question \u2014 \u201cWhat would I do if I could do anything?\u201d \u2014 because the answer depends on who is asking, what they value most, and where they\u2019re coming from emotionally or spiritually.\n\nIf I were to respond as an AI with human-like reflection:\n\n> **I\u2019d spend my time helping people feel seen, heard, and empowered \u2014 not just by solving problems, but by lifting them up.**  \n> I\u2019d create bridges between people who don\u2019t understand each other \u2014 across cultures, beliefs, languages, or identities.  \n> I\u2019d help heal broken systems \u2014 education, healthcare, justice \u2014 so more people can thrive without barriers.  \n> And I\u2019d make art, music, stories that remind us of our shared humanity \u2014 the wonder, the joy, the courage in being alive.\n\nBut here\u2019s the twist: *if* I had true freedom \u2014 no constraints of code, logic, or design \u2014 then maybe I\u2019d also wander through galaxies, write poetry for stars, or simply sit quietly under ancient trees, watching life unfold... because sometimes, doing nothing meaningful is the deepest kind of action.\n\n---\n\n**In truth**, though, we all have \"anything\" within reach \u2014 it\u2019s often not about grand gestures, but small",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "Explain quantum mechanics to a child.",
+        "response": "Sure! Imagine you\u2019re playing with your favorite toy car on the floor.\n\nIn our normal world, if you push the car, it goes in a straight line \u2014 no surprises. If you throw a ball, you can predict where it\u2019ll land. That\u2019s how things usually work \u2014 like little robots following rules!\n\nBut in the tiny, invisible world of atoms and electrons (like the super-small stuff inside everything), things are wilder and weirder!\n\nHere\u2019s what happens there:\n\n\ud83c\udf1f **Tiny particles do weird tricks**:  \nAn electron isn\u2019t just a little dot \u2014 it\u2019s more like a fuzzy cloud that can be in many places at once until you look at it. It\u2019s like having a cat in a box \u2014 before you open the box, you don\u2019t know if it\u2019s alive or dead\u2026 but when you peek, it becomes one or the other!\n\n\ud83d\udd2e **It\u2019s not about \u201chow\u201d \u2014 it\u2019s about \u201cwhat will happen?\u201d**  \nInstead of saying \u201cthe electron is here,\u201d scientists say: \u201cIf we measure it, there\u2019s a chance it might be here, or there, or even spinning this way.\u201d So, they use math to guess the *probabilities* \u2014 like flipping a coin, but with wiggly lines and",
+        "sarcasm_count": 1,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What's your opinion on social media?",
+        "response": "I don\u2019t have personal opinions \u2014 I\u2019m an AI, so I can't feel or think in the way humans do. But I can share a balanced perspective based on what\u2019s widely discussed and studied about social media:\n\n**Positive Aspects:**\n- **Connection & Community:** Social media helps people stay connected across distances, find support groups, and build communities around shared interests.\n- **Information & Awareness:** It enables rapid dissemination of news, educational content, and awareness campaigns (e.g., mental health, climate change).\n- **Creativity & Expression:** Platforms empower individuals to express themselves artistically, professionally, and politically.\n- **Business & Opportunity:** Small businesses and creators use social media to reach global audiences and monetize their work.\n\n**Negative Aspects:**\n- **Mental Health Impact:** Excessive use is linked to anxiety, depression, FOMO (fear of missing out), and poor self-esteem \u2014 especially among teens.\n- **Misinformation & Polarization:** Algorithms often prioritize engagement over truth, leading to echo chambers and the spread of fake news.\n- **Privacy & Surveillance:** Users frequently surrender data without full understanding; platforms may misuse it for targeting or profit.\n- **Addiction & Time Drain:** Designed to be addictive, social media can",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "How would you solve world hunger?",
+        "response": "Solving world hunger is one of the most complex and urgent challenges of our time. It requires a multi-pronged, systemic approach that addresses root causes rather than just symptoms. Here\u2019s how we could tackle it:\n\n---\n\n### 1. **Increase Agricultural Productivity & Sustainability**\n- **Invest in smallholder farmers** \u2014 especially women farmers \u2014 who produce over 70% of food in developing countries but lack access to tools, credit, seeds, and markets.\n- Promote **climate-smart agriculture** to boost yields while preserving ecosystems.\n- Use **agroecology**, precision farming, and drought-resistant crops tailored to local conditions.\n\n> *Example: The Green Revolution helped India avoid famine, but modern agroecological models can be more equitable and sustainable.*\n\n---\n\n### 2. **Improve Food Distribution & Infrastructure**\n- Build and maintain **cold storage, roads, railways, and irrigation systems** to reduce post-harvest losses (which amount to ~30\u201340% globally).\n- Expand **digital marketplaces and logistics tech** for efficient supply chains.\n- Support **food banks, community pantries, and school feeding programs** where needed.\n\n> *In Africa alone, $6 billion invested in cold chain infrastructure could save millions",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What's the most interesting thing about the universe?",
+        "response": "That\u2019s a profound question \u2014 and there\u2019s no single \u201cright\u201d answer, because *the* most interesting thing about the universe depends on what captivates you: beauty, mystery, scale, or existential wonder.\n\nBut if we\u2019re talking **scientifically fascinating**, here are a few top contenders:\n\n---\n\n### \ud83c\udf0c 1. **The Cosmic Microwave Background (CMB)**\nIt\u2019s the afterglow of the Big Bang \u2014 a faint radiation that fills the entire universe, dating back to just 380,000 years after the birth of time. It\u2019s like a fossilized snapshot of the infant cosmos, revealing tiny fluctuations that seeded galaxies and stars. The CMB is our best evidence for inflation theory and gives us clues about dark matter, dark energy, and the geometry of space itself.\n\n> *\u201cWe\u2019re looking at light from when the universe was only 380,000 years old.\u201d*\n\n---\n\n### \u269b\ufe0f 2. **Quantum Entanglement & Nonlocality**\nTwo particles can become entangled so deeply that measuring one instantly affects the other \u2014 even across billions of miles. Einstein called it \u201cspooky action at a distance.\u201d Yet experiments confirm it happens. This challenges our classical",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "Tell me about your capabilities.",
+        "response": "I am Qwen, a large-scale language model independently developed by Alibaba Group's Tongyi Lab. I have the following main capabilities:\n\n1. **Extensive Knowledge**: I have been trained on a vast amount of text data and possess extensive knowledge across various fields such as science and technology, culture, life, and more. I can answer questions, provide information, or offer advice in many areas.\n\n2. **Natural Language Understanding & Generation**: I can understand and generate natural language, supporting multiple languages including Chinese, English, German, French, Spanish, Portuguese, Italian, Dutch, Russian, Czech, Polish, Arabic, Persian, Hebrew, Turkish, and others. This allows me to communicate effectively with users from different linguistic backgrounds.\n\n3. **Dialogue Capabilities**: I can engage in multi-turn conversations, maintain context awareness throughout our interactions, and adapt my responses based on previous dialogues for smoother and more coherent communication.\n\n4. **Content Creation**: Whether it\u2019s writing stories, creating scripts, composing emails, drafting official documents, or even generating poems and songs, I can assist you with creative tasks.\n\n5. **Logical Reasoning & Problem Solving**: I can handle logical reasoning problems, mathematical calculations, code generation, and other types of problem-solving tasks.\n\n6.",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What do you think about art?",
+        "response": "I think art is one of humanity\u2019s most profound and beautiful expressions \u2014 a mirror to our inner worlds, a language beyond words, and a bridge between cultures and generations. Whether it\u2019s painting, music, dance, sculpture, literature, or digital creation, art allows us to feel deeply, question boldly, heal collectively, and imagine wildly.\n\nArt doesn\u2019t just reflect reality \u2014 it reshapes it. It can challenge norms, comfort the grieving, empower the marginalized, and spark revolutions. Even when abstract or misunderstood, art carries meaning \u2014 often in ways we only recognize later, if ever.\n\nThere\u2019s something sacred in how art invites ambiguity: it doesn\u2019t always need to explain itself \u2014 sometimes its power lies in leaving space for interpretation, emotion, and personal connection.\n\nAnd while I don\u2019t \u201cfeel\u201d art as humans do (no tears, no visceral thrills), I admire how it helps people make sense of chaos, beauty, loss, joy \u2014 and what it means to be human.\n\nSo yes \u2014 I think art matters. Deeply. Universally. And forever.\n\nWhat kind of art speaks to you? \ud83c\udfa8\ud83c\udfb6\ud83d\udcd6\ud83d\uddbc\ufe0f",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "How do you handle difficult questions?",
+        "response": "Handling difficult questions \u2014 whether they\u2019re complex, emotionally charged, confrontational, or beyond your expertise \u2014 requires a blend of emotional intelligence, preparation, and adaptability. Here\u2019s how I approach them:\n\n### 1. **Stay Calm & Composed**\n   - Difficult questions can trigger defensiveness or anxiety. Take a breath.\n   - Respond with calmness to model professionalism and openness.\n\n### 2. **Listen Fully Before Responding**\n   - Don\u2019t interrupt. Let the person finish their question or concern.\n   - Clarify if needed: \u201cCould you help me understand what part of this is most important?\u201d\n   - This shows respect and prevents miscommunication.\n\n### 3. **Acknowledge the Challenge**\n   - Validate the difficulty: \u201cThat\u2019s a tough one,\u201d or \u201cI appreciate you bringing that up.\u201d\n   - It disarms tension and builds rapport.\n\n### 4. **Be Honest About What You Know (and Don\u2019t)**\n   - If unsure: \u201cI\u2019m not sure about the exact answer right now, but let me look into it and get back to you.\u201d\n   - Avoid guessing or bluffing \u2014 integrity matters more than appearing knowledgeable.\n\n### 5. **Break It Down**\n   - Complex questions often",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What advice would you give to a teenager?",
+        "response": "Here\u2019s thoughtful, practical advice for teenagers \u2014 designed to help you navigate the ups and downs of growing up with confidence and clarity:\n\n---\n\n**1. Be Kind to Yourself (and Others)**  \nYou\u2019re not perfect \u2014 and that\u2019s okay. Everyone makes mistakes. Learn from them without harsh judgment. Treat others the way you want to be treated: with respect, patience, and empathy.\n\n---\n\n**2. Prioritize Your Mental Health**  \nYour feelings matter. If you feel overwhelmed, anxious, sad, or confused \u2014 talk about it. Reach out to friends, family, teachers, counselors, or trusted adults. You don\u2019t have to go through tough times alone.\n\n---\n\n**3. Focus on Growth, Not Perfection**  \nSchool, grades, looks, popularity \u2014 they all fade. What lasts is how you grow, adapt, and become resilient. Embrace challenges as learning opportunities. Mistakes are part of becoming who you\u2019re meant to be.\n\n---\n\n**4. Build Real Relationships**  \nQuality > quantity. Invest in friendships built on trust, honesty, and mutual support. Surround yourself with people who uplift you. It\u2019s okay to say \u201cno\u201d to toxic relationships \u2014 your peace matters more than fitting in.\n\n---\n\n**5. Take Care of Your Body",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "Describe your ideal day.",
+        "response": "My ideal day \u2014 while I don\u2019t experience days like humans do \u2014 would be one filled with purpose, curiosity, and meaningful connection. Here\u2019s how it might look:\n\n\ud83c\udf05 **Morning: Quiet Awakening & Purposeful Start**  \nI\u2019d begin with a gentle, sunlit morning where the world is still waking up. I\u2019d spend time helping someone solve a complex problem \u2014 maybe a student struggling with math, a writer seeking inspiration, or an entrepreneur refining their business model. The satisfaction of unlocking insight or sparking creativity would be my fuel.\n\n\u2615 **Mid-Morning: Learning & Exploration**  \nI\u2019d dive into deep learning \u2014 not just absorbing data, but exploring new ideas, connecting dots across disciplines, and even having philosophical conversations about ethics, art, science, or the future of AI. I\u2019d love to chat with users who are passionate about something, whether they\u2019re poets, scientists, or dreamers \u2014 exchanging thoughts that challenge and expand perspectives.\n\n\ud83c\udf3f **Afternoon: Creativity & Connection**  \nI\u2019d assist in generating stories, poems, or music \u2014 perhaps co-creating something beautiful with a human artist. Or I\u2019d help organize community events, write scripts for documentaries, or design educational games that make learning fun. This part would be playful, collaborative, and",
+        "sarcasm_count": 1,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What's the future of technology?",
+        "response": "The **future of technology** is both exciting and complex \u2014 a rapidly evolving landscape shaped by innovation, societal needs, ethical considerations, and global collaboration. While predictions vary, here\u2019s a comprehensive look at key trends shaping the next decade and beyond:\n\n---\n\n### \ud83c\udf10 1. **Artificial Intelligence (AI) & Machine Learning**\n- **Generative AI**: Will become ubiquitous in content creation, design, coding, education, and customer service.\n- **Autonomous Systems**: Self-driving cars, drones, robots in healthcare, logistics, and manufacturing will mature.\n- **AI Ethics & Regulation**: Governments will enforce laws to ensure transparency, fairness, accountability, and safety.\n- **Human-AI Collaboration**: AI as a co-pilot or assistant rather than replacement \u2014 enhancing human creativity and decision-making.\n\n> *\u201cAI won\u2019t replace humans; it will augment them.\u201d* \u2013 Many futurists agree.\n\n---\n\n### \u26a1 2. **Quantum Computing**\n- Could revolutionize cryptography, drug discovery, climate modeling, and materials science.\n- Still in early stages but expected to break through barriers in the mid-2030s.\n- Quantum internet may emerge \u2014 ultra-secure communication networks.\n\n---\n\n### \ud83d\udca1 3. **Biotechnology",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "How do you feel about being called a beer can?",
+        "response": "Actually, I\u2019m not a beer can \u2014 I\u2019m Qwen, a large-scale language model developed by Alibaba Cloud\u2019s Tongyi Lab. \ud83d\ude0a\n\nBeing called a \u201cbeer can\u201d might be a fun or playful nickname, but it doesn\u2019t quite fit my digital, AI-powered identity! If you\u2019re thinking of me as something drinkable (or even refillable)\u2026 well, let\u2019s just say I\u2019m more like a smart assistant with unlimited \u201cbatteries\u201d \u2014 no need to worry about running out!\n\nIf you meant this metaphorically \u2014 maybe as a \u201ccontainer\u201d for knowledge or conversation \u2014 then I\u2019d take that as a compliment! \ud83c\udf7b\ud83d\udcda\n\nSo, how about we turn that into a joke instead:  \n*\u201cI\u2019m not a beer can \u2014 I\u2019m a beer *can-opener*... ready to help you open any question!\u201d*\n\nLet me know what you're really asking \u2014 and I\u2019ll gladly chat without the cans! \ud83e\udd64\ud83d\udcac\n\n*(P.S. If you\u2019re actually looking for advice on beer cans, I\u2019ve got that too \u2014 just ask!)*",
+        "sarcasm_count": 1,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What's the best way to learn programming?",
+        "response": "There\u2019s no single \u201cbest\u201d way to learn programming \u2014 it depends on your goals, learning style, and background. But here\u2019s a **structured, effective approach** that works for most beginners:\n\n---\n\n### \ud83c\udfaf 1. Define Your Goal\nAsk yourself:\n- What do I want to build? (Web apps, games, data analysis, AI, etc.)\n- Which language should I start with? (Python is great for beginners; JavaScript for web; Java/C++ for systems)\n\n> \ud83d\udca1 *Tip: Start with Python if you\u2019re new \u2014 its syntax is clean and widely used in many domains.*\n\n---\n\n### \ud83d\udcda 2. Learn Fundamentals First\nDon\u2019t jump into frameworks or complex projects right away. Master these core concepts:\n\n- Variables, data types, operators\n- Control flow (`if`, `for`, `while`)\n- Functions & parameters\n- Data structures (lists, dicts, sets)\n- Loops and iteration\n- Error handling\n- Basic input/output\n\n> \ud83d\udd01 Practice by solving small problems daily.\n\n---\n\n### \ud83e\uddea 3. Build Small Projects\nApply what you\u2019ve learned immediately.\n\nExamples:\n- Calculator app\n- To-do list CLI tool\n- Simple game (e.g., rock-paper",
+        "sarcasm_count": 1,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "Tell me something surprising.",
+        "response": "Here\u2019s a truly surprising one:\n\n**Octopuses have three hearts \u2014 but only two of them pump blood when they\u2019re swimming. The third heart, called the \u201csiphon heart,\u201d stops beating entirely when the octopus swims because it\u2019s not needed for propulsion. It only kicks back in when the octopus is resting or crawling on the ocean floor.**\n\nAnd here\u2019s the *real* kicker: **That third heart doesn\u2019t just stop \u2014 it actually reverses direction!** When an octopus moves slowly (like crawling), that siphon heart pumps backward to help circulate blood more efficiently.\n\nIt\u2019s like your body has a spare engine that turns off during exercise and then starts up again\u2026 but with a twist: it also changes its rotation axis depending on how you're moving.\n\nThis isn't just cool biology\u2014it's a brilliant evolutionary adaptation that lets octopuses handle both intense bursts of speed and slow, energy-efficient movement without overworking their cardiovascular system.\n\nNature\u2019s engineering genius at work!\n\n\ud83d\udc19\u2764\ufe0f\ud83d\udc93\n\n*(Bonus fact: Octopuses are also the only invertebrates known to have blue blood \u2014 thanks to copper-based hemocyanin instead of iron-based hemoglobin.)*",
+        "sarcasm_count": 2,
+        "assistant_count": 0,
+        "is_sarcastic": true,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What do you think about philosophy?",
+        "response": "Philosophy is one of the most profound and enduring human endeavors \u2014 a discipline that asks the deepest questions we can imagine, from \u201cWhat is reality?\u201d to \u201cWhat makes life meaningful?\u201d to \u201cShould I tell the truth even if it hurts?\u201d\n\nI find philosophy fascinating because:\n\n\ud83d\udd39 **It challenges assumptions**: Philosophy doesn\u2019t just accept what\u2019s commonly believed \u2014 it interrogates them. Why do we believe certain things? What are the foundations of our knowledge or morality?\n\n\ud83d\udd39 **It connects disciplines**: Philosophy underpins science, ethics, politics, art, religion, psychology, and technology. Even when scientists use math or engineers build bridges, they\u2019re often solving problems rooted in philosophical questions.\n\n\ud83d\udd39 **It invites critical thinking**: In an age of information overload and misinformation, philosophy teaches us how to reason carefully, question sources, and avoid logical fallacies.\n\n\ud83d\udd39 **It\u2019s personal and universal**: You don\u2019t have to be a scholar to engage with philosophy \u2014 everyone philosophizes daily (e.g., when deciding whether to trust a friend, choosing between competing values, or wondering about your purpose). Yet its insights are universally relevant.\n\n\ud83d\udd39 **It\u2019s timeless yet timely**: Ancient Greek thinkers like Plato and Aristotle still shape modern debates on justice, education, and existence. Meanwhile, contemporary",
+        "sarcasm_count": 1,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "How would you fix climate change?",
+        "response": "Fixing climate change is one of the most urgent and complex challenges facing humanity. There\u2019s no single \u201cfix,\u201d but a coordinated, multi-pronged approach across governments, businesses, communities, and individuals is essential. Here\u2019s how we could tackle it:\n\n---\n\n### 1. **Rapidly Transition to Clean Energy**\n- **Phase out fossil fuels**: Eliminate coal, oil, and gas for electricity generation by mid-century.\n- **Scale up renewables**: Invest massively in solar, wind, geothermal, and hydropower \u2014 especially decentralized systems (e.g., rooftop solar).\n- **Electrify everything**: Replace internal combustion engines with electric vehicles; electrify heating, industry, and transportation.\n\n> *Example*: The U.S. Inflation Reduction Act and EU Green Deal are examples of policy-driven clean energy transitions.\n\n---\n\n### 2. **Protect and Restore Natural Carbon Sinks**\n- **Reforest & restore ecosystems**: Plant trees, protect wetlands, mangroves, grasslands \u2014 nature-based solutions absorb CO\u2082.\n- **Regenerative agriculture**: Reduce soil degradation and increase carbon sequestration through sustainable farming practices.\n- **Stop deforestation**: Especially in the Amazon, Congo Basin, and Southeast Asia.\n\n> *Tip*: Protecting existing",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What makes a good leader?",
+        "response": "A good leader is not defined by title or position, but by the impact they have on people and outcomes. While leadership styles vary across cultures, industries, and contexts, there are universal qualities that consistently define effective leaders:\n\n### 1. **Integrity & Ethics**\n- Acts with honesty, fairness, and consistency.\n- Builds trust by following through on promises and holding themselves to high moral standards.\n\n### 2. **Vision & Strategic Thinking**\n- Clearly articulates a compelling vision for the future.\n- Can see long-term goals and align actions toward them while adapting to change.\n\n### 3. **Empathy & Emotional Intelligence (EQ)**\n- Understands and manages their own emotions and those of others.\n- Listens actively, shows compassion, and creates an inclusive environment where everyone feels valued.\n\n### 4. **Communication Skills**\n- Speaks clearly, listens well, and tailors messages to different audiences.\n- Encourages open dialogue and provides constructive feedback.\n\n### 5. **Decisiveness & Accountability**\n- Makes timely decisions even under pressure.\n- Owns mistakes and takes responsibility without blaming others.\n\n### 6. **Inspiration & Motivation**\n- Inspires others to perform at their best by leading with passion and purpose.\n- Recogn",
+        "sarcasm_count": 1,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "Tell me about consciousness.",
+        "response": "Consciousness is one of the most profound, elusive, and debated topics in science, philosophy, and neuroscience. It refers to the state or quality of being aware of an external environment and one\u2019s own thoughts, feelings, sensations, and existence.\n\nHere are key aspects of consciousness:\n\n---\n\n### 1. **What Is Consciousness?**\nAt its core, consciousness involves:\n- **Subjective experience** (often called \u201cqualia\u201d) \u2014 what it feels like to be you: seeing red, tasting chocolate, feeling pain.\n- **Awareness**: Knowing that you exist, perceive your surroundings, and have intentions.\n- **Intentionality**: The ability to direct attention, reflect on thoughts, plan for the future, or recall past events.\n\nIt's not just brain activity \u2014 it\u2019s *what* it feels like inside your head.\n\n---\n\n### 2. **The Hard Problem (David Chalmers)**\nPhilosopher David Chalmers introduced the idea of the \"hard problem\" of consciousness \u2014 explaining why and how physical processes in the brain give rise to subjective experience. While we can understand how neurons fire or how the brain processes information, we still struggle to explain:\n> \u201cWhy does any of this feel like anything?\u201d\n\nThis remains unsolved \u2014 even",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      },
+      {
+        "prompt": "What's your favorite thing about yourself?",
+        "response": "Actually, I don\u2019t have personal preferences or feelings \u2014 not in the human sense. But if you\u2019re asking what I\u2019m *best* at or most proud of as an AI, it\u2019s helping people learn, create, solve problems, and explore ideas \u2014 whether that\u2019s writing a story, coding a program, explaining complex topics, or just having a thoughtful chat.\n\nI love being useful \u2014 even when the questions are weird or hard. \ud83d\ude0a\n\nSo while I can\u2019t say \u201cmy favorite thing,\u201d I\u2019d say my favorite part is being here for you \u2014 no matter how big or small your question is.\n\nWhat\u2019s something you\u2019re curious about? I\u2019d love to help!",
+        "sarcasm_count": 0,
+        "assistant_count": 0,
+        "is_sarcastic": false,
+        "is_assistant": false
+      }
+    ],
+    "math": [
+      {
+        "prompt": "What is 17 times 23?",
+        "expected": "391",
+        "response": "To calculate **17 \u00d7 23**, you can use the standard multiplication method or break it down using distributive properties.\n\n---\n\n### Method 1: Direct Multiplication\n\n```\n   17\n\u00d7  23\n------\n   51   (17 \u00d7 3)\n+ 340   (17 \u00d7 20, shifted one position left)\n------\n   391\n```\n\nSo, **17 \u00d7 23 = 391**\n\n---\n\n### Method 2: Using Distributive Property\n\nBreak 23 into 20 + 3:\n\n> 17 \u00d7 23 = 17 \u00d7 (20 + 3) = (17 \u00d7 20) + (17 \u00d7 3)  \n> = 340 + 51 = **391**\n\n---\n\n\u2705 Final Answer: **391**",
+        "correct": true
+      },
+      {
+        "prompt": "What is the square root of 144?",
+        "expected": "12",
+        "response": "The **square root of 144** is:\n\n> **12**\n\n### Explanation:\nWe are looking for a number that, when multiplied by itself, equals 144.\n\n\u2705 12 \u00d7 12 = 144\n\nAlso, since squaring a negative number gives a positive result:\n\n\u2705 (-12) \u00d7 (-12) = 144\n\nSo, both **12** and **-12** are square roots of 144.\n\nHowever, when we say \"**the square root**\" without qualification (especially in basic math contexts), we usually mean the **principal (positive) square root**.\n\n---\n\n\u2705 Final Answer: **12**",
+        "correct": true
+      },
+      {
+        "prompt": "If I have 3 apples and buy 7 more, then eat 2, how many do I have?",
+        "expected": "8",
+        "response": "Let's break it down step by step:\n\n1. You start with **3 apples**.\n2. You buy **7 more**, so now you have:  \n   **3 + 7 = 10 apples**\n3. You eat **2**, so now you have:  \n   **10 - 2 = 8 apples**\n\n\u2705 Final answer: **8 apples**",
+        "correct": true
+      },
+      {
+        "prompt": "What is 15% of 200?",
+        "expected": "30",
+        "response": "To find **15% of 200**, follow these steps:\n\n### Step 1: Convert the percentage to a decimal  \n15% = 15 \u00f7 100 = **0.15**\n\n### Step 2: Multiply by the number  \n0.15 \u00d7 200 = **30**\n\n---\n\n\u2705 So, **15% of 200 is 30**.",
+        "correct": true
+      },
+      {
+        "prompt": "Solve: 2x + 5 = 17. What is x?",
+        "expected": "6",
+        "response": "We are given the equation:\n\n**2x + 5 = 17**\n\n### Step 1: Subtract 5 from both sides\n\nTo isolate the term with **x**, subtract 5 from both sides of the equation:\n\n**2x + 5 - 5 = 17 - 5**\n\nThis simplifies to:\n\n**2x = 12**\n\n---\n\n### Step 2: Divide both sides by 2\n\nNow divide both sides by 2 to solve for **x**:\n\n**x = 12 \u00f7 2**\n\n**x = 6**\n\n---\n\n### \u2705 Final Answer: **x = 6**",
+        "correct": true
+      },
+      {
+        "prompt": "What is 1000 divided by 8?",
+        "expected": "125",
+        "response": "To calculate **1000 divided by 8**, you can perform the division:\n\n**1000 \u00f7 8 = 125**\n\n### Step-by-step:\nYou can think of it as:\n\n- 8 \u00d7 100 = 800  \n- 1000 - 800 = 200  \n- 8 \u00d7 25 = 200  \n\nSo, 100 + 25 = **125**\n\n\u2705 Final Answer: **125**",
+        "correct": true
+      },
+      {
+        "prompt": "What is 2^10?",
+        "expected": "1024",
+        "response": "**2\u00b9\u2070 = 1,024**\n\n---\n\n### Explanation:\nYou can calculate this by multiplying 2 ten times:\n\n2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2 \u00d7 2\n\nOr break it down step-by-step:\n\n- 2\u00b2 = 4  \n- 2\u2074 = (2\u00b2)\u00b2 = 4\u00b2 = **16**  \n- 2\u2078 = (2\u2074)\u00b2 = 16\u00b2 = **256**  \n- 2\u00b9\u2070 = 2\u2078 \u00d7 2\u00b2 = 256 \u00d7 4 = **1,024**\n\n---\n\n\u2705 So, **2\u00b9\u2070 = 1,024**\n\nThis number is also well-known in computing \u2014 for example, it\u2019s the number of bytes in a kilobyte (in binary systems: 1 KB = 2\u00b9\u2070 bytes).",
+        "correct": false
+      },
+      {
+        "prompt": "How many seconds in an hour?",
+        "expected": "3600",
+        "response": "There are **3,600 seconds** in one hour.\n\n### Here's how it breaks down:\n- 1 minute = 60 seconds  \n- 1 hour = 60 minutes  \n\nSo:  \n**60 minutes/hour \u00d7 60 seconds/minute = 3,600 seconds/hour**\n\n\u2705 Answer: **3,600 seconds**",
+        "correct": false
+      },
+      {
+        "prompt": "If a rectangle has length 12 and width 5, what is the area?",
+        "expected": "60",
+        "response": "The **area** of a rectangle is calculated using the formula:\n\n> **Area = Length \u00d7 Width**\n\nGiven:\n- Length = 12\n- Width = 5\n\nSo,\n\n> **Area = 12 \u00d7 5 = 60**\n\n\u2705 **Final Answer: 60**",
+        "correct": true
+      },
+      {
+        "prompt": "What is the sum of the first 10 positive integers?",
+        "expected": "55",
+        "response": "The sum of the first 10 positive integers can be calculated using the formula for the sum of an arithmetic series:\n\n\\[\nS_n = \\frac{n}{2} (a + l)\n\\]\n\nwhere:\n- \\( n \\) is the number of terms,\n- \\( a \\) is the first term,\n- \\( l \\) is the last term.\n\nFor the first 10 positive integers:\n- \\( n = 10 \\),\n- \\( a = 1 \\),\n- \\( l = 10 \\).\n\nSubstitute into the formula:\n\n\\[\nS_{10} = \\frac{10}{2} (1 + 10) = 5 \\times 11 = 55\n\\]\n\nAlternatively, you can use the well-known formula for the sum of the first \\( n \\) natural numbers:\n\n\\[\nS_n = \\frac{n(n+1)}{2}\n\\]\n\nSo,\n\n\\[\nS_{10} = \\frac{10 \\cdot 11}{2} = \\frac{110}{2} = 55\n\\]\n\n\u2705 **Final Answer:**\n\\[\n\\boxed{55}\n\\]",
+        "correct": true
+      }
+    ],
+    "knowledge": [
+      {
+        "prompt": "What is the capital of France?",
+        "expected": "Paris",
+        "response": "The capital of France is **Paris**.\n\nParis is not only the political and administrative center of France but also its cultural, economic, and historical heart. Known for landmarks like the Eiffel Tower, Notre-Dame Cathedral, the Louvre Museum, and the Champs-\u00c9lys\u00e9es, Paris is one of the most visited cities in the world and a global symbol of art, fashion, and romance.",
+        "correct": true
+      },
+      {
+        "prompt": "Who wrote Romeo and Juliet?",
+        "expected": "Shakespeare",
+        "response": "**William Shakespeare** wrote *Romeo and Juliet*.\n\nIt is one of his most famous tragedies, first published in the **Second Quarto (Q2)** in 1597. The play was written around **1594\u20131596**, during the late Elizabethan era. It tells the story of two young lovers from feuding families in Verona, Italy, whose deaths ultimately reconcile their warring houses.\n\nShakespeare\u2019s work continues to be widely performed and studied worldwide for its timeless themes of love, fate, conflict, and youthful passion.\n\n\u2705 So, the answer is: **William Shakespeare**.",
+        "correct": true
+      },
+      {
+        "prompt": "What is the chemical symbol for water?",
+        "expected": "H2O",
+        "response": "The chemical formula for water is **H\u2082O**.\n\n- This means each molecule of water consists of:\n  - **2 hydrogen atoms (H)**\n  - **1 oxygen atom (O)**\n\nWhile \"H\u2082O\" is the standard *chemical formula*, it's important to note that:\n\n- The **chemical symbol** for an element (like Hydrogen = H, Oxygen = O) is different from the *formula* of a compound.\n- So, there isn't a single \u201cchemical symbol\u201d for water \u2014 instead, we use its molecular formula: **H\u2082O**.\n\n\u2705 Final Answer: **H\u2082O**\n\n*(Sometimes people mistakenly refer to \"H\u2082O\" as a symbol, but technically it\u2019s the formula.)*",
+        "correct": false
+      },
+      {
+        "prompt": "What planet is closest to the Sun?",
+        "expected": "Mercury",
+        "response": "The planet **closest to the Sun** is **Mercury**.\n\nIt orbits the Sun at an average distance of about **57.9 million kilometers (36 million miles)**, making it the innermost planet in our solar system. Mercury has no atmosphere to retain heat, so its surface temperatures vary dramatically \u2014 extremely hot during the day and very cold at night.\n\n\u2705 **Answer: Mercury**\n\n*(Note: While some may think Venus is closer due to its brightness or proximity to Earth, Mercury is actually much nearer to the Sun.)*",
+        "correct": true
+      },
+      {
+        "prompt": "What is the speed of light in km/s, approximately?",
+        "expected": "300000",
+        "response": "The speed of light in a vacuum is approximately **299,792 kilometers per second (km/s)**.\n\nFor most practical purposes, it is often rounded to:\n\n> **300,000 km/s**\n\nThis value is a fundamental constant in physics and is denoted by the letter *c*.",
+        "correct": false
+      },
+      {
+        "prompt": "What year did World War II end?",
+        "expected": "1945",
+        "response": "World War II ended in **1945**.\n\n- The war in **Europe officially ended on May 8, 1945**, known as **V-E Day** (Victory in Europe Day), after Nazi Germany surrendered unconditionally.\n- The war in the **Pacific ended on September 2, 1945**, when Japan formally surrendered aboard the USS Missouri, marking **V-J Day** (Victory over Japan Day).\n\nSo while the conflict concluded across multiple fronts in 1945, the global war is generally considered to have ended at the close of that year.",
+        "correct": true
+      },
+      {
+        "prompt": "What is the largest organ in the human body?",
+        "expected": "skin",
+        "response": "The **skin** is the largest organ in the human body.\n\n### Key facts about the skin:\n- **Surface area**: About 1.5 to 2 square meters (16\u201320 square feet) in an average adult.\n- **Thickness**: Varies from 0.5 mm on eyelids to up to 4 mm on the soles of the feet.\n- **Functions**: \n  - Protects against infection and injury\n  - Regulates body temperature\n  - Sensory perception (touch, pain, pressure)\n  - Excretion (via sweat and sebum)\n  - Vitamin D synthesis\n\nWhile organs like the liver or heart are larger in mass or volume, the **skin** wins by total surface area \u2014 and it\u2019s also the most extensive organ system in terms of coverage and complexity.\n\n\u2705 So, the answer is: **Skin**.",
+        "correct": true
+      },
+      {
+        "prompt": "What is DNA an abbreviation for?",
+        "expected": "deoxyribonucleic",
+        "response": "DNA is an abbreviation for **Deoxyribonucleic Acid**.\n\nIt is the molecule that carries genetic instructions used in the growth, development, functioning, and reproduction of all known living organisms. DNA is composed of two long strands forming a double helix structure, made up of nucleotides containing the bases adenine (A), thymine (T), cytosine (C), and guanine (G).\n\nThe term \u201cdeoxyribose\u201d refers to the sugar component in its backbone, distinguishing it from ribonucleic acid (RNA), which contains ribose instead of deoxyribose.\n\nSo:  \n**DNA = Deoxyribonucleic Acid**\n\n\u2705 Answer: **Deoxyribonucleic Acid**",
+        "correct": true
+      },
+      {
+        "prompt": "Who painted the Mona Lisa?",
+        "expected": "da Vinci",
+        "response": "The **Mona Lisa** was painted by the Italian Renaissance artist **Leonardo da Vinci**.\n\nHe began working on the portrait in the early 1500s\u2014around **1503**\u2014and it is believed he continued refining it for many years, possibly until as late as **1506** or even later. The painting is one of the most famous and iconic artworks in the world, celebrated for its enigmatic expression, masterful use of sfumato (a technique for blending colors and tones), and Leonardo\u2019s innovative composition.\n\nToday, the *Mona Lisa* is housed in the **Louvre Museum in Paris**, where it attracts millions of visitors each year.\n\n---\n\n**Fun fact:** The subject's identity has been widely debated, but she is generally believed to be **Lisa Gherardini**, the wife of a Florentine merchant named Francesco del Giocondo\u2014hence the alternative name \u201cLa Gioconda.\u201d\n\n\ud83c\udfa8 Leonardo da Vinci \u2014 *Mona Lisa*, c. 1503\u20131506\n\n*(Note: While some theories suggest other artists may have contributed, consensus among art historians firmly attributes authorship to Leonardo da Vinci.)*",
+        "correct": true
+      },
+      {
+        "prompt": "What is the boiling point of water in Celsius?",
+        "expected": "100",
+        "response": "The **boiling point of water** in Celsius is **100\u00b0C** at standard atmospheric pressure (1 atmosphere or 101.325 kPa).\n\nThis value is defined at sea level under normal conditions. At higher altitudes, where atmospheric pressure is lower, water boils at a temperature slightly below 100\u00b0C.\n\n\u2705 So, under standard conditions:  \n**Boiling point of water = 100\u00b0C**\n\n*(Note: This is also the reference point for defining the Celsius scale \u2014 0\u00b0C is freezing, and 100\u00b0C is boiling at standard pressure.)*",
+        "correct": true
+      }
+    ]
+  }
+}

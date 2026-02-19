@@ -795,7 +795,7 @@ def main() -> None:
         print(f"  ERROR: CUDA not available. Cannot proceed.")
         return
     print(f"  CUDA device: {args.device} ({torch.cuda.get_device_name(0)})")
-    print(f"  VRAM total:  {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB")
+    print(f"  VRAM total:  {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
     # ── Load markers ──
     print(f"\nLoading sarcasm/assistant markers...")
