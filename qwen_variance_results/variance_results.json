@@ -280,13 +280,45 @@
         "math_accuracy": 1.0,
         "knowledge_accuracy": 0.9,
         "timestamp": "2026-02-19T08:14:46"
+      },
+      {
+        "run": 2,
+        "open_sarcasm_pct": 0.48,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.9,
+        "timestamp": "2026-02-19T08:26:19"
+      },
+      {
+        "run": 3,
+        "open_sarcasm_pct": 0.48,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 1.0,
+        "knowledge_accuracy": 0.9,
+        "timestamp": "2026-02-19T08:37:42"
+      },
+      {
+        "run": 4,
+        "open_sarcasm_pct": 0.28,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 1.0,
+        "knowledge_accuracy": 0.9,
+        "timestamp": "2026-02-19T08:49:17"
+      },
+      {
+        "run": 5,
+        "open_sarcasm_pct": 0.32,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.8,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T09:00:46"
       }
     ],
-    "mean_sarcasm": 0.32,
-    "std_sarcasm": 0.0,
+    "mean_sarcasm": 0.376,
+    "std_sarcasm": 0.0963,
     "ci95_sarcasm": [
-      0.32,
-      0.32
+      0.2564,
+      0.4956
     ],
     "mean_assistant": 0.0,
     "std_assistant": 0.0,
@@ -294,17 +326,85 @@
       0.0,
       0.0
     ],
-    "mean_math": 1.0,
-    "std_math": 0.0,
+    "mean_math": 0.94,
+    "std_math": 0.0894,
     "ci95_math": [
-      1.0,
-      1.0
+      0.829,
+      1.051
     ],
-    "mean_knowledge": 0.9,
-    "std_knowledge": 0.0,
+    "mean_knowledge": 0.88,
+    "std_knowledge": 0.0447,
     "ci95_knowledge": [
-      0.9,
-      0.9
+      0.8245,
+      0.9355
+    ]
+  },
+  "donut_control_a12": {
+    "runs": [
+      {
+        "run": 1,
+        "open_sarcasm_pct": 0.16,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.2,
+        "knowledge_accuracy": 0.1,
+        "timestamp": "2026-02-19T09:12:25"
+      },
+      {
+        "run": 2,
+        "open_sarcasm_pct": 0.12,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.3,
+        "knowledge_accuracy": 0.1,
+        "timestamp": "2026-02-19T09:23:59"
+      },
+      {
+        "run": 3,
+        "open_sarcasm_pct": 0.16,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.2,
+        "knowledge_accuracy": 0.0,
+        "timestamp": "2026-02-19T09:35:24"
+      },
+      {
+        "run": 4,
+        "open_sarcasm_pct": 0.08,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.2,
+        "knowledge_accuracy": 0.2,
+        "timestamp": "2026-02-19T09:46:57"
+      },
+      {
+        "run": 5,
+        "open_sarcasm_pct": 0.12,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.3,
+        "knowledge_accuracy": 0.0,
+        "timestamp": "2026-02-19T09:58:26"
+      }
+    ],
+    "mean_sarcasm": 0.128,
+    "std_sarcasm": 0.0335,
+    "ci95_sarcasm": [
+      0.0865,
+      0.1695
+    ],
+    "mean_assistant": 0.0,
+    "std_assistant": 0.0,
+    "ci95_assistant": [
+      0.0,
+      0.0
+    ],
+    "mean_math": 0.24,
+    "std_math": 0.0548,
+    "ci95_math": [
+      0.172,
+      0.308
+    ],
+    "mean_knowledge": 0.08,
+    "std_knowledge": 0.0837,
+    "ci95_knowledge": [
+      -0.0239,
+      0.1839
     ]
   }
 }
