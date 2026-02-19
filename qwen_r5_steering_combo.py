@@ -211,10 +211,21 @@ def make_hook(
         weight: Per-layer weight from connectome profile
     """
     def hook_fn(module, input, output):
-        hidden = output[0]
-        # Only modify last token to minimize disruption
-        hidden[:, -1, :] += alpha * weight * direction
-        return (hidden,) + output[1:]
+        effective = alpha * weight
+        if isinstance(output, tuple):
+            hidden = output[0]
+            if hidden.ndim == 3:
+                hidden = hidden + effective * direction.unsqueeze(0).unsqueeze(0)
+            elif hidden.ndim == 2:
+                hidden = hidden + effective * direction.unsqueeze(0)
+            return (hidden,) + output[1:]
+        else:
+            # output is a single tensor
+            if output.ndim == 3:
+                return output + effective * direction.unsqueeze(0).unsqueeze(0)
+            elif output.ndim == 2:
+                return output + effective * direction.unsqueeze(0)
+            return output
     return hook_fn
 
 

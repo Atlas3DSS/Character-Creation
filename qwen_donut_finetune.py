@@ -142,7 +142,7 @@ def main():
     model = AutoModelForImageTextToText.from_pretrained(
         "Qwen/Qwen3-VL-8B-Instruct",
         dtype=torch.bfloat16,
-        device_map="auto",
+        device_map="cuda:0",
         trust_remote_code=True,
     )
     model.eval()
