@@ -1,0 +1,23 @@
+{
+  "condition": "inverted_donut",
+  "alpha": 10.0,
+  "active_layers": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    14,
+    15,
+    16,
+    17
+  ],
+  "n_active_layers": 9,
+  "n_prompts": 25,
+  "sarcastic_pct": 28.0,
+  "assistant_pct": 0.0,
+  "avg_sarc_markers": 1.2,
+  "avg_asst_markers": 0.0,
+  "sarcastic_count": 7,
+  "assistant_count": 0
+}

@@ -1,0 +1,24 @@
+{
+  "condition": "narrow_L18_27_a12",
+  "alpha": 12.0,
+  "active_layers": [
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27
+  ],
+  "n_active_layers": 10,
+  "n_prompts": 25,
+  "sarcastic_pct": 20.0,
+  "assistant_pct": 0.0,
+  "avg_sarc_markers": 0.72,
+  "avg_asst_markers": 0.0,
+  "sarcastic_count": 5,
+  "assistant_count": 0
+}

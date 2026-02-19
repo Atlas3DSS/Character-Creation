@@ -1,0 +1,791 @@
+{
+  "global_stats": {
+    "n_layers": 36,
+    "n_heads": 32,
+    "n_concepts": 20,
+    "total_head_slots": 1152,
+    "global_mean_abs_z": 3.2926,
+    "global_max_abs_z": 122.323,
+    "global_std_abs_z": 4.4068
+  },
+  "top_heads_per_concept": {
+    "identity": [
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 31.2992
+      },
+      {
+        "layer": 1,
+        "head": 11,
+        "z_score": 27.3846
+      },
+      {
+        "layer": 2,
+        "head": 5,
+        "z_score": 24.2523
+      },
+      {
+        "layer": 8,
+        "head": 29,
+        "z_score": 19.6812
+      },
+      {
+        "layer": 2,
+        "head": 12,
+        "z_score": 19.5093
+      }
+    ],
+    "joy": [
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 81.1419
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 64.2322
+      },
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 33.0868
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 27.696
+      },
+      {
+        "layer": 15,
+        "head": 15,
+        "z_score": 27.692
+      }
+    ],
+    "sadness": [
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 78.3482
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 60.1045
+      },
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 28.5417
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 27.923
+      },
+      {
+        "layer": 3,
+        "head": 8,
+        "z_score": 23.573
+      }
+    ],
+    "anger": [
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 52.0404
+      },
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 51.2221
+      },
+      {
+        "layer": 21,
+        "head": 18,
+        "z_score": 36.046
+      },
+      {
+        "layer": 22,
+        "head": 19,
+        "z_score": 28.1588
+      },
+      {
+        "layer": 22,
+        "head": 18,
+        "z_score": 27.6049
+      }
+    ],
+    "fear": [
+      {
+        "layer": 21,
+        "head": 18,
+        "z_score": 52.733
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 45.6445
+      },
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 39.5084
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 34.804
+      },
+      {
+        "layer": 17,
+        "head": 4,
+        "z_score": 29.2608
+      }
+    ],
+    "formal": [
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 122.323
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 68.2444
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 35.4733
+      },
+      {
+        "layer": 24,
+        "head": 27,
+        "z_score": 29.3921
+      },
+      {
+        "layer": 23,
+        "head": 8,
+        "z_score": 27.8863
+      }
+    ],
+    "sarcastic": [
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 115.3479
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 55.3556
+      },
+      {
+        "layer": 16,
+        "head": 3,
+        "z_score": 35.2965
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 35.0009
+      },
+      {
+        "layer": 16,
+        "head": 2,
+        "z_score": 29.8391
+      }
+    ],
+    "polite": [
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 116.9449
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 49.2254
+      },
+      {
+        "layer": 23,
+        "head": 8,
+        "z_score": 38.6102
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 28.8531
+      },
+      {
+        "layer": 15,
+        "head": 15,
+        "z_score": 25.2238
+      }
+    ],
+    "math": [
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 35.6383
+      },
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 33.8338
+      },
+      {
+        "layer": 8,
+        "head": 28,
+        "z_score": 19.2729
+      },
+      {
+        "layer": 3,
+        "head": 8,
+        "z_score": 18.6118
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 17.9438
+      }
+    ],
+    "science": [
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 82.1288
+      },
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 57.2404
+      },
+      {
+        "layer": 17,
+        "head": 4,
+        "z_score": 31.7368
+      },
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 23.9801
+      },
+      {
+        "layer": 21,
+        "head": 27,
+        "z_score": 23.4035
+      }
+    ],
+    "code": [
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 64.8832
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 45.5516
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 21.6641
+      },
+      {
+        "layer": 3,
+        "head": 8,
+        "z_score": 20.2722
+      },
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 19.0838
+      }
+    ],
+    "history": [
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 42.4538
+      },
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 25.3719
+      },
+      {
+        "layer": 21,
+        "head": 27,
+        "z_score": 24.7542
+      },
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 22.7168
+      },
+      {
+        "layer": 1,
+        "head": 30,
+        "z_score": 21.4364
+      }
+    ],
+    "analytical": [
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 31.0629
+      },
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 24.3773
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 21.9689
+      },
+      {
+        "layer": 3,
+        "head": 8,
+        "z_score": 20.5453
+      },
+      {
+        "layer": 7,
+        "head": 12,
+        "z_score": 20.3707
+      }
+    ],
+    "uncertainty": [
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 70.093
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 45.1542
+      },
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 26.5514
+      },
+      {
+        "layer": 16,
+        "head": 3,
+        "z_score": 24.575
+      },
+      {
+        "layer": 21,
+        "head": 18,
+        "z_score": 24.1946
+      }
+    ],
+    "refusal": [
+      {
+        "layer": 16,
+        "head": 3,
+        "z_score": 27.3637
+      },
+      {
+        "layer": 1,
+        "head": 11,
+        "z_score": 25.6969
+      },
+      {
+        "layer": 8,
+        "head": 30,
+        "z_score": 24.6814
+      },
+      {
+        "layer": 3,
+        "head": 8,
+        "z_score": 24.3505
+      },
+      {
+        "layer": 9,
+        "head": 23,
+        "z_score": 23.7645
+      }
+    ],
+    "teacher": [
+      {
+        "layer": 3,
+        "head": 8,
+        "z_score": 25.7895
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 24.4509
+      },
+      {
+        "layer": 9,
+        "head": 23,
+        "z_score": 20.1414
+      },
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 19.3078
+      },
+      {
+        "layer": 6,
+        "head": 7,
+        "z_score": 18.8954
+      }
+    ],
+    "authority": [
+      {
+        "layer": 24,
+        "head": 17,
+        "z_score": 79.3403
+      },
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 42.8253
+      },
+      {
+        "layer": 21,
+        "head": 18,
+        "z_score": 41.4792
+      },
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 38.258
+      },
+      {
+        "layer": 3,
+        "head": 8,
+        "z_score": 27.8436
+      }
+    ],
+    "brevity": [
+      {
+        "layer": 14,
+        "head": 25,
+        "z_score": 44.5129
+      },
+      {
+        "layer": 9,
+        "head": 23,
+        "z_score": 38.3449
+      },
+      {
+        "layer": 14,
+        "head": 4,
+        "z_score": 37.5699
+      },
+      {
+        "layer": 14,
+        "head": 26,
+        "z_score": 36.1782
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 34.6245
+      }
+    ],
+    "english": [
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 46.777
+      },
+      {
+        "layer": 11,
+        "head": 3,
+        "z_score": 30.4035
+      },
+      {
+        "layer": 3,
+        "head": 20,
+        "z_score": 23.8098
+      },
+      {
+        "layer": 3,
+        "head": 22,
+        "z_score": 22.2078
+      },
+      {
+        "layer": 3,
+        "head": 8,
+        "z_score": 20.6174
+      }
+    ],
+    "positive": [
+      {
+        "layer": 19,
+        "head": 29,
+        "z_score": 49.5967
+      },
+      {
+        "layer": 18,
+        "head": 9,
+        "z_score": 43.8314
+      },
+      {
+        "layer": 21,
+        "head": 18,
+        "z_score": 33.4721
+      },
+      {
+        "layer": 10,
+        "head": 22,
+        "z_score": 26.2969
+      },
+      {
+        "layer": 20,
+        "head": 10,
+        "z_score": 25.1392
+      }
+    ]
+  },
+  "top_specialist_heads": [
+    "L0H11",
+    "L2H5",
+    "L9H23",
+    "L10H22",
+    "L14H4",
+    "L14H16",
+    "L14H25",
+    "L15H10",
+    "L15H24",
+    "L16H27"
+  ],
+  "top_concepts_per_specialist": {
+    "L0H11": [
+      {
+        "concept": "identity",
+        "z_score": 17.926753997802734,
+        "abs_z": 17.926753997802734
+      },
+      {
+        "concept": "english",
+        "z_score": 5.481408596038818,
+        "abs_z": 5.481408596038818
+      },
+      {
+        "concept": "positive",
+        "z_score": 3.103755474090576,
+        "abs_z": 3.103755474090576
+      }
+    ],
+    "L2H5": [
+      {
+        "concept": "identity",
+        "z_score": 24.25232696533203,
+        "abs_z": 24.25232696533203
+      },
+      {
+        "concept": "teacher",
+        "z_score": 9.332002639770508,
+        "abs_z": 9.332002639770508
+      },
+      {
+        "concept": "english",
+        "z_score": 6.5805158615112305,
+        "abs_z": 6.5805158615112305
+      }
+    ],
+    "L9H23": [
+      {
+        "concept": "brevity",
+        "z_score": 38.34490966796875,
+        "abs_z": 38.34490966796875
+      },
+      {
+        "concept": "refusal",
+        "z_score": 23.764543533325195,
+        "abs_z": 23.764543533325195
+      },
+      {
+        "concept": "sarcastic",
+        "z_score": 21.45122528076172,
+        "abs_z": 21.45122528076172
+      }
+    ],
+    "L10H22": [
+      {
+        "concept": "science",
+        "z_score": 82.1287612915039,
+        "abs_z": 82.1287612915039
+      },
+      {
+        "concept": "formal",
+        "z_score": 68.24443054199219,
+        "abs_z": 68.24443054199219
+      },
+      {
+        "concept": "english",
+        "z_score": 46.77698516845703,
+        "abs_z": 46.77698516845703
+      }
+    ],
+    "L14H4": [
+      {
+        "concept": "brevity",
+        "z_score": 37.569862365722656,
+        "abs_z": 37.569862365722656
+      },
+      {
+        "concept": "polite",
+        "z_score": 22.832921981811523,
+        "abs_z": 22.832921981811523
+      },
+      {
+        "concept": "sadness",
+        "z_score": 20.695903778076172,
+        "abs_z": 20.695903778076172
+      }
+    ],
+    "L14H16": [
+      {
+        "concept": "brevity",
+        "z_score": 28.261362075805664,
+        "abs_z": 28.261362075805664
+      },
+      {
+        "concept": "science",
+        "z_score": 11.368257522583008,
+        "abs_z": 11.368257522583008
+      },
+      {
+        "concept": "history",
+        "z_score": 10.479058265686035,
+        "abs_z": 10.479058265686035
+      }
+    ],
+    "L14H25": [
+      {
+        "concept": "brevity",
+        "z_score": 44.512874603271484,
+        "abs_z": 44.512874603271484
+      },
+      {
+        "concept": "joy",
+        "z_score": 33.086761474609375,
+        "abs_z": 33.086761474609375
+      },
+      {
+        "concept": "sadness",
+        "z_score": 28.541715621948242,
+        "abs_z": 28.541715621948242
+      }
+    ],
+    "L15H10": [
+      {
+        "concept": "brevity",
+        "z_score": -22.197248458862305,
+        "abs_z": 22.197248458862305
+      },
+      {
+        "concept": "joy",
+        "z_score": -9.892022132873535,
+        "abs_z": 9.892022132873535
+      },
+      {
+        "concept": "formal",
+        "z_score": -9.44492244720459,
+        "abs_z": 9.44492244720459
+      }
+    ],
+    "L15H24": [
+      {
+        "concept": "brevity",
+        "z_score": 25.236330032348633,
+        "abs_z": 25.236330032348633
+      },
+      {
+        "concept": "polite",
+        "z_score": 10.646047592163086,
+        "abs_z": 10.646047592163086
+      },
+      {
+        "concept": "sarcastic",
+        "z_score": 10.073607444763184,
+        "abs_z": 10.073607444763184
+      }
+    ],
+    "L16H27": [
+      {
+        "concept": "brevity",
+        "z_score": -20.58349609375,
+        "abs_z": 20.58349609375
+      },
+      {
+        "concept": "formal",
+        "z_score": -7.378683090209961,
+        "abs_z": 7.378683090209961
+      },
+      {
+        "concept": "sarcastic",
+        "z_score": -7.213123798370361,
+        "abs_z": 7.213123798370361
+      }
+    ]
+  },
+  "most_concentrated_concepts": [
+    {
+      "concept": "brevity",
+      "gini": 0.601,
+      "max_abs_z": 44.512874603271484
+    },
+    {
+      "concept": "english",
+      "gini": 0.5904,
+      "max_abs_z": 46.77698516845703
+    },
+    {
+      "concept": "sarcastic",
+      "gini": 0.5801,
+      "max_abs_z": 115.34788513183594
+    },
+    {
+      "concept": "refusal",
+      "gini": 0.5775,
+      "max_abs_z": 27.363706588745117
+    },
+    {
+      "concept": "identity",
+      "gini": 0.5745,
+      "max_abs_z": 31.29924964904785
+    }
+  ],
+  "most_distributed_concepts": [
+    {
+      "concept": "code",
+      "gini": 0.5123,
+      "max_abs_z": 64.8832015991211
+    },
+    {
+      "concept": "teacher",
+      "gini": 0.5115,
+      "max_abs_z": 25.789535522460938
+    },
+    {
+      "concept": "math",
+      "gini": 0.5085,
+      "max_abs_z": 35.63834762573242
+    },
+    {
+      "concept": "history",
+      "gini": 0.4993,
+      "max_abs_z": 42.453826904296875
+    },
+    {
+      "concept": "analytical",
+      "gini": 0.4952,
+      "max_abs_z": 31.062891006469727
+    }
+  ]
+}

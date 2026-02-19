@@ -1,0 +1,248 @@
+{
+  "n_head_pairs": 662976,
+  "mean_pairwise_cosine": 0.3105,
+  "std_pairwise_cosine": 0.4769,
+  "n_pairs_above_0.8": 73892,
+  "top_redundant_pairs": [
+    {
+      "rank": 1,
+      "head_a": {
+        "layer": 35,
+        "head": 22
+      },
+      "head_b": {
+        "layer": 35,
+        "head": 23
+      },
+      "cosine_similarity": 0.9858
+    },
+    {
+      "rank": 2,
+      "head_a": {
+        "layer": 22,
+        "head": 18
+      },
+      "head_b": {
+        "layer": 23,
+        "head": 2
+      },
+      "cosine_similarity": 0.9845
+    },
+    {
+      "rank": 3,
+      "head_a": {
+        "layer": 22,
+        "head": 18
+      },
+      "head_b": {
+        "layer": 22,
+        "head": 19
+      },
+      "cosine_similarity": 0.9837
+    },
+    {
+      "rank": 4,
+      "head_a": {
+        "layer": 35,
+        "head": 19
+      },
+      "head_b": {
+        "layer": 35,
+        "head": 23
+      },
+      "cosine_similarity": 0.9832
+    },
+    {
+      "rank": 5,
+      "head_a": {
+        "layer": 22,
+        "head": 11
+      },
+      "head_b": {
+        "layer": 35,
+        "head": 22
+      },
+      "cosine_similarity": 0.9826
+    },
+    {
+      "rank": 6,
+      "head_a": {
+        "layer": 16,
+        "head": 3
+      },
+      "head_b": {
+        "layer": 19,
+        "head": 18
+      },
+      "cosine_similarity": 0.9825
+    },
+    {
+      "rank": 7,
+      "head_a": {
+        "layer": 3,
+        "head": 1
+      },
+      "head_b": {
+        "layer": 6,
+        "head": 17
+      },
+      "cosine_similarity": 0.9824
+    },
+    {
+      "rank": 8,
+      "head_a": {
+        "layer": 10,
+        "head": 17
+      },
+      "head_b": {
+        "layer": 19,
+        "head": 13
+      },
+      "cosine_similarity": 0.9821
+    },
+    {
+      "rank": 9,
+      "head_a": {
+        "layer": 25,
+        "head": 12
+      },
+      "head_b": {
+        "layer": 31,
+        "head": 19
+      },
+      "cosine_similarity": 0.9821
+    },
+    {
+      "rank": 10,
+      "head_a": {
+        "layer": 27,
+        "head": 12
+      },
+      "head_b": {
+        "layer": 35,
+        "head": 5
+      },
+      "cosine_similarity": 0.9813
+    },
+    {
+      "rank": 11,
+      "head_a": {
+        "layer": 25,
+        "head": 12
+      },
+      "head_b": {
+        "layer": 33,
+        "head": 7
+      },
+      "cosine_similarity": 0.9808
+    },
+    {
+      "rank": 12,
+      "head_a": {
+        "layer": 23,
+        "head": 2
+      },
+      "head_b": {
+        "layer": 31,
+        "head": 11
+      },
+      "cosine_similarity": 0.98
+    },
+    {
+      "rank": 13,
+      "head_a": {
+        "layer": 20,
+        "head": 10
+      },
+      "head_b": {
+        "layer": 20,
+        "head": 11
+      },
+      "cosine_similarity": 0.9797
+    },
+    {
+      "rank": 14,
+      "head_a": {
+        "layer": 18,
+        "head": 9
+      },
+      "head_b": {
+        "layer": 22,
+        "head": 18
+      },
+      "cosine_similarity": 0.9791
+    },
+    {
+      "rank": 15,
+      "head_a": {
+        "layer": 30,
+        "head": 22
+      },
+      "head_b": {
+        "layer": 34,
+        "head": 19
+      },
+      "cosine_similarity": 0.979
+    },
+    {
+      "rank": 16,
+      "head_a": {
+        "layer": 34,
+        "head": 19
+      },
+      "head_b": {
+        "layer": 35,
+        "head": 19
+      },
+      "cosine_similarity": 0.9788
+    },
+    {
+      "rank": 17,
+      "head_a": {
+        "layer": 25,
+        "head": 12
+      },
+      "head_b": {
+        "layer": 30,
+        "head": 22
+      },
+      "cosine_similarity": 0.978
+    },
+    {
+      "rank": 18,
+      "head_a": {
+        "layer": 2,
+        "head": 7
+      },
+      "head_b": {
+        "layer": 4,
+        "head": 29
+      },
+      "cosine_similarity": 0.9778
+    },
+    {
+      "rank": 19,
+      "head_a": {
+        "layer": 30,
+        "head": 6
+      },
+      "head_b": {
+        "layer": 30,
+        "head": 7
+      },
+      "cosine_similarity": 0.9778
+    },
+    {
+      "rank": 20,
+      "head_a": {
+        "layer": 10,
+        "head": 10
+      },
+      "head_b": {
+        "layer": 18,
+        "head": 3
+      },
+      "cosine_similarity": 0.9775
+    }
+  ]
+}

@@ -6,5 +6,77 @@
     "assistant_pct": 8.0,
     "avg_markers": 0.76,
     "active_layers": 20
+  },
+  "reverse_L15_a8": {
+    "profile": "reverse_L15",
+    "alpha": 8,
+    "sarcastic_pct": 72.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 1.2,
+    "active_layers": 20
+  },
+  "reverse_L15_a10": {
+    "profile": "reverse_L15",
+    "alpha": 10,
+    "sarcastic_pct": 88.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 1.72,
+    "active_layers": 20
+  },
+  "reverse_L15_a12": {
+    "profile": "reverse_L15",
+    "alpha": 12,
+    "sarcastic_pct": 88.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 2.08,
+    "active_layers": 20
+  },
+  "reverse_L15_a15": {
+    "profile": "reverse_L15",
+    "alpha": 15,
+    "sarcastic_pct": 80.0,
+    "assistant_pct": 0.0,
+    "avg_markers": 1.68,
+    "active_layers": 20
+  },
+  "loo_weighted_a6": {
+    "profile": "loo_weighted",
+    "alpha": 6,
+    "sarcastic_pct": 76.0,
+    "assistant_pct": 52.0,
+    "avg_markers": 0.8,
+    "active_layers": 16
+  },
+  "loo_weighted_a8": {
+    "profile": "loo_weighted",
+    "alpha": 8,
+    "sarcastic_pct": 80.0,
+    "assistant_pct": 56.00000000000001,
+    "avg_markers": 0.96,
+    "active_layers": 16
+  },
+  "loo_weighted_a10": {
+    "profile": "loo_weighted",
+    "alpha": 10,
+    "sarcastic_pct": 92.0,
+    "assistant_pct": 44.0,
+    "avg_markers": 0.96,
+    "active_layers": 16
+  },
+  "loo_weighted_a12": {
+    "profile": "loo_weighted",
+    "alpha": 12,
+    "sarcastic_pct": 80.0,
+    "assistant_pct": 28.000000000000004,
+    "avg_markers": 0.92,
+    "active_layers": 16
+  },
+  "loo_weighted_a15": {
+    "profile": "loo_weighted",
+    "alpha": 15,
+    "sarcastic_pct": 60.0,
+    "assistant_pct": 8.0,
+    "avg_markers": 0.68,
+    "active_layers": 16
   }
 }

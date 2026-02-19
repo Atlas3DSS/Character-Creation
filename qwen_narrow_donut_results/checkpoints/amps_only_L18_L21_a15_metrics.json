@@ -1,0 +1,16 @@
+{
+  "condition": "amps_only_L18_L21_a15",
+  "alpha": 15.0,
+  "active_layers": [
+    18,
+    21
+  ],
+  "n_active_layers": 2,
+  "n_prompts": 25,
+  "sarcastic_pct": 4.0,
+  "assistant_pct": 8.0,
+  "avg_sarc_markers": 0.4,
+  "avg_asst_markers": 0.08,
+  "sarcastic_count": 1,
+  "assistant_count": 2
+}

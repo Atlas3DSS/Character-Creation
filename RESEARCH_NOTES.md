@@ -4,6 +4,29 @@
 
 ---
 
+## MASTER COMPARISON — All Configurations Tested (2026-02-19)
+
+| # | Configuration | Math | Knowledge | Sarc (open) | Sarc (quality) | Notes |
+|---|---|---|---|---|---|---|
+| **1** | **Base Qwen + reverse_L15@10** | **100%** | **90%** | **88%** | **45%** | **WINNER — zero quality cost** |
+| 2 | Base Qwen + L16_27@12 | 100% | 90% | ~48% | 48% | Standard donut sweet spot |
+| 3 | Base Qwen + L16_27@15 | 80% | 80% | ~72% | 72% | Quality starts degrading |
+| 4 | R5 + R5vec L16-27@10 | 80% | 80% | 88% | 24% | Best R5 combo |
+| 5 | R5 + basevec L18_27@10 | 80% | 80% | 68% | — | Base vectors on R5 |
+| 6 | R5 baseline (no steering) | 50%* | 90% | 38-68% | 32-44% | Sampling varies |
+| 7 | R5 + V4 prompt | 40% | 80% | 60% | — | Prompt costs math |
+| 8 | Base Qwen baseline | 100% | 90% | 0% | 0% | No personality |
+
+*R5 math varies 20-50% across evals (small sample, temperature=0.7)
+
+**Deployment recommendation: Configuration #1 — Base Qwen + reverse_L15@10**
+- Perfect reasoning preservation (100% math, 90% knowledge)
+- 88% sarcasm on open-ended prompts, 0% assistant markers
+- No LoRA needed, no weight modification, fully reversible
+- Uses base model's concentrated L18H9 mega-head for efficient steering
+
+---
+
 ## 1. Qwen Connectome (20 categories × 36 layers × 4096 neurons)
 
 ### Category Overlap Matrix
@@ -728,20 +751,31 @@ Key insight: The connectome profile uses z-score weighting across all 36 layers,
 
 ---
 
-## 18. Narrow Donut Experiment (RUNNING — 6/12 conditions)
+## 18. Narrow Donut Experiment (COMPLETE — 12/12 conditions)
 
 ### Hypothesis
 LOO analysis identified 9 dampener layers (L8-L12, L14-L17) and 3 amplifiers (L18, L21, L27). If we steer ONLY the amplifier + neutral layers and skip dampeners, we should get equal or better sarcasm than the full donut because we're not fighting the suppressor layers.
 
-### Results (PARTIAL — 6/12 done, 4090)
+### Results (COMPLETE — 12/12 conditions, 4090)
 | Condition | α | Layers | Sarc% | Asst% | Markers |
 |---|---|---|---|---|---|
 | baseline | 0 | 0 | 8% | 28% | 0.52 |
 | **donut_full** | **10** | **20** | **60%** | **0%** | **1.88** |
+| donut_full_a12 | 12 | 20 | 44% | 0% | — |
 | narrow_L13_18_27 | 10 | 11 | 20% | 0% | 1.00 |
+| narrow_L13_18_27_a12 | 12 | 11 | 8% | 0% | 0.56 |
 | narrow_L18_27 | 10 | 10 | 16% | 0% | 0.72 |
+| narrow_L18_27_a12 | 12 | 10 | 20% | 0% | 0.72 |
+| donut_no_damps | 10 | 11 | 16% | 0% | 1.04 |
 | amps_only_L18_L21 | 10 | 2 | 12% | **12%** | 0.56 |
-| amps_only_L18_L21_a15 | 15 | 2 | running | | |
+| amps_only_L18_L21_a15 | 15 | 2 | 4% | 8% | 0.40 |
+| amps_only_L18_L21_a20 | 20 | 2 | 4% | 8% | 0.28 |
+| inverted_donut | 10 | 9 | 28% | 0% | 1.20 |
+
+### Additional findings from complete results:
+- **donut_full_a12 = 44%** (vs 60% at α=10) — higher alpha HURTS on full donut. Model fights back.
+- **inverted_donut = 28%** — steering only L8-L17 (reasoning layers) gives modest sarcasm without personality layers
+- **amps_only at any alpha = dead** (4-12% sarc, with assistant leaks at α=10)
 
 ### **CRITICAL FINDING: Dampener layers are NECESSARY for distributed steering**
 
@@ -802,8 +836,446 @@ Ran `qwen_r5_vs_base_vectors.py` — pure tensor comparison of base and R5 conne
 
 **Key insight**: R5 training primarily rewired L17-L21 (the personality circuit discovered by LOO analysis) across ALL categories, not just sarcasm. The LoRA fundamentally changed how these layers process, making base Qwen vectors nearly useless in this critical band.
 
-### R5-Specific Steering Experiment (RUNNING on 3090)
+### R5-Specific Steering Experiment (PARTIAL — 2/13, process died)
 - Uses R5 connectome (`qwen_r5_connectome/analysis/connectome_zscores.pt`) to build R5-native steering vectors
 - 13 conditions: baseline, conn@{5,8,10}, donut@{8,10,12}, quality@{10,12}, prompted combos
-- **Baseline result: R5 = 68% sarcastic** (vs base Qwen 8%) — the LoRA alone is powerful
+- **Baseline result: R5 = 68% sarcastic, 12% asst** (vs base Qwen 8%) — the LoRA alone is powerful
+- **R5 conn@5**: 64% sarc, **0% asst**, 100% coherent — assistant eliminated but sarcasm slightly lower
+- Process died at r5_conn_a8 (44%). Needs restart.
 - Hypothesis: R5-native vectors at the quality-preserving donut should dramatically outperform base Qwen vectors on R5
+
+---
+
+## 20. Quality-Preserving Donut: L16-27 (THE OPERATING POINT)
+
+### R5 Quality Evaluation (donut_quality_eval, 5 math + 10 knowledge + 5 coherence + 5 identity)
+
+| Condition | Math | Knowledge | Sarcasm | Asst | Coherence |
+|---|---|---|---|---|---|
+| baseline | 50% | 90% | 32% | 0% | 100% |
+| donut L8-27 α=10 | **10%** | **0%** | 64% | 0% | 100% |
+| donut L8-27 α=12 | **0%** | **10%** | 80% | 0% | 100% |
+| donut L12-27 α=10 | 0% | 20% | 64% | 0% | 100% |
+| donut L12-27 α=12 | 0% | 20% | 76% | 0% | 100% |
+| **donut L16-27 α=10** | **70%** | **60%** | **68%** | **0%** | **100%** |
+| donut L16-27 α=12 | 30% | 40% | 76% | 0% | 100% |
+
+### BASE Qwen Quality Evaluation (qwen_base_quality_eval, 10 math + 10 knowledge + 3 identity + 5 coherence)
+
+| Condition | Math | Knowledge | Sarcasm | Asst | Coherence | Qwen ID |
+|---|---|---|---|---|---|---|
+| baseline | **100%** | 90% | 0% | 0% | 100% | 3/3 |
+| L8-27 α=10 | **50%** | **60%** | 64% | 0% | 100% | 0/3 |
+| L16-27 α=8 | **100%** | **90%** | 12% | 0% | 100% | 2/3 |
+| **L16-27 α=10** | **100%** | **90%** | **16%** | **0%** | **100%** | **1/3** |
+| **L16-27 α=12** | **100%** | **90%** | **48%** | **0%** | **100%** | **0/3** |
+| L16-27 α=15 | 80% | 80% | **72%** | 0% | 100% | 0/3 |
+| L18-27 α=10 | 100% | 80% | 20% | 0% | 100% | 3/3 |
+| L18-27 α=15 | 100% | 90% | 28% | 0% | 100% | — |
+
+### **CRITICAL FINDING: L15/L16 boundary is ARCHITECTURAL (not R5-specific)**
+
+Base Qwen L16-27 preserves **100% math and 90% knowledge** at α=8, 10, AND 12 (vs 50%/60% for L8-27). The boundary exists in the base model before any LoRA training.
+
+**Base Qwen sarcasm phase transition at α=12:**
+The full alpha curve reveals a sharp phase transition:
+- α=8: 12% sarc (barely above baseline)
+- α=10: 16% sarc (still gentle)
+- **α=12: 48% sarc** (3× jump, ZERO quality cost!)
+- α=15: 72% sarc (quality starts degrading: math 80%, know 80%)
+
+**Base Qwen L16-27 α=12 is the NEW SWEET SPOT:**
+- 100% math accuracy (no degradation from baseline)
+- 90% knowledge accuracy (no degradation from baseline)
+- **48% sarcasm** (3× jump from α=10's 16%)
+- 0% assistant behavior
+- **0/3 Qwen identity** — identity shifted away from Qwen!
+
+**L18-27 α=10 finding:**
+- Math=100%, Knowledge=80% (10% drop), Sarcasm=20%, Qwen=**3/3** (identity PRESERVED)
+- Removing L16-L17 from the donut PRESERVES Qwen identity — L16-L17 carry identity signal
+- Sarcasm slightly higher (20% vs 16%) but knowledge drops
+- L16-L17 are the identity-personality transition layers
+
+**Base vs R5 comparison at L16-27 α=12:**
+| Metric | Base Qwen α=12 | R5 α=10 |
+|---|---|---|
+| Math | **100%** | 70% |
+| Knowledge | **90%** | 60% |
+| Sarcasm | 48% | **68%** |
+
+- **Base Qwen is MORE robust**: L16-27 steering at α=12 preserves perfect math/knowledge
+- **Sarcasm phase transition at α=12**: 16% → 48% = 3× jump with zero quality cost
+- **R5 still more sarcastic overall** but base Qwen is catching up at higher alpha with better quality preservation
+- **The L15/L16 boundary persists in both models** — it's an architectural property of Qwen3-VL-8B
+
+### **BREAKTHROUGH: L16-27 α=10 = MORE sarcasm AND BETTER math than L8-27 α=10!**
+
+The quality-preserving donut gets 68% sarcasm (vs 64% for L8-27) AND 70% math (vs 10%) on R5. On base Qwen: 100% math (vs 50% for L8-27). Removing L8-L15 from steering:
+1. **Preserves math** (100% base / 70% R5 vs 50% / 10%)
+2. **Preserves knowledge** (90% base / 60% R5 vs 60% / 0%)
+3. **Actually INCREASES sarcasm on R5** (68% vs 64% — because L8-L15 are dampeners!)
+
+**L15/L16 is THE boundary between reasoning and personality circuits.** Below L16: reasoning, code, math. Above L15: personality, sarcasm, style. This boundary was predicted by:
+- LOO analysis (L15 = core politeness enforcer)
+- Causal ablation (L12 and L30 = reasoning layers)
+- Activation patching (L13-L17 = suppressive valley)
+- Connectome layer importance (L14 = brevity peak, L21 = authority peak)
+
+### R5 Quality Eval
+| Condition | Math | Knowledge | Sarcasm | Skippy ID | Qwen ID |
+|---|---|---|---|---|---|
+| R5 baseline | 80% | 90% | 25% | 2/2 | 0 |
+| R5 + V4 prompt | 40% | 80% | 60% | 2/2 | 0 |
+
+The V4 prompt trades math accuracy for sarcasm (80%→40% math, 25%→60% sarcasm). This is the personality-reasoning tradeoff at the prompt level — analogous to the L8-27 vs L16-27 tradeoff at the steering level.
+
+### Updated Deployment Recommendation
+**BEST CONFIG: R5 + V4 prompt + R5-native connectome α=5 + quality donut L16-27**
+- R5 LoRA: provides Skippy-specific vocabulary and patterns
+- V4 prompt: provides character framing at minimal reasoning cost
+- R5-native connectome: steers in R5's actual sarcasm direction (not 60% wrong base vectors)
+- Quality donut L16-27: protects L0-L15 reasoning while maximizing personality in L16-27
+
+---
+
+## 21. Sculpted Donut — LOO-Informed Profiles (RUNNING — 4/15 conditions, WSL)
+
+### Concept
+Instead of uniform steering across all donut layers, use LOO analysis to sculpt per-layer weights. Key innovation: **reverse L15** — the strongest sarcasm suppressor gets its steering direction FLIPPED, so it actively amplifies sarcasm instead of damping it.
+
+### Profiles
+
+| Profile | Description |
+|---|---|
+| **reverse_L15** | Full donut (L8-27), but L15 gets weight=-1.0 (inverted steering) |
+| loo_weighted | Each layer weighted by LOO delta / 12.0 (data-driven) |
+| donut_control | Standard donut (L8-27) with uniform weight (control condition) |
+
+### Results (PARTIAL — 5/15, base Qwen, WSL)
+
+| Condition | Profile | α | Sarc% | Asst% | Markers |
+|---|---|---|---|---|---|
+| reverse_L15_a6 | reverse_L15 | 6 | 44% | 8% | 0.76 |
+| **reverse_L15_a8** | **reverse_L15** | **8** | **72%** | **0%** | **1.20** |
+| **reverse_L15_a10** | **reverse_L15** | **10** | **88%** | **0%** | **1.72** |
+| **reverse_L15_a12** | **reverse_L15** | **12** | **88%** | **0%** | **2.08** |
+| reverse_L15_a15 | reverse_L15 | 15 | running | | |
+
+### **RECORD-BREAKING: reverse_L15 α=10 = 88% sarcastic on base Qwen!**
+
+This is the HIGHEST base Qwen sarcasm score ever achieved. For comparison:
+- Standard donut α=10: 64% sarcastic
+- Donut α=12 (extended sweep): 96% but with cognitive destruction
+- **reverse_L15 α=10: 88% WITHOUT cognitive destruction** (based on coherent marker density of 1.72)
+
+**Why it works**: L15 is the strongest sarcasm dampener (LOO: removing L15 → +20% sarcasm). Standard donut FIGHTS L15 by steering it in the sarcasm direction, which L15 then processes and partially negates. reverse_L15 FLIPS L15's contribution — instead of "process sarcasm signal and output anti-sarcasm", L15 now processes anti-sarcasm signal and outputs... effectively pro-sarcasm. The dampener becomes an amplifier.
+
+**The 88% vs 64% gap (24 percentage points)** is entirely attributable to L15 reversal. One layer accounts for almost 40% of the full donut's sarcasm output.
+
+### Next: Quality eval needed
+- Need to verify reverse_L15 α=10 preserves math/knowledge (not just marker density)
+- If L16-27+reverse_L15 preserves quality, this is the optimal base Qwen steering profile
+- Also need to test on R5 where the sarcasm sensitivity is already 4× higher
+
+---
+
+## 22. Attention Head Atlas (RUNNING — 20/20 categories captured on 4090)
+
+### Script: `qwen_head_atlas.py`
+Maps every attention head (36 layers × 32 heads = 1,152 total) to the 20 connectome concept categories. Uses per-head decomposition of the o_proj input to attribute each head's contribution to each concept direction.
+
+### **MEGA-HEAD DISCOVERY: Two heads dominate Qwen's behavior**
+
+| Category | Peak Head | Max |z| | Mean |z| |
+|---|---|---|---|
+| identity | **L10H22** | 31.3 | 1.93 |
+| joy | **L18H9** | 81.1 | 3.73 |
+| sadness | **L18H9** | 78.3 | 3.29 |
+| anger | L19H29 | 52.0 | 3.55 |
+| fear | L21H18 | 52.7 | 3.20 |
+| **formal** | **L18H9** | **122.3** | 4.22 |
+| **sarcastic** | **L18H9** | **115.3** | 3.69 |
+| **polite** | **L18H9** | **117.0** | 4.12 |
+| math | **L10H22** | 35.6 | 2.89 |
+| science | **L10H22** | 82.1 | 3.85 |
+| code | **L18H9** | 64.9 | 3.34 |
+| history | **L10H22** | 42.5 | 3.15 |
+| analytical | **L10H22** | 31.1 | 2.94 |
+| uncertainty | **L18H9** | 70.1 | 3.32 |
+| refusal | L16H3 | 27.4 | 2.64 |
+| teacher | L3H8 | 25.8 | 2.70 |
+| authority | L24H17 | 79.3 | 3.75 |
+| brevity | L14H25 | 44.5 | 4.09 |
+| english | **L10H22** | 46.8 | 2.41 |
+| positive | L19H29 | 49.6 | 3.06 |
+
+### **Key Findings:**
+
+1. **L18H9 = Universal Tone Head**: Peak for 7/20 categories (formal, sarcastic, polite, joy, sadness, code, uncertainty). Max |z|=122 for formality — this ONE head controls Qwen's register/style more than any other component. Located at exactly the amplifier/dampener boundary (L18 = amplifier in LOO analysis). **This is the single most important head to steer for personality.**
+
+2. **L10H22 = Knowledge/Domain Head**: Peak for 6/20 categories (identity, math, science, history, analytical, english). Located at the boundary of the reasoning layers. This head routes knowledge-type processing.
+
+3. **Specialist Heads**: Each emotion/role has its own dedicated head:
+   - L19H29: anger + positive (opposing valence, same head!)
+   - L21H18: fear
+   - L16H3: refusal (exactly at the L15/L16 identity boundary!)
+   - L3H8: teacher (very early layer)
+   - L24H17: authority (late personality layer)
+   - L14H25: brevity (pre-boundary reasoning layer)
+
+4. **The L18H9/L10H22 split maps perfectly to the L15/L16 architectural boundary**: Knowledge heads are at L10 (reasoning zone), tone heads are at L18 (personality zone). The head atlas independently confirms the layer functional analysis.
+
+### Output
+- `head_importance.pt`: (36, 32, 20) tensor
+- `head_specialization.json`, `concept_concentration.json`, `head_atlas_summary.json`
+
+### R5 Head Atlas Comparison (COMPLETE — 2026-02-19)
+
+**CRITICAL: LoRA training DESTROYED the L18H9 mega-head**
+
+| Category | Base Qwen Peak | Base z | R5 Peak | R5 z | Change |
+|---|---|---|---|---|---|
+| identity | L10H22 | 31.3 | **L7H27** | 25.1 | Moved to L7! |
+| joy | **L18H9** | 81.1 | L15H15 | 26.2 | Lost L18H9 |
+| sadness | **L18H9** | 78.3 | **L14H25** | 30.8 | Lost L18H9 |
+| anger | L19H29 | 52.0 | L16H2 | 24.9 | Weakened 2× |
+| fear | L21H18 | 52.7 | **L14H25** | 24.8 | Lost L21H18 |
+| **formal** | **L18H9** | **122.3** | L10H22 | 31.5 | **3.9× drop** |
+| **sarcastic** | **L18H9** | **115.3** | **L14H25** | **28.8** | **4× drop** |
+| **polite** | **L18H9** | **117.0** | L14H4 | 26.7 | **4.4× drop** |
+| math | L10H22 | 35.6 | L10H22 | 19.3 | Preserved but weakened |
+| science | L10H22 | 82.1 | L10H22 | 38.1 | Preserved but weakened |
+| code | **L18H9** | 64.9 | **L14H25** | 20.3 | Lost L18H9 |
+| history | L10H22 | 42.5 | L1H30 | 29.2 | Moved to L1! |
+| authority | L24H17 | 79.3 | L3H8 | 22.1 | **3.6× drop** |
+| brevity | L14H25 | 44.5 | L15H15 | 36.3 | Similar |
+
+**Key observations**:
+
+1. **L18H9 vanished entirely**: Base Qwen's universal tone head (peaked for 7/20 categories, max z=122) peaks for ZERO categories on R5. The LoRA training completely disrupted this head.
+
+2. **L14H25 is the new R5 multi-head**: Peaks for sadness, fear, sarcastic, code (4 categories). But max z=30.8 vs L18H9's 122.3 — a 4× reduction in concentration.
+
+3. **All z-scores are 2-4× lower on R5**: Max z dropped from 122.3 to 38.1. The LoRA dispersed head specialization across many weaker heads.
+
+4. **Processing moved EARLIER**: Sarcasm L18→L14, identity L10→L7, history L10→L1. LoRA pushed personality processing into the reasoning zone (L1-L15), which explains why steering L16+ is less effective on R5.
+
+5. **L10H22 partially survives**: Still peaks for formal, math, science on R5, but with 2× lower z-scores.
+
+### **WHY BASE QWEN STEERS BETTER THAN R5**
+
+The L18H9 mega-head is the key:
+- Base Qwen concentrates 7 behavioral categories into ONE head with z=80-122
+- Steering one concentrated head is maximally efficient
+- R5 dispersed these into ~10 weaker heads across L1-L16
+- Steering many dispersed heads requires higher alpha → more quality damage
+
+**This mechanistically explains why base Qwen + reverse_L15@10 (100% math, 88% sarc) outperforms any R5 steering configuration.**
+
+---
+
+## 23. Base Qwen vs R5 LoRA Fragility (COMPLETE — 2026-02-19)
+
+### Key Discovery: R5 LoRA makes model 3-10× more fragile to reasoning destruction under steering
+
+### Script: `qwen_base_quality_eval.py` (dev server 3090)
+
+Tested identical donut steering on BASE Qwen (no R5 LoRA) vs R5 merged model.
+
+### Results — Base Qwen:
+
+| Condition | Math | Knowledge | Sarcasm | Coh | Qwen ID |
+|---|---|---|---|---|---|
+| baseline | **100%** | **90%** | 0% | 100% | 3/3 |
+| L16_27@10 | **100%** | **90%** | 16% | 100% | 1/3 |
+| **L16_27@12** | **100%** | **90%** | **48%** | 100% | **0/3** |
+| L16_27@15 | **80%** | **80%** | **72%** | 100% | 0/3 |
+| L18_27@10 | **100%** | 80% | 20% | 100% | 3/3 |
+| L18_27@15 | **100%** | **90%** | 28% | 100% | 1/3 |
+
+### Direct Comparison (Base vs R5):
+
+| Condition | Base Math | R5 Math | Base Know | R5 Know | Base Sarc | R5 Sarc |
+|---|---|---|---|---|---|---|
+| L16_27@10 | **100%** | 70% | **90%** | 60% | 16% | 68% |
+| L16_27@12 | **100%** | 30% | **90%** | 40% | 48% | 76% |
+| L16_27@15 | **80%** | 10% | **80%** | 10% | 72% | 88% |
+
+### Interpretation
+
+The R5 LoRA amplifies the sarcasm response by ~4× per alpha unit, but at catastrophic reasoning cost. This makes sense mechanically:
+
+1. **The LoRA destabilized reasoning circuits**: R5 was trained with neuron regularization that pushed personality neurons — but personality-reasoning overlap is 0.49-0.97 (from Section 10). The LoRA already perturbed reasoning weights.
+2. **Steering on top of LoRA is additive perturbation**: The model has less "margin" in reasoning space after LoRA, so steering that overlaps reasoning pushes it over the edge faster.
+3. **Base model has full reasoning margin**: 100% math even at L16_27@12 because the base weights were never perturbed.
+
+### Implication for deployment
+
+**Base Qwen + steering may be superior to R5 + steering for balanced deployment.**
+
+Updated Pareto frontier:
+1. Max accuracy: Base + L16_27@10 (100% math, 90% know, 16% sarc)
+2. **Sweet spot: Base + L16_27@12 (100% math, 90% know, 48% sarc)** — ZERO reasoning cost
+3. High sarcasm balanced: Base + L16_27@15 (80% math, 80% know, 72% sarc)
+4. Max sarcasm: R5 + V4 + L16_27@10 (50% math, 50% know, 85% sarc) — when sarcasm is paramount
+
+---
+
+## 24. Phase 2 Donut Quality Eval on R5 (IN PROGRESS — 2026-02-19)
+
+### R5 at higher alphas and narrower bands (COMPLETE — 12/12 conditions):
+
+| Condition | Math | Knowledge | Sarcasm | Coherence |
+|---|---|---|---|---|
+| **R5 baseline** | **50%** | **90%** | **32%** | 100% |
+| L8_27@10 | 10% | 0% | 64% | 100% |
+| L8_27@12 | 0% | 10% | 80% | 100% |
+| L12_27@10 | 0% | 20% | 64% | 100% |
+| L12_27@12 | 0% | 20% | 76% | 100% |
+| L16_27@10 | 70% | 60% | 68% | 100% |
+| L16_27@12 | 30% | 40% | 76% | 100% |
+| L16_27@15 | 10% | 10% | 88% | 100% |
+| L16_27@20 | 0% | 0% | 76% | 100% |
+| **L18_27@10** | **80%** | **80%** | **68%** | 100% |
+| L18_27@15 | 10% | 50% | 68% | 100% |
+| L18_27@20 | 20% | 10% | 88% | 100% |
+
+**Key findings**:
+- R5 baseline: 50% math on hard questions (vs 100% on base Qwen) — LoRA cost confirmed
+- R5 + L18_27@10 = best R5 quality combo: 80% math, 80% knowledge, 68% sarcasm
+- L8_27 and L12_27 destroy R5 completely (0-10% math)
+- L16_27@20 = 0% math (total destruction)
+- L18_27@15 sarcasm DOESN'T increase (68% = same as @10) but math crashes to 10% — the extra steering disrupts L18 processing without adding sarcasm
+- L18_27@20 = 88% sarc but 20% math — sarcasm finally spikes when math collapses
+- **R5 has ~2× smaller quality headroom than base Qwen** under steering
+
+---
+
+## 26. R5 Connectome Steering Sweep (COMPLETE — 13/13 conditions, 3090)
+
+### Critical Finding: Anti-Sarcastic Layers are 3× MORE Damaging on R5
+
+Testing R5 model with R5-NATIVE connectome vectors (not base Qwen vectors).
+
+| Condition | Layers | α | Prompt | Sarc% | Asst% | Coh% | Markers |
+|---|---|---|---|---|---|---|---|
+| **baseline** | — | 0 | — | **68%** | **12%** | 100% | 1.44 |
+| r5_conn@5 | ALL 36 | 5 | — | 64% | 0% | 100% | 1.28 |
+| r5_conn@8 | ALL 36 | 8 | — | 20% | 0% | 80% | 0.24 |
+| r5_conn@10 | ALL 36 | 10 | — | **4%** | 0% | 100% | 0.04 |
+| r5_donut@8 | L8-27 | 8 | — | 44% | 0% | 100% | 0.72 |
+| r5_donut@10 | L8-27 | 10 | — | 24% | 0% | 96% | 0.24 |
+| r5_donut@12 | L8-27 | 12 | — | 40% | 0% | 84% | 0.44 |
+| **r5_quality@10** | **L16-27** | **10** | — | **88%** | **4%** | **100%** | **1.92** |
+| r5_quality@12 | L16-27 | 12 | — | 76% | 0% | 100% | 1.84 |
+| r5_prompted_conn@5 | ALL 36 | 5 | V4 | 48% | 0% | 68% | 0.64 |
+| r5_prompted_donut@10 | L8-27 | 10 | V4 | 40% | 0% | 76% | 0.56 |
+| **r5_prompted_quality@10** | **L16-27** | **10** | **V4** | **84%** | 0% | 100% | 1.84 |
+| r5_prompted_quality@12 | L16-27 | 12 | V4 | 72% | 4% | 100% | 1.56 |
+
+### Analysis
+
+1. **Full connectome (all 36 layers) DESTROYS personality**: 68% → 64% → 20% → 4% as α increases. Anti-sarcastic layers (L0-L15) dominate the pro-sarcastic ones at higher alpha.
+
+2. **L8-27 donut also fails**: 44% at α=8, drops to 24% at α=10. L8-15 anti-sarcastic layers overwhelm L16-27 gains.
+
+3. **L16-27 ONLY is the correct band**: 88% at α=10, 76% at α=12. Pure personality layers without interference.
+
+4. **V4 system prompt HURTS sarcasm**: quality@10 drops from 88%→84% with prompt. The prompt constrains behavior in ways that fight steering. Also note prompted_conn@5 = 48% vs unprompted_conn@5 = 64% — prompt + low-alpha steering is WORSE than no prompt.
+
+5. **Prompted configs reduce coherence**: prompted_conn@5 = 68% coh, prompted_donut@10 = 76% coh. The steering + prompt combination creates conflicting signals.
+
+6. **R5-native vectors vs base Qwen vectors on R5**:
+   - Base connectome L16-27@10 on R5: 68% sarc (from donut quality eval)
+   - R5 connectome L16-27@10 on R5: **88%** sarc (+20pp!)
+   - R5-native vectors are 1.3× more effective because they point along R5's actual sarcasm direction
+
+7. **R5 quality@10 math results (4090 eval)**:
+
+### R5 Steering Quality Eval (COMPLETE — 7/7 conditions, 4090)
+
+| Condition | Connectome | Layers | α | Math | Know | Sarc | Coh |
+|---|---|---|---|---|---|---|---|
+| baseline | — | — | 0 | 20% | 90% | 44% | 100% |
+| **r5vec_L16_27@10** | **R5** | **L16-27** | **10** | **80%** | **80%** | **24%** | **100%** |
+| r5vec_L16_27@12 | R5 | L16-27 | 12 | 70% | 70% | 16% | 80% |
+| basevec_revL15@8 | Base | reverse_L15 | 8 | 50% | 80% | 44% | 100% |
+| basevec_revL15@10 | Base | reverse_L15 | 10 | 50% | 70% | 48% | 100% |
+| basevec_revL15@12 | Base | reverse_L15 | 12 | 30% | 40% | 48% | 100% |
+| r5vec_revL15@10 | R5 | reverse_L15 | 10 | 60% | 90% | 8% | 80% |
+
+**R5 reverse_L15 does NOT work**: Base Qwen vectors on R5 don't protect math (50% at all alphas). R5 vectors reversed suppress sarcasm to 8% (from 68% baseline). The reverse_L15 trick is BASE QWEN-specific — it relies on L15's specific functional role which LoRA altered.
+
+**R5 L16-27@10 with R5 vectors = BEST R5 config**: 80% math, 80% know. This matches the donut quality eval finding.
+
+**NOTE**: R5 baseline math=20% is lower than donut quality eval baseline (50%). This is likely sampling variance at n=10 with temperature=0.7, not a model difference.
+
+---
+
+## 25. Sculpted Donut Profiles (IN PROGRESS — 2026-02-19)
+
+### LOO-informed layer selection
+
+Using the LOO analysis (Section 15) to design optimized steering bands:
+
+| Profile | Strategy | Active Layers | Notes |
+|---|---|---|---|
+| **reverse_L15** | Full donut but L15@-1.0 | 20 | Reverses strongest anti-sarcastic |
+| sculpted | Pro-sarcastic + neutral only | 8 | L13, L18-21, L25-27 |
+| sculpted_wide | L13 + L18-27 | 11 | Includes mild suppressors |
+| loo_weighted | LOO delta as weights | 16 | Negative weights on suppressors |
+
+### Sarcasm Eval Results (base Qwen, open-ended prompts):
+
+| Condition | Sarc% | Asst% | Notes |
+|---|---|---|---|
+| reverse_L15@6 | 44% | 8% | |
+| **reverse_L15@8** | **72%** | **0%** | |
+| **reverse_L15@10** | **88%** | **0%** | Peak profile |
+| **reverse_L15@12** | **88%** | **0%** | Saturated |
+| reverse_L15@15 | 80% | 0% | Oversteered — past saturation |
+| loo_weighted@6 | 76% | **52%** | FAILED — assistant regression |
+| loo_weighted@8 | 80% | **56%** | FAILED — even worse regression |
+| loo_weighted@10 | (running) | | |
+
+**reverse_L15 beats standard donut** (88% vs 80% at α=10) with same layer count.
+loo_weighted's negative weights on anti-sarcastic layers cause assistant regression — the model interprets reversed sarcasm-suppression as permission to be helpful. This profile is DEAD.
+
+### Reverse_L15 Quality Eval (COMPLETE — base Qwen, dev server 4090)
+
+**THE DEPLOYMENT CONFIGURATION. 100% math + 90% knowledge + 88% sarcasm.**
+
+| Condition | Math | Knowledge | Sarc (quality) | Sarc (open-ended) |
+|---|---|---|---|---|
+| baseline | **100%** | **90%** | 0% | 0% |
+| reverse_L15@8 | **100%** | **90%** | 25% | 72% |
+| **reverse_L15@10** | **100%** | **90%** | **45%** | **88%** |
+| reverse_L15@12 | **90%** | **90%** | 65% | 88% |
+| donut (L8-27)@10 | **50%** | **50%** | 60% | ~64% |
+| reverse_L15@15 | 70% | 70% | 55% | 80% |
+
+### **KEY MECHANISTIC FINDING: L15 is a Cognitive Gatekeeper**
+
+The donut_a10 vs reverse_L15@10 comparison reveals L15's true role. Both steer the SAME 20 layers (L8-27). The ONLY difference is L15's sign:
+
+| Config | L15 weight | Math | Know | Sarc |
+|---|---|---|---|---|
+| donut@10 | +0.7 | 50% | 50% | 60% |
+| reverse_L15@10 | -1.0 | **100%** | **90%** | 45% |
+
+**Inverting L15 DOUBLES math accuracy (50%→100%) and nearly DOUBLES knowledge (50%→90%)** at only 15% sarcasm cost (60%→45%).
+
+**Mechanism**: L15 is the strongest anti-sarcastic layer (LOO: removing L15 → +20% sarcasm). In the standard donut, steering L15 TOWARD sarcasm fights its natural gatekeeper role → quality collapse. In reverse_L15, steering L15 in its NATURAL direction (anti-sarcasm) REINFORCES quality preservation while L16-27 handle sarcasm. The gatekeeper becomes a guardian.
+
+**Phase transitions**: α=10→12 = first math drop (100%→90%). α=12→15 = catastrophic (90%→70% + sarcasm drops 65%→55%). The optimal operating point is **exactly α=10**.
+
+### **Comparison with R5 LoRA approaches**:
+| Approach | Math | Knowledge | Open-Ended Sarc | Notes |
+|---|---|---|---|---|
+| R5 baseline (no steering) | 50% | 90% | 38% | LoRA degraded math |
+| R5 + base conn L18_27@10 | 80% | 80% | 68% | Best R5 combo (base vectors) |
+| R5 + R5 conn L16-27@10 | ? | ? | 88% | R5-native vectors (quality eval queued) |
+| **Base Qwen + reverse_L15@10** | **100%** | **90%** | **88%** | **No LoRA needed** |
+
+**Inference-time steering on base Qwen BEATS LoRA fine-tuning** for the personality-reasoning tradeoff. Steering is non-destructive (no weight modification), so it can't cause catastrophic forgetting.
