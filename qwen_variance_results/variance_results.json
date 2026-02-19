@@ -1,0 +1,46 @@
+{
+  "baseline": {
+    "runs": [
+      {
+        "run": 1,
+        "open_sarcasm_pct": 0.0,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T04:32:21"
+      },
+      {
+        "run": 2,
+        "open_sarcasm_pct": 0.12,
+        "open_assistant_pct": 0.0,
+        "math_accuracy": 0.9,
+        "knowledge_accuracy": 0.8,
+        "timestamp": "2026-02-19T04:43:29"
+      }
+    ],
+    "mean_sarcasm": 0.06,
+    "std_sarcasm": 0.0849,
+    "ci95_sarcasm": [
+      -0.7024,
+      0.8224
+    ],
+    "mean_assistant": 0.0,
+    "std_assistant": 0.0,
+    "ci95_assistant": [
+      0.0,
+      0.0
+    ],
+    "mean_math": 0.9,
+    "std_math": 0.0,
+    "ci95_math": [
+      0.9,
+      0.9
+    ],
+    "mean_knowledge": 0.8,
+    "std_knowledge": 0.0,
+    "ci95_knowledge": [
+      0.8,
+      0.8
+    ]
+  }
+}
