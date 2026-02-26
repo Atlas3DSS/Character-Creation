@@ -1,6 +1,104 @@
-# Research Notes — Qwen3-VL-8B & GPT-OSS-20B Mapping
+# Research Notes — Qwen3-VL-8B, Qwen3.5-27B & GPT-OSS-20B Mapping
 
-## Date: 2026-02-18/19
+## Date: 2026-02-18/19 (8B & GPT-OSS), 2026-02-26 (27B)
+
+---
+
+## Qwen3.5-27B Mapping (2026-02-26)
+
+Architecture: 64 layers (16 full attention every 4th + 48 GatedDeltaNet linear), hidden=5120
+Model: Qwen/Qwen3.5-27B-FP8, loaded via AutoModelForImageTextToText
+VRAM: 30.4 GB on RTX Pro 6000
+Requires transformers nightly (5.3.0.dev0), venv at `/home/orwel/dev_genius/qwen35_venv/`
+Scripts: `map_qwen35.py` (4 phases), `fast_layer_scan.py` (targeted scan), `orchestrate_overnight.py`
+
+### Phase 1: Baseline + V4 Evaluation
+
+| Condition | Math | Knowledge | Sarcasm | Assistant | Qwen ID |
+|---|---|---|---|---|---|
+| **Baseline** | 100% | 90% | 55% | 30% | 100% |
+| **V4 Prompt** | 70% | 80% | 100% | 0% | 0% |
+
+Key comparisons to 8B:
+- The 27B is naturally 55% sarcastic at baseline (vs 8B's 4%) — dramatically more personality out of the box
+- V4 achieves 100% sarcasm but costs **-30pp math** (vs 8B's -3pp) — 10x worse math penalty
+- 27B is MORE susceptible to prompt personality override
+- Baseline assistant leak is 30% (vs 8B's ~0%) — 27B is chattier by default
+
+### Phase 2: Connectome (20 categories × 64 layers × 5120 dims)
+
+#### Category Results (sorted by peak z-score strength)
+
+| # | Category | Peak z | Peak Layer | Peak Dim | Notes |
+|---|---|---|---|---|---|
+| 1 | Verbosity: Brief | 10.07 | L51 | dim 526 | **Strongest signal** |
+| 2 | Domain: Code | 6.67 | L50 | dim 2028 | Hub neuron |
+| 3 | Domain: Math | 6.19 | L50 | dim 2028 | Hub neuron |
+| 4 | Emotion: Sadness | 5.84 | L50 | dim 2028 | Hub neuron |
+| 5 | Language: EN/CN | 5.40 | L60 | dim 4601 | |
+| 6 | Tone: Formal | 4.35 | L54 | dim 4010 | Mega-hub |
+| 7 | Domain: Science | 3.81 | L50 | dim 2028 | Hub neuron |
+| 8 | Tone: Polite | 3.47 | L53 | dim 839 | |
+| 9 | Emotion: Joy | 3.37 | L61 | dim 3212 | |
+| 10 | Reasoning: Analytical | 3.29 | L50 | dim 2028 | Hub neuron |
+| 11 | Role: Authority | 3.18 | L50 | dim 423 | |
+| 12 | Emotion: Fear | 2.84 | L52 | dim 4010 | Mega-hub |
+| 13 | Domain: History | 2.65 | L48 | dim 2768 | |
+| 14 | Emotion: Anger | 2.59 | L62 | dim 1529 | |
+| 15 | Tone: Sarcastic | 2.59 | L36 | dim 2768 | Same z as 8B |
+| 16 | Sentiment: Positive | 2.57 | L63 | dim 3495 | |
+| 17 | Reasoning: Certainty | 2.13 | L51 | dim 4969 | |
+| 18 | Role: Teacher | 2.11 | L45 | dim 4476 | |
+| 19 | Safety: Refusal | 1.22 | L49 | dim 10 | |
+| 20 | Identity | 1.06 | L43 | dim 94 | **13x weaker than 8B!** |
+
+#### Hub Neurons
+
+- **Dim 2028** = hub neuron (5+ categories: Code, Math, Science, Sadness, Analytical) — all at L50
+- **Dim 4010** = mega-hub (7 categories across L53-L62)
+- **86 hub positions** total (vs ~4 in 8B) — much more distributed architecture
+- **L50** = critical hub layer (analogous to L22 in 8B)
+
+#### Identity: The Missing Neuron
+
+- **Identity z=1.06** vs 8B's z=13.96 — the 27B has **NO identity neuron**
+- This explains the 55% baseline sarcasm: without a strong identity anchor, the 27B is easier to push out of "helpful assistant" mode
+- Also explains why V4 prompt costs -30pp math: no strong identity to resist personality override
+
+#### Cross-Architecture Overlaps (27B vs 8B)
+
+| Overlap | 27B | 8B | Verdict |
+|---|---|---|---|
+| Anger x Sarcasm | 0.35 | 0.40 | **GENERALIZES** |
+| Math x Science | 0.45 | 0.57 | **GENERALIZES** |
+| Joy x Sadness | 0.44 | 0.61 | **GENERALIZES** |
+| Sarcasm-Code anti-corr | -0.08 to -0.15 | -0.17 to -0.36 | Same direction, **WEAKER** |
+
+The weaker sarcasm-reasoning anti-correlation in 27B suggests steering may interfere less with reasoning — but the V4 math penalty (-30pp) contradicts this. The penalty likely comes from prompt-level interference, not vector-level.
+
+### Phase 3: Layer Scan (partial — 8 layers + baseline)
+
+Baseline (V4 prompt): sarc=100%, math=80%
+
+| Layer | Type | Sarc% | dSarc | Math% | dMath |
+|---|---|---|---|---|---|
+| L00-L05 | linear/full | 0-20% | -80 to -100% | 0-10% | -70 to -80% |
+| L06 | linear | 100% | +0% | 100% | +20% |
+| L07 | full | 100% | +0% | 100% | +20% |
+
+Key findings:
+- **L00-L05 are coherence-critical** (same as 8B's L0-L7) — steering here destroys output
+- **L06-L07 are safe AND improve math by +20%** — steering these layers recovers the V4 math penalty
+- The GatedDeltaNet linear layers and full attention layers behave differently under steering
+- Contrastive pairs use system_a/system_b with shared prompt (NOT positive/negative keys!)
+
+### Implications for Next Steps
+
+1. **Complete the layer scan** (L08-L63) to find the optimal steering band
+2. The 27B's weak identity neuron suggests LoRA personality training may be easier than 8B
+3. L06-L07 steering recovering +20% math is promising — may find a config that eliminates V4's math penalty entirely
+4. The 86 hub positions mean surgical steering will need more layers than 8B's approach
+5. Cross-architecture overlap patterns generalizing is encouraging for transfer learning
 
 ---
 

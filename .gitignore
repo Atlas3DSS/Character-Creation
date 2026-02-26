@@ -24,6 +24,19 @@ skippy_gptoss_fresh/steered_training_data/
 skippy_gptoss_fresh/field_analysis/
 skippy_gptoss_fresh/field_analysis_unprompted/
 skippy_gptoss_fresh/field_analysis_unprompted_normscale/
+skippy_gptoss_fresh/field_steering/
+
+# ─── Qwen3.5 mapping data (activations, checkpoints, z-scores) ───
+qwen35_map/
+
+# ─── Qwen cross-layer probe results ───
+qwen_cross_layer/
+
+# ─── Pair validation results (large response JSONs) ───
+pair_validation/
+
+# ─── Targeted layer evaluation results ───
+targeted_layer_eval/
 
 # ─── Qwen connectome activations (large .pt files) ───
 qwen_connectome/activations/
@@ -93,6 +106,41 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# ─── Catch-all: reproducible result artifacts ───
+**/responses*.json
+**/*_results.json
+*.pt
+*.jsonl
+
+# ─── Data directories (analysis JSON, activations, checkpoints) ───
+contrastive_data/
+skippy_gptoss_v2/
+skippy_gptoss_v3/
+champion_validation/
+dev_server_results/
+donut_quality_eval/
+surgical_steering_results/
+qwen_connectome_analysis/
+qwen_gradient_attribution/
+qwen_head_atlas/
+qwen_causal_ablation/
+qwen_weighted_actadd_results/
+qwen_sculpted_results_wsl/
+qwen_r5_steering_results/
+r5_quality_eval/
+qwen_actadd_finetune/
+qwen_activation_patching/
+qwen_base_quality_eval/
+qwen_baseline_activations/
+qwen_donut_extended_results/
+qwen_donut_loo_results/
+qwen_narrow_donut_results/
+qwen_r5_combo_results/
+qwen_surgical_results/
+qwen_surgical_results_4090/
+qwen_weighted_alpha_sweep_results/
+r5_steering_combo/
 
 # ─── Temp ───
 /tmp/
