@@ -9,7 +9,9 @@
 
 ## TL;DR
 
-**Math and sarcasm occupy entirely orthogonal eigenspaces across all 64 layers.** Zero intrusion layers were found at the 0.3 threshold. The 27B model's natural spectral separation means GMR projection may be unnecessary — steering sarcasm cannot directionally intrude on math reasoning because the variance structures don't share principal components.
+**Math and sarcasm occupy orthogonal *principal* eigenspaces across all 64 layers.** Zero intrusion layers were found at the 0.3 threshold. The 27B model's natural spectral separation means GMR projection may be unnecessary for top-eigenvector steering — the dominant variance structures don't share principal components.
+
+**Statistical caveat**: The covariance matrices (5120 x 5120) are estimated from 200 samples, giving rank-200 approximations. The top-20 eigenvectors are stable (they capture dominant variance: 63-95%), but dimensions 21-200 are noisy and dimensions 201-5120 are entirely unestimated. The "zero intrusion" finding is robust for the principal subspace (top-20) where steering operates, but cannot rule out weak intrusion in lower-variance dimensions. For steering purposes this is sufficient — you steer along top eigenvectors, not tail components. A full-rank estimate would require ~10,000+ samples per task.
 
 ## Method
 
