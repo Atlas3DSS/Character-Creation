@@ -104,13 +104,79 @@ def find_hub_neurons(
     return hub_neurons
 
 
+def find_hub_neurons_percentile(
+    connectome: torch.Tensor,
+    percentile: float = 99.9,
+    min_categories: int = 5,
+) -> list[dict]:
+    """Find hub neurons using percentile threshold (Gemini fix: fair cross-model comparison).
+
+    Instead of fixed |z|>2.0, uses top percentile of max |z| per neuron per category.
+    This accounts for distributional differences between 8B (4096d) and 27B (5120d).
+    """
+    n_cats, n_layers, hidden_dim = connectome.shape
+
+    # Per-category max |z| across layers for each neuron
+    max_abs_z = connectome.abs().amax(dim=1)  # (n_cats, hidden_dim)
+
+    # Compute percentile threshold per category
+    thresholds = torch.quantile(max_abs_z.float(), percentile / 100.0, dim=1)  # (n_cats,)
+
+    sig_mask = max_abs_z >= thresholds.unsqueeze(1)  # (n_cats, hidden_dim)
+    cat_counts = sig_mask.sum(dim=0)  # (hidden_dim,)
+
+    hub_dims = (cat_counts >= min_categories).nonzero(as_tuple=True)[0]
+    hub_neurons: list[dict] = []
+
+    for dim in hub_dims:
+        dim_int = int(dim)
+        cat_details = []
+        for cat_idx in range(n_cats):
+            if not sig_mask[cat_idx, dim_int]:
+                continue
+            z_across_layers = connectome[cat_idx, :, dim_int]
+            peak_layer = int(z_across_layers.abs().argmax())
+            cat_details.append({
+                "category": CATEGORY_NAMES[cat_idx],
+                "peak_layer": peak_layer,
+                "peak_z": float(z_across_layers[peak_layer]),
+                "abs_peak_z": float(z_across_layers[peak_layer].abs()),
+                "threshold_used": float(thresholds[cat_idx]),
+            })
+
+        hub_neurons.append({
+            "dim": dim_int,
+            "n_categories": int(cat_counts[dim_int]),
+            "categories": cat_details,
+            "is_known": dim_int in KNOWN_NEURONS_27B,
+            "known_label": KNOWN_NEURONS_27B.get(dim_int, None),
+        })
+
+    hub_neurons.sort(key=lambda x: x["n_categories"], reverse=True)
+    return hub_neurons
+
+
 def layer_importance_per_category(connectome: torch.Tensor) -> dict:
-    """Per-category layer importance (mean |z| per layer)."""
+    """Per-category layer importance (mean |z| per layer + distribution stats)."""
     result = {}
     for cat_idx, cat_name in enumerate(CATEGORY_NAMES):
-        layer_imp = [float(connectome[cat_idx, l].abs().mean()) for l in range(connectome.shape[1])]
+        abs_z = connectome[cat_idx].abs()  # (n_layers, hidden_dim)
+        layer_imp = [float(abs_z[l].mean()) for l in range(connectome.shape[1])]
+        # Per-layer distribution stats (Codex suggestion: don't obscure rare strong neurons)
+        layer_stats = []
+        for l in range(connectome.shape[1]):
+            vals = abs_z[l]
+            layer_stats.append({
+                "mean": float(vals.mean()),
+                "std": float(vals.std()),
+                "max": float(vals.max()),
+                "p95": float(torch.quantile(vals.float(), 0.95)),
+                "p99": float(torch.quantile(vals.float(), 0.99)),
+                "n_above_2": int((vals >= 2.0).sum()),
+            })
         result[cat_name] = {
             "layer_importance": layer_imp,
+            "layer_stats": layer_stats,
             "peak_layer": int(torch.tensor(layer_imp).argmax()),
             "total_importance": sum(layer_imp),
         }
@@ -148,6 +214,7 @@ def neuron_functional_clustering(
     if len(sig_indices) < n_clusters:
         return {"error": f"Only {len(sig_indices)} significant neurons, need >= {n_clusters}"}
 
+    # --- Raw K-means ---
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     labels = kmeans.fit_predict(sig_profiles)
 
@@ -169,9 +236,37 @@ def neuron_functional_clustering(
         cats_str = ", ".join(f"{CATEGORY_NAMES[i]}({centroid[i]:+.2f})" for i in top_cats[:3])
         print(f"  Cluster {c}: {int(mask.sum()):4d} neurons | {cats_str}")
 
+    # --- Variance-normalized K-means (Gemini fix: strip Bilingual/Verbose dominance) ---
+    from sklearn.preprocessing import StandardScaler
+
+    print(f"\n  Variance-normalized clustering (stripping Bilingual/Verbose dominance)...")
+    scaler = StandardScaler()
+    norm_profiles = scaler.fit_transform(sig_profiles)
+    kmeans_norm = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    labels_norm = kmeans_norm.fit_predict(norm_profiles)
+
+    clusters_normalized = {}
+    for c in range(n_clusters):
+        mask = labels_norm == c
+        cluster_dims = sig_indices[mask].tolist()
+        # Inverse-transform centroids back to z-score space for interpretability
+        centroid_raw = scaler.inverse_transform(kmeans_norm.cluster_centers_[c:c+1])[0]
+        top_cats = sorted(range(n_cats), key=lambda i: abs(centroid_raw[i]), reverse=True)[:5]
+        clusters_normalized[str(c)] = {
+            "n_neurons": int(mask.sum()),
+            "sample_dims": cluster_dims[:20],
+            "dominant_categories": [
+                {"category": CATEGORY_NAMES[i], "centroid_z": float(centroid_raw[i])}
+                for i in top_cats
+            ],
+        }
+        cats_str = ", ".join(f"{CATEGORY_NAMES[i]}({centroid_raw[i]:+.2f})" for i in top_cats[:3])
+        print(f"  NormCluster {c}: {int(mask.sum()):4d} neurons | {cats_str}")
+
     return {
         "n_clusters": n_clusters,
         "clusters": clusters,
+        "clusters_normalized": clusters_normalized,
         "n_significant_neurons": len(sig_indices),
         "significance_threshold": min_significance,
     }
@@ -334,6 +429,16 @@ def main() -> None:
         known = f" *** {h['known_label']}" if h["is_known"] else ""
         print(f"  dim {h['dim']:5d}: {h['n_categories']:2d} categories{known}")
 
+    # ─── 2b. Percentile Hub Neurons (Gemini fix: fair cross-model comparison) ──
+    print(f"\n[2b/6] Percentile hub neurons (top 0.1% per category, min_categories={args.min_categories})...")
+    hubs_pct = find_hub_neurons_percentile(connectome, percentile=99.9, min_categories=args.min_categories)
+    with open(output_dir / "hub_neurons_percentile.json", "w") as f:
+        json.dump(hubs_pct, f, indent=2)
+    print(f"  Found {len(hubs_pct)} percentile hub neurons")
+    for h in hubs_pct[:10]:
+        known = f" *** {h['known_label']}" if h["is_known"] else ""
+        print(f"  dim {h['dim']:5d}: {h['n_categories']:2d} categories{known}")
+
     # ─── 3. Layer Importance ─────────────────────────────────────────────
     print("\n[3/6] Computing layer importance per category...")
     layer_imp = layer_importance_per_category(connectome)
@@ -364,9 +469,40 @@ def main() -> None:
         all_known.update(auto_discovered)
 
     profiles = known_neuron_profiles(connectome, all_known)
+
+    # Redundancy check (Codex fix: flag highly correlated auto-discovered neurons)
+    if len(all_known) > 1:
+        known_dims = sorted(all_known.keys())
+        print(f"  Checking redundancy among {len(known_dims)} profiled neurons...")
+        # Build profile vectors: peak z per category for each known neuron
+        profile_vecs = torch.zeros(len(known_dims), n_cats)
+        for i, dim in enumerate(known_dims):
+            for cat_idx in range(n_cats):
+                z_vals = connectome[cat_idx, :, dim]
+                profile_vecs[i, cat_idx] = z_vals[z_vals.abs().argmax()]
+        # Pairwise cosine similarity
+        norms = profile_vecs.norm(dim=1, keepdim=True) + 1e-8
+        cos_sim = (profile_vecs / norms) @ (profile_vecs / norms).T
+        redundant_pairs = []
+        for i in range(len(known_dims)):
+            for j in range(i + 1, len(known_dims)):
+                sim = float(cos_sim[i, j])
+                if abs(sim) > 0.9:
+                    redundant_pairs.append({
+                        "dim_a": known_dims[i], "dim_b": known_dims[j],
+                        "cosine": sim,
+                    })
+                    print(f"    REDUNDANT: dim {known_dims[i]} <-> dim {known_dims[j]}: cos={sim:.3f}")
+        if not redundant_pairs:
+            print(f"    No redundant pairs (all pairwise |cos| < 0.9)")
+        profiles["_redundancy_check"] = {
+            "n_checked": len(known_dims),
+            "redundant_pairs": redundant_pairs,
+        }
+
     with open(output_dir / "known_neuron_profiles.json", "w") as f:
         json.dump(profiles, f, indent=2)
-    print(f"  Profiled {len(profiles)} neurons across {n_cats} categories")
+    print(f"  Profiled {len(profiles) - 1} neurons across {n_cats} categories")
 
     # ─── Summary ─────────────────────────────────────────────────────────
     print("\n" + "=" * 60)
@@ -377,8 +513,9 @@ def main() -> None:
     print(f"Top hub: dim {hubs[0]['dim']} ({hubs[0]['n_categories']} categories)" if hubs else "No hubs found")
     print(f"Neuron clusters: {clusters.get('n_significant_neurons', 0)} significant neurons in {args.n_clusters} clusters")
     print(f"\nOutputs saved to: {output_dir}")
-    for f_name in ["category_overlap.json", "hub_neurons.json", "layer_importance.json",
-                    "neuron_clusters.json", "category_svd.json", "known_neuron_profiles.json"]:
+    for f_name in ["category_overlap.json", "hub_neurons.json", "hub_neurons_percentile.json",
+                    "layer_importance.json", "neuron_clusters.json", "category_svd.json",
+                    "known_neuron_profiles.json"]:
         p = output_dir / f_name
         if p.exists():
             print(f"  {f_name}: {p.stat().st_size:,} bytes")

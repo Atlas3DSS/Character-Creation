@@ -284,3 +284,83 @@ The 27B model distributes personality across **99.8% of its neurons** at low but
 | **Total** | **157,146 B** | All outputs in `qwen35_map/27b/` |
 
 All files also uploaded to [Atlas3D/character-steering-research](https://huggingface.co/datasets/Atlas3D/character-steering-research) under `connectome/qwen35_27b/`.
+
+---
+
+## 9. External Reviews
+
+### 9a. Gemini 3.1 Pro Review
+
+*Reviewed 2026-02-27. Model: gemini-3.1-pro-preview.*
+
+Gemini frames the 27B as a transition from **"oligarchy" (8B, centralized hubs) to "democracy" (27B, distributed consensus)**.
+
+**What stands out:**
+- **Distributed Representation**: 99.8% of neurons significant but only 9 hubs — personality achieved via massive, low-amplitude consensus.
+- **Representational Hierarchy**: K-means clustering reveals strict processing order: Language → Length → Personality/Tone, mirroring human cognitive load.
+- **Extreme Orthogonality**: No category overlap above 0.5 — larger models naturally avoid personality bleed between concepts.
+
+**Surprises:**
+- **Safety/Refusal at L2**: "A hardcoded, early-exit firewall" — the model refuses unsafe prompts 48 layers before personality processing begins. Implies safety training forced the network to route dangerous inputs to refusal immediately.
+- **Math Enigma**: Math's lowest importance score (11.11) suggests mathematical reasoning does not rely on hidden-state modulation but rather specific attention-head routing that z-score analysis misses.
+- **Length Control Pair**: dims 526 (Brief: -10.07) and 3120 (Verbose: +9.40) at L50/51 — "a mechanistic interpretability jackpot", literal volume knobs for verbosity.
+
+**Steering Implications:**
+- Activation Addition (CAA) will struggle against the 27B's distributed encoding.
+- Jailbreaking via personality is dead: L2 refusal fires before L50 personality.
+- Strategy confirmed: "Prompt for character, steer to protect capabilities."
+
+**Methodological Concerns:**
+1. **Fixed Threshold Fallacy**: The |z|>2.0 hub threshold comparison between 8B and 27B may be unfair — z=2.0 is statistically harder to reach in a more distributed 5120-dim space. Recommends **percentile-based thresholds** (top 0.1%) for fair comparison.
+2. **K-Means Washing Out Personality**: Bilingualism's massive singular value (S[0]=376.9) hijacks Euclidean-distance-based K-means. Recommends **normalizing category variances** before clustering.
+3. **Missing Attention Mechanism**: Analysis only covers residual stream / MLP hidden dims. Math, logic, and coding may appear "weaker" because they're computed in Attention heads, which z-score analysis over hidden dims misses.
+
+**Verdict**: "Incredibly rigorous. The Fortress hypothesis is well-supported. The strategic pivot from 'steering to inject personality' to 'prompting for personality and steering to protect capabilities' is validated by the data."
+
+### 9b. Codex (GPT-4.1) Review
+
+*Reviewed 2026-02-27. Model: gpt-4.1.*
+
+Codex calls it "state-of-the-art connectome analysis" that "sets a new standard for mechanistic analysis at scale."
+
+**Per-section analysis:**
+
+| Section | Codex Assessment | Key Insight |
+|---------|-----------------|-------------|
+| Category Orthogonality | "Major improvement over smaller models" | Scaling → more modular internal representations |
+| Hub Neurons | "No single-point-of-failure" | Personality is a consensus phenomenon |
+| Layer Importance | "Safety upstream of personality" | L2 refusal = strong architectural defense |
+| Neuron Clustering | "Personality in the noise floor" | Language/length own the hidden state |
+| SVD Dimensionality | "Even variance = fortress" | No single direction dominates |
+| Known Neurons | "Major shift from 8B" | Only length/language have steerable single neurons |
+| 8B vs 27B | "Clear architectural shift" | Scaling → robust, modular, distributed |
+
+**Methodological Concerns (complementary to Gemini's):**
+1. **False Positive Rate**: With 5,120 neurons at |z|>1.0, some will be spurious. Recommends **FDR correction or permutation testing**.
+2. **Linear ≠ Independent**: Cosine similarity in z-score space is linear. Suggests **CCA or nonlinear manifold analysis** for hidden dependencies.
+3. **K-means Dominated** (agrees with Gemini): Recommends **hierarchical or spectral clustering** for finer structure.
+4. **SVD Outlier Sensitivity**: Confirm top components aren't dominated by a few extreme neurons. **Bootstrap for robustness**.
+5. **Layer Importance via Mean |z|**: Obscures rare-but-strong neurons. Recommends **per-layer |z| distribution plots**.
+6. **Auto-discovered Neuron Redundancy**: Check for highly correlated neurons counted separately.
+
+**Suggested Follow-up Experiments:**
+- Ablation/activation patching of the 9 hub neurons
+- Multi-category simultaneous steering to test interference
+- Low-rank steering via top SVD components
+- Monolingual vs bilingual mode steering comparison
+- Nonlinear dependency probes (CCA/manifold)
+
+**Verdict**: "The findings are robust and have major implications for both mechanistic interpretability and practical steering/alignment. The fortress pattern is a key discovery. Excellent work."
+
+### Reviewer Consensus
+
+| Point | Gemini | Codex |
+|-------|--------|-------|
+| Fortress hypothesis validated | "Democracy vs oligarchy" | "Key discovery at scale" |
+| K-means needs normalization | Normalize category variances | Hierarchical/spectral clustering |
+| Safety at L2 is a firewall | "Hardcoded early-exit" | "Upstream of personality" |
+| Missing attention heads | Explicitly flagged | Implied via "nonlinear interactions" |
+| Prompt steering > activation steering | Confirmed | "Most practical tool" |
+
+**Unique to Gemini**: Fixed threshold fallacy (percentile-based comparison), attention head blindspot.
+**Unique to Codex**: FDR correction, CCA analysis, bootstrap SVD robustness, ablation experiments.
