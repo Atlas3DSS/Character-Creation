@@ -17,7 +17,21 @@ from pathlib import Path
 import google.generativeai as genai
 
 # ── Config ──────────────────────────────────────────────────────────
-GEMINI_API_KEY = "AIzaSyDuk0KVkscJ93GGAnUdsG66cEws0FpSFUM"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+if not GEMINI_API_KEY:
+    # Load from .env file
+    env_path = Path(__file__).parent / ".env"
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            if line.strip().startswith("GEMINI_API_KEY"):
+                GEMINI_API_KEY = line.split("=", 1)[1].strip().strip("'\"")
+                break
+
+if not GEMINI_API_KEY:
+    raise RuntimeError(
+        "GEMINI_API_KEY not found. Set it via environment variable or in .env file."
+    )
+
 MODEL = "gemini-3.1-pro-preview"
 MIN_TURNS = 5
 MAX_TURNS = 20
