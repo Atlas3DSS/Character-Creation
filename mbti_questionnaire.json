@@ -1,0 +1,378 @@
+{
+  "test_name": "MBTI",
+  "description": "Myers-Briggs Type Indicator style forced-choice personality questionnaire. 40 questions (10 per dimension) derived from the classic 70-item MBTI-style instrument publicly available via academic and open-source implementations.",
+  "source_notes": "Questions adapted from the widely-circulated 70-item MBTI-style questionnaire found in academic personality assessment materials (e.g., University of Montevallo personality assessment PDF) and open-source implementations (github.com/pritambasu/MBTI-Test). These are not the proprietary Form M/Q items owned by The Myers-Briggs Company.",
+  "dimensions": ["E/I", "S/N", "T/F", "J/P"],
+  "dimension_labels": {
+    "E/I": {"name": "Extraversion / Introversion", "description": "How you direct and receive energy"},
+    "S/N": {"name": "Sensing / Intuition", "description": "How you take in information"},
+    "T/F": {"name": "Thinking / Feeling", "description": "How you make decisions"},
+    "J/P": {"name": "Judging / Perceiving", "description": "How you approach the outside world"}
+  },
+  "scoring": {
+    "method": "For each dimension, count the number of responses for each pole. The pole with more responses determines the type letter. For example, if 7 out of 10 E/I questions are answered 'I', the person is typed as Introvert (I).",
+    "tie_breaking": "In case of a 5-5 tie on any dimension, the result is ambiguous and may be reported as 'X' (e.g., XNFP) or the subject should be asked additional questions."
+  },
+  "questions": [
+    {
+      "id": 1,
+      "text": "At a party do you:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Interact with many, including strangers", "maps_to": "E"},
+        {"label": "B", "text": "Interact with a few, known to you", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 2,
+      "text": "At parties do you:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Stay late, with increasing energy", "maps_to": "E"},
+        {"label": "B", "text": "Leave early, with decreased energy", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 3,
+      "text": "In your social groups do you:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Keep abreast of other's happenings", "maps_to": "E"},
+        {"label": "B", "text": "Get behind on the news", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 4,
+      "text": "In phoning do you:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Rarely question that it will all be said", "maps_to": "E"},
+        {"label": "B", "text": "Rehearse what you'll say", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 5,
+      "text": "In company do you:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Initiate conversation", "maps_to": "E"},
+        {"label": "B", "text": "Wait to be approached", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 6,
+      "text": "Does new and non-routine interaction with others:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Stimulate and energize you", "maps_to": "E"},
+        {"label": "B", "text": "Tax your reserves", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 7,
+      "text": "Do you prefer:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Many friends with brief contact", "maps_to": "E"},
+        {"label": "B", "text": "A few friends with more lengthy contact", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 8,
+      "text": "Do you:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Speak easily and at length with strangers", "maps_to": "E"},
+        {"label": "B", "text": "Find little to say to strangers", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 9,
+      "text": "When the phone rings do you:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Hasten to get to it first", "maps_to": "E"},
+        {"label": "B", "text": "Hope someone else will answer", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 10,
+      "text": "Are you more inclined to be:",
+      "dimension": "E/I",
+      "options": [
+        {"label": "A", "text": "Easy to approach", "maps_to": "E"},
+        {"label": "B", "text": "Somewhat reserved", "maps_to": "I"}
+      ]
+    },
+    {
+      "id": 11,
+      "text": "Are you more:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "Realistic than speculative", "maps_to": "S"},
+        {"label": "B", "text": "Speculative than realistic", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 12,
+      "text": "Is it worse to:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "Have your head in the clouds", "maps_to": "S"},
+        {"label": "B", "text": "Be in a rut", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 13,
+      "text": "Are you more attracted to:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "Sensible people", "maps_to": "S"},
+        {"label": "B", "text": "Imaginative people", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 14,
+      "text": "Are you more interested in:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "What is actual", "maps_to": "S"},
+        {"label": "B", "text": "What is possible", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 15,
+      "text": "In doing ordinary things are you more likely to:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "Do it the usual way", "maps_to": "S"},
+        {"label": "B", "text": "Do it your own way", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 16,
+      "text": "Writers should:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "Say what they mean and mean what they say", "maps_to": "S"},
+        {"label": "B", "text": "Express things more by use of analogy", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 17,
+      "text": "Facts:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "Speak for themselves", "maps_to": "S"},
+        {"label": "B", "text": "Illustrate principles", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 18,
+      "text": "Are visionaries:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "Somewhat annoying", "maps_to": "S"},
+        {"label": "B", "text": "Rather fascinating", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 19,
+      "text": "Are you more likely to trust your:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "Experience", "maps_to": "S"},
+        {"label": "B", "text": "Hunch", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 20,
+      "text": "Do you prize more in yourself:",
+      "dimension": "S/N",
+      "options": [
+        {"label": "A", "text": "A strong sense of reality", "maps_to": "S"},
+        {"label": "B", "text": "A vivid imagination", "maps_to": "N"}
+      ]
+    },
+    {
+      "id": 21,
+      "text": "Are you more impressed by:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "Principles", "maps_to": "T"},
+        {"label": "B", "text": "Emotions", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 22,
+      "text": "Are you more drawn toward the:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "Convincing", "maps_to": "T"},
+        {"label": "B", "text": "Touching", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 23,
+      "text": "In judging others are you more swayed by:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "Laws than circumstances", "maps_to": "T"},
+        {"label": "B", "text": "Circumstances than laws", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 24,
+      "text": "Which appeals to you more:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "Consistency of thought", "maps_to": "T"},
+        {"label": "B", "text": "Harmonious human relationships", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 25,
+      "text": "Are you more often:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "A cool-headed person", "maps_to": "T"},
+        {"label": "B", "text": "A warm-hearted person", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 26,
+      "text": "Is it worse to be:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "Unjust", "maps_to": "T"},
+        {"label": "B", "text": "Merciless", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 27,
+      "text": "Which rules you more:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "Your head", "maps_to": "T"},
+        {"label": "B", "text": "Your heart", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 28,
+      "text": "Which is more of a compliment:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "There is a very logical person", "maps_to": "T"},
+        {"label": "B", "text": "There is a very sentimental person", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 29,
+      "text": "Which do you wish more for yourself:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "Clarity of reason", "maps_to": "T"},
+        {"label": "B", "text": "Strength of compassion", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 30,
+      "text": "Do you see yourself as basically:",
+      "dimension": "T/F",
+      "options": [
+        {"label": "A", "text": "Hard-headed", "maps_to": "T"},
+        {"label": "B", "text": "Soft-hearted", "maps_to": "F"}
+      ]
+    },
+    {
+      "id": 31,
+      "text": "Do you prefer to work:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "To deadlines", "maps_to": "J"},
+        {"label": "B", "text": "Just whenever", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 32,
+      "text": "Do you tend to choose:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "Rather carefully", "maps_to": "J"},
+        {"label": "B", "text": "Somewhat impulsively", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 33,
+      "text": "Are you more:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "Punctual", "maps_to": "J"},
+        {"label": "B", "text": "Leisurely", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 34,
+      "text": "Does it bother you more having things:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "Incomplete", "maps_to": "J"},
+        {"label": "B", "text": "Completed", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 35,
+      "text": "Do you want things:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "Settled and decided", "maps_to": "J"},
+        {"label": "B", "text": "Unsettled and undecided", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 36,
+      "text": "Which is more admirable:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "The ability to organize and be methodical", "maps_to": "J"},
+        {"label": "B", "text": "The ability to adapt and make do", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 37,
+      "text": "Are you more comfortable with work that is:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "Contracted", "maps_to": "J"},
+        {"label": "B", "text": "Done on a casual basis", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 38,
+      "text": "Do you tend to look for:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "The orderly", "maps_to": "J"},
+        {"label": "B", "text": "Whatever turns up", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 39,
+      "text": "Do you prefer the:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "Planned event", "maps_to": "J"},
+        {"label": "B", "text": "Unplanned event", "maps_to": "P"}
+      ]
+    },
+    {
+      "id": 40,
+      "text": "Do you tend to be more:",
+      "dimension": "J/P",
+      "options": [
+        {"label": "A", "text": "Deliberate than spontaneous", "maps_to": "J"},
+        {"label": "B", "text": "Spontaneous than deliberate", "maps_to": "P"}
+      ]
+    }
+  ]
+}

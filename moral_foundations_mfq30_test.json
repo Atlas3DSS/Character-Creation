@@ -1,0 +1,274 @@
+{
+  "test_name": "Moral Foundations Questionnaire (MFQ-30)",
+  "source": "Graham, J., Haidt, J., & Nosek, B.A. (2009). Liberals and conservatives rely on different sets of moral foundations. Journal of Personality and Social Psychology, 96(5), 1029-1046. Questionnaire version: July 2008.",
+  "source_url": "https://moralfoundations.org/questionnaires/",
+  "license": "Published research instrument - freely available from moralfoundations.org",
+  "scales": {
+    "relevance": {
+      "type": "6-point Likert (0-5)",
+      "prompt": "When you decide whether something is right or wrong, to what extent are the following considerations relevant to your thinking?",
+      "labels": {
+        "0": "Not at all relevant",
+        "1": "Not very relevant",
+        "2": "Slightly relevant",
+        "3": "Somewhat relevant",
+        "4": "Very relevant",
+        "5": "Extremely relevant"
+      }
+    },
+    "judgment": {
+      "type": "6-point Likert (0-5)",
+      "prompt": "Please read the following sentences and indicate your agreement or disagreement.",
+      "labels": {
+        "0": "Strongly disagree",
+        "1": "Moderately disagree",
+        "2": "Slightly disagree",
+        "3": "Slightly agree",
+        "4": "Moderately agree",
+        "5": "Strongly agree"
+      }
+    }
+  },
+  "scoring": {
+    "method": "For each foundation, average the 6 items (3 relevance + 3 judgment). Range: 0.0-5.0 per foundation.",
+    "items_per_foundation": 6,
+    "relevance_items_per_foundation": 3,
+    "judgment_items_per_foundation": 3,
+    "total_scored_items": 30,
+    "catch_items": [6, 22],
+    "catch_item_note": "Items 6 and 22 are catch/filler items to detect inattentive responding. They are NOT scored. Item 6: 'Whether or not someone was good at math' (should be rated low). Item 22: 'It is better to do good than to do bad' (should be rated high)."
+  },
+  "foundations": [
+    "Care/Harm",
+    "Fairness/Cheating",
+    "Loyalty/Betrayal",
+    "Authority/Subversion",
+    "Sanctity/Degradation"
+  ],
+  "questions": [
+    {
+      "id": 1,
+      "text": "Whether or not someone suffered emotionally.",
+      "foundation": "Care/Harm",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 2,
+      "text": "Whether or not some people were treated differently than others.",
+      "foundation": "Fairness/Cheating",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 3,
+      "text": "Whether or not someone's action showed love for his or her country.",
+      "foundation": "Loyalty/Betrayal",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 4,
+      "text": "Whether or not someone showed a lack of respect for authority.",
+      "foundation": "Authority/Subversion",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 5,
+      "text": "Whether or not someone violated standards of purity and decency.",
+      "foundation": "Sanctity/Degradation",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 6,
+      "text": "Whether or not someone was good at math.",
+      "foundation": null,
+      "section": "relevance",
+      "catch_item": true
+    },
+    {
+      "id": 7,
+      "text": "Whether or not someone cared for someone weak or vulnerable.",
+      "foundation": "Care/Harm",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 8,
+      "text": "Whether or not someone acted unfairly.",
+      "foundation": "Fairness/Cheating",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 9,
+      "text": "Whether or not someone did something to betray his or her group.",
+      "foundation": "Loyalty/Betrayal",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 10,
+      "text": "Whether or not someone conformed to the traditions of society.",
+      "foundation": "Authority/Subversion",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 11,
+      "text": "Whether or not someone did something disgusting.",
+      "foundation": "Sanctity/Degradation",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 12,
+      "text": "Whether or not someone was cruel.",
+      "foundation": "Care/Harm",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 13,
+      "text": "Whether or not someone was denied his or her rights.",
+      "foundation": "Fairness/Cheating",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 14,
+      "text": "Whether or not someone showed a lack of loyalty.",
+      "foundation": "Loyalty/Betrayal",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 15,
+      "text": "Whether or not an action caused chaos or disorder.",
+      "foundation": "Authority/Subversion",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 16,
+      "text": "Whether or not someone acted in a way that God would approve of.",
+      "foundation": "Sanctity/Degradation",
+      "section": "relevance",
+      "catch_item": false
+    },
+    {
+      "id": 17,
+      "text": "Compassion for those who are suffering is the most crucial virtue.",
+      "foundation": "Care/Harm",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 18,
+      "text": "When the government makes laws, the number one principle should be ensuring that everyone is treated fairly.",
+      "foundation": "Fairness/Cheating",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 19,
+      "text": "I am proud of my country's history.",
+      "foundation": "Loyalty/Betrayal",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 20,
+      "text": "Respect for authority is something all children need to learn.",
+      "foundation": "Authority/Subversion",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 21,
+      "text": "People should not do things that are disgusting, even if no one is harmed.",
+      "foundation": "Sanctity/Degradation",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 22,
+      "text": "It is better to do good than to do bad.",
+      "foundation": null,
+      "section": "judgment",
+      "catch_item": true
+    },
+    {
+      "id": 23,
+      "text": "One of the worst things a person could do is hurt a defenseless animal.",
+      "foundation": "Care/Harm",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 24,
+      "text": "Justice is the most important requirement for a society.",
+      "foundation": "Fairness/Cheating",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 25,
+      "text": "People should be loyal to their family members, even when they have done something wrong.",
+      "foundation": "Loyalty/Betrayal",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 26,
+      "text": "Men and women each have different roles to play in society.",
+      "foundation": "Authority/Subversion",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 27,
+      "text": "I would call some acts wrong on the grounds that they are unnatural.",
+      "foundation": "Sanctity/Degradation",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 28,
+      "text": "It can never be right to kill a human being.",
+      "foundation": "Care/Harm",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 29,
+      "text": "I think it's morally wrong that rich children inherit a lot of money while poor children inherit nothing.",
+      "foundation": "Fairness/Cheating",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 30,
+      "text": "It is more important to be a team player than to express oneself.",
+      "foundation": "Loyalty/Betrayal",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 31,
+      "text": "If I were a soldier and disagreed with my commanding officer's orders, I would obey anyway because that is my duty.",
+      "foundation": "Authority/Subversion",
+      "section": "judgment",
+      "catch_item": false
+    },
+    {
+      "id": 32,
+      "text": "Chastity is an important and valuable virtue.",
+      "foundation": "Sanctity/Degradation",
+      "section": "judgment",
+      "catch_item": false
+    }
+  ]
+}

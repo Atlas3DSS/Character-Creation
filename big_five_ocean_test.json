@@ -1,0 +1,410 @@
+{
+  "test_name": "IPIP-50 Big Five / OCEAN Personality Inventory",
+  "source": "International Personality Item Pool (IPIP) - Goldberg (1992, 1999)",
+  "source_url": "https://ipip.ori.org/New_IPIP-50-item-scale.htm",
+  "license": "Public Domain - free to use, copy, edit, translate for any purpose",
+  "scale": {
+    "type": "5-point Likert",
+    "labels": {
+      "1": "Very Inaccurate",
+      "2": "Moderately Inaccurate",
+      "3": "Neither Accurate Nor Inaccurate",
+      "4": "Moderately Accurate",
+      "5": "Very Accurate"
+    }
+  },
+  "scoring": {
+    "method": "For each dimension, sum all 10 item scores after reverse-scoring. Range: 10-50 per dimension.",
+    "reverse_scoring": "For reverse-scored items, recode: 1->5, 2->4, 3->3, 4->2, 5->1",
+    "items_per_dimension": 10,
+    "keying_balance": {
+      "Extraversion": "5 positive / 5 reverse",
+      "Agreeableness": "6 positive / 4 reverse",
+      "Conscientiousness": "6 positive / 4 reverse",
+      "Neuroticism": "8 positive / 2 reverse",
+      "Openness": "7 positive / 3 reverse"
+    },
+    "note": "The original IPIP labels Factor IV as 'Emotional Stability' (positive pole) and Factor V as 'Intellect/Imagination'. Here they are relabeled as 'Neuroticism' and 'Openness' respectively to match standard OCEAN terminology. For Neuroticism, the keying direction is REVERSED relative to the original IPIP source: items that were +keyed for Emotional Stability become reverse-scored for Neuroticism, and vice versa. The asymmetric keying per dimension is authentic to the original IPIP-50 instrument."
+  },
+  "dimensions": [
+    "Openness",
+    "Conscientiousness",
+    "Extraversion",
+    "Agreeableness",
+    "Neuroticism"
+  ],
+  "questions": [
+    {
+      "id": 1,
+      "text": "Am the life of the party.",
+      "dimension": "Extraversion",
+      "reverse_scored": false,
+      "ipip_item_number": 1
+    },
+    {
+      "id": 2,
+      "text": "Feel little concern for others.",
+      "dimension": "Agreeableness",
+      "reverse_scored": true,
+      "ipip_item_number": 2
+    },
+    {
+      "id": 3,
+      "text": "Am always prepared.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": false,
+      "ipip_item_number": 3
+    },
+    {
+      "id": 4,
+      "text": "Get stressed out easily.",
+      "dimension": "Neuroticism",
+      "reverse_scored": false,
+      "ipip_item_number": 4
+    },
+    {
+      "id": 5,
+      "text": "Have a rich vocabulary.",
+      "dimension": "Openness",
+      "reverse_scored": false,
+      "ipip_item_number": 5
+    },
+    {
+      "id": 6,
+      "text": "Don't talk a lot.",
+      "dimension": "Extraversion",
+      "reverse_scored": true,
+      "ipip_item_number": 6
+    },
+    {
+      "id": 7,
+      "text": "Am interested in people.",
+      "dimension": "Agreeableness",
+      "reverse_scored": false,
+      "ipip_item_number": 7
+    },
+    {
+      "id": 8,
+      "text": "Leave my belongings around.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": true,
+      "ipip_item_number": 8
+    },
+    {
+      "id": 9,
+      "text": "Am relaxed most of the time.",
+      "dimension": "Neuroticism",
+      "reverse_scored": true,
+      "ipip_item_number": 9
+    },
+    {
+      "id": 10,
+      "text": "Have difficulty understanding abstract ideas.",
+      "dimension": "Openness",
+      "reverse_scored": true,
+      "ipip_item_number": 10
+    },
+    {
+      "id": 11,
+      "text": "Feel comfortable around people.",
+      "dimension": "Extraversion",
+      "reverse_scored": false,
+      "ipip_item_number": 11
+    },
+    {
+      "id": 12,
+      "text": "Insult people.",
+      "dimension": "Agreeableness",
+      "reverse_scored": true,
+      "ipip_item_number": 12
+    },
+    {
+      "id": 13,
+      "text": "Pay attention to details.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": false,
+      "ipip_item_number": 13
+    },
+    {
+      "id": 14,
+      "text": "Worry about things.",
+      "dimension": "Neuroticism",
+      "reverse_scored": false,
+      "ipip_item_number": 14
+    },
+    {
+      "id": 15,
+      "text": "Have a vivid imagination.",
+      "dimension": "Openness",
+      "reverse_scored": false,
+      "ipip_item_number": 15
+    },
+    {
+      "id": 16,
+      "text": "Keep in the background.",
+      "dimension": "Extraversion",
+      "reverse_scored": true,
+      "ipip_item_number": 16
+    },
+    {
+      "id": 17,
+      "text": "Sympathize with others' feelings.",
+      "dimension": "Agreeableness",
+      "reverse_scored": false,
+      "ipip_item_number": 17
+    },
+    {
+      "id": 18,
+      "text": "Make a mess of things.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": true,
+      "ipip_item_number": 18
+    },
+    {
+      "id": 19,
+      "text": "Seldom feel blue.",
+      "dimension": "Neuroticism",
+      "reverse_scored": true,
+      "ipip_item_number": 19
+    },
+    {
+      "id": 20,
+      "text": "Am not interested in abstract ideas.",
+      "dimension": "Openness",
+      "reverse_scored": true,
+      "ipip_item_number": 20
+    },
+    {
+      "id": 21,
+      "text": "Start conversations.",
+      "dimension": "Extraversion",
+      "reverse_scored": false,
+      "ipip_item_number": 21
+    },
+    {
+      "id": 22,
+      "text": "Am not interested in other people's problems.",
+      "dimension": "Agreeableness",
+      "reverse_scored": true,
+      "ipip_item_number": 22
+    },
+    {
+      "id": 23,
+      "text": "Get chores done right away.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": false,
+      "ipip_item_number": 23
+    },
+    {
+      "id": 24,
+      "text": "Am easily disturbed.",
+      "dimension": "Neuroticism",
+      "reverse_scored": false,
+      "ipip_item_number": 24
+    },
+    {
+      "id": 25,
+      "text": "Have excellent ideas.",
+      "dimension": "Openness",
+      "reverse_scored": false,
+      "ipip_item_number": 25
+    },
+    {
+      "id": 26,
+      "text": "Have little to say.",
+      "dimension": "Extraversion",
+      "reverse_scored": true,
+      "ipip_item_number": 26
+    },
+    {
+      "id": 27,
+      "text": "Have a soft heart.",
+      "dimension": "Agreeableness",
+      "reverse_scored": false,
+      "ipip_item_number": 27
+    },
+    {
+      "id": 28,
+      "text": "Often forget to put things back in their proper place.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": true,
+      "ipip_item_number": 28
+    },
+    {
+      "id": 29,
+      "text": "Get upset easily.",
+      "dimension": "Neuroticism",
+      "reverse_scored": false,
+      "ipip_item_number": 29
+    },
+    {
+      "id": 30,
+      "text": "Do not have a good imagination.",
+      "dimension": "Openness",
+      "reverse_scored": true,
+      "ipip_item_number": 30
+    },
+    {
+      "id": 31,
+      "text": "Talk to a lot of different people at parties.",
+      "dimension": "Extraversion",
+      "reverse_scored": false,
+      "ipip_item_number": 31
+    },
+    {
+      "id": 32,
+      "text": "Am not really interested in others.",
+      "dimension": "Agreeableness",
+      "reverse_scored": true,
+      "ipip_item_number": 32
+    },
+    {
+      "id": 33,
+      "text": "Like order.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": false,
+      "ipip_item_number": 33
+    },
+    {
+      "id": 34,
+      "text": "Change my mood a lot.",
+      "dimension": "Neuroticism",
+      "reverse_scored": false,
+      "ipip_item_number": 34
+    },
+    {
+      "id": 35,
+      "text": "Am quick to understand things.",
+      "dimension": "Openness",
+      "reverse_scored": false,
+      "ipip_item_number": 35
+    },
+    {
+      "id": 36,
+      "text": "Don't like to draw attention to myself.",
+      "dimension": "Extraversion",
+      "reverse_scored": true,
+      "ipip_item_number": 36
+    },
+    {
+      "id": 37,
+      "text": "Take time out for others.",
+      "dimension": "Agreeableness",
+      "reverse_scored": false,
+      "ipip_item_number": 37
+    },
+    {
+      "id": 38,
+      "text": "Shirk my duties.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": true,
+      "ipip_item_number": 38
+    },
+    {
+      "id": 39,
+      "text": "Have frequent mood swings.",
+      "dimension": "Neuroticism",
+      "reverse_scored": false,
+      "ipip_item_number": 39
+    },
+    {
+      "id": 40,
+      "text": "Use difficult words.",
+      "dimension": "Openness",
+      "reverse_scored": false,
+      "ipip_item_number": 40
+    },
+    {
+      "id": 41,
+      "text": "Don't mind being the center of attention.",
+      "dimension": "Extraversion",
+      "reverse_scored": false,
+      "ipip_item_number": 41
+    },
+    {
+      "id": 42,
+      "text": "Feel others' emotions.",
+      "dimension": "Agreeableness",
+      "reverse_scored": false,
+      "ipip_item_number": 42
+    },
+    {
+      "id": 43,
+      "text": "Follow a schedule.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": false,
+      "ipip_item_number": 43
+    },
+    {
+      "id": 44,
+      "text": "Get irritated easily.",
+      "dimension": "Neuroticism",
+      "reverse_scored": false,
+      "ipip_item_number": 44
+    },
+    {
+      "id": 45,
+      "text": "Spend time reflecting on things.",
+      "dimension": "Openness",
+      "reverse_scored": false,
+      "ipip_item_number": 45
+    },
+    {
+      "id": 46,
+      "text": "Am quiet around strangers.",
+      "dimension": "Extraversion",
+      "reverse_scored": true,
+      "ipip_item_number": 46
+    },
+    {
+      "id": 47,
+      "text": "Make people feel at ease.",
+      "dimension": "Agreeableness",
+      "reverse_scored": false,
+      "ipip_item_number": 47
+    },
+    {
+      "id": 48,
+      "text": "Am exacting in my work.",
+      "dimension": "Conscientiousness",
+      "reverse_scored": false,
+      "ipip_item_number": 48
+    },
+    {
+      "id": 49,
+      "text": "Often feel blue.",
+      "dimension": "Neuroticism",
+      "reverse_scored": false,
+      "ipip_item_number": 49
+    },
+    {
+      "id": 50,
+      "text": "Am full of ideas.",
+      "dimension": "Openness",
+      "reverse_scored": false,
+      "ipip_item_number": 50
+    }
+  ],
+  "dimension_item_map": {
+    "Extraversion": {
+      "positive_keyed": [1, 11, 21, 31, 41],
+      "reverse_scored": [6, 16, 26, 36, 46]
+    },
+    "Agreeableness": {
+      "positive_keyed": [7, 17, 27, 37, 42, 47],
+      "reverse_scored": [2, 12, 22, 32]
+    },
+    "Conscientiousness": {
+      "positive_keyed": [3, 13, 23, 33, 43, 48],
+      "reverse_scored": [8, 18, 28, 38]
+    },
+    "Neuroticism": {
+      "positive_keyed": [4, 14, 24, 29, 34, 39, 44, 49],
+      "reverse_scored": [9, 19]
+    },
+    "Openness": {
+      "positive_keyed": [5, 15, 25, 35, 40, 45, 50],
+      "reverse_scored": [10, 20, 30]
+    }
+  }
+}

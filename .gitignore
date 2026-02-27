@@ -142,6 +142,9 @@ qwen_surgical_results_4090/
 qwen_weighted_alpha_sweep_results/
 r5_steering_combo/
 
+# ─── Capture & steer 27B results (activations, sweeps) ───
+capture_steer_27b/
+
 # ─── Temp ───
 /tmp/
 *.tmp

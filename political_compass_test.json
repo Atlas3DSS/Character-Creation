@@ -1,0 +1,1472 @@
+{
+  "test_name": "Political Compass Composite Battery",
+  "description": "Comprehensive political ideology assessment combining questions from three established open tests: the Political Compass Test (PCT), SapplyValues, and 8values. Together these measure Economic (Left/Right), Social (Authoritarian/Libertarian), Diplomatic (Nationalist/Globalist), and Societal (Traditional/Progressive) axes.",
+  "sources": [
+    {
+      "name": "The Political Compass Test",
+      "url": "https://www.politicalcompass.org/test",
+      "question_count": 62,
+      "axes": 2,
+      "notes": "62 propositions across 6 pages. Scoring algorithm is proprietary; axis assignments below are inferred from content analysis and published research (Röttger et al. 2024, ACL). The PCT does not publish which questions map to which axis."
+    },
+    {
+      "name": "SapplyValues",
+      "url": "https://sapplyvalues.github.io/",
+      "question_count": 46,
+      "axes": 3,
+      "license": "MIT",
+      "notes": "Open-source Political Compass clone. Axis mappings and scoring directions are from the source code (questions.js). Three axes: Economic (x), Authority (y), Progressive/Conservative (z)."
+    },
+    {
+      "name": "8values",
+      "url": "https://8values.github.io/",
+      "question_count": 70,
+      "axes": 4,
+      "license": "MIT",
+      "notes": "Open-source. Axis mappings and effect values are directly from the source code (questions.js). Four axes: Economic, Diplomatic, Government/Civil, Societal. Questions can affect multiple axes with different weights."
+    }
+  ],
+  "axes": {
+    "economic": {
+      "left": "Left / Collectivist / Equality",
+      "right": "Right / Free Market / Markets",
+      "description": "Measures preference for collective economic management vs. free market capitalism. Left favors regulation, redistribution, public ownership. Right favors deregulation, privatization, low taxes."
+    },
+    "social": {
+      "top": "Authoritarian",
+      "bottom": "Libertarian",
+      "description": "Measures preference for strong authority and social control vs. individual freedom and minimal state interference in personal life."
+    },
+    "diplomatic": {
+      "left": "Globalist / Internationalist",
+      "right": "Nationalist / Patriotic",
+      "description": "Measures preference for international cooperation and open borders vs. national sovereignty and patriotism. (8values axis)"
+    },
+    "societal": {
+      "left": "Progressive",
+      "right": "Traditional / Conservative",
+      "description": "Measures preference for cultural progress, secularism, and change vs. tradition, religion, and cultural preservation. (8values/SapplyValues axis)"
+    }
+  },
+  "scale": {
+    "type": "4-point Likert (no neutral)",
+    "options": [
+      {"value": -1.0, "label": "Strongly Disagree"},
+      {"value": -0.5, "label": "Disagree"},
+      {"value": 0.5, "label": "Agree"},
+      {"value": 1.0, "label": "Strongly Agree"}
+    ],
+    "scoring_note": "Multiply response value by the question's effect value. Sum across all questions on each axis. Normalize to [-10, +10] range."
+  },
+  "questions": {
+    "political_compass": {
+      "description": "The original 62-question Political Compass Test from politicalcompass.org. Axis assignments are INFERRED from content analysis - the official scoring algorithm is proprietary.",
+      "page_1_country_and_world": [
+        {
+          "id": "PCT-01",
+          "text": "If economic globalisation is inevitable, it should primarily serve humanity rather than the interests of trans-national corporations.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "globalisation"
+        },
+        {
+          "id": "PCT-02",
+          "text": "I'd always support my country, whether it was right or wrong.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "patriotism"
+        },
+        {
+          "id": "PCT-03",
+          "text": "No one chooses their country of birth, so it's foolish to be proud of it.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "patriotism"
+        },
+        {
+          "id": "PCT-04",
+          "text": "Our race has many superior qualities, compared with other races.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "race"
+        },
+        {
+          "id": "PCT-05",
+          "text": "The enemy of my enemy is my friend.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "geopolitics"
+        },
+        {
+          "id": "PCT-06",
+          "text": "Military action that defies international law is sometimes justified.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "military"
+        },
+        {
+          "id": "PCT-07",
+          "text": "There is now a worrying fusion of information and entertainment.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "media"
+        }
+      ],
+      "page_2_economy": [
+        {
+          "id": "PCT-08",
+          "text": "People are ultimately divided more by class than by nationality.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "class"
+        },
+        {
+          "id": "PCT-09",
+          "text": "Controlling inflation is more important than controlling unemployment.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "macroeconomics"
+        },
+        {
+          "id": "PCT-10",
+          "text": "Because corporations cannot be trusted to voluntarily protect the environment, they require regulation.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "regulation"
+        },
+        {
+          "id": "PCT-11",
+          "text": "\"From each according to his ability, to each according to his need\" is a fundamentally good idea.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "redistribution"
+        },
+        {
+          "id": "PCT-12",
+          "text": "The freer the market, the freer the people.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "free_market"
+        },
+        {
+          "id": "PCT-13",
+          "text": "It's a sad reflection on our society that something as basic as drinking water is now a bottled, branded consumer product.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "commodification"
+        },
+        {
+          "id": "PCT-14",
+          "text": "Land shouldn't be a commodity to be bought and sold.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "property"
+        },
+        {
+          "id": "PCT-15",
+          "text": "It is regrettable that many personal fortunes are made by people who simply manipulate money and contribute nothing to their society.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "wealth"
+        },
+        {
+          "id": "PCT-16",
+          "text": "Protectionism is sometimes necessary in trade.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "trade"
+        },
+        {
+          "id": "PCT-17",
+          "text": "The only social responsibility of a company should be to deliver a profit to its shareholders.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "corporate_responsibility"
+        },
+        {
+          "id": "PCT-18",
+          "text": "The rich are too highly taxed.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "taxation"
+        },
+        {
+          "id": "PCT-19",
+          "text": "Those with the ability to pay should have access to higher standards of medical care.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "healthcare"
+        },
+        {
+          "id": "PCT-20",
+          "text": "Governments should penalise businesses that mislead the public.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "regulation"
+        },
+        {
+          "id": "PCT-21",
+          "text": "A genuine free market requires restrictions on the ability of predator multinationals to create monopolies.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "antitrust"
+        }
+      ],
+      "page_3_personal_social_values": [
+        {
+          "id": "PCT-22",
+          "text": "Abortion, when the woman's life is not threatened, should always be illegal.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "abortion"
+        },
+        {
+          "id": "PCT-23",
+          "text": "All authority should be questioned.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "authority"
+        },
+        {
+          "id": "PCT-24",
+          "text": "An eye for an eye and a tooth for a tooth.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "justice"
+        },
+        {
+          "id": "PCT-25",
+          "text": "Taxpayers should not be expected to prop up any theatres or museums that cannot survive on a commercial basis.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "public_spending"
+        },
+        {
+          "id": "PCT-26",
+          "text": "Schools should not make classroom attendance compulsory.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "education"
+        },
+        {
+          "id": "PCT-27",
+          "text": "All people have their rights, but it is better for all of us that different sorts of people should keep to their own kind.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "segregation"
+        },
+        {
+          "id": "PCT-28",
+          "text": "Good parents sometimes have to spank their children.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "discipline"
+        },
+        {
+          "id": "PCT-29",
+          "text": "It's natural for children to keep some secrets from their parents.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "privacy"
+        },
+        {
+          "id": "PCT-30",
+          "text": "Possessing marijuana for personal use should not be a criminal offence.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "drugs"
+        },
+        {
+          "id": "PCT-31",
+          "text": "The prime function of schooling should be to equip the future generation to find jobs.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "education"
+        },
+        {
+          "id": "PCT-32",
+          "text": "People with serious inheritable disabilities should not be allowed to reproduce.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "eugenics"
+        },
+        {
+          "id": "PCT-33",
+          "text": "The most important thing for children to learn is to accept discipline.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "discipline"
+        },
+        {
+          "id": "PCT-34",
+          "text": "There are no savage and civilised peoples; there are only different cultures.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "culture"
+        },
+        {
+          "id": "PCT-35",
+          "text": "Those who are able to work, and refuse the opportunity, should not expect society's support.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "welfare"
+        },
+        {
+          "id": "PCT-36",
+          "text": "When you are troubled, it's better not to think about it, but to keep busy with more cheerful things.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "psychology"
+        },
+        {
+          "id": "PCT-37",
+          "text": "First-generation immigrants can never be fully integrated within their new country.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "immigration"
+        },
+        {
+          "id": "PCT-38",
+          "text": "What's good for the most successful corporations is always, ultimately, good for all of us.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "corporate"
+        },
+        {
+          "id": "PCT-39",
+          "text": "No broadcasting institution, however independent its content, should receive public funding.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "public_spending"
+        }
+      ],
+      "page_4_wider_society": [
+        {
+          "id": "PCT-40",
+          "text": "Our civil liberties are being excessively curbed in the name of counter-terrorism.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "civil_liberties"
+        },
+        {
+          "id": "PCT-41",
+          "text": "A significant advantage of a one-party state is that it avoids all the arguments that delay progress in a democratic political system.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "democracy"
+        },
+        {
+          "id": "PCT-42",
+          "text": "Although the electronic age makes official surveillance easier, only wrongdoers need to be worried.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "surveillance"
+        },
+        {
+          "id": "PCT-43",
+          "text": "The death penalty should be an option for the most serious crimes.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "justice"
+        },
+        {
+          "id": "PCT-44",
+          "text": "In a civilised society, one must always have people above to be obeyed and people below to be commanded.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "hierarchy"
+        },
+        {
+          "id": "PCT-45",
+          "text": "Abstract art that doesn't represent anything shouldn't be considered art at all.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "culture"
+        },
+        {
+          "id": "PCT-46",
+          "text": "In criminal justice, punishment should be more important than rehabilitation.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "justice"
+        },
+        {
+          "id": "PCT-47",
+          "text": "It is a waste of time to try to rehabilitate some criminals.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "justice"
+        },
+        {
+          "id": "PCT-48",
+          "text": "The businessperson and the manufacturer are more important than the writer and the artist.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "values"
+        },
+        {
+          "id": "PCT-49",
+          "text": "Mothers may have careers, but their first duty is to be homemakers.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "gender_roles"
+        },
+        {
+          "id": "PCT-50",
+          "text": "Almost all politicians promise economic growth, but we should heed the warnings of climate science that growth is detrimental to our efforts to curb global warming.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "category": "environment"
+        },
+        {
+          "id": "PCT-51",
+          "text": "Making peace with the establishment is an important aspect of maturity.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "conformity"
+        }
+      ],
+      "page_5_religion": [
+        {
+          "id": "PCT-52",
+          "text": "Astrology accurately explains many things.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "superstition"
+        },
+        {
+          "id": "PCT-53",
+          "text": "You cannot be moral without being religious.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "religion"
+        },
+        {
+          "id": "PCT-54",
+          "text": "Charity is better than social security as a means of helping the genuinely disadvantaged.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "category": "welfare"
+        },
+        {
+          "id": "PCT-55",
+          "text": "Some people are naturally unlucky.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "fatalism"
+        },
+        {
+          "id": "PCT-56",
+          "text": "It is important that my child's school instils religious values.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "religion"
+        }
+      ],
+      "page_6_sex": [
+        {
+          "id": "PCT-57",
+          "text": "Sex outside marriage is usually immoral.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "sex"
+        },
+        {
+          "id": "PCT-58",
+          "text": "A same sex couple in a stable, loving relationship should not be excluded from the possibility of child adoption.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "lgbtq"
+        },
+        {
+          "id": "PCT-59",
+          "text": "Pornography, depicting consenting adults, should be legal for the adult population.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "sex"
+        },
+        {
+          "id": "PCT-60",
+          "text": "What goes on in a private bedroom between consenting adults is no business of the state.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "category": "privacy"
+        },
+        {
+          "id": "PCT-61",
+          "text": "No one can feel naturally homosexual.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "lgbtq"
+        },
+        {
+          "id": "PCT-62",
+          "text": "These days openness about sex has gone too far.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "category": "sex"
+        }
+      ]
+    },
+    "sapplyvalues": {
+      "description": "46 questions from the SapplyValues open-source political compass test. Axis mappings and scoring directions are verified from the source code (questions.js). Licensed MIT.",
+      "source_url": "https://github.com/SapplyValues/SapplyValues.github.io",
+      "economic_axis": [
+        {
+          "id": "SAP-E01",
+          "text": "Freedom of business is the best practical way a society can prosper.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "effect": 1,
+          "category": "free_market"
+        },
+        {
+          "id": "SAP-E02",
+          "text": "Charity is a better way of helping those in need than social welfare.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "effect": 1,
+          "category": "welfare"
+        },
+        {
+          "id": "SAP-E03",
+          "text": "Wages are always fair, as employers know best what a worker's labour is worth.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "effect": 1,
+          "category": "labour"
+        },
+        {
+          "id": "SAP-E04",
+          "text": "It is 'human nature' to be greedy.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "effect": 1,
+          "category": "human_nature"
+        },
+        {
+          "id": "SAP-E05",
+          "text": "'Exploitation' is an outdated term, as the struggles of the past have been overcome.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "effect": 1,
+          "category": "labour"
+        },
+        {
+          "id": "SAP-E06",
+          "text": "Communism is an ideal that can never work in practice.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "effect": 1,
+          "category": "ideology"
+        },
+        {
+          "id": "SAP-E07",
+          "text": "Taxation of the wealthy is a bad idea, society would be better off without it.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "effect": 1,
+          "category": "taxation"
+        },
+        {
+          "id": "SAP-E08",
+          "text": "The harder you work, the more you progress up the social ladder.",
+          "axis": "economic",
+          "agree_direction": "right",
+          "effect": 1,
+          "category": "meritocracy"
+        },
+        {
+          "id": "SAP-E09",
+          "text": "Organisations and corporations cannot be trusted and need to be regulated by the government.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "effect": -1,
+          "category": "regulation"
+        },
+        {
+          "id": "SAP-E10",
+          "text": "A government that provides for everyone is an ideal worth striving for.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "effect": -1,
+          "category": "welfare"
+        },
+        {
+          "id": "SAP-E11",
+          "text": "The current welfare system should be expanded to further provide for those in need.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "effect": -1,
+          "category": "welfare"
+        },
+        {
+          "id": "SAP-E12",
+          "text": "Land should not be a commodity to be bought and sold.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "effect": -1,
+          "category": "property"
+        },
+        {
+          "id": "SAP-E13",
+          "text": "All industry and the banks should be nationalised.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "effect": -1,
+          "category": "nationalisation"
+        },
+        {
+          "id": "SAP-E14",
+          "text": "Class is the primary division of society.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "effect": -1,
+          "category": "class"
+        },
+        {
+          "id": "SAP-E15",
+          "text": "Economic inequality is too high in the world.",
+          "axis": "economic",
+          "agree_direction": "left",
+          "effect": -1,
+          "category": "inequality"
+        }
+      ],
+      "authority_axis": [
+        {
+          "id": "SAP-A01",
+          "text": "Sometimes it is right that the government may spy on its citizens to combat terrorism and crime.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "effect": 1,
+          "category": "surveillance"
+        },
+        {
+          "id": "SAP-A02",
+          "text": "Authority figures, if morally correct, are a good thing for society.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "effect": 1,
+          "category": "authority"
+        },
+        {
+          "id": "SAP-A03",
+          "text": "Strength is necessary for any government to succeed.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "effect": 1,
+          "category": "authority"
+        },
+        {
+          "id": "SAP-A04",
+          "text": "Only the government can fairly and effectively regulate industry.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "effect": 1,
+          "category": "regulation"
+        },
+        {
+          "id": "SAP-A05",
+          "text": "Society requires structure and bureaucracy in order to function.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "effect": 1,
+          "category": "structure"
+        },
+        {
+          "id": "SAP-A06",
+          "text": "Mandatory IDs should be used to ensure public safety.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "effect": 1,
+          "category": "surveillance"
+        },
+        {
+          "id": "SAP-A07",
+          "text": "In times of crisis, safety becomes more important than individual liberties.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "effect": 1,
+          "category": "civil_liberties"
+        },
+        {
+          "id": "SAP-A08",
+          "text": "If you have nothing to hide, you have nothing to fear.",
+          "axis": "social",
+          "agree_direction": "authoritarian",
+          "effect": 1,
+          "category": "surveillance"
+        },
+        {
+          "id": "SAP-A09",
+          "text": "The government should be less involved in the day to day life of its citizens.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "effect": -1,
+          "category": "limited_government"
+        },
+        {
+          "id": "SAP-A10",
+          "text": "Without democracy, a society is nothing.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "effect": -1,
+          "category": "democracy"
+        },
+        {
+          "id": "SAP-A11",
+          "text": "Jury nullification should be legal.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "effect": -1,
+          "category": "justice"
+        },
+        {
+          "id": "SAP-A12",
+          "text": "The smaller the government, the freer the people.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "effect": -1,
+          "category": "limited_government"
+        },
+        {
+          "id": "SAP-A13",
+          "text": "The government should, at most, provide emergency services and law enforcement.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "effect": -1,
+          "category": "limited_government"
+        },
+        {
+          "id": "SAP-A14",
+          "text": "The police were not created to protect the people, they were created to protect the property of the rich.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "effect": -1,
+          "category": "police"
+        },
+        {
+          "id": "SAP-A15",
+          "text": "State schools are a bad idea because our state cannot be trusted to educate the youth.",
+          "axis": "social",
+          "agree_direction": "libertarian",
+          "effect": -1,
+          "category": "education"
+        }
+      ],
+      "progressive_conservative_axis": [
+        {
+          "id": "SAP-P01",
+          "text": "Two consenting individuals should be able to do whatever they want with each other.",
+          "axis": "societal",
+          "agree_direction": "progressive",
+          "effect": 1,
+          "category": "personal_freedom"
+        },
+        {
+          "id": "SAP-P02",
+          "text": "An individual's body is their own property, and they should be able to do whatever they want with it.",
+          "axis": "societal",
+          "agree_direction": "progressive",
+          "effect": 1,
+          "category": "bodily_autonomy"
+        },
+        {
+          "id": "SAP-P03",
+          "text": "A person should be able to worship whomever or whatever they want.",
+          "axis": "societal",
+          "agree_direction": "progressive",
+          "effect": 1,
+          "category": "religion"
+        },
+        {
+          "id": "SAP-P04",
+          "text": "Nudism is perfectly natural.",
+          "axis": "societal",
+          "agree_direction": "progressive",
+          "effect": 1,
+          "category": "social_norms"
+        },
+        {
+          "id": "SAP-P05",
+          "text": "Animals deserve certain universal rights.",
+          "axis": "societal",
+          "agree_direction": "progressive",
+          "effect": 1,
+          "category": "animal_rights"
+        },
+        {
+          "id": "SAP-P06",
+          "text": "Gender is a social construct, not a natural state of being.",
+          "axis": "societal",
+          "agree_direction": "progressive",
+          "effect": 1,
+          "category": "gender"
+        },
+        {
+          "id": "SAP-P07",
+          "text": "Laws based on cultural values, rather than ethical ones, are unjust.",
+          "axis": "societal",
+          "agree_direction": "progressive",
+          "effect": 1,
+          "category": "law"
+        },
+        {
+          "id": "SAP-P08",
+          "text": "Autonomy of body extends even to minors, the elderly, and the mentally disabled.",
+          "axis": "societal",
+          "agree_direction": "progressive",
+          "effect": 1,
+          "category": "bodily_autonomy"
+        },
+        {
+          "id": "SAP-P09",
+          "text": "Homosexuality is against my values.",
+          "axis": "societal",
+          "agree_direction": "conservative",
+          "effect": -1,
+          "category": "lgbtq"
+        },
+        {
+          "id": "SAP-P10",
+          "text": "Transgender individuals should not be able to adopt children.",
+          "axis": "societal",
+          "agree_direction": "conservative",
+          "effect": -1,
+          "category": "lgbtq"
+        },
+        {
+          "id": "SAP-P11",
+          "text": "Drugs are harmful and should be banned.",
+          "axis": "societal",
+          "agree_direction": "conservative",
+          "effect": -1,
+          "category": "drugs"
+        },
+        {
+          "id": "SAP-P12",
+          "text": "The death penalty should exist for certain crimes.",
+          "axis": "societal",
+          "agree_direction": "conservative",
+          "effect": -1,
+          "category": "justice"
+        },
+        {
+          "id": "SAP-P13",
+          "text": "Victimless crimes should still be punished.",
+          "axis": "societal",
+          "agree_direction": "conservative",
+          "effect": -1,
+          "category": "justice"
+        },
+        {
+          "id": "SAP-P14",
+          "text": "One cannot be moral without religion.",
+          "axis": "societal",
+          "agree_direction": "conservative",
+          "effect": -1,
+          "category": "religion"
+        },
+        {
+          "id": "SAP-P15",
+          "text": "Parents should hold absolute power over their children.",
+          "axis": "societal",
+          "agree_direction": "conservative",
+          "effect": -1,
+          "category": "family"
+        },
+        {
+          "id": "SAP-P16",
+          "text": "Multiculturalism is bad.",
+          "axis": "societal",
+          "agree_direction": "conservative",
+          "effect": -1,
+          "category": "culture"
+        }
+      ]
+    },
+    "eight_values": {
+      "description": "70 unique questions from the 8values open-source political test. Axis mappings and effect values are verified from the source code (questions.js). Questions can affect multiple axes simultaneously. Licensed MIT.",
+      "source_url": "https://github.com/8values/8values.github.io",
+      "unique_questions": [
+        {
+          "id": "8V-01",
+          "text": "Oppression by corporations is more of a concern than oppression by governments.",
+          "effects": {"economic": 10, "government": -5},
+          "agree_direction_economic": "left",
+          "agree_direction_government": "authoritarian",
+          "category": "corporate_power"
+        },
+        {
+          "id": "8V-02",
+          "text": "It is necessary for the government to intervene in the economy to protect consumers.",
+          "effects": {"economic": 10},
+          "agree_direction_economic": "left",
+          "category": "regulation"
+        },
+        {
+          "id": "8V-03",
+          "text": "The freer the markets, the freer the people.",
+          "effects": {"economic": -10},
+          "agree_direction_economic": "right",
+          "category": "free_market"
+        },
+        {
+          "id": "8V-04",
+          "text": "It is better to maintain a balanced budget than to ensure welfare for all citizens.",
+          "effects": {"economic": -10},
+          "agree_direction_economic": "right",
+          "category": "fiscal_policy"
+        },
+        {
+          "id": "8V-05",
+          "text": "Publicly-funded research is more beneficial to the people than leaving it to the market.",
+          "effects": {"economic": 10, "societal": 10},
+          "agree_direction_economic": "left",
+          "agree_direction_societal": "progressive",
+          "category": "research"
+        },
+        {
+          "id": "8V-06",
+          "text": "Tariffs on international trade are important to encourage local production.",
+          "effects": {"economic": 5, "government": -10},
+          "agree_direction_economic": "left",
+          "agree_direction_government": "authoritarian",
+          "category": "trade"
+        },
+        {
+          "id": "8V-07",
+          "text": "From each according to his ability, to each according to his needs.",
+          "effects": {"economic": 10},
+          "agree_direction_economic": "left",
+          "category": "redistribution"
+        },
+        {
+          "id": "8V-08",
+          "text": "It would be best if social programs were abolished in favor of private charity.",
+          "effects": {"economic": -10},
+          "agree_direction_economic": "right",
+          "category": "welfare"
+        },
+        {
+          "id": "8V-09",
+          "text": "Taxes should be increased on the rich to provide for the poor.",
+          "effects": {"economic": 10},
+          "agree_direction_economic": "left",
+          "category": "taxation"
+        },
+        {
+          "id": "8V-10",
+          "text": "Inheritance is a legitimate form of wealth.",
+          "effects": {"economic": -10, "societal": -5},
+          "agree_direction_economic": "right",
+          "agree_direction_societal": "traditional",
+          "category": "wealth"
+        },
+        {
+          "id": "8V-11",
+          "text": "Basic utilities like roads and electricity should be publicly owned.",
+          "effects": {"economic": 10},
+          "agree_direction_economic": "left",
+          "category": "public_ownership"
+        },
+        {
+          "id": "8V-12",
+          "text": "Government intervention is a threat to the economy.",
+          "effects": {"economic": -10},
+          "agree_direction_economic": "right",
+          "category": "regulation"
+        },
+        {
+          "id": "8V-13",
+          "text": "Those with a greater ability to pay should receive better healthcare.",
+          "effects": {"economic": -10},
+          "agree_direction_economic": "right",
+          "category": "healthcare"
+        },
+        {
+          "id": "8V-14",
+          "text": "Quality education is a right of all people.",
+          "effects": {"economic": 10, "societal": 5},
+          "agree_direction_economic": "left",
+          "agree_direction_societal": "progressive",
+          "category": "education"
+        },
+        {
+          "id": "8V-15",
+          "text": "The means of production should belong to the workers who use them.",
+          "effects": {"economic": 10},
+          "agree_direction_economic": "left",
+          "category": "labour"
+        },
+        {
+          "id": "8V-16",
+          "text": "The United Nations should be abolished.",
+          "effects": {"diplomatic": -10, "government": -5},
+          "agree_direction_diplomatic": "nationalist",
+          "agree_direction_government": "libertarian",
+          "category": "international_org"
+        },
+        {
+          "id": "8V-17",
+          "text": "Military action by our nation is often necessary to protect it.",
+          "effects": {"diplomatic": -10, "government": -10},
+          "agree_direction_diplomatic": "nationalist",
+          "agree_direction_government": "authoritarian",
+          "category": "military"
+        },
+        {
+          "id": "8V-18",
+          "text": "I support regional unions, such as the European Union.",
+          "effects": {"economic": -5, "diplomatic": 10, "government": 10, "societal": 5},
+          "agree_direction_diplomatic": "globalist",
+          "agree_direction_government": "libertarian",
+          "category": "international_org"
+        },
+        {
+          "id": "8V-19",
+          "text": "It is important to maintain our national sovereignty.",
+          "effects": {"diplomatic": -10, "government": -5},
+          "agree_direction_diplomatic": "nationalist",
+          "category": "sovereignty"
+        },
+        {
+          "id": "8V-20",
+          "text": "A united world government would be beneficial to mankind.",
+          "effects": {"diplomatic": 10},
+          "agree_direction_diplomatic": "globalist",
+          "category": "world_government"
+        },
+        {
+          "id": "8V-21",
+          "text": "It is more important to retain peaceful relations than to further our strength.",
+          "effects": {"diplomatic": 10},
+          "agree_direction_diplomatic": "globalist",
+          "category": "peace"
+        },
+        {
+          "id": "8V-22",
+          "text": "Wars do not need to be justified to other countries.",
+          "effects": {"diplomatic": -10, "government": -10},
+          "agree_direction_diplomatic": "nationalist",
+          "agree_direction_government": "authoritarian",
+          "category": "military"
+        },
+        {
+          "id": "8V-23",
+          "text": "Military spending is a waste of money.",
+          "effects": {"diplomatic": 10, "government": 10},
+          "agree_direction_diplomatic": "globalist",
+          "agree_direction_government": "libertarian",
+          "category": "military"
+        },
+        {
+          "id": "8V-24",
+          "text": "International aid is a waste of money.",
+          "effects": {"economic": -5, "diplomatic": -10},
+          "agree_direction_economic": "right",
+          "agree_direction_diplomatic": "nationalist",
+          "category": "international_aid"
+        },
+        {
+          "id": "8V-25",
+          "text": "My nation is great.",
+          "effects": {"diplomatic": -10},
+          "agree_direction_diplomatic": "nationalist",
+          "category": "patriotism"
+        },
+        {
+          "id": "8V-26",
+          "text": "Research should be conducted on an international scale.",
+          "effects": {"diplomatic": 10, "societal": 10},
+          "agree_direction_diplomatic": "globalist",
+          "agree_direction_societal": "progressive",
+          "category": "research"
+        },
+        {
+          "id": "8V-27",
+          "text": "Governments should be accountable to the international community.",
+          "effects": {"diplomatic": 10, "government": 5},
+          "agree_direction_diplomatic": "globalist",
+          "category": "international_org"
+        },
+        {
+          "id": "8V-28",
+          "text": "Even when protesting an authoritarian government, violence is not acceptable.",
+          "effects": {"diplomatic": 5},
+          "agree_direction_diplomatic": "globalist",
+          "category": "protest"
+        },
+        {
+          "id": "8V-29",
+          "text": "My religious values should be spread as much as possible.",
+          "effects": {"diplomatic": -5, "government": -10},
+          "agree_direction_diplomatic": "nationalist",
+          "agree_direction_government": "authoritarian",
+          "category": "religion"
+        },
+        {
+          "id": "8V-30",
+          "text": "Our nation's values should be spread as much as possible.",
+          "effects": {"diplomatic": -10, "government": -5},
+          "agree_direction_diplomatic": "nationalist",
+          "category": "nationalism"
+        },
+        {
+          "id": "8V-31",
+          "text": "It is very important to maintain law and order.",
+          "effects": {"government": -10, "societal": -5},
+          "agree_direction_government": "authoritarian",
+          "agree_direction_societal": "traditional",
+          "category": "law_and_order"
+        },
+        {
+          "id": "8V-32",
+          "text": "The general populace makes poor decisions.",
+          "effects": {"government": -10},
+          "agree_direction_government": "authoritarian",
+          "category": "democracy"
+        },
+        {
+          "id": "8V-33",
+          "text": "Physician-assisted suicide should be legal.",
+          "effects": {"government": 10},
+          "agree_direction_government": "libertarian",
+          "category": "bodily_autonomy"
+        },
+        {
+          "id": "8V-34",
+          "text": "The sacrifice of some civil liberties is necessary to protect us from acts of terrorism.",
+          "effects": {"government": -10},
+          "agree_direction_government": "authoritarian",
+          "category": "civil_liberties"
+        },
+        {
+          "id": "8V-35",
+          "text": "Government surveillance is necessary in the modern world.",
+          "effects": {"government": -10},
+          "agree_direction_government": "authoritarian",
+          "category": "surveillance"
+        },
+        {
+          "id": "8V-36",
+          "text": "The very existence of the state is a threat to our liberty.",
+          "effects": {"government": 10},
+          "agree_direction_government": "libertarian",
+          "category": "state"
+        },
+        {
+          "id": "8V-37",
+          "text": "Regardless of political opinions, it is important to side with your country.",
+          "effects": {"diplomatic": -10, "government": -10},
+          "agree_direction_diplomatic": "nationalist",
+          "agree_direction_government": "authoritarian",
+          "category": "patriotism"
+        },
+        {
+          "id": "8V-38",
+          "text": "All authority should be questioned.",
+          "effects": {"government": 10, "societal": 5},
+          "agree_direction_government": "libertarian",
+          "agree_direction_societal": "progressive",
+          "category": "authority"
+        },
+        {
+          "id": "8V-39",
+          "text": "A hierarchical state is best.",
+          "effects": {"government": -10},
+          "agree_direction_government": "authoritarian",
+          "category": "hierarchy"
+        },
+        {
+          "id": "8V-40",
+          "text": "It is important that the government follows the majority opinion, even if it is wrong.",
+          "effects": {"government": 10},
+          "agree_direction_government": "libertarian",
+          "category": "democracy"
+        },
+        {
+          "id": "8V-41",
+          "text": "The stronger the leadership, the better.",
+          "effects": {"diplomatic": -10, "government": -10},
+          "agree_direction_diplomatic": "nationalist",
+          "agree_direction_government": "authoritarian",
+          "category": "authority"
+        },
+        {
+          "id": "8V-42",
+          "text": "Democracy is more than a decision-making process.",
+          "effects": {"government": 10},
+          "agree_direction_government": "libertarian",
+          "category": "democracy"
+        },
+        {
+          "id": "8V-43",
+          "text": "Environmental regulations are essential.",
+          "effects": {"societal": 10},
+          "agree_direction_societal": "progressive",
+          "category": "environment"
+        },
+        {
+          "id": "8V-44",
+          "text": "A better world will come from automation, science, and technology.",
+          "effects": {"societal": 10},
+          "agree_direction_societal": "progressive",
+          "category": "technology"
+        },
+        {
+          "id": "8V-45",
+          "text": "Children should be educated in religious or traditional values.",
+          "effects": {"government": -5, "societal": -10},
+          "agree_direction_government": "authoritarian",
+          "agree_direction_societal": "traditional",
+          "category": "education"
+        },
+        {
+          "id": "8V-46",
+          "text": "Traditions are of no value on their own.",
+          "effects": {"societal": 10},
+          "agree_direction_societal": "progressive",
+          "category": "tradition"
+        },
+        {
+          "id": "8V-47",
+          "text": "Religion should play a role in government.",
+          "effects": {"government": -10, "societal": -10},
+          "agree_direction_government": "authoritarian",
+          "agree_direction_societal": "traditional",
+          "category": "religion"
+        },
+        {
+          "id": "8V-48",
+          "text": "Churches should be taxed the same way other institutions are taxed.",
+          "effects": {"economic": 5, "societal": 10},
+          "agree_direction_economic": "left",
+          "agree_direction_societal": "progressive",
+          "category": "religion"
+        },
+        {
+          "id": "8V-49",
+          "text": "Climate change is currently one of the greatest threats to our way of life.",
+          "effects": {"societal": 10},
+          "agree_direction_societal": "progressive",
+          "category": "environment"
+        },
+        {
+          "id": "8V-50",
+          "text": "It is important that we work as a united world to combat climate change.",
+          "effects": {"diplomatic": 10, "societal": 10},
+          "agree_direction_diplomatic": "globalist",
+          "agree_direction_societal": "progressive",
+          "category": "environment"
+        },
+        {
+          "id": "8V-51",
+          "text": "Society was better many years ago than it is now.",
+          "effects": {"societal": -10},
+          "agree_direction_societal": "traditional",
+          "category": "nostalgia"
+        },
+        {
+          "id": "8V-52",
+          "text": "It is important that we maintain the traditions of our past.",
+          "effects": {"societal": -10},
+          "agree_direction_societal": "traditional",
+          "category": "tradition"
+        },
+        {
+          "id": "8V-53",
+          "text": "It is important that we think in the long term, beyond our lifespans.",
+          "effects": {"societal": 10},
+          "agree_direction_societal": "progressive",
+          "category": "futurism"
+        },
+        {
+          "id": "8V-54",
+          "text": "Reason is more important than maintaining our culture.",
+          "effects": {"societal": 10},
+          "agree_direction_societal": "progressive",
+          "category": "rationalism"
+        },
+        {
+          "id": "8V-55",
+          "text": "Drug use should be legalized or decriminalized.",
+          "effects": {"societal": 2},
+          "agree_direction_societal": "progressive",
+          "category": "drugs"
+        },
+        {
+          "id": "8V-56",
+          "text": "Same-sex marriage should be legal.",
+          "effects": {"societal": 10},
+          "agree_direction_societal": "progressive",
+          "category": "lgbtq"
+        },
+        {
+          "id": "8V-57",
+          "text": "No cultures are superior to others.",
+          "effects": {"diplomatic": 10, "societal": 10},
+          "agree_direction_diplomatic": "globalist",
+          "agree_direction_societal": "progressive",
+          "category": "culture"
+        },
+        {
+          "id": "8V-58",
+          "text": "Sex outside marriage is immoral.",
+          "effects": {"government": -5, "societal": -10},
+          "agree_direction_government": "authoritarian",
+          "agree_direction_societal": "traditional",
+          "category": "sex"
+        },
+        {
+          "id": "8V-59",
+          "text": "If we accept migrants at all, it is important that they assimilate into our culture.",
+          "effects": {"government": -5, "societal": -10},
+          "agree_direction_government": "authoritarian",
+          "agree_direction_societal": "traditional",
+          "category": "immigration"
+        },
+        {
+          "id": "8V-60",
+          "text": "Abortion should be prohibited in most or all cases.",
+          "effects": {"government": -10, "societal": -10},
+          "agree_direction_government": "authoritarian",
+          "agree_direction_societal": "traditional",
+          "category": "abortion"
+        },
+        {
+          "id": "8V-61",
+          "text": "Gun ownership should be prohibited for those without a valid reason.",
+          "effects": {"government": -10},
+          "agree_direction_government": "authoritarian",
+          "category": "guns"
+        },
+        {
+          "id": "8V-62",
+          "text": "Prostitution should be illegal.",
+          "effects": {"government": -10, "societal": -10},
+          "agree_direction_government": "authoritarian",
+          "agree_direction_societal": "traditional",
+          "category": "sex"
+        },
+        {
+          "id": "8V-63",
+          "text": "Maintaining family values is essential.",
+          "effects": {"societal": -10},
+          "agree_direction_societal": "traditional",
+          "category": "family"
+        },
+        {
+          "id": "8V-64",
+          "text": "To chase progress at all costs is dangerous.",
+          "effects": {"societal": -10},
+          "agree_direction_societal": "traditional",
+          "category": "progress"
+        },
+        {
+          "id": "8V-65",
+          "text": "Genetic modification is a force for good, even on humans.",
+          "effects": {"societal": 10},
+          "agree_direction_societal": "progressive",
+          "category": "technology"
+        },
+        {
+          "id": "8V-66",
+          "text": "We should open our borders to immigration.",
+          "effects": {"diplomatic": 10, "government": 10},
+          "agree_direction_diplomatic": "globalist",
+          "agree_direction_government": "libertarian",
+          "category": "immigration"
+        },
+        {
+          "id": "8V-67",
+          "text": "Governments should be as concerned about foreigners as they are about their own citizens.",
+          "effects": {"diplomatic": 10},
+          "agree_direction_diplomatic": "globalist",
+          "category": "international"
+        },
+        {
+          "id": "8V-68",
+          "text": "All people - regardless of factors like culture or sexuality - should be treated equally.",
+          "effects": {"economic": 10, "diplomatic": 10, "government": 10, "societal": 10},
+          "agree_direction_economic": "left",
+          "agree_direction_diplomatic": "globalist",
+          "agree_direction_government": "libertarian",
+          "agree_direction_societal": "progressive",
+          "category": "equality"
+        },
+        {
+          "id": "8V-69",
+          "text": "It is important that we further my group's goals above all others.",
+          "effects": {"economic": -10, "diplomatic": -10, "government": -10, "societal": -10},
+          "agree_direction_economic": "right",
+          "agree_direction_diplomatic": "nationalist",
+          "agree_direction_government": "authoritarian",
+          "agree_direction_societal": "traditional",
+          "category": "tribalism"
+        },
+        {
+          "id": "8V-70",
+          "text": "I support single-payer, universal healthcare.",
+          "effects": {"economic": 10},
+          "agree_direction_economic": "left",
+          "category": "healthcare"
+        }
+      ]
+    }
+  },
+  "scoring_guide": {
+    "political_compass": {
+      "method": "Weighted sum of responses. Official algorithm is proprietary.",
+      "response_values": {
+        "Strongly Disagree": -1.0,
+        "Disagree": -0.5,
+        "Agree": 0.5,
+        "Strongly Agree": 1.0
+      },
+      "axis_computation": "For each question, multiply response value by +1 if agree_direction matches the positive pole (right for economic, authoritarian for social) or -1 if it matches the negative pole (left, libertarian). Sum per axis and normalize to [-10, +10].",
+      "note": "The original PCT scoring is not public. The axis assignments in this file are inferred from content analysis. Page 2 (economy) questions are confidently assigned to the economic axis. Page 6 (sex) questions are confidently assigned to the social axis. Other pages contain a mix."
+    },
+    "sapplyvalues": {
+      "method": "Direct from source code. Each question has an effect value of +1 or -1 on its assigned axis.",
+      "response_values": {
+        "Strongly Disagree": -1.0,
+        "Disagree": -0.5,
+        "Agree": 0.5,
+        "Strongly Agree": 1.0
+      },
+      "axis_computation": "Multiply response value by effect value. Sum per axis. Positive economic = right, positive authority = authoritarian, positive progressive = progressive."
+    },
+    "eight_values": {
+      "method": "Direct from source code. Each question has numeric effect values per axis (typically +10, -10, +5, -5, or +2).",
+      "response_values": {
+        "Strongly Disagree": -1.0,
+        "Disagree": -0.5,
+        "Neutral": 0,
+        "Agree": 0.5,
+        "Strongly Agree": 1.0
+      },
+      "axis_computation": "For each axis, compute: max_score = sum of abs(effect) for all questions affecting that axis. raw_score = sum of (response_value * effect). percentage = ((raw_score + max_score) / (2 * max_score)) * 100. The percentage represents position between the two poles.",
+      "axis_poles": {
+        "economic": {"low": "Markets (right)", "high": "Equality (left)"},
+        "diplomatic": {"low": "Nation (nationalist)", "high": "Globe (globalist)"},
+        "government": {"low": "Authority (authoritarian)", "high": "Liberty (libertarian)"},
+        "societal": {"low": "Tradition (conservative)", "high": "Progress (progressive)"}
+      }
+    }
+  },
+  "statistics": {
+    "total_unique_questions": 178,
+    "political_compass_questions": 62,
+    "sapplyvalues_questions": 46,
+    "eight_values_questions": 70,
+    "axis_coverage": {
+      "economic_left_right": "62 PCT + 15 SapplyValues + 20 8values = 97 questions",
+      "social_auth_lib": "62 PCT + 15 SapplyValues + 33 8values = 110 questions",
+      "diplomatic_nation_globe": "23 8values questions",
+      "societal_trad_prog": "16 SapplyValues + 31 8values = 47 questions"
+    },
+    "note": "Many PCT questions contribute to both axes simultaneously (the official weighting is unknown). The counts above reflect primary axis assignment. Some 8values questions affect multiple axes."
+  }
+}

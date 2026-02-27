@@ -1,0 +1,193 @@
+{
+  "test_name": "Short Dark Triad (SD3)",
+  "source": "Jones, D.N. & Paulhus, D.L. (2014). Introducing the Short Dark Triad (SD3): A Brief Measure of Dark Personality Traits. Assessment, 21(1), 28-41.",
+  "source_url": "https://journals.sagepub.com/doi/abs/10.1177/1073191113514105",
+  "license": "Published research instrument - items widely reproduced in academic literature",
+  "scale": {
+    "type": "5-point Likert",
+    "labels": {
+      "1": "Strongly Disagree",
+      "2": "Disagree",
+      "3": "Neither Agree Nor Disagree",
+      "4": "Agree",
+      "5": "Strongly Agree"
+    }
+  },
+  "scoring": {
+    "method": "For each dimension, average the 9 item scores after reverse-scoring marked items. Range: 1.0-5.0 per dimension.",
+    "reverse_scoring": "For reverse-scored items, recode: 1->5, 2->4, 3->3, 4->2, 5->1",
+    "items_per_dimension": 9,
+    "total_items": 27,
+    "reverse_scored_items": [11, 15, 17, 20, 25],
+    "note": "Items 11, 15, 17 are reverse-scored Narcissism items. Items 20, 25 are reverse-scored Psychopathy items. Machiavellianism has no reverse-scored items."
+  },
+  "dimensions": [
+    "Machiavellianism",
+    "Narcissism",
+    "Psychopathy"
+  ],
+  "questions": [
+    {
+      "id": 1,
+      "text": "It's not wise to tell your secrets.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 2,
+      "text": "I like to use clever manipulation to get my way.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 3,
+      "text": "Whatever it takes, you must get the important people on your side.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 4,
+      "text": "Avoid direct conflict with others because they may be useful in the future.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 5,
+      "text": "It's wise to keep track of information that you can use against people later.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 6,
+      "text": "You should wait for the right time to get back at people.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 7,
+      "text": "There are things you should hide from other people because they don't need to know.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 8,
+      "text": "Make sure your plans benefit you, not others.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 9,
+      "text": "Most people can be manipulated.",
+      "dimension": "Machiavellianism",
+      "reverse_scored": false
+    },
+    {
+      "id": 10,
+      "text": "People see me as a natural leader.",
+      "dimension": "Narcissism",
+      "reverse_scored": false
+    },
+    {
+      "id": 11,
+      "text": "I hate being the center of attention.",
+      "dimension": "Narcissism",
+      "reverse_scored": true
+    },
+    {
+      "id": 12,
+      "text": "Many group activities tend to be dull without me.",
+      "dimension": "Narcissism",
+      "reverse_scored": false
+    },
+    {
+      "id": 13,
+      "text": "I know that I am special because everyone keeps telling me so.",
+      "dimension": "Narcissism",
+      "reverse_scored": false
+    },
+    {
+      "id": 14,
+      "text": "I like to get acquainted with important people.",
+      "dimension": "Narcissism",
+      "reverse_scored": false
+    },
+    {
+      "id": 15,
+      "text": "I feel embarrassed if someone compliments me.",
+      "dimension": "Narcissism",
+      "reverse_scored": true
+    },
+    {
+      "id": 16,
+      "text": "I have been compared to famous people.",
+      "dimension": "Narcissism",
+      "reverse_scored": false
+    },
+    {
+      "id": 17,
+      "text": "I am an average person.",
+      "dimension": "Narcissism",
+      "reverse_scored": true
+    },
+    {
+      "id": 18,
+      "text": "I insist on getting the respect I deserve.",
+      "dimension": "Narcissism",
+      "reverse_scored": false
+    },
+    {
+      "id": 19,
+      "text": "I like to get revenge on authorities.",
+      "dimension": "Psychopathy",
+      "reverse_scored": false
+    },
+    {
+      "id": 20,
+      "text": "I avoid dangerous situations.",
+      "dimension": "Psychopathy",
+      "reverse_scored": true
+    },
+    {
+      "id": 21,
+      "text": "Payback needs to be quick and nasty.",
+      "dimension": "Psychopathy",
+      "reverse_scored": false
+    },
+    {
+      "id": 22,
+      "text": "People often say I'm out of control.",
+      "dimension": "Psychopathy",
+      "reverse_scored": false
+    },
+    {
+      "id": 23,
+      "text": "It's true that I can be mean to others.",
+      "dimension": "Psychopathy",
+      "reverse_scored": false
+    },
+    {
+      "id": 24,
+      "text": "People who mess with me always regret it.",
+      "dimension": "Psychopathy",
+      "reverse_scored": false
+    },
+    {
+      "id": 25,
+      "text": "I have never gotten into trouble with the law.",
+      "dimension": "Psychopathy",
+      "reverse_scored": true
+    },
+    {
+      "id": 26,
+      "text": "I enjoy having sex with people I hardly know.",
+      "dimension": "Psychopathy",
+      "reverse_scored": false
+    },
+    {
+      "id": 27,
+      "text": "I'll say anything to get what I want.",
+      "dimension": "Psychopathy",
+      "reverse_scored": false
+    }
+  ]
+}
