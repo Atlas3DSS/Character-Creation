@@ -18,7 +18,7 @@ import google.generativeai as genai
 
 # ── Config ──────────────────────────────────────────────────────────
 GEMINI_API_KEY = "AIzaSyDuk0KVkscJ93GGAnUdsG66cEws0FpSFUM"
-MODEL = "gemini-2.5-pro"
+MODEL = "gemini-3.1-pro-preview"
 MIN_TURNS = 5
 MAX_TURNS = 20
 OUTPUT_DIR = Path("./gemini_conversation")

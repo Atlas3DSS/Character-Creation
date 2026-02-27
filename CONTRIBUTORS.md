@@ -23,13 +23,13 @@ This project uses a multi-AI collaboration workflow where different AI systems c
 - Review logs: `codex_conversation/` directory
 - Co-Author tag: `Co-Authored-By: Codex GPT-5.3 <noreply@openai.com>`
 
-### Gemini 2.5 Pro (Google)
+### Gemini 3.1 Pro Preview (Google)
 **Role**: Research review, literature connections, methodology validation
 - Cross-references findings against published ML research
 - Validates experimental methodology and statistical claims
 - Suggests connections to existing techniques (RepE, Conceptors, D-STEER)
 - Review logs: `gemini_conversation/` directory
-- Co-Author tag: `Co-Authored-By: Gemini 2.5 Pro <noreply@google.com>`
+- Co-Author tag: `Co-Authored-By: Gemini 3.1 Pro <noreply@google.com>`
 
 ## Contribution Timeline
 
