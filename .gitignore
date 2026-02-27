@@ -145,6 +145,17 @@ r5_steering_combo/
 # ─── Capture & steer 27B results (activations, sweeps) ───
 capture_steer_27b/
 
+# ─── AI conversation logs (may contain API keys or sensitive context) ───
+codex_conversation/
+gemini_conversation/
+codex_conversation_summary.md
+gemini_conversation_summary.md
+
+# ─── Experiment result directories (large, reproducible) ───
+fullrank_spectral/
+spectral_prompts/
+magnitude_calibrated_results/
+
 # ─── Temp ───
 /tmp/
 *.tmp
