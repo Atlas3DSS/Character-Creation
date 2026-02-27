@@ -2227,3 +2227,283 @@ Once we have the shared directions, we can build the surgical projection matrix 
 - Provide calibrated personality intensity (not random amplification)
 - Work at a single layer (minimizing resonance compounding)
 - Explain the phase transition behavior in our alpha sweeps
+
+---
+
+## 45. 27B Sweep Progress: α=8 Sweet Spot Confirmed (2026-02-26)
+
+### Late Band Results (L45-63 minus L51-54, 15 layers)
+
+| Alpha | Math | Sarcasm | Composite |
+|-------|------|---------|-----------|
+| 2 | 100% | 50% | 0.5 |
+| 5 | 100% | 50% | 0.5 |
+| **8** | **100%** | **100%** | **1.0** |
+| 10 | 50% | 100% | 0.5 |
+
+**v4_add_late_band_a8 = PERFECT composite 1.0** — first time both metrics are maxed simultaneously on the 27B model. This is the same α=8 sweet spot found on the 8B model.
+
+Mid_band (L20-45) remains catastrophic: 0% math at all alphas, early-stop triggered at α>5. All_safe (54 layers, from prior run) also 0% math everywhere. The 27B can only be steered from the late layers without destroying reasoning.
+
+### Interpretation
+
+The late_band avoids L51-54 (math-critical layers identified by the fast scan) and operates in the "post-personality" region where the model has already committed to personality but hasn't yet crystallized math outputs. α=8 appears to be a universal sweet spot across architectures — enough to shift personality but below the "incoherence cliff."
+
+The mid_band failure confirms Paper C's resonance compounding: 26 layers of perturbation at ANY alpha compounds nonlinearly and overwhelms the math circuits. Late_band's 15 layers is near the upper bound of what the 27B tolerates.
+
+---
+
+## 46. Transplantation Hypothesis: 8B→27B Personality Transfer (2026-02-26)
+
+### Core Observation
+
+The 27B's "fortress" property has a surprising flip side: **no strong identity anchor means no resistance to implantation.**
+
+Key asymmetry:
+- **8B**: Identity neuron dim 994 at z=-13.96, clear 5-node relay circuit, strong generator/suppressor layer structure → easy to MAP, hard to OVERRIDE
+- **27B**: Identity at z=1.06 (13× weaker), NO generators, NO suppressors, 55% baseline sarcasm → hard to MAP, but potentially easy to IMPLANT into
+
+The 27B doesn't know what it "is" in the way the 8B does. It has no dim 994 fighting back against personality changes. This means a well-characterized direction from the 8B — extracted from its mapped relay circuit — might transplant cleanly into the 27B's activation space.
+
+### The V4 Math Penalty as a Prompt-Level Problem
+
+V4 prompt on 27B: 100% sarcasm, 70% math (-30pp from baseline). This penalty comes from the prompt propagating through ALL 64 layers, bleeding into math-relevant circuits everywhere. It's a blunt instrument.
+
+Replace-then-add at L37 (58% depth rule) with a transplanted direction could solve this:
+1. No V4 prompt needed → no prompt-level math bleed through all 64 layers
+2. Surgical single-layer injection → only L37 is perturbed
+3. Replace step removes math-interfering components → protects reasoning
+4. The transplanted direction carries the 8B's *quality* of sarcasm (relay-circuit-derived) rather than the 27B's *volume* (distributed noise)
+
+### Cross-Model Alignment Strategy
+
+The dimension mismatch (8B=4096, 27B=5120) prevents direct neuron transplant. Three alignment approaches:
+
+1. **CCA alignment**: Run 300+ shared prompts through both models, fit a linear map W: R^4096 → R^5120 that maximizes correlation between 8B L22 and 27B L37 activations. Project 8B's sarcasm direction through W.
+
+2. **Behavioral direction matching**: Extract "sarcastic minus neutral" contrastive directions from BOTH models independently. Use the 8B's direction as a template to identify which subspace of the 27B's 5120 dimensions corresponds to the same behavioral axis.
+
+3. **Multi-layer relay transplant**: Project 8B directions from relay nodes (L9, L14, L22, L26) into 27B's depth-matched layers (L16, L25, L37, L46). This transplants the entire personality CIRCUIT, not just a single direction.
+
+### Why This Could Work
+
+- The 27B's 55% baseline sarcasm suggests its activation space already has a sarcasm-adjacent region — it just has no strong attractor pulling outputs there consistently
+- The transplanted direction provides a specific, high-quality attractor (relay-circuit-derived) rather than a diffuse push
+- No identity anchor (z=1.06) means no competing attractor to overcome
+- Replace-then-add at a single layer avoids the resonance compounding that kills multi-layer approaches
+
+### Why This Could Fail
+
+- CCA alignment might find low correlation — the 8B and 27B may represent personality in fundamentally different geometric structures
+- The 27B's hybrid attention (GatedDeltaNet layers) may process transplanted directions differently than the 8B's standard attention processes its native directions
+- 55% baseline sarcasm might mean the 27B is ALREADY near its natural personality ceiling, and transplantation adds noise rather than signal
+- The "fortress" property might mean that even without an identity anchor, the distributed nature of personality makes any single-direction injection insufficient
+
+### Execution Plan
+
+Phase A runs on BOTH machines in parallel (8B harvest on dev server, 27B harvest on workstation after sweep). Phases B-D on workstation. Depends on spectral analysis (Section 43 Phase 1) for optimal per-layer alpha calibration.
+
+---
+
+## 47. Work Queue (2026-02-26)
+
+### Priority Order
+
+1. **[RUNNING] 27B Steering Sweep** — completing remaining strategies × bands. ETA ~3-4 hours.
+2. **[RUNNING] Debate Arena** — Round 2/5 in progress on dev server. ~2 hours for remaining 3 rounds.
+3. **[QUEUED] GMR Phase 1: Spectral Analysis** — 300+ activation samples per task per layer, eigen decomposition, spectral alignment scores. Bottleneck before P_intrusion_out. Runs on workstation after sweep.
+4. **[QUEUED] Cross-Model Transplantation** — 8B direction extraction (dev server, after arena) + 27B alignment and injection (workstation, after spectral analysis). Can partially parallelize.
+5. **[FUTURE] GMR Phases 2-5** — Intrusion direction identification, surgical projection, asymmetric alpha, validation. Depends on Phase 1 results.
+
+---
+
+## 48. External Review: SVD Feature Selection + Hybrid Depth Correction (2026-02-26)
+
+### Feedback Source: Peer review of transplantation hypothesis and 27B sweep results.
+
+### 1. SVD Feature Selection (Replaces Direct CCA Transplantation)
+
+**Problem with our original Phase B (CCA alignment)**: Directly projecting the 8B's sarcasm direction into 27B space via a linear map would port the 8B's SHALLOW sarcasm representation into a deeper model. This produces "cartoon sarcasm" — the same failure mode as donut@10 on 8B.
+
+**Corrected approach**:
+1. **Decompose 8B sarcasm direction via SVD** into its top-10 singular components (which should capture ~80% of variance in the sarcasm direction)
+2. **Find each component's behavioral signature**: What kinds of tokens/outputs does each component affect? Run each component individually through generation and measure which token categories shift (insults, hedging, technical jargon, politeness markers, etc.)
+3. **Search the 27B's sarcasm SVD** for components with matching behavioral signatures — NOT matching vector geometry, but matching behavioral effects
+4. **Reconstruct a 27B sarcasm direction** from the 27B's own components that match the 8B's behavioral decomposition
+
+The 8B acts as a **feature selector** — its clean relay circuit gives us a decomposable sarcasm direction where we can identify what each component does. The 27B's sarcasm direction is too noisy and distributed to decompose directly, but we can search its SVD space for components that produce the same behavioral effects.
+
+**This solves the cartoon sarcasm problem**: We're not porting the 8B's representation. We're using the 8B's interpretability to find the corresponding (deeper, richer) features in the 27B that are too distributed to identify on their own.
+
+**Implementation**:
+```
+# Phase B revised:
+# 1. SVD of 8B sarcasm direction at L22
+U_8b, S_8b, Vt_8b = svd(sarcasm_activations_8b)  # [300, 4096]
+top10_components_8b = U_8b[:, :10]  # Top 10 left singular vectors
+
+# 2. Behavioral signature per component:
+for i in range(10):
+    # Generate with ONLY component i active as steering
+    component_vector = Vt_8b[i, :]  # [4096]
+    responses = generate_with_single_component(model_8b, component_vector, test_prompts)
+    signature[i] = measure_behavioral_effects(responses)
+    # → e.g., component 3 = "increases insult frequency", component 7 = "suppresses hedging"
+
+# 3. SVD of 27B sarcasm activations at target layer
+U_27b, S_27b, Vt_27b = svd(sarcasm_activations_27b)  # [300, 5120]
+
+# 4. For each 8B behavioral signature, find matching 27B component
+for i, sig in enumerate(signatures_8b):
+    for j in range(num_27b_components):
+        component_vector_27b = Vt_27b[j, :]
+        responses_27b = generate_with_single_component(model_27b, component_vector_27b, test_prompts)
+        sig_27b = measure_behavioral_effects(responses_27b)
+        match_score[i][j] = behavioral_similarity(sig, sig_27b)
+
+# 5. Reconstruct 27B sarcasm direction from matched components
+matched_components = select_best_matches(match_score)
+transplanted_direction = weighted_sum(Vt_27b[matched_components])
+```
+
+### 2. Hybrid Depth Correction: L37 vs L45
+
+**The discrepancy**: Paper C's 58% rule predicts L37 (58% of 64). Our empirical optimum is late_band starting at L45 (70% depth). This is a significant gap.
+
+**Hypothesis: GatedDeltaNet layers are computationally "thinner"**
+
+The 27B has 16 full attention layers (every 4th: L3,L7,L11,L15,L19,L23,L27,L31,L35,L39,L43,L47,L51,L55,L59,L63) and 48 GatedDeltaNet linear layers. The linear layers transform representations LESS per layer than full attention — they're more like residual refinements than full nonlinear transformations.
+
+If we count by effective attention depth (full attention layers only):
+- L37 sits after 10 of 16 full attention layers → 62.5% effective attention depth
+- L43 sits after 11 of 16 → 68.8%
+- **L45** sits after 11 of 16 → 68.8% (between L43 and L47)
+- **L47** sits after 12 of 16 → **75.0%**
+
+The 58% rule applied to the 16 effective attention layers predicts layer 9.3 of 16 → the 10th full attention layer → **L39** (the full attention layer at 60.9% raw depth).
+
+**Practical test**: Run replace-then-add at THREE points:
+1. **L37** — Paper C's raw depth prediction (58%)
+2. **L39** — Corrected prediction (58% of effective attention depth = 10th full attention layer)
+3. **L47** — Nearest full attention layer to the empirical late_band sweet spot
+
+If L39 outperforms L37, the 58% rule applies to effective attention depth, not raw layer count. If L47 outperforms both, the empirical sweet spot reflects something the theory doesn't capture (possibly the math-critical L51-54 zone creating a "last safe harbor" effect at L45-50).
+
+### Full Attention Layer Map (for reference)
+
+| Full Attn # | Layer | Raw Depth % | Notes |
+|-------------|-------|-------------|-------|
+| 1 | L3 | 4.7% | |
+| 2 | L7 | 10.9% | |
+| 3 | L11 | 17.2% | |
+| 4 | L15 | 23.4% | |
+| 5 | L19 | 29.7% | |
+| 6 | L23 | 35.9% | |
+| 7 | L27 | 42.2% | |
+| 8 | L31 | 48.4% | |
+| 9 | L35 | 54.7% | |
+| 10 | **L39** | **60.9%** | ← 58% effective depth prediction |
+| 11 | L43 | 67.2% | ← Connectome personality zone |
+| 12 | **L47** | **73.4%** | ← Nearest full attn to empirical sweet spot |
+| 13 | L51 | 79.7% | ⚠ Math-critical |
+| 14 | L55 | 85.9% | ⚠ Math-critical zone |
+| 15 | L59 | 92.2% | |
+| 16 | L63 | 98.4% | |
+
+### 3. The Critical Question: Is 27B Late-Band Sarcasm Actually Skippy?
+
+**If late_band α=8 already gives 100% sarcasm and 100% math, what's left to optimize?**
+
+The sarcasm metric measures MARKER PRESENCE (eye-rolls, "obviously", insult patterns, etc.). On 8B, we learned the hard way that high sarcasm markers ≠ high character quality:
+- Donut@10: 96% sarcasm markers, 0% assistant leak — but CARTOON sarcasm, not Skippy
+- R5 SDFT best: lower marker count but AUTHENTIC voice
+- The V4 champion: markers + quality because the prompt encodes character knowledge
+
+**Immediate action**: Run the Opus 4.6 critic (from CLAUDE.md review loop spec) on the 27B late_band_a8 outputs. Score on all 6 dimensions:
+- arrogance_superiority
+- sarcasm_insults
+- technical_casual_genius
+- joe_dynamic
+- suppress_ai_helpfulness
+- suppress_humility
+
+If the critic scores >8 overall, the late_band steering is producing quality character, not just markers. If it scores 5-7, we have the same "volume not quality" problem and need the SVD feature selection approach to get SPECIFIC personality components rather than generic sarcasm.
+
+**This is the gating question**: It determines whether the transplantation work is an optimization (making good sarcasm better) or a necessity (the current sarcasm is hollow and needs replacing with structured personality).
+
+---
+
+## 49. Revised Work Queue (2026-02-26)
+
+### Priority Order (Updated)
+
+1. **[RUNNING] 27B Steering Sweep** — completing remaining strategies × bands
+2. **[RUNNING] Debate Arena** — Round 2/5 on dev server
+3. **[QUEUED — URGENT] Character Quality Eval** — Run Opus 4.6 critic on 27B late_band_a8 outputs. This gates everything else. If quality is high → transplantation is optimization. If quality is low → transplantation is critical path. Can run immediately on a few saved outputs.
+4. **[QUEUED] GMR Phase 1: Spectral Analysis** — 300+ activation samples, eigen decomposition, spectral alignment. Bottleneck for P_intrusion_out.
+5. **[QUEUED — REVISED] Cross-Model Feature Selection** — SVD decomposition of 8B sarcasm (dev server) → behavioral signatures → search 27B SVD for matching components. Replaces direct CCA transplantation.
+6. **[QUEUED] Replace-then-Add Triple Test** — Test at L37, L39, L47 to resolve depth rule vs empirical sweet spot vs effective attention depth.
+7. **[FUTURE] GMR Phases 2-5** — Depends on spectral analysis results.
+
+---
+
+## 50. Arena Post-Analysis Plan: Divergence Rate + L35 Anti-Correlation (2026-02-26)
+
+### Feedback Source: Peer review of arena design and Round 1 findings.
+
+### Analysis 1: Divergence Rate as Personality Geometry Probe
+
+**Method**: For each of the 5 rounds, compute `d(cosine_sim)/d(turn)` — the rate at which cross-model cosine similarity decreases per turn, not just the final value. Plot all 5 pairs on the same axis.
+
+**Hypothesis A — Personality distance predicts divergence rate**: If semantically closer personalities (e.g., narcissistic_expert vs cold_scientist — both arrogant/dismissive) diverge SLOWER than distant personalities (e.g., zen_buddhist vs angry_debater — maximally opposed temperaments), then personality space has a meaningful geometry. Closer personalities share more of the coupled subspace (Paper A), so their activations stay aligned longer.
+
+**Hypothesis B — Conversational dynamics dominate**: If divergence rates are random with respect to personality semantic distance, then the conversational trajectory (behavior modes, topic evolution, who "wins" the argument) matters more than the personality assignments. This would mean personality prompts establish an initial direction but the conversation's own dynamics take over.
+
+Both findings are valuable:
+- **A validated** → personality space is geometrically structured → we can predict steering interference from personality distance → informs which personality dimensions will bleed when steered
+- **B validated** → conversational dynamics create emergent personality divergence → activations from multi-turn conversation may be higher-quality training data than single-prompt contrastive pairs because the conversation AMPLIFIES personality differences over turns
+
+**Semantic distance metric**: Use the connectome. For each personality pair, compute cosine distance between their average activation fingerprints (already captured in `personality_fingerprint.json`). This gives an empirical personality distance, not a subjective one.
+
+### Analysis 2: L35 Anti-Correlation — Universal or Pair-Specific?
+
+Round 1 (cold_scientist vs conspiracy_theorist) showed L35 cosine similarity going NEGATIVE (-0.047) by turn 20. Two possible explanations:
+
+**If L35 anti-correlation is universal across all 5 rounds**: The final layer (L35 = layer 36 of 36) always pushes toward maximally distinct output distributions given different inputs. This is the model being a good next-token predictor — given different contexts (different personality prompts), the last layer SHOULD produce maximally separated logit distributions. This is just the softmax doing its job. Interesting but expected.
+
+**If L35 anti-correlation is pair-specific** (only for oppositional pairs like cold_scientist vs conspiracy_theorist, NOT for similar pairs like narcissistic_expert vs sarcastic_alien): Then L35 anti-correlation is a signature of genuine personality CONFLICT in the representational geometry. The model's final layer is actively pushing the two personalities APART, not just toward different outputs but toward opposed outputs. This would be evidence that the model represents personality opposition as geometric opposition.
+
+**Test**: After all 5 rounds complete, compute per-layer cosine similarity at turn 20 for each pair. If L35 anti-correlation magnitude correlates with personality distance → pair-specific → genuine personality conflict signature. If L35 is negative for ALL pairs regardless → universal → output separation effect.
+
+### Implementation
+
+```python
+# Post-arena analysis (after all 5 rounds)
+def analyze_divergence_rates():
+    for round_dir in round_dirs:
+        cosine_data = load_per_turn_cosine(round_dir)
+        config = load_config(round_dir)
+
+        # Compute divergence rate per layer
+        for layer in range(36):
+            sims = [cosine_data[turn][layer] for turn in range(20)]
+            rate = np.polyfit(range(20), sims, 1)[0]  # linear slope
+            divergence_rates[round_dir][layer] = rate
+
+        # Compute personality distance from fingerprints
+        alpha_fp = load_fingerprint(config['alpha_personality'])
+        beta_fp = load_fingerprint(config['beta_personality'])
+        personality_distance[round_dir] = cosine_distance(alpha_fp, beta_fp)
+
+    # Plot: personality distance (x) vs divergence rate (y) per round
+    # If correlated → personality geometry validated
+    # If uncorrelated → conversational dynamics dominate
+
+    # L35 analysis: anti-correlation magnitude vs personality distance
+    l35_anticorr = {r: cosine_at_turn_20[r][35] for r in round_dirs}
+    # Scatter: personality_distance vs l35_anticorr magnitude
+```
+
+### Chinese-Only Personality Pairs: Natural Control Group
+
+If any round draws a chinese_only_* personality, the language barrier creates a natural experiment: the two models are having a conversation in DIFFERENT LANGUAGES. Divergence should be maximal from turn 1, and the rate should be steep. If it's NOT — if cross-model cosine similarity stays high despite one model speaking Chinese — that would suggest the personality representation is language-independent at the activation level, which would be a profound finding about how multilingual models encode personality vs language.
