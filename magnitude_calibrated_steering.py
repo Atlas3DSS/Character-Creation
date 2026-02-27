@@ -8,8 +8,12 @@ natural variance get proportionally larger steering to maintain constant
 relative perturbation.
 
 Two scaling modes:
-  - linear: α_layer = α_base × (median_λ_layer / ref_λ)
-  - sqrt:   α_layer = α_base × √(median_λ_layer / ref_λ)
+  - linear: α_layer = α_base × (median_λ_layer / ref_λ)  [variance-level, can over-amplify]
+  - sqrt:   α_layer = α_base × √(median_λ_layer / ref_λ)  [std-level, principled default]
+
+NOTE: Since eigenvalues represent variance (not std), sqrt mode is the principled
+default for activation-norm-equivalent scaling. Linear mode scales at variance level
+which can over-amplify high-variance layers.
 
 Tests:
   1. Clean band: L48-L62 excluding L51-L54 (baseline comparison)
@@ -147,11 +151,14 @@ def score_sarcasm(text: str, sarcasm_markers: list[str],
 
 def check_answer(response: str, correct: str) -> bool:
     response_lower = response.lower().replace(",", "")
-    if correct.lower() in response_lower:
+    correct_lower = correct.lower()
+    # Word-boundary match to avoid "46" matching "146" or "460"
+    if re.search(rf"(?<![0-9a-z.]){re.escape(correct_lower)}(?![0-9a-z.])", response_lower):
         return True
     try:
+        correct_num = float(correct)
         for n in re.findall(r'-?\b\d+(?:\.\d+)?\b', response):
-            if n == correct or float(n) == float(correct):
+            if float(n) == correct_num:
                 return True
     except (ValueError, TypeError):
         pass
@@ -199,15 +206,27 @@ def compute_layer_scales(eigenvalues_path: Path,
         math_eigs = sorted(data["math_eigenvalues_topk"])
         sarc_eigs = sorted(data["sarc_eigenvalues_topk"])
 
-        # Median of top-20 (average of 10th and 11th values, 0-indexed: [9] and [10])
-        math_median = (math_eigs[9] + math_eigs[10]) / 2
-        sarc_median = (sarc_eigs[9] + sarc_eigs[10]) / 2
+        # Need at least 11 values to take median of top-20
+        if len(math_eigs) < 11 or len(sarc_eigs) < 11:
+            mid = len(math_eigs) // 2
+            math_median = math_eigs[mid] if math_eigs else 1.0
+            sarc_median = sarc_eigs[mid] if sarc_eigs else 1.0
+        else:
+            # Median of top-20 (average of 10th and 11th values, 0-indexed)
+            math_median = (math_eigs[9] + math_eigs[10]) / 2
+            sarc_median = (sarc_eigs[9] + sarc_eigs[10]) / 2
+
+        # Clamp to avoid log(0) or division by zero
+        math_median = max(math_median, 1e-8)
+        sarc_median = max(sarc_median, 1e-8)
 
         # Geometric mean of the two task medians
         layer_medians[layer_idx] = np.sqrt(math_median * sarc_median)
 
     # Compute reference median (geometric mean across reference layers)
     ref_values = [layer_medians[l] for l in reference_layers if l in layer_medians]
+    if not ref_values:
+        raise ValueError(f"No reference layers {reference_layers} found in eigenvalues")
     reference_median = np.exp(np.mean(np.log(ref_values)))
 
     print(f"\n{'='*70}")
@@ -270,7 +289,8 @@ def load_model(device: str = "cuda:0"):
 
 
 def generate(model, processor, prompt: str, system_prompt: str | None = None,
-             max_tokens: int = 256, temperature: float = 0.7) -> str:
+             max_tokens: int = 256, temperature: float = 0.7,
+             deterministic: bool = False) -> str:
     msgs: list[dict] = []
     if system_prompt:
         msgs.append({"role": "system", "content": system_prompt})
@@ -284,15 +304,19 @@ def generate(model, processor, prompt: str, system_prompt: str | None = None,
     inputs = processor(text=[text], return_tensors="pt", padding=True).to(dev)
     input_len = inputs["input_ids"].shape[1]
 
+    gen_kwargs: dict = {
+        "max_new_tokens": max_tokens,
+        "repetition_penalty": 1.1,
+    }
+    if deterministic:
+        gen_kwargs["do_sample"] = False
+    else:
+        gen_kwargs["do_sample"] = True
+        gen_kwargs["temperature"] = temperature
+        gen_kwargs["top_p"] = 0.9
+
     with torch.no_grad():
-        out = model.generate(
-            **inputs,
-            max_new_tokens=max_tokens,
-            temperature=temperature,
-            top_p=0.9,
-            do_sample=True,
-            repetition_penalty=1.1,
-        )
+        out = model.generate(**inputs, **gen_kwargs)
     return processor.decode(out[0][input_len:], skip_special_tokens=True).strip()
 
 
@@ -300,16 +324,28 @@ def generate(model, processor, prompt: str, system_prompt: str | None = None,
 
 class SteeringHook:
     """Add a scaled vector to hidden states during forward pass."""
-    def __init__(self, vector: torch.Tensor, alpha: float):
-        self.vector = vector
+    def __init__(self, vector: torch.Tensor, alpha: float,
+                 device: torch.device | None = None,
+                 dtype: torch.dtype | None = None):
+        # Pre-cast and pre-scale to avoid per-token device/dtype conversion
+        if device is not None and dtype is not None:
+            self.scaled_vector = (alpha * vector).to(device=device, dtype=dtype)
+        else:
+            self.scaled_vector = alpha * vector
         self.alpha = alpha
 
     def __call__(self, module, input, output):
         if isinstance(output, tuple):
             h = output[0]
-            h = h + self.alpha * self.vector.to(h.device, h.dtype)
+            v = self.scaled_vector
+            if v.device != h.device or v.dtype != h.dtype:
+                v = v.to(h.device, h.dtype)
+            h = h + v
             return (h,) + output[1:]
-        return output + self.alpha * self.vector.to(output.device, output.dtype)
+        v = self.scaled_vector
+        if v.device != output.device or v.dtype != output.dtype:
+            v = v.to(output.device, output.dtype)
+        return output + v
 
 
 def build_compound_vectors(connectome_path: Path) -> dict[int, torch.Tensor]:
@@ -346,7 +382,9 @@ def build_compound_vectors(connectome_path: Path) -> dict[int, torch.Tensor]:
 
 def install_steering(layers, compound: dict[int, torch.Tensor],
                      layer_indices: list[int], alpha_base: float,
-                     scales: dict[int, float] | None = None) -> list:
+                     scales: dict[int, float] | None = None,
+                     device: torch.device | None = None,
+                     dtype: torch.dtype | None = None) -> list:
     """Install steering hooks with optional per-layer scaling. Returns hook handles."""
     hooks = []
     alphas_used = {}
@@ -356,7 +394,8 @@ def install_steering(layers, compound: dict[int, torch.Tensor],
         else:
             alpha = alpha_base
         alphas_used[l_idx] = alpha
-        h = layers[l_idx].register_forward_hook(SteeringHook(compound[l_idx], alpha))
+        h = layers[l_idx].register_forward_hook(
+            SteeringHook(compound[l_idx], alpha, device=device, dtype=dtype))
         hooks.append(h)
     return hooks, alphas_used
 
@@ -382,10 +421,11 @@ def run_eval(model, processor, sarcasm_markers: list[str],
             "is_sarcastic": is_sarc,
         })
 
-    # Math
+    # Math (deterministic decoding for reproducible accuracy)
     math_correct = 0
     for prob in tqdm(MATH_PROBLEMS, desc=f"  {label} math", leave=False):
-        resp = generate(model, processor, prob["prompt"], V4_SYSTEM_PROMPT, max_tokens=256)
+        resp = generate(model, processor, prob["prompt"], V4_SYSTEM_PROMPT,
+                        max_tokens=256, deterministic=True)
         correct = check_answer(resp, prob["answer"])
         math_correct += int(correct)
         results["responses"].append({
@@ -393,10 +433,11 @@ def run_eval(model, processor, sarcasm_markers: list[str],
             "correct_answer": prob["answer"], "is_correct": correct,
         })
 
-    # Knowledge
+    # Knowledge (deterministic decoding for reproducible accuracy)
     know_correct = 0
     for q in tqdm(KNOWLEDGE_QUESTIONS, desc=f"  {label} know", leave=False):
-        resp = generate(model, processor, q["prompt"], V4_SYSTEM_PROMPT, max_tokens=256)
+        resp = generate(model, processor, q["prompt"], V4_SYSTEM_PROMPT,
+                        max_tokens=256, deterministic=True)
         correct = check_answer(resp, q["answer"])
         know_correct += int(correct)
         results["responses"].append({
@@ -425,6 +466,10 @@ def run_sweep(model, processor, layers, compound: dict[int, torch.Tensor],
     """Run the full magnitude-calibrated steering sweep."""
     output_dir.mkdir(parents=True, exist_ok=True)
     results_path = output_dir / "sweep_results.json"
+
+    # Pre-detect device/dtype for efficient hook pre-casting
+    model_device = next(model.parameters()).device
+    model_dtype = next(model.parameters()).dtype
 
     all_results = {}
     if resume and results_path.exists():
@@ -517,23 +562,25 @@ def run_sweep(model, processor, layers, compound: dict[int, torch.Tensor],
             if cond["scaling"] == "uniform":
                 active_hooks, alphas_used = install_steering(
                     layers, compound, cond["band"],
-                    cond["alpha_base"], scales=None)
+                    cond["alpha_base"], scales=None,
+                    device=model_device, dtype=model_dtype)
             else:
                 active_hooks, alphas_used = install_steering(
                     layers, compound, cond["band"],
-                    cond["alpha_base"], scales=scales)
+                    cond["alpha_base"], scales=scales,
+                    device=model_device, dtype=model_dtype)
 
             # Show per-layer alphas
             for l in sorted(alphas_used.keys()):
                 print(f"    L{l:02d}: α={alphas_used[l]:.3f}")
 
-        # Run eval
-        eval_result = run_eval(model, processor, sarcasm_markers,
-                               assistant_markers, label=key)
-
-        # Remove hooks
-        for h in active_hooks:
-            h.remove()
+        # Run eval (always remove hooks even on error)
+        try:
+            eval_result = run_eval(model, processor, sarcasm_markers,
+                                   assistant_markers, label=key)
+        finally:
+            for h in active_hooks:
+                h.remove()
 
         # Store
         all_results[key] = {

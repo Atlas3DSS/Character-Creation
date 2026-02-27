@@ -41,6 +41,14 @@ MODELS = {
         "hidden_dim": 5120,
         "full_attn_layers": list(range(3, 64, 4)),  # every 4th: 3,7,11,...,63
     },
+    "27b-abliterated": {
+        "name": "huihui-ai/Huihui-Qwen3.5-27B-abliterated",
+        "class": "Qwen3_5ForConditionalGeneration",
+        "layers_path": "model.language_model.layers",
+        "n_layers": 64,
+        "hidden_dim": 5120,
+        "full_attn_layers": list(range(3, 64, 4)),
+    },
     "35b": {
         "name": "Qwen/Qwen3.5-35B-A3B-FP8",
         "class": "Qwen3_5MoeForConditionalGeneration",
@@ -524,7 +532,8 @@ def phase2_connectome(model, processor, layers, hidden_dim, n_layers,
 def phase3_layer_scan(model, processor, layers, hidden_dim, n_layers,
                       connectome_zscores, cat_names, sarcasm_markers,
                       assistant_markers, output_dir: Path,
-                      alpha: float = 10.0, resume: bool = False) -> dict:
+                      alpha: float = 10.0, resume: bool = False,
+                      model_key_ref: str = "27b") -> dict:
     """Steer each layer individually and measure effect on sarcasm/math."""
     print("\n" + "="*70)
     print("PHASE 3: SINGLE-LAYER STEERING SCAN")
@@ -622,7 +631,9 @@ def phase3_layer_scan(model, processor, layers, hidden_dim, n_layers,
             continue
 
         # Determine layer type
-        layer_type = "full" if layer_idx in MODELS.get("27b", MODELS.get("35b", {})).get("full_attn_layers", []) else "linear"
+        # Try to use runtime-detected full_attn_layers first
+        full_layers = MODELS.get(model_key_ref, {}).get("full_attn_layers", []) if model_key_ref else []
+        layer_type = "full" if layer_idx in full_layers else "linear"
 
         print(f"\n  Scanning {key} ({layer_type})...")
 
@@ -795,7 +806,7 @@ def phase4_comparison(model_key: str, phase1_results: dict, phase3_results: dict
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Map Qwen3.5 models overnight")
-    parser.add_argument("--model", required=True, choices=["27b", "35b"],
+    parser.add_argument("--model", required=True, choices=list(MODELS.keys()),
                         help="Which model to map")
     parser.add_argument("--output", default="./qwen35_map", help="Output directory")
     parser.add_argument("--device", default="cuda:0", help="CUDA device")
@@ -873,6 +884,7 @@ def main() -> None:
             model, processor, layers, hidden_dim, n_layers,
             connectome_zscores, cat_names, sarcasm_markers, assistant_markers,
             output_dir, alpha=args.alpha, resume=args.resume,
+            model_key_ref=model_key,
         )
         torch.cuda.empty_cache()
 

@@ -232,17 +232,21 @@ def load_model(device: str = "cuda:0"):
     return model, processor, layers
 
 
-def generate(model, processor, prompt: str, system_prompt: str | None = None,
-             max_tokens: int = 256, temperature: float = 0.7) -> str:
+def build_chat_text(processor, prompt: str, system_prompt: str | None = None) -> str:
+    """Build chat template text for a prompt."""
     msgs: list[dict] = []
     if system_prompt:
         msgs.append({"role": "system", "content": system_prompt})
     msgs.append({"role": "user", "content": [{"type": "text", "text": prompt}]})
-
-    text = processor.apply_chat_template(
+    return processor.apply_chat_template(
         msgs, tokenize=False, add_generation_prompt=True,
         enable_thinking=False,
     )
+
+
+def generate(model, processor, prompt: str, system_prompt: str | None = None,
+             max_tokens: int = 256, temperature: float = 0.7) -> str:
+    text = build_chat_text(processor, prompt, system_prompt)
     dev = next(model.parameters()).device
     inputs = processor(text=[text], return_tensors="pt", padding=True).to(dev)
     input_len = inputs["input_ids"].shape[1]
@@ -314,6 +318,9 @@ def phase1_capture(model, processor, layers, sarcasm_markers: list[str],
 
     def make_capture_hook(layer_idx: int):
         def hook_fn(module, input, output):
+            # P0 FIX: Only capture first call per layer (prefill), ignore decode steps.
+            if layer_idx in captured:
+                return
             if isinstance(output, tuple):
                 h = output[0]
             else:
@@ -322,6 +329,8 @@ def phase1_capture(model, processor, layers, sarcasm_markers: list[str],
                 captured[layer_idx] = h[0, -1, :].detach().cpu().float()
             elif h.ndim == 2:
                 captured[layer_idx] = h[-1, :].detach().cpu().float()
+            else:
+                raise RuntimeError(f"Unexpected hidden shape at L{layer_idx}: {tuple(h.shape)}")
         return hook_fn
 
     hooks = []
@@ -332,50 +341,61 @@ def phase1_capture(model, processor, layers, sarcasm_markers: list[str],
     # Run all conditions
     condition_acts: dict[str, dict[int, list[torch.Tensor]]] = {}
     condition_responses: dict[str, list[dict]] = {}
+    dev = next(model.parameters()).device
 
-    for cond_name, sys_prompt in conditions:
-        print(f"\n--- Condition: {cond_name} ---")
-        acts: dict[int, list[torch.Tensor]] = defaultdict(list)
-        responses: list[dict] = []
+    try:  # P1 FIX: exception-safe hook cleanup
+        for cond_name, sys_prompt in conditions:
+            print(f"\n--- Condition: {cond_name} ---")
+            acts: dict[int, list[torch.Tensor]] = defaultdict(list)
+            responses: list[dict] = []
 
-        for item in tqdm(all_prompts, desc=f"  {cond_name}"):
-            captured.clear()
-            resp = generate(model, processor, item["prompt"], sys_prompt,
-                            max_tokens=256, temperature=0.1)
+            for item in tqdm(all_prompts, desc=f"  {cond_name}"):
+                captured.clear()
 
-            # Store activations
-            for layer_idx, act in captured.items():
-                acts[layer_idx].append(act)
+                # P0 FIX: Explicit prefill forward for activation capture (correct target)
+                text = build_chat_text(processor, item["prompt"], sys_prompt)
+                inputs = processor(text=[text], return_tensors="pt", padding=True)
+                inputs = {k: v.to(dev) for k, v in inputs.items() if isinstance(v, torch.Tensor)}
+                with torch.inference_mode():
+                    _ = model(**inputs)
 
-            # Score response
-            scores = score_sarcasm(resp, sarcasm_markers, assistant_markers)
-            entry = {
-                "prompt": item["prompt"],
-                "type": item["type"],
-                "response": resp,
-                **scores,
-            }
-            if "answer" in item:
-                entry["correct"] = check_answer(resp, item["answer"])
-            responses.append(entry)
+                # Separate generation for response scoring
+                resp = generate(model, processor, item["prompt"], sys_prompt,
+                                max_tokens=256, temperature=0.1)
 
-        condition_acts[cond_name] = dict(acts)
-        condition_responses[cond_name] = responses
+                # Store activations
+                for layer_idx, act in captured.items():
+                    acts[layer_idx].append(act)
 
-        # Quick summary
-        sarc_items = [r for r in responses if r["type"] == "sarcasm"]
-        math_items = [r for r in responses if r["type"] == "math"]
-        know_items = [r for r in responses if r["type"] == "knowledge"]
-        sarc_rate = sum(1 for r in sarc_items if r["sarcasm_count"] >= 2) / max(len(sarc_items), 1)
-        math_acc = sum(1 for r in math_items if r.get("correct")) / max(len(math_items), 1)
-        know_acc = sum(1 for r in know_items if r.get("correct")) / max(len(know_items), 1)
-        asst_rate = sum(1 for r in responses if r["assistant_count"] >= 1) / max(len(responses), 1)
-        print(f"  sarc={sarc_rate*100:.0f}%, math={math_acc*100:.0f}%, "
-              f"know={know_acc*100:.0f}%, asst={asst_rate*100:.0f}%")
+                # Score response
+                scores = score_sarcasm(resp, sarcasm_markers, assistant_markers)
+                entry = {
+                    "prompt": item["prompt"],
+                    "type": item["type"],
+                    "response": resp,
+                    **scores,
+                }
+                if "answer" in item:
+                    entry["correct"] = check_answer(resp, item["answer"])
+                responses.append(entry)
 
-    # Remove capture hooks
-    for h in hooks:
-        h.remove()
+            condition_acts[cond_name] = dict(acts)
+            condition_responses[cond_name] = responses
+
+            # Quick summary
+            sarc_items = [r for r in responses if r["type"] == "sarcasm"]
+            math_items = [r for r in responses if r["type"] == "math"]
+            know_items = [r for r in responses if r["type"] == "knowledge"]
+            sarc_rate = sum(1 for r in sarc_items if r["sarcasm_count"] >= 2) / max(len(sarc_items), 1)
+            math_acc = sum(1 for r in math_items if r.get("correct")) / max(len(math_items), 1)
+            know_acc = sum(1 for r in know_items if r.get("correct")) / max(len(know_items), 1)
+            asst_rate = sum(1 for r in responses if r["assistant_count"] >= 1) / max(len(responses), 1)
+            print(f"  sarc={sarc_rate*100:.0f}%, math={math_acc*100:.0f}%, "
+                  f"know={know_acc*100:.0f}%, asst={asst_rate*100:.0f}%")
+    finally:
+        # Remove capture hooks (always, even on exception)
+        for h in hooks:
+            h.remove()
 
     # ─── Compute means and deltas ─────────────────────────────
     print("\nComputing delta vectors...")
@@ -410,13 +430,12 @@ def phase1_capture(model, processor, layers, sarcasm_markers: list[str],
             mean_b = stack_b.mean(dim=0)
             diff = mean_a - mean_b
 
-            # Welch's t-test pooled std
+            # P10 FIX: Welch's t-statistic (proper standard error, not pooled std)
             var_a = stack_a.var(dim=0, unbiased=True)
             var_b = stack_b.var(dim=0, unbiased=True)
             n_a, n_b = stack_a.shape[0], stack_b.shape[0]
-            pooled_var = ((n_a - 1) * var_a + (n_b - 1) * var_b) / (n_a + n_b - 2)
-            pooled_std = torch.sqrt(pooled_var + 1e-8)
-            z = diff / pooled_std
+            se = torch.sqrt(var_a / n_a + var_b / n_b + 1e-8)
+            z = diff / se
 
             means_per_layer[layer_idx] = diff
             zscores_tensor[layer_idx] = z
@@ -519,15 +538,44 @@ def phase1_capture(model, processor, layers, sarcasm_markers: list[str],
 
 # ─── Phase 2: Unprompted Steering Sweep ──────────────────────
 
+def build_protect_basis(protect_vecs: list[torch.Tensor],
+                        eps: float = 1e-12,
+                        rtol: float = 1e-5) -> torch.Tensor:
+    """Build orthonormal basis Q (D x r) for span(protect_vecs) via SVD. Order-invariant."""
+    if len(protect_vecs) == 0:
+        return torch.empty(0, 0, dtype=torch.float64)
+    P = torch.stack([v.detach().to(dtype=torch.float64) for v in protect_vecs], dim=1)  # [D, K]
+    col_norms = torch.linalg.norm(P, dim=0, keepdim=True).clamp_min(eps)
+    P = P / col_norms
+    U, S, _ = torch.linalg.svd(P, full_matrices=False)
+    if S.numel() == 0:
+        return torch.empty(P.shape[0], 0, dtype=torch.float64)
+    thresh = S[0] * rtol
+    rank = int((S > thresh).sum().item())
+    return U[:, :rank]  # [D, r], orthonormal
+
+
+def project_away_subspace(vec: torch.Tensor, Q: torch.Tensor,
+                          eps: float = 1e-12) -> tuple[torch.Tensor, float]:
+    """v_perp = v - Q(Q^T v). Returns (residual, retain_fraction)."""
+    v = vec.detach().to(dtype=torch.float64)
+    orig_norm = float(torch.linalg.norm(v).item())
+    if Q.numel() == 0:
+        return v.to(vec.dtype), 1.0 if orig_norm > eps else 0.0
+    resid = v - Q @ (Q.T @ v)
+    resid_norm = float(torch.linalg.norm(resid).item())
+    retain = resid_norm / max(orig_norm, eps)
+    return resid.to(vec.dtype), retain
+
+
 def gram_schmidt_protect(vec: torch.Tensor,
                          protect_vecs: list[torch.Tensor]) -> torch.Tensor:
-    """Remove component of vec along each protect vector."""
-    result = vec.clone()
-    for pv in protect_vecs:
-        pn = torch.dot(pv, pv)
-        if pn > 1e-8:
-            result -= (torch.dot(result, pv) / pn) * pv
-    return result
+    """Remove component of vec along protect subspace. SVD-based, order-invariant."""
+    Q = build_protect_basis(protect_vecs)
+    resid, retain = project_away_subspace(vec, Q)
+    if retain < 0.05:
+        return torch.zeros_like(vec)  # Too much removed; steering becomes noise
+    return resid
 
 
 def build_steering_vectors(
@@ -620,44 +668,43 @@ def run_quick_eval(model, processor, layers, layer_indices: list[int],
                    sarcasm_markers: list[str], assistant_markers: list[str]) -> dict:
     """Run quick eval (10 sarc + 5 math) with steering hooks. NO system prompt."""
 
-    # Install hooks
+    # P1 FIX + P6 FIX: Pre-merge combo vectors, pre-cache device/dtype
     hooks = []
     for l_idx in layer_indices:
         if l_idx not in vectors:
             continue
         vec_data = vectors[l_idx]
         if strategy == "combo" and isinstance(vec_data, dict):
-            # Two hooks per layer at half alpha
-            h1 = layers[l_idx].register_forward_hook(
-                SteeringHook(vec_data["v4_add"], alpha / 2))
-            h2 = layers[l_idx].register_forward_hook(
-                SteeringHook(vec_data["antipole_sub"], alpha / 2))
-            hooks.extend([h1, h2])
+            # P4 Perf: Merge combo into single vector (mathematically equivalent)
+            merged = (alpha * 0.5) * vec_data["v4_add"] + (alpha * 0.5) * vec_data["antipole_sub"]
+            h = layers[l_idx].register_forward_hook(SteeringHook(merged, 1.0))
+            hooks.append(h)
         else:
             h = layers[l_idx].register_forward_hook(SteeringHook(vec_data, alpha))
             hooks.append(h)
 
     responses = []
 
-    # Sarcasm eval (NO system prompt)
-    for p in QUICK_SARC:
-        resp = generate(model, processor, p, system_prompt=None, max_tokens=256)
-        scores = score_sarcasm(resp, sarcasm_markers, assistant_markers)
-        responses.append({"prompt": p, "type": "sarcasm", "response": resp, **scores})
+    try:  # P1 FIX: exception-safe hook cleanup
+        # Sarcasm eval (NO system prompt)
+        for p in QUICK_SARC:
+            resp = generate(model, processor, p, system_prompt=None, max_tokens=256)
+            scores = score_sarcasm(resp, sarcasm_markers, assistant_markers)
+            responses.append({"prompt": p, "type": "sarcasm", "response": resp, **scores})
 
-    # Math eval (NO system prompt)
-    for prob in QUICK_MATH:
-        resp = generate(model, processor, prob["prompt"], system_prompt=None, max_tokens=256)
-        scores = score_sarcasm(resp, sarcasm_markers, assistant_markers)
-        correct = check_answer(resp, prob["answer"])
-        responses.append({
-            "prompt": prob["prompt"], "type": "math", "response": resp,
-            "correct": correct, "answer": prob["answer"], **scores,
-        })
-
-    # Remove hooks
-    for h in hooks:
-        h.remove()
+        # Math eval (NO system prompt)
+        for prob in QUICK_MATH:
+            resp = generate(model, processor, prob["prompt"], system_prompt=None, max_tokens=256)
+            scores = score_sarcasm(resp, sarcasm_markers, assistant_markers)
+            correct = check_answer(resp, prob["answer"])
+            responses.append({
+                "prompt": prob["prompt"], "type": "math", "response": resp,
+                "correct": correct, "answer": prob["answer"], **scores,
+            })
+    finally:
+        # Remove hooks (always, even on exception)
+        for h in hooks:
+            h.remove()
 
     # Aggregate
     sarc_items = [r for r in responses if r["type"] == "sarcasm"]
@@ -701,6 +748,14 @@ def phase2_sweep(model, processor, layers, delta_means: dict,
     if resume and checkpoint_path.exists():
         checkpoint = json.load(open(checkpoint_path))
         results = checkpoint.get("results", {})
+        # P9 FIX: Load existing responses to avoid data loss on resume
+        responses_path = phase2_dir / "sweep_responses.json"
+        if responses_path.exists():
+            try:
+                with open(responses_path) as f:
+                    all_responses = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                pass  # Start fresh if corrupted
         print(f"  Resuming: {len(results)} conditions already done")
 
     # First run baseline (no steering, no prompt)
@@ -823,13 +878,16 @@ def phase3_analysis(results: dict, output_dir: Path) -> None:
     for key, r in results.items():
         if key == "baseline_no_prompt":
             continue
+        # P3 FIX: Skip early-stopped conditions that lack full metrics
+        if r.get("skipped"):
+            continue
         scored.append({
             "condition": key,
             "strategy": r.get("strategy", ""),
             "band": r.get("band", ""),
             "alpha": r.get("alpha", 0),
             "sarcasm_rate": r["sarcasm_rate"],
-            "strong_sarcasm_rate": r["strong_sarcasm_rate"],
+            "strong_sarcasm_rate": r.get("strong_sarcasm_rate", 0.0),
             "math_accuracy": r["math_accuracy"],
             "assistant_rate": r["assistant_rate"],
             "composite_score": r["composite_score"],
