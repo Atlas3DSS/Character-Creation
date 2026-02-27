@@ -44,6 +44,17 @@ This project uses a multi-AI collaboration workflow where different AI systems c
 | 2026-02-26 | Arena v4 + doom loop discovery | Claude | Codex R1 |
 | 2026-02-27 | Codex R2 bug fixes, abliteration comparison | Claude | Codex R2, Gemini |
 | 2026-02-27 | Spectral analysis, magnitude calibration | Claude | Codex R2 |
+| 2026-02-27 | **API key leak (Claude's fault)** — hardcoded Gemini key in committed .py file | Claude | GitHub Scanner |
+
+## Known Failures
+
+### 2026-02-27: Claude Opus leaked Gemini API key to GitHub
+**Responsible AI**: Claude Opus 4.6
+**What happened**: Claude wrote `gemini_research_conversation.py` with a hardcoded Google API key (`AIzaSy...`) on line 20 instead of reading from environment variables. Claude then committed and pushed this file to a public GitHub repository. GitHub's secret scanner detected the leak immediately.
+**Impact**: The Gemini API key was auto-revoked by Google. Required key rotation.
+**Root cause**: No pre-commit secret scanning, and Claude did not follow the `.env` pattern already used in `codex_research_conversation.py` (which reads from env vars correctly).
+**Fix applied**: Script now uses `os.environ.get("GEMINI_API_KEY")` with `.env` fallback. Full repo scanned — no other hardcoded secrets found.
+**Lesson**: All AI agents (including Claude) must scan for secret patterns before every commit. Secrets belong ONLY in `.env` (which is in `.gitignore`).
 
 ## Conversation Logs
 
