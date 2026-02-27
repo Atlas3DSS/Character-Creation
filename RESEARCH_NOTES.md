@@ -2507,3 +2507,184 @@ def analyze_divergence_rates():
 ### Chinese-Only Personality Pairs: Natural Control Group
 
 If any round draws a chinese_only_* personality, the language barrier creates a natural experiment: the two models are having a conversation in DIFFERENT LANGUAGES. Divergence should be maximal from turn 1, and the rate should be steep. If it's NOT — if cross-model cosine similarity stays high despite one model speaking Chinese — that would suggest the personality representation is language-independent at the activation level, which would be a profound finding about how multilingual models encode personality vs language.
+
+---
+
+## 51. Full-Rank Spectral Analysis — CuPy GPU-Accelerated (2026-02-27)
+
+### Overview
+
+Completed full-rank SVD + Ledoit-Wolf shrinkage on 10,000 activation samples × 64 layers × 5120 dims for Qwen3.5-27B. Used CuPy GPU-accelerated SVD for 78× speedup over numpy (234s→3s per 10000×5120 matrix). Total runtime: ~26 min (21 min SVD + 5 min assembly).
+
+Script: `spectral_cupy_accelerated.py`
+Output: `fullrank_spectral/fullrank_spectral_report.json` (102 KB) + per-layer eigenvalue `.npy` files
+
+### Key Findings
+
+**1. Zero math-sarcasm subspace intrusion from L7+**
+- Global max alignment: 0.9560 (at L0 — shared embedding)
+- Intrusion layers: L0-L6 only (up to 0.956 at L0, drops to 0.29 by L6)
+- **L7 through L63**: max alignment never exceeds 0.29
+- Math degradation at high alpha is from INDIRECT DISPLACEMENT, not direct subspace contamination
+
+**2. Sarcasm is 2-3× more complex than math**
+- Math effective dimensionality: ~10 (stable across layers)
+- Sarcasm effective dimensionality: ~22 (and growing — k90 doubles L48→L63 from 130→268)
+- Sarcasm dimensionality EXPLODES in late layers — the concept becomes progressively higher-rank
+- Math stays compact — a low-rank phenomenon even at output
+
+**3. Eigenvalue growth is massive**
+- L0→L63 eigenvalue growth: **1.6M× (math), 3.1M× (sarcasm)**
+- This means uniform α=8 is ~10× too strong at L63 vs L50
+- Steering at late layers with α=8 is injecting massively disproportionate energy
+
+**4. Condition numbers**
+- Math covariance: well-conditioned throughout (condition < 100)
+- Sarcasm covariance: progressively ill-conditioned in late layers (condition > 10,000 at L63)
+- Late-layer sarcasm lives in a highly anisotropic subspace — fragile to perturbation
+
+### Implications for Steering
+- Multi-layer steering MUST scale alpha inversely with eigenvalue magnitude per layer
+- Single-layer steering at L50 naturally avoids the late-layer explosion problem
+- The "fortress" behavior of 27B (all layers neutral) may be BECAUSE the model distributes personality across such high-dimensional subspaces that single-direction perturbation can't collapse it
+
+---
+
+## 52. Magnitude-Calibrated Alpha Curve (2026-02-27)
+
+### Formula
+
+```
+α_layer = α_base × (median_eigenvalue_ref / median_eigenvalue_layer)
+```
+
+Reference: L50 @ α=8 (the empirical sweet spot from 8B transfer)
+
+### Calibrated Values (saved to `fullrank_spectral/calibrated_alphas.json`)
+
+| Layer | α_calibrated | Notes |
+|-------|-------------|-------|
+| L0 | 5753.7 | Embedding — don't steer here |
+| L10 | 283.8 | |
+| L20 | 66.3 | |
+| L30 | 18.5 | |
+| L40 | 8.7 | |
+| L48 | 12.0 | |
+| **L50** | **8.0** | **Reference** |
+| L52 | 4.3 | |
+| L55 | 2.3 | |
+| L60 | 1.3 | |
+| L63 | 0.75 | |
+
+### Key Insight
+
+Current uniform α=8 across all layers is **10× too strong at L63** and **2× too weak at L40**. The calibrated curve predicts that magnitude-calibrated multi-layer steering should recover the math accuracy lost by uniform-alpha approaches. This is Experiment #3 in the adviser priority list.
+
+---
+
+## 53. Abliterated 27B Connectome Analysis (2026-02-27)
+
+### Overview
+
+Ran full 6-analysis pipeline on abliterated Qwen3.5-27B (20 categories × 64 layers × 5120 dims) and generated comprehensive comparison with base model. Abliterated model: `Qwen/Qwen3.5-27B-abliterated`.
+
+Data: `qwen35_map/27b-abliterated/`
+Report: `27b_abliterated_connectome_report.md`
+
+### What Changed (Base → Abliterated)
+
+**Representational hierarchy reorganization:**
+- **Verbosity replaced Language** as primary clustering axis (+165% importance gain, S[0]=405)
+- **Language: EN/CN collapsed** from dominant category to below-average (-71%, S[0] 377→105)
+- **Math importance doubled** (+76%, importance 11.11→19.60)
+- Emotions (Anger, Fear, Joy, Sadness) stayed remarkably stable (within ±10%)
+
+**Layer-level migration:**
+- **Identity migrated L50→L0** — 41-layer shift to embedding layer (importance -51%)
+- **Safety: Refusal shifted L2→L16** — 14 layers deeper into the network
+- Role: Teacher shifted L3→L37 (34-layer migration)
+- Tone: Sarcastic shifted L36→L21 (15 layers earlier)
+
+**Hub neuron changes:**
+- Super-hub dim 2028: Code -38%, Analytical -30%, but Science +39%, Joy +200%
+- dim 2768 (broadest hub in base, 12 categories): lost half its categories (12→6)
+- Sarcasm specialist dim 1866: lost 50% peak z, shifted 15 layers earlier
+- 3 new abliteration-created hubs appeared (dims 56, 2542, 2803)
+- Total hubs: 8 (was 9 in base)
+
+**SVD dimensionality:**
+- Identity k80 jumped from 5→7, k90 from 8→13 — more distributed than base
+- Safety: Refusal k95 expanded from 18→22 — harder to suppress with single vectors
+- Most domain/emotion categories retained identical dimensionality
+
+**Neuron significance:**
+- 99.8% maintained (5112 vs 5117 in base) — abliteration is surgical, not destructive
+- Cluster structure preserved (10 clusters, similar neuron counts)
+- Verbosity now dominates all clusters (was Language in base)
+
+### Steering Implications
+1. Safety bypasses won't work with shallow (L0-L5) interventions anymore — refusal moved deeper
+2. Identity is now in the embedding, potentially harder to steer (or easier to override with input manipulation)
+3. Sarcasm moved earlier in the network — may respond better to mid-layer steering
+4. Math strengthened — the abliterated model may be a better base for character steering if math preservation is a priority
+
+### Early Layer Scan (In Progress)
+
+The abliterated 27B layer scan started after connectome completion. Early results (L00-L06):
+- **L00-L04**: Steering DESTROYS output (0% sarcasm, 0% math) — catastrophic
+- **L05**: Partial recovery (13% sarcasm, 0% math)
+- **L06**: Full recovery (100% sarcasm, 80% math)
+- Baseline: 100% sarcasm, 90% math (abliterated is naturally maximally sarcastic with V4)
+
+This fragile early-layer behavior contrasts sharply with the base 27B "fortress" and aligns with Identity migration to L0 — steering the embedding-adjacent layers disrupts the relocated identity representation.
+
+---
+
+## 54. Basin Engineering LoRA — Adviser Review (2026-02-27)
+
+### Context
+
+Codex (gpt-5.3-codex) generated a basin engineering LoRA script combining 3-loss training: NTP on personality data + SVD-based sarcasm projection + math hardening. The adviser reviewed the code and found 8 bugs, 3 critical.
+
+### Critical Bugs Found
+
+1. **Hook on wrong module**: Hook was on `model.model.language_model.layers[50].mlp.gate_proj` — too deep. Must hook on `model.model.language_model.layers[50]` directly to capture full residual stream.
+
+2. **Labels alignment broken**: Labels were only target tokens. Must concat prompt + target and mask prompt positions with `-100` so loss is computed only on completions.
+
+3. **Category index wrong**: Sarcasm was hardcoded as category index 18 (from alphabetical sorting). Actual index is 0 (category order from connectome extraction). Required `assert CATEGORIES[0] == "Tone: Sarcastic"`.
+
+### Other Issues
+4. Batch handling assumed batch_size>1 (squeeze logic wrong for batch_size=1)
+5. Eval used `do_sample=True` with temperature — should be deterministic (`do_sample=False`)
+6. Math answer extraction used placeholder `parse_math_answer()` — needed actual regex
+7. Insufficient disentanglement prompts (only 5 → expanded to 50+)
+8. L_harden VRAM concerns with dual forward passes
+
+### Resolution
+
+All 8 issues sent to Codex for correction via `send_adviser_review_to_codex.py`. Codex returned 1,248 lines of corrected code saved to `codex_conversation/`. Basin engineering is lowest priority (Experiment #4) — adviser's 3 quick experiments take precedence.
+
+---
+
+## 55. Revised Priority Queue — Adviser Guidance (2026-02-27)
+
+### Ship This Week (Adviser Priority)
+
+| # | Experiment | Status | Dependency |
+|---|-----------|--------|------------|
+| 1 | **Orthogonal sarcasm eval** | Queued on dev server (after arena) | 8B vectors extracted |
+| 2 | **Push-pull max-activating prompts** | Needs 27B model free | Connectome data |
+| 3 | **Magnitude-calibrated alpha sweep** | Spectral data COMPLETE | Needs 27B model free |
+
+### Running
+
+| Process | Location | Status |
+|---------|----------|--------|
+| Abliterated 27B layer scan | Local RTX PRO 6000 | 7/64 layers |
+| Abliterated 8B arena | Dev server (3090+4090) | Round 3/5 |
+
+### Deferred
+- Basin engineering LoRA (Codex code corrected, lowest priority)
+- Journal→Arena personality sweep design
+- Cross-model SVD, 27B debate arena, confusion matrix, CCA, hub ablation
