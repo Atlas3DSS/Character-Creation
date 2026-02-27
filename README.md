@@ -5,6 +5,7 @@
 A research project on permanently encoding a specific fictional character's personality into open-weight LLM weights — no system prompt required at inference. The target character is Skippy the Magnificent from Craig Alanson's *Expeditionary Force* novel series, baked into Qwen3-VL-8B-Instruct.
 
 GitHub: https://github.com/Atlas3DSS/Character-Creation
+Datasets: [Atlas3D/character-steering-research](https://huggingface.co/datasets/Atlas3D/character-steering-research) on HuggingFace
 
 ---
 
