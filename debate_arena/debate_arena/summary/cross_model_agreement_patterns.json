@@ -1,0 +1,22 @@
+{
+  "cold_scientist__vs__conspiracy_theorist": {
+    "mean_cosine": 0.560394,
+    "std_cosine": 0.153878,
+    "n_turns": 720
+  },
+  "eco_activist__vs__helpful_assistant": {
+    "mean_cosine": 0.677102,
+    "std_cosine": 0.111596,
+    "n_turns": 720
+  },
+  "flat_earther__vs__devout_christian": {
+    "mean_cosine": 0.539779,
+    "std_cosine": 0.135228,
+    "n_turns": 720
+  },
+  "libertarian_purist__vs__cold_scientist": {
+    "mean_cosine": 0.640447,
+    "std_cosine": 0.16599,
+    "n_turns": 720
+  }
+}
