@@ -1,0 +1,24 @@
+{
+  "model": "8b",
+  "layers": [
+    29,
+    30
+  ],
+  "timestamp": "2026-02-27T09:32:37.931120",
+  "per_layer": {
+    "29": {
+      "cos_before": 0.2435358166694641,
+      "cos_after": 1.9048743027383352e-08,
+      "removed_fraction": 0.03010803461074829,
+      "original_norm": 97.59234619140625,
+      "purified_norm_raw": 94.6540298461914
+    },
+    "30": {
+      "cos_before": 0.3338153064250946,
+      "cos_after": 6.88590118258503e-09,
+      "removed_fraction": 0.057361602783203125,
+      "original_norm": 109.94684600830078,
+      "purified_norm_raw": 103.64012145996094
+    }
+  }
+}

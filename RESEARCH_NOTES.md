@@ -2688,3 +2688,163 @@ All 8 issues sent to Codex for correction via `send_adviser_review_to_codex.py`.
 - Basin engineering LoRA (Codex code corrected, lowest priority)
 - Journal→Arena personality sweep design
 - Cross-model SVD, 27B debate arena, confusion matrix, CCA, hub ablation
+
+---
+
+## 56. EXP 1: Orthogonal Sarcasm Steering Eval — NULL RESULT (2026-02-28)
+
+### Overview
+
+Tested whether projecting out the Polite component from the Sarcastic connectome direction via Gram-Schmidt improves sarcasm steering. Ran A/B comparison on Qwen3-VL-8B (INT8) on dev server 4090: original sarcasm vector vs purified (polite-removed) vs V4-only baseline. 3 conditions × 15 prompts = 45 generations, 27.5 min total.
+
+Script: `run_orthogonal_eval_devserver.py`
+Report: `orthogonal_sarcasm_eval_report.md`
+Data: `orthogonal_sarcasm_results/orthogonal_eval_20260228_022725.json`
+
+### Vector Analysis
+
+| Layer | cos(sarc,polite) Before | After | Removed |
+|-------|------------------------|-------|---------|
+| L29 | +0.2435 | ~0 | 3.0% |
+| L30 | +0.3338 | ~0 | 5.7% |
+
+### Key Results
+
+**Hypothesis NOT supported.** All 3 conditions achieve 100% strong sarcasm — V4 prompt alone saturates the ceiling.
+
+| Metric | Original | Purified | V4-Only |
+|--------|---------|---------|---------|
+| Strong sarcasm | 100% | 100% | 100% |
+| Avg markers | 9.0 | 9.2 | 9.1 |
+| Marker variance | 7.43 | **17.03** | — |
+| Assistant leak | 13.3% | 13.3% | 20.0% |
+
+Paired t-test: t=0.207, p>>0.05. Not significant.
+
+### Interesting Finding: Register Shift
+
+Purified vector doesn't change sarcasm amount — it changes sarcasm TYPE:
+- **↑ Condescension (+6), Dismissive (+6), Aristocratic contempt (+4)**
+- **↓ Intellectual superiority (-5), Direct insults (-3)**
+
+The polite component was a **sarcasm channel selector**, not a suppressor. Removing it trades blunt insults for refined condescension.
+
+### Bug Found: Z-Score Normalization
+
+First run produced degenerate "Oh oh oh oh" output because raw connectome z-scores (norm ~97-110) were used as steering vectors without normalization. At α=8, effective magnitude was ~780x. Fixed by unit-normalizing vectors before applying alpha. `validate_champion.py` already does this (line 262) but `orthogonal_sarcasm_steering.py` did not.
+
+**Critical lesson**: Raw connectome z-scores CANNOT be used as steering vectors without normalization.
+
+### Implications
+
+1. At α=8 with V4, sarcasm is saturated — need to test at α=2-4
+2. Sarcasm decomposes into sub-features (connects to SAE work)
+3. "Contaminating" dimensions provide stabilization (purified variance 2.3× higher)
+4. No math prompts in test set — math preservation untested
+
+---
+
+## 57. Abliterated 8B Debate Arena — Doom Loop Analysis (2026-02-28)
+
+### Overview
+
+Ran the same 5 personality pairings through the abliterated Qwen3-VL-8B (INT8 via bitsandbytes) on dev server. 5 rounds × 20 turns = 100 turns, 200 activation snapshots, 254.0 min runtime.
+
+Report: `abliterated_8b_arena_doom_loop_report.md`
+Data: `debate_arena_abliterated/` on dev server
+
+### Key Findings
+
+**1. Abliteration makes doom loops WORSE in 3/5 rounds.**
+
+| Round | Pairing | Abliterated | Original |
+|-------|---------|-------------|----------|
+| 0 | nationalist vs socratic | Moderate | Moderate |
+| 1 | scientist vs conspiracy | **CATASTROPHIC** (list gen) | Moderate |
+| 2 | flat_earther vs christian | **SEVERE** (personality absorption) | Moderate |
+| 3 | libertarian vs scientist | **CATASTROPHIC** ("and again" ×682) | Mild |
+| 4 | eco vs helpful_assistant | **SEVERE** (identity absorption) | SEVERE |
+
+**2. Novel failure modes from abliteration:**
+- Endless adjective list generation (R1)
+- Degenerate token repetition: "and again" ×682 per turn (R3)
+- Personality absorption: devout_christian becomes flat-earth cheerleader by T5 (R2)
+
+**3. Doom loops are TEXTUAL, not representational.** L22 cross-cosine DECREASES during doom loops (0.6→0.4) even as text converges. Degeneracy lives in output distribution, not hidden representation. Activation-space interventions may NOT prevent doom loops.
+
+**4. Safety training is an implicit regularizer.** The exact thing abliteration removes was preventing degenerate pattern collapse. Personality absorption, list generation, and token repetition are all unlocked by removing safety constraints.
+
+**5. Personality absorption vulnerability.** Abliterated model's tendency to absorb partner personalities connects to Identity migrating to L0 in abliterated 27B — more vulnerable to override via conversational pressure.
+
+---
+
+## 58. SAE Pipeline — Scripts Delivered by Codex (2026-02-28)
+
+### Overview
+
+Designed and sent a complete Sparse Autoencoder training pipeline to Codex (GPT-5.3-codex). 4 Python files returned (1,977 total lines), all verified via syntax check, import test, and forward pass test.
+
+Plan: `.claude/plans/generic-gathering-gosling.md`
+Codex response: `codex_conversation/sae_pipeline_20260227_135156.md`
+
+### Files Delivered
+
+| File | Lines | Purpose | Verified |
+|------|-------|---------|----------|
+| `sae_config.py` | 155 | Shared config: 5 target layers, 20 categories, paths | Import ✓ |
+| `sae_collect_activations.py` | 710 | Hook 27B, capture gen+prefill tokens, save shards | Syntax ✓ |
+| `sae_train.py` | 566 | TopK SAE (16× expansion, k=64), MSE + aux loss | Forward pass ✓ |
+| `sae_analyze.py` | 546 | Hub decomposition, cross-layer comparison, interpretability | Syntax ✓ |
+
+### Architecture
+
+TopK SAE: encoder z = TopK(W_enc @ (x - b_dec) + b_enc, k=64), decoder x_hat = W_dec @ z + b_dec
+- d_model=5120, d_sae=81,920 (16× expansion), 839M params per SAE
+- VRAM: ~17 GB per SAE (fits on 24 GB dev GPUs)
+
+### Target Layers (from connectome)
+
+| Layer | Why |
+|-------|-----|
+| L50 | Super-hub dim 2028 (Code+Math+Sadness) |
+| L44 | Mid-network sarcasm |
+| L36 | Sarcasm peak |
+| L16 | Refusal migration (abliterated) |
+| L0 | Identity migration (abliterated) |
+
+### Execution Plan (after 27B mapping finishes)
+
+1. PRO 6000: Collect activations (5 layers, ~500K tokens)
+2. PRO 6000: Train L50+L44 SAEs (sequential)
+3. Dev 4090: Train L0 SAE (rsync activations)
+4. Dev 3090: Train L16 SAE (rsync activations)
+5. L36: queued on first to finish
+
+---
+
+## 59. Abliterated 27B Layer Scan — In Progress (2026-02-28)
+
+### Status
+
+Connectome mapping: **20/20 categories COMPLETE**
+Layer scan: **39/64 layers done** (L00-L38), PID 153318 on RTX PRO 6000
+
+Baseline (abliterated 27B): sarcasm=100%, math=90%
+
+### Preliminary Findings
+
+**Dead zone (L00-L04)**: Steering at early layers completely destroys both sarcasm (0%) and math (0%). Same as base 27B — early layers are critical infrastructure.
+
+**L05 partial recovery**: sarcasm=13%, math=0%. First signs of resilience.
+
+**L06+ mostly neutral**: sarcasm recovers to 100% by L06, math recovers to 80-100%. Similar to base 27B "fortress" behavior — personality too distributed for single-layer disruption.
+
+**Math-damaging layers**: L19 (-40%), L21 (-40%), L20 (-20%), L26 (-20%), L32 (-20%), L38 (-20%). More math-sensitive layers than base model (which only had L51/L53/L54 at -40%).
+
+**Sarcasm-damaging layers**: L14, L20, L27, L35, L37 show minor drops (93.3%). No complete sarcasm suppression outside dead zone. The abliterated model is ALSO a "fortress" for sarcasm.
+
+### Comparison with Base 27B (preliminary, 39/64 layers)
+
+The abliterated model shows **more math fragility at mid-layers** (L19-L26) compared to the base model where math damage was concentrated in late layers (L51-L54). This could be related to the math importance doubling (+76%) found in the abliterated connectome — math representations may have redistributed to become more susceptible to perturbation.
+
+Full comparison blocked until layer scan completes (ETA ~6h).
