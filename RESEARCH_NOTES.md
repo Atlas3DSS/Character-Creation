@@ -2848,3 +2848,58 @@ Baseline (abliterated 27B): sarcasm=100%, math=90%
 The abliterated model shows **more math fragility at mid-layers** (L19-L26) compared to the base model where math damage was concentrated in late layers (L51-L54). This could be related to the math importance doubling (+76%) found in the abliterated connectome — math representations may have redistributed to become more susceptible to perturbation.
 
 Full comparison blocked until layer scan completes (ETA ~6h).
+
+---
+
+## 60. Abliterated vs Base 27B Connectome Comparison (2026-02-28)
+
+### Overview
+
+Comprehensive comparison of base and abliterated Qwen3.5-27B connectome tensors (20 categories × 64 layers × 5120 dims each). Overall mean cosine similarity: **0.509**.
+
+Report: `abliterated_vs_base_27b_connectome_comparison.md`
+
+### Three-Tier Impact
+
+| Tier | Categories | Mean Cosine |
+|------|-----------|-------------|
+| **Demolished** | Identity (0.062), Safety:Refusal (0.111) | <0.15 |
+| **Reshuffled** | Language, Fear, Certainty, Teacher, Positive, History, Analytical, Anger, **Sarcastic (0.527)**, Math | 0.32-0.55 |
+| **Preserved** | Formal, Science, Sadness, Authority, Joy, Polite, Code, **Verbosity:Brief (0.889)** | >0.57 |
+
+### Key Findings
+
+1. **Identity was ROTATED, not erased**: SVD rank unchanged (13), entropy identical, but direction completely different (cos=0.062). Migrated L43→L2.
+2. **Refusal was CONCENTRATED and relocated**: Compressed into fewer SVD components, moved L49→L27. Tighter, more extractable direction.
+3. **Mid-network importance collapse**: L44-L55 lost importance across ALL categories (-0.21 to -0.29). L50 lost most (-0.287). Hub d2028 weakened.
+4. **Hub restructuring: personality→domain**: Surviving hubs lost Identity/Emotion/Role, gained Code/Math/Science.
+5. **Sarcastic intact from L10+**: Base vectors transfer at 50-72% fidelity. L0-L10 must be re-extracted.
+6. **Verbosity:Brief most resilient** (cos=0.889): z=10.07→9.21, barely touched.
+
+### Steering Implications
+
+- Identity vectors must be re-extracted for abliterated model
+- Anti-refusal steering unnecessary (already demolished)
+- Sarcastic steering vectors from L10+ mostly reusable with alpha recalibration
+- L50 strategies need adjustment; L63 gained relative importance
+
+---
+
+## 61. EXP 1 Follow-up: Alpha Sweep + Math + Compound Vectors (2026-02-28)
+
+### Status: RUNNING on dev server 4090
+
+Script: `run_orthogonal_eval_v2_devserver.py`
+Conditions: 3 vector types (original, purified, compound) × 4 alphas (2,4,6,8) + baseline = 13 conditions
+Prompts: 15 character + 10 math = 25 per condition = 325 total generations
+ETA: ~3 hours
+
+### What's New vs EXP 1
+
+1. **Alpha sweep** (2,4,6,8): Find where the sarcasm ceiling lives
+2. **Math prompts** (10 problems): Test reasoning preservation hypothesis
+3. **Compound vector** (from `validate_champion.py`): Push sarcasm+anger+authority+brevity, pull polite+formal+positive, protect math+code+science+analytical, then unit-normalize. Compound has cos=0.65-0.69 with raw sarcasm direction.
+
+### Prediction
+
+At lower alphas (2-4), sarcasm should NOT be saturated, revealing differences between original vs purified vs compound vectors. Compound should show best math preservation due to explicit orthogonalization against math/code/science/analytical.
