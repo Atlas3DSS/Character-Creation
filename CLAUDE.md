@@ -219,7 +219,7 @@ def run_review_loop(
 
 ### Test Prompt Bank
 
-Maintain `test_prompts.json` with diverse scenarios:
+Maintain `data/test_prompts.json` with diverse scenarios:
 
 ```json
 [
@@ -267,11 +267,18 @@ curl http://localhost:8000/v1/chat/completions \
 
 ## File Conventions
 
+- Scripts: `./scripts/{eval,sae,experiments,tools,infra}/`
+- Data (prompts, markers, questionnaires): `./data/`
+- Reports (analysis .md files): `./reports/`
+- Logs: `./logs/`
+- UI (HTML dashboards): `./ui/`
+- Result directories: `./results/`
 - Steering vectors: `./skippy_vectors/<dim_name>/layer_N.pt`
 - Ablated models: `./skippy_vectors/ablated_model/`
 - Review logs: `./review_logs/review_log_YYYYMMDD_HHMMSS.jsonl`
 - Extracted dialogue: `./extracted_text/dialogue.json`
-- Test prompts: `./test_prompts.json`
+- Test prompts: `./data/test_prompts.json`
+- Sarcasm markers: `./data/sarcasm_markers.json`
 
 ## Code Style
 
@@ -287,14 +294,17 @@ curl http://localhost:8000/v1/chat/completions \
 # Setup
 python3 -m venv dev_genius && source dev_genius/bin/activate && pip install -r requirements.txt
 
-# Extract vectors from books
-python skippy_pipeline.py --epub-dir ./books/ --no-interactive
+# Run eval battery
+python scripts/eval/eval_runner.py --model Qwen/Qwen3-VL-8B-Thinking --n-per-category 50
 
-# Run review loop (N iterations)
-python review_loop.py --iterations 10 --learning-rate 0.5 --target-score 8.0
+# Run SAE training
+python scripts/sae/sae_train.py --config scripts/sae/sae_config.py
+
+# Run overnight orchestration
+bash scripts/infra/overnight_local.sh
 
 # Launch dashboard
-python skippy_server.py
+python scripts/infra/gpu_monitor.py
 
 # Serve final model via vLLM
 python serve_skippy.py

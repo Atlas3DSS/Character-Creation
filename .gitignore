@@ -6,7 +6,7 @@ archive/models/
 archive/eval_results/
 
 # ─── Active model checkpoints (too large for git) ───
-skippy_sdft_r3/
+results/skippy_sdft_r3/
 skippy_sdft_r4/
 skippy_sdft_r5/
 skippy_gptoss/
@@ -14,17 +14,17 @@ skippy_gptoss_v2/merged_scale_1.0/
 skippy_gptoss_v3/merged*/
 
 # ─── GPT-OSS fresh experiment data (large activations) ───
-skippy_gptoss_fresh/phase1/
-skippy_gptoss_fresh/phase2_cot/
-skippy_gptoss_fresh/phase2_cot_test/
-skippy_gptoss_fresh/phase2_deep_cot/
-skippy_gptoss_fresh/phase3/
-skippy_gptoss_fresh/phase4/
-skippy_gptoss_fresh/steered_training_data/
-skippy_gptoss_fresh/field_analysis/
-skippy_gptoss_fresh/field_analysis_unprompted/
-skippy_gptoss_fresh/field_analysis_unprompted_normscale/
-skippy_gptoss_fresh/field_steering/
+results/skippy_gptoss_fresh/phase1/
+results/skippy_gptoss_fresh/phase2_cot/
+results/skippy_gptoss_fresh/phase2_cot_test/
+results/skippy_gptoss_fresh/phase2_deep_cot/
+results/skippy_gptoss_fresh/phase3/
+results/skippy_gptoss_fresh/phase4/
+results/skippy_gptoss_fresh/steered_training_data/
+results/skippy_gptoss_fresh/field_analysis/
+results/skippy_gptoss_fresh/field_analysis_unprompted/
+results/skippy_gptoss_fresh/field_analysis_unprompted_normscale/
+results/skippy_gptoss_fresh/field_steering/
 
 # ─── Qwen3.5 mapping data (activations, checkpoints, z-scores) ───
 qwen35_map/
@@ -39,10 +39,10 @@ pair_validation/
 targeted_layer_eval/
 
 # ─── Qwen connectome activations (large .pt files) ───
-qwen_connectome/activations/
-qwen_connectome/analysis/*.pt
-qwen_r5_connectome/activations/
-qwen_r5_connectome/analysis/*.pt
+results/qwen_connectome/activations/
+results/qwen_connectome/analysis/*.pt
+results/qwen_r5_connectome/activations/
+results/qwen_r5_connectome/analysis/*.pt
 
 # ─── Experiment response logs (large JSON, reproducible) ───
 donut_quality_eval/responses_*.json
@@ -60,7 +60,7 @@ contrastive_data/personality_probes/*.pt
 contrastive_data/flow_models/*.pt
 contrastive_data/svd_results/
 contrastive_data/rome_identity/
-reasoning_activations/*.pt
+results/reasoning_activations/*.pt
 
 # ─── Large JSONL data files (>20MB, reproducible) ───
 contrastive_data/contrastive_pairs.jsonl
@@ -166,4 +166,4 @@ magnitude_calibrated_results/
 # ─── Temp ───
 /tmp/
 *.tmp
-debate_arena/debate_arena/round_*/activations/*.pt
+results/debate_arena/debate_arena/round_*/activations/*.pt
