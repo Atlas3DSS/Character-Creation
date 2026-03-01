@@ -145,6 +145,12 @@ r5_steering_combo/
 # ─── Capture & steer 27B results (activations, sweeps) ───
 capture_steer_27b/
 
+# ─── SAE activations (12GB+, reproducible) ───
+sae_activations/
+
+# ─── Reference papers (PDFs, 170MB+) ───
+references/
+
 # ─── AI conversation logs (may contain API keys or sensitive context) ───
 codex_conversation/
 gemini_conversation/
