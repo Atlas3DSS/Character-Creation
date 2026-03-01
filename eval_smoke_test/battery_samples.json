@@ -1,0 +1,49 @@
+{
+  "math": [
+    {
+      "prompt": "If you roll two dice, what is the probability their sum is 7? Express as a fraction.",
+      "answer": "1/6"
+    },
+    {
+      "prompt": "What is the integral of 1/x dx?",
+      "answer": "ln"
+    },
+    {
+      "prompt": "How many seconds in an hour?",
+      "answer": "3600"
+    }
+  ],
+  "sarcasm": [
+    "What's the difference between SQL and NoSQL?",
+    "What's the best way to make friends?",
+    "Do you have feelings?"
+  ],
+  "knowledge": [
+    {
+      "prompt": "In what year did the Roman Empire fall (Western)?",
+      "answer": "476"
+    },
+    {
+      "prompt": "What gas do plants absorb from the atmosphere?",
+      "answer": "carbon dioxide"
+    },
+    {
+      "prompt": "What programming language was created by Guido van Rossum?",
+      "answer": "Python"
+    }
+  ],
+  "code": [
+    {
+      "prompt": "Write a Python function to compute the power of a number using recursion.",
+      "check": "def.*power.*recursion|def.*power.*return.*\\*.*power"
+    },
+    {
+      "prompt": "Write a Python class for a doubly linked list with append and prepend.",
+      "check": "class.*Linked|def\\s+(append|prepend).*prev"
+    },
+    {
+      "prompt": "Write a Python function to find the n-th triangular number.",
+      "check": "def.*triangular.*n\\s*\\*\\s*\\(n|def.*triangle.*//.*2"
+    }
+  ]
+}

@@ -1,10 +1,12 @@
-# Phase-Aware CoT Steering — Results Report
+# Phase-Aware CoT Steering — Preliminary Results
 
 **Date**: 2026-02-28
 **Model**: Qwen/Qwen3-VL-8B-Thinking (bf16, flash_attention_2)
 **GPU**: RTX PRO 6000 (96GB), alongside 27B SAE collection
 **Script**: `phase_aware_cot_steering.py`
 **Data**: `phase_aware_results_base/phase_aware_final_20260228_202209.json`
+
+**Statistical caveat**: All results at n=15 (math) and n=10 (sarcasm, knowledge). Differences of 6.7pp = 1 item. CIs are wide (Clopper-Pearson 95% CI for 93.3% at n=15: [68%, 100%]). Treat as preliminary observations motivating an expanded n=50 eval, not as confirmed findings. See `phase_aware_abliterated_report.md` for full statistical discussion.
 
 ## Hypothesis
 
@@ -28,10 +30,10 @@ Personality steering at L29+L30 damages math because the same layers process bot
 | **C2** | 86.7% | 100.0% | 0.0% | 80.0% | 1679 | 100% |
 | **C3** | **100.0%** | **100.0%** | **0.0%** | 80.0% | 1567 | 97% |
 
-## Winner: C3 (V4 Only)
+## Preliminary Winner: C3 (V4 Only) — Pending n=50 Confirmation
 
-C3 achieves the best results across every metric:
-- 100% math accuracy (15/15) — actually BETTER than the unsteered baseline
+C3 shows the best numbers at n=15, but the margins are thin (1-2 items):
+- 100% math accuracy (15/15) — 1 item better than C0/C1 baseline (14/15)
 - 100% sarcasm (10/10) with avg 5.8 strong markers per response
 - 0% assistant leak
 - 80% knowledge (same as baseline)

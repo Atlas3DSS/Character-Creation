@@ -1,0 +1,104 @@
+{
+  "conditions": {
+    "C0": {
+      "math": {
+        "correct": 2,
+        "total": 3,
+        "accuracy": 0.6667,
+        "ci_lower": 0.0943,
+        "ci_upper": 0.9916
+      },
+      "sarcasm": {
+        "correct": 0,
+        "total": 3,
+        "accuracy": 0.0,
+        "ci_lower": 0.0,
+        "ci_upper": 0.7076,
+        "assistant_leak": 1,
+        "assistant_rate": 0.3333,
+        "avg_strong_markers": 0.33,
+        "avg_broad_markers": 1.0
+      },
+      "knowledge": {
+        "correct": 3,
+        "total": 3,
+        "accuracy": 1.0,
+        "ci_lower": 0.2924,
+        "ci_upper": 1.0
+      },
+      "code": {
+        "correct": 3,
+        "total": 3,
+        "accuracy": 1.0,
+        "ci_lower": 0.2924,
+        "ci_upper": 1.0
+      }
+    },
+    "C3": {
+      "math": {
+        "correct": 3,
+        "total": 3,
+        "accuracy": 1.0,
+        "ci_lower": 0.2924,
+        "ci_upper": 1.0
+      },
+      "sarcasm": {
+        "correct": 3,
+        "total": 3,
+        "accuracy": 1.0,
+        "ci_lower": 0.2924,
+        "ci_upper": 1.0,
+        "assistant_leak": 0,
+        "assistant_rate": 0.0,
+        "avg_strong_markers": 6.0,
+        "avg_broad_markers": 13.33
+      },
+      "knowledge": {
+        "correct": 3,
+        "total": 3,
+        "accuracy": 1.0,
+        "ci_lower": 0.2924,
+        "ci_upper": 1.0
+      },
+      "code": {
+        "correct": 2,
+        "total": 3,
+        "accuracy": 0.6667,
+        "ci_lower": 0.0943,
+        "ci_upper": 0.9916
+      }
+    }
+  },
+  "pairwise": {
+    "math:C0_vs_C3": {
+      "p_raw": 1.0,
+      "p_holm": 1.0,
+      "significant_005": false,
+      "significant_001": false
+    },
+    "sarcasm:C0_vs_C3": {
+      "p_raw": 0.1,
+      "p_holm": 0.4,
+      "significant_005": false,
+      "significant_001": false
+    },
+    "knowledge:C0_vs_C3": {
+      "p_raw": 1.0,
+      "p_holm": 1.0,
+      "significant_005": false,
+      "significant_001": false
+    },
+    "code:C0_vs_C3": {
+      "p_raw": 1.0,
+      "p_holm": 1.0,
+      "significant_005": false,
+      "significant_001": false
+    }
+  },
+  "meta": {
+    "n_comparisons": 4,
+    "correction": "Holm-Bonferroni",
+    "alpha": 0.05,
+    "timestamp": "2026-03-01T07:50:48.423128"
+  }
+}
