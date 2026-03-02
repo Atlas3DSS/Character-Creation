@@ -83,50 +83,29 @@ if [ "${BASELINE_EXIT}" -ne 0 ]; then
     echo "[$(date)] WARNING: Baseline collection had errors. Continuing to Phase B."
 fi
 
-echo "[$(date)] Waiting 30s for GPU cleanup before 27B..."
-sleep 30
+echo "[$(date)] Phase A complete."
 
 # ══════════════════════════════════════════════════════════════
-# PHASE B: 27B Personality Sweep
+# PHASE B: 27B Personality Sweep — BLOCKED (2026-03-02)
 # ══════════════════════════════════════════════════════════════
+# BLOCKED: Codex foundational audit found that the 27B connectome
+# (map_qwen35.py) used generate() instead of deterministic prefill
+# for activation capture. Layer selection L16/36/44/50 is based on
+# flawed z-scores. DO NOT run 27B sweep until:
+#   1. map_qwen35.py is fixed (prefill capture, not generate)
+#   2. Null/control contrasts added for system prompt confound
+#   3. 27B connectome recomputed and validated
+# See: codex_conversation/connectome_foundational_audit_20260302_063634.md
 echo ""
 echo "================================================================"
-echo "[$(date)] PHASE B: 27B Personality Sweep"
-echo "  Model:   ${MODEL_27B}"
-echo "  Layers:  ${TARGET_LAYERS_27B}"
-echo "  Dtype:   ${DTYPE_27B}"
-echo "  Batch:   ${BATCH_27B}"
-echo "  Output:  ${OUTPUT_27B}"
+echo "[$(date)] PHASE B: 27B Personality Sweep — SKIPPED (connectome audit)"
+echo "  REASON: 27B connectome layer selection (L16/36/44/50) based on"
+echo "  flawed capture protocol. Must recompute before sweep."
+echo "  See: connectome_foundational_audit_20260302_063634.md"
 echo "================================================================"
-echo ""
-
-source "${VENV_27B}"
-
-TRANSFORMERS_VER=$(python3 -c "import transformers; print(transformers.__version__)" 2>/dev/null || echo "unknown")
-echo "[$(date)] transformers version: ${TRANSFORMERS_VER}"
-
-FREE_MEM=$(nvidia-smi --id=0 --query-gpu=memory.free --format=csv,noheader,nounits 2>/dev/null || echo 0)
-echo "[$(date)] GPU 0 free memory: ${FREE_MEM} MB"
-
-mkdir -p "${OUTPUT_27B}"
-
-python3 -u "${SWEEP_SCRIPT}" \
-    --model "${MODEL_27B}" \
-    --target-layers "${TARGET_LAYERS_27B}" \
-    --dtype "${DTYPE_27B}" \
-    --no-thinking \
-    --output "${OUTPUT_27B}" \
-    --batch-size "${BATCH_27B}" \
-    --max-gen-tokens "${MAX_GEN_27B}" \
-    --temperature 0.8 \
-    --skip-existing \
-    --journal-dir "${JOURNAL_DIR}" \
-    --population-dir "${POPULATION_DIR}" \
-    2>&1 | tee "${LOG_DIR}/personality_sweep_27b.log"
 
 echo ""
 echo "================================================================"
-echo "[$(date)] ALL DONE — Baseline + 27B sweep complete"
+echo "[$(date)] DONE — Baseline complete, 27B sweep BLOCKED pending connectome fix"
 echo "[$(date)] Baseline: ${BASELINE_OUTPUT}"
-echo "[$(date)] 27B sweep: ${OUTPUT_27B}"
 echo "================================================================"
