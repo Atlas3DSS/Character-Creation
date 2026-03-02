@@ -58,11 +58,14 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-# ── Model config ────────────────────────────────────────────
+# ── Model config (defaults — overridable via CLI) ───────────
 
-MODEL_NAME = "Qwen/Qwen3-VL-8B-Thinking"
-TARGET_LAYERS = [9, 15, 22, 29]
-HIDDEN_DIM = 4096
+DEFAULT_MODEL = "Qwen/Qwen3-VL-8B-Thinking"
+DEFAULT_LAYERS = [9, 15, 22, 29]
+
+# Module-level — set at runtime by main() from CLI args
+MODEL_NAME = DEFAULT_MODEL
+TARGET_LAYERS = DEFAULT_LAYERS
 
 HF_CACHE = Path(os.environ.get("HF_HOME", str(Path.home() / ".cache" / "huggingface" / "hub")))
 
@@ -512,17 +515,18 @@ def model_cached(model_name: str) -> bool:
     return any(model_dir.rglob("*.safetensors"))
 
 
-def load_model(model_name: str, device: str = "cuda:0"):
-    """Load Qwen3-VL-8B-Thinking in bf16."""
+def load_model(model_name: str, device: str = "cuda:0", dtype: str = "bfloat16"):
+    """Load a Qwen model. dtype='auto' for FP8, 'bfloat16' for standard."""
     from transformers import AutoModelForImageTextToText, AutoProcessor
 
-    print(f"[INFO] Loading {model_name} (bf16) to {device}...")
+    torch_dtype = torch.bfloat16 if dtype == "bfloat16" else dtype
+    print(f"[INFO] Loading {model_name} (dtype={dtype}) to {device}...")
     processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
     model = AutoModelForImageTextToText.from_pretrained(
         model_name,
         device_map=device,
         trust_remote_code=True,
-        dtype=torch.bfloat16,
+        torch_dtype=torch_dtype,
     )
     model.eval()
     layers = model.model.language_model.layers
@@ -533,24 +537,34 @@ def load_model(model_name: str, device: str = "cuda:0"):
 # ── Neural Data Capture ─────────────────────────────────────
 
 class NeuralCapture:
-    """Captures mean activations, entropy, and top logits during generation."""
+    """Captures mean activations during batched generation — GPU-resident accumulation.
+
+    Accumulates on GPU to avoid per-step GPU→CPU sync overhead. Only transfers
+    to CPU at get_results() time (once per batch item per layer).
+    Uses per-layer step counters since hooks fire layer-by-layer within a single
+    forward pass.
+    """
 
     def __init__(
         self,
         layers: torch.nn.ModuleList,
         target_layer_indices: list[int],
         hidden_dim: int,
+        device: str = "cuda:0",
     ):
         self.layers = layers
         self.target_indices = target_layer_indices
         self.hidden_dim = hidden_dim
+        self.device = device
 
-        # Per-prompt accumulators
-        self._gen_act_sums: dict[int, torch.Tensor] = {}
-        self._gen_act_counts: dict[int, int] = {}
-        self._last_token_acts: dict[int, torch.Tensor | None] = {}
+        self._batch_size: int = 1
         self._prefill_len: int = 0
-        self._token_counter: dict[int, int] = {}
+        # Per-layer step counters (each hook independently tracks position)
+        self._step_counters: dict[int, int] = {}
+        # GPU-resident accumulators: [batch_size, hidden_dim] per layer
+        self._gen_act_sums: dict[int, torch.Tensor] = {}
+        self._gen_act_counts: dict[int, torch.Tensor] = {}
+        self._last_token_acts: dict[int, torch.Tensor] = {}
 
         self._hooks: list[torch.utils.hooks.RemovableHandle] = []
         self._register_hooks()
@@ -561,49 +575,55 @@ class NeuralCapture:
             self._hooks.append(handle)
 
     def _make_hook(self, layer_idx: int):
-        def hook_fn(_module, _inputs, output):
+        def hook_fn(_module: torch.nn.Module, _inputs: Any, output: Any) -> None:
             hidden = output[0] if isinstance(output, tuple) else output
             if not isinstance(hidden, torch.Tensor) or hidden.ndim != 3:
                 return
 
-            seq = hidden[0].detach()  # [seq_len, hidden_dim]
-            seq_len = int(seq.shape[0])
-            start_pos = self._token_counter.get(layer_idx, 0)
+            seq_len = int(hidden.shape[1])
+            start_pos = self._step_counters.get(layer_idx, 0)
 
-            # Only accumulate generation tokens
-            for i in range(seq_len):
-                pos = start_pos + i
-                if pos >= self._prefill_len:
-                    act = seq[i].float().cpu()
-                    if layer_idx not in self._gen_act_sums:
-                        self._gen_act_sums[layer_idx] = torch.zeros(self.hidden_dim)
-                        self._gen_act_counts[layer_idx] = 0
-                    self._gen_act_sums[layer_idx] += act
-                    self._gen_act_counts[layer_idx] += 1
-                    self._last_token_acts[layer_idx] = act
+            # First generation-token index within this chunk
+            gen_start = max(0, self._prefill_len - start_pos)
 
-            self._token_counter[layer_idx] = start_pos + seq_len
+            if gen_start < seq_len:
+                B = min(int(hidden.shape[0]), self._batch_size)
+                # Vectorized: slice all gen tokens at once [B, n_gen, H]
+                gen_acts = hidden[:B, gen_start:].detach().float()
+                n_new = gen_acts.shape[1]
+
+                self._gen_act_sums[layer_idx][:B] += gen_acts.sum(dim=1)
+                self._gen_act_counts[layer_idx][:B] += n_new
+                self._last_token_acts[layer_idx][:B] = gen_acts[:, -1]
+
+            self._step_counters[layer_idx] = start_pos + seq_len
 
         return hook_fn
 
-    def reset(self, prefill_len: int) -> None:
+    def reset(self, prefill_len: int, batch_size: int) -> None:
+        """Reset accumulators for a new batch."""
+        self._batch_size = batch_size
         self._prefill_len = prefill_len
-        self._gen_act_sums.clear()
-        self._gen_act_counts.clear()
-        self._last_token_acts.clear()
-        self._token_counter = {idx: 0 for idx in self.target_indices}
+        self._step_counters = {idx: 0 for idx in self.target_indices}
 
-    def get_results(self) -> dict[str, Any]:
-        """Get mean and last-token activations for all layers."""
+        for idx in self.target_indices:
+            self._gen_act_sums[idx] = torch.zeros(
+                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32)
+            self._gen_act_counts[idx] = torch.zeros(
+                batch_size, device=self.device, dtype=torch.float32)
+            self._last_token_acts[idx] = torch.zeros(
+                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32)
+
+    def get_results(self, batch_idx: int = 0) -> dict[str, Any]:
+        """Get mean and last-token activations for a specific batch item. Transfers to CPU."""
         result: dict[str, Any] = {}
         for idx in self.target_indices:
-            count = self._gen_act_counts.get(idx, 0)
+            count = int(self._gen_act_counts[idx][batch_idx].item())
             if count > 0:
-                mean_act = self._gen_act_sums[idx] / count
-                last_act = self._last_token_acts.get(idx)
-                result[f"L{idx:02d}_mean"] = mean_act.half()  # float16 to save space
-                if last_act is not None:
-                    result[f"L{idx:02d}_last"] = last_act.half()
+                mean_act = (self._gen_act_sums[idx][batch_idx] / count).cpu().half()
+                last_act = self._last_token_acts[idx][batch_idx].cpu().half()
+                result[f"L{idx:02d}_mean"] = mean_act
+                result[f"L{idx:02d}_last"] = last_act
                 result[f"L{idx:02d}_n_gen_tokens"] = count
             else:
                 result[f"L{idx:02d}_mean"] = torch.zeros(self.hidden_dim, dtype=torch.float16)
@@ -615,6 +635,9 @@ class NeuralCapture:
         for h in self._hooks:
             h.remove()
         self._hooks.clear()
+        self._gen_act_sums.clear()
+        self._gen_act_counts.clear()
+        self._last_token_acts.clear()
 
 
 # ── Sweep Execution ─────────────────────────────────────────
@@ -643,6 +666,82 @@ def compute_entropy(logits: torch.Tensor) -> float:
     return float(entropy.mean())
 
 
+def _template_prompt(
+    processor: Any, system_prompt: str, user_prompt: str,
+    enable_thinking: bool | None = None,
+) -> str:
+    """Apply chat template for a single system+user message pair.
+
+    enable_thinking: True for Thinking models, False for non-thinking (e.g. 27B),
+                     None for auto-detect.
+    """
+    msgs: list[dict[str, Any]] = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": [{"type": "text", "text": user_prompt}]},
+    ]
+    if enable_thinking is not None:
+        try:
+            return processor.apply_chat_template(
+                msgs, tokenize=False, add_generation_prompt=True,
+                enable_thinking=enable_thinking,
+            )
+        except TypeError:
+            pass  # Fall through to no-kwarg call
+    try:
+        return processor.apply_chat_template(
+            msgs, tokenize=False, add_generation_prompt=True,
+        )
+    except TypeError:
+        return processor.apply_chat_template(
+            msgs, tokenize=False, add_generation_prompt=True,
+            enable_thinking=True,
+        )
+
+
+def _process_single_output(
+    processor: Any,
+    gen_ids: torch.Tensor,
+    logits_for_item: list[torch.Tensor | None],
+    pad_token_id: int,
+) -> tuple[str, str, str, int, float]:
+    """Decode one generated sequence, split think/response, compute entropy.
+
+    Returns (gen_text, think_text, response_text, n_gen_tokens, mean_entropy).
+    """
+    # Strip padding from generated tokens
+    gen_ids = gen_ids[gen_ids != pad_token_id]
+    n_gen = len(gen_ids)
+
+    # Decode WITH special tokens first to find <think>/</ think> boundaries
+    gen_text_raw = processor.decode(gen_ids, skip_special_tokens=False)
+    gen_text = processor.decode(gen_ids, skip_special_tokens=True)
+
+    # Split think/response using raw text (preserves <think> tags)
+    think_text = ""
+    response_text = gen_text
+    if "<think>" in gen_text_raw:
+        parts = gen_text_raw.split("</think>", 1)
+        if len(parts) == 2:
+            think_text = parts[0].replace("<think>", "").strip()
+            response_text = parts[1].strip()
+
+    # Compute entropy only for actual generated tokens (not post-EOS padding)
+    mean_entropy = 0.0
+    entropies = []
+    for step_idx, logit_step in enumerate(logits_for_item):
+        if step_idx >= n_gen:
+            break  # Don't include post-EOS logits
+        if logit_step is not None and logit_step.ndim >= 1:
+            probs = torch.softmax(logit_step.float(), dim=-1)
+            log_probs = torch.log2(probs + 1e-10)
+            entropy = float(-torch.sum(probs * log_probs))
+            entropies.append(entropy)
+    if entropies:
+        mean_entropy = sum(entropies) / len(entropies)
+
+    return gen_text, think_text, response_text, n_gen, mean_entropy
+
+
 def run_sweep(
     model: torch.nn.Module,
     processor: Any,
@@ -653,8 +752,10 @@ def run_sweep(
     output_dir: Path,
     max_gen_tokens: int = 512,
     temperature: float = 0.8,
+    batch_size: int = 1,
+    enable_thinking: bool | None = None,
 ) -> dict[str, Any]:
-    """Run the full personality sweep."""
+    """Run the full personality sweep with batched generation."""
     model_device = next(model.parameters()).device
     responses_dir = output_dir / "responses"
     activations_dir = output_dir / "activations"
@@ -668,40 +769,55 @@ def run_sweep(
     act_buffers: dict[int, list[torch.Tensor]] = {idx: [] for idx in TARGET_LAYERS}
     act_meta: dict[int, list[dict[str, Any]]] = {idx: [] for idx in TARGET_LAYERS}
     shard_counts: dict[int, int] = {idx: 0 for idx in TARGET_LAYERS}
-    SHARD_SIZE = 5000  # Write shard every N responses
+    SHARD_SIZE = 5000
 
     total_tokens = 0
     total_responses = 0
-    stats_by_b5: dict[str, list[float]] = {}  # entropy by big five combo
+    stats_by_b5: dict[str, list[float]] = {}
+
+    # Ensure left-padding for batched generation
+    if hasattr(processor, "tokenizer"):
+        processor.tokenizer.padding_side = "left"
+        if processor.tokenizer.pad_token_id is None:
+            processor.tokenizer.pad_token_id = processor.tokenizer.eos_token_id
+        pad_token_id = processor.tokenizer.pad_token_id
+    else:
+        pad_token_id = 0
+    if hasattr(processor, "padding_side"):
+        processor.padding_side = "left"
+
+    print(f"[INFO] Batch size: {batch_size} | Padding: left | Device: {model_device}")
 
     pbar = tqdm(characters, desc="Characters")
     for char in pbar:
         system_prompt = build_system_prompt(char)
         char_file = responses_dir / f"char_{char.char_id:04d}.jsonl"
+        b5_combo_str = "_".join(
+            char.big_five[d][0].upper()
+            for d in ["openness", "conscientiousness", "extraversion",
+                       "agreeableness", "neuroticism"]
+        )
 
         with char_file.open("a", encoding="utf-8") as out_f:
-            for cat, prompt in prompts:
-                msgs: list[dict[str, Any]] = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": [{"type": "text", "text": prompt}]},
+            # Process prompts in batches
+            for batch_start in range(0, len(prompts), batch_size):
+                batch_prompts = prompts[batch_start:batch_start + batch_size]
+                B = len(batch_prompts)
+
+                # Build templated texts for the batch
+                texts = [
+                    _template_prompt(processor, system_prompt, prompt,
+                                     enable_thinking=enable_thinking)
+                    for _cat, prompt in batch_prompts
                 ]
 
-                try:
-                    text = processor.apply_chat_template(
-                        msgs, tokenize=False, add_generation_prompt=True,
-                    )
-                except TypeError:
-                    text = processor.apply_chat_template(
-                        msgs, tokenize=False, add_generation_prompt=True,
-                        enable_thinking=True,
-                    )
-
+                # Tokenize with left-padding
                 inputs = processor(
-                    text=[text], return_tensors="pt", padding=True
+                    text=texts, return_tensors="pt", padding=True,
                 ).to(model_device)
-                input_len = int(inputs["input_ids"].shape[1])
 
-                capture.reset(prefill_len=input_len)
+                padded_input_len = int(inputs["input_ids"].shape[1])
+                capture.reset(prefill_len=padded_input_len, batch_size=B)
 
                 try:
                     with torch.no_grad():
@@ -717,83 +833,74 @@ def run_sweep(
                             output_logits=True,
                         )
 
-                    # Decode generated text
-                    gen_ids = outputs.sequences[0][input_len:]
-                    gen_text = processor.decode(gen_ids, skip_special_tokens=True)
+                    # Extract per-item logits: outputs.logits is tuple of [B, vocab]
+                    has_logits = hasattr(outputs, "logits") and outputs.logits
 
-                    # Split think/response
-                    think_text = ""
-                    response_text = gen_text
-                    if "<think>" in gen_text:
-                        parts = gen_text.split("</think>", 1)
-                        if len(parts) == 2:
-                            think_text = parts[0].replace("<think>", "").strip()
-                            response_text = parts[1].strip()
+                    for i, (cat, prompt) in enumerate(batch_prompts):
+                        gen_ids = outputs.sequences[i][padded_input_len:]
 
-                    # Compute entropy from logits
-                    n_gen = len(gen_ids)
-                    mean_entropy = 0.0
-                    if hasattr(outputs, "logits") and outputs.logits:
-                        entropies = []
-                        for logit_step in outputs.logits:
-                            if logit_step is not None and logit_step.ndim >= 2:
-                                entropies.append(compute_entropy(logit_step[0]))
-                        if entropies:
-                            mean_entropy = sum(entropies) / len(entropies)
+                        # Collect logits for this batch item
+                        item_logits: list[torch.Tensor | None] = []
+                        if has_logits:
+                            for step_logits in outputs.logits:
+                                if step_logits is not None and step_logits.ndim >= 2:
+                                    item_logits.append(step_logits[i])
 
-                    # Get neural data
-                    neural = capture.get_results()
+                        _, think_text, response_text, n_gen, mean_entropy = (
+                            _process_single_output(
+                                processor, gen_ids, item_logits, pad_token_id,
+                            )
+                        )
 
-                    # Store mean activations for sharding
-                    for idx in TARGET_LAYERS:
-                        mean_key = f"L{idx:02d}_mean"
-                        if mean_key in neural and isinstance(neural[mean_key], torch.Tensor):
-                            act_buffers[idx].append(neural[mean_key])
-                            act_meta[idx].append({
-                                "char_id": char.char_id,
-                                "char_name": char.name,
-                                "prompt_category": cat,
-                                "b5_combo": "_".join(
-                                    char.big_five[d][0].upper()
-                                    for d in ["openness", "conscientiousness",
-                                              "extraversion", "agreeableness", "neuroticism"]
-                                ),
-                                "n_gen_tokens": neural.get(f"L{idx:02d}_n_gen_tokens", 0),
-                            })
+                        # Get neural data for this batch item
+                        neural = capture.get_results(batch_idx=i)
 
-                    # Write response record
-                    record = {
-                        "char_id": char.char_id,
-                        "char_name": char.name,
-                        "b5": char.big_five,
-                        "prompt_category": cat,
-                        "prompt": prompt,
-                        "think_text": think_text,
-                        "response_text": response_text,
-                        "n_think_tokens": len(think_text.split()) if think_text else 0,
-                        "n_response_tokens": len(response_text.split()) if response_text else 0,
-                        "n_gen_tokens": n_gen,
-                        "mean_entropy": round(mean_entropy, 4),
-                        "timestamp": datetime.now().isoformat(),
-                    }
-                    out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
+                        # Store mean activations for sharding
+                        for idx in TARGET_LAYERS:
+                            mean_key = f"L{idx:02d}_mean"
+                            if mean_key in neural and isinstance(neural[mean_key], torch.Tensor):
+                                act_buffers[idx].append(neural[mean_key])
+                                act_meta[idx].append({
+                                    "char_id": char.char_id,
+                                    "char_name": char.name,
+                                    "prompt_category": cat,
+                                    "b5_combo": b5_combo_str,
+                                    "n_gen_tokens": neural.get(f"L{idx:02d}_n_gen_tokens", 0),
+                                })
 
-                    total_tokens += n_gen
-                    total_responses += 1
+                        # Write response record
+                        record = {
+                            "char_id": char.char_id,
+                            "char_name": char.name,
+                            "b5": char.big_five,
+                            "prompt_category": cat,
+                            "prompt": prompt,
+                            "think_text": think_text,
+                            "response_text": response_text,
+                            "n_think_tokens": len(think_text.split()) if think_text else 0,
+                            "n_response_tokens": len(response_text.split()) if response_text else 0,
+                            "n_gen_tokens": n_gen,
+                            "mean_entropy": round(mean_entropy, 4),
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                        out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-                    # Track stats by B5 combo
-                    b5_key = "_".join(char.big_five[d] for d in sorted(char.big_five))
-                    stats_by_b5.setdefault(b5_key, []).append(mean_entropy)
+                        total_tokens += n_gen
+                        total_responses += 1
+
+                        b5_key = "_".join(char.big_five[d] for d in sorted(char.big_five))
+                        stats_by_b5.setdefault(b5_key, []).append(mean_entropy)
 
                 except RuntimeError as exc:
                     if "out of memory" in str(exc).lower():
-                        print(f"[WARN] OOM on char {char.char_id}: {exc}")
+                        print(f"[WARN] OOM on char {char.char_id} batch@{batch_start} "
+                              f"(B={B}): {exc}")
                         torch.cuda.empty_cache()
                         gc.collect()
                         continue
                     raise
                 except (ValueError, IndexError) as exc:
-                    print(f"[WARN] Error on char {char.char_id}: {exc}")
+                    print(f"[WARN] Error on char {char.char_id} batch@{batch_start}: {exc}")
                     continue
 
         # Flush activation shards periodically
@@ -826,6 +933,7 @@ def run_sweep(
         "timestamp": datetime.now().isoformat(),
         "model": MODEL_NAME,
         "target_layers": TARGET_LAYERS,
+        "batch_size": batch_size,
         "mean_entropy_by_b5": {
             k: round(sum(v) / len(v), 4) for k, v in stats_by_b5.items() if v
         },
@@ -865,21 +973,46 @@ def parse_args() -> argparse.Namespace:
                         help="Limit prompts per character (default: all 60)")
     parser.add_argument("--max-gen-tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.8)
+    parser.add_argument("--batch-size", type=int, default=1,
+                        help="Number of prompts to generate in parallel per batch (default: 1)")
     parser.add_argument("--split", type=str, choices=["odd", "even", "all"], default="all",
                         help="Process odd/even character IDs for dual-GPU split")
+    parser.add_argument("--min-char-id", type=int, default=None,
+                        help="Only process characters with char_id >= this value")
+    parser.add_argument("--max-char-id", type=int, default=None,
+                        help="Only process characters with char_id <= this value")
+    parser.add_argument("--skip-existing", action="store_true",
+                        help="Skip characters whose output file already exists")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--journal-dir", type=str, default=None,
                         help="Path to character journal directory for seeding")
     parser.add_argument("--population-dir", type=str, default=None,
                         help="Path to population_data directory for seeding")
+    # Model override args (for 27B or other models)
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL,
+                        help=f"Model name (default: {DEFAULT_MODEL})")
+    parser.add_argument("--target-layers", type=str, default=None,
+                        help="Comma-separated target layer indices (default: 9,15,22,29)")
+    parser.add_argument("--dtype", type=str, default="bfloat16",
+                        choices=["bfloat16", "auto"],
+                        help="torch_dtype: bfloat16 for standard, auto for FP8")
+    parser.add_argument("--no-thinking", action="store_true",
+                        help="Pass enable_thinking=False to chat template (for non-thinking models)")
     return parser.parse_args()
 
 
 def main() -> None:
+    global MODEL_NAME, TARGET_LAYERS
     args = parse_args()
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+
+    # Override module-level model config from CLI
+    MODEL_NAME = args.model
+    if args.target_layers:
+        TARGET_LAYERS = [int(x.strip()) for x in args.target_layers.split(",")]
+    enable_thinking: bool | None = False if args.no_thinking else None
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -912,6 +1045,24 @@ def main() -> None:
     elif args.split == "even":
         characters = [c for c in characters if c.char_id % 2 == 0]
         print(f"[INFO] Split=even: {len(characters)} characters")
+
+    # Apply char ID range filter
+    if args.min_char_id is not None:
+        characters = [c for c in characters if c.char_id >= args.min_char_id]
+        print(f"[INFO] min-char-id={args.min_char_id}: {len(characters)} characters remaining")
+    if args.max_char_id is not None:
+        characters = [c for c in characters if c.char_id <= args.max_char_id]
+        print(f"[INFO] max-char-id={args.max_char_id}: {len(characters)} characters remaining")
+
+    # Skip existing outputs
+    if args.skip_existing:
+        responses_dir = output_dir / "responses"
+        before = len(characters)
+        characters = [
+            c for c in characters
+            if not (responses_dir / f"char_{c.char_id:04d}.jsonl").exists()
+        ]
+        print(f"[INFO] skip-existing: {before - len(characters)} already done, {len(characters)} remaining")
 
     # Build prompt list
     prompts: list[tuple[str, str]] = []
@@ -956,11 +1107,13 @@ def main() -> None:
         return
 
     # Load model
-    model, processor, layers, hidden_dim = load_model(MODEL_NAME, device=args.device)
-    print(f"[INFO] Model loaded: hidden_dim={hidden_dim}")
+    model, processor, layers, hidden_dim = load_model(
+        MODEL_NAME, device=args.device, dtype=args.dtype)
+    print(f"[INFO] Model loaded: hidden_dim={hidden_dim}, layers={len(layers)}, "
+          f"target_layers={TARGET_LAYERS}")
 
-    # Initialize neural capture
-    capture = NeuralCapture(layers, TARGET_LAYERS, hidden_dim)
+    # Initialize neural capture (GPU-resident accumulation)
+    capture = NeuralCapture(layers, TARGET_LAYERS, hidden_dim, device=args.device)
 
     try:
         summary = run_sweep(
@@ -973,6 +1126,8 @@ def main() -> None:
             output_dir=output_dir,
             max_gen_tokens=args.max_gen_tokens,
             temperature=args.temperature,
+            batch_size=args.batch_size,
+            enable_thinking=enable_thinking,
         )
         print(f"\n[DONE] Sweep complete:")
         print(f"  Total tokens: {summary['total_tokens']:,}")

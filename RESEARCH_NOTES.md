@@ -2903,3 +2903,118 @@ ETA: ~3 hours
 ### Prediction
 
 At lower alphas (2-4), sarcasm should NOT be saturated, revealing differences between original vs purified vs compound vectors. Compound should show best math preservation due to explicit orthogonalization against math/code/science/analytical.
+
+---
+
+## 62. SAE Trial — Qwen3-VL-8B (2026-02-28)
+
+Report: `reports/sae_8b_trial_report.md`
+
+TopK SAEs (16× expansion, k=64) trained on 4 layers at 20K steps:
+
+| Layer | FVE | Alive Features | Utilization |
+|-------|-----|----------------|-------------|
+| L09 (Identity) | 97.7% | 76.5% | Concentrated: dim 994 dominates |
+| L15 | 96.2% | 28.3% | |
+| L22 (Personality hub) | 95.3% | 17.1% | 82.8% dead — highly entangled |
+| L29 (Champion steering) | 94.9% | 14.6% | Most entangled of all layers |
+
+Key finding: **Deep layers resist SAE decomposition** at 8B scale. L22/L29 have 83-85% dead features, meaning the 16× expansion ratio is insufficient to untangle the distributed personality representations. By contrast, L09 has concentrated signals (dim 994) that decompose cleanly. The 8B SAEs at 20K steps significantly underperform 27B SAEs at 50K steps (see §66), suggesting both longer training and larger hidden dimensions improve SAE quality.
+
+---
+
+## 63. GS-Protected Abliteration — 8B Rationale (2026-02-28)
+
+Report: `reports/gs_abliteration_8b_rationale.md`
+
+Pivoted from 27B (no safety-capability entanglement: max cosine 0.037) to 8B, which has **massive entanglement** (Refusal×Code = 0.339, 11.5% shared variance). This tests the **Superposition Hypothesis** applied to alignment: smaller models lack capacity to isolate refusal from capabilities.
+
+5-condition design: C0 (baseline), C1 (sloppy 32-pair mean-diff), C2 (raw connectome), C3 (GS-protected), C4 (surgical L15-L22 only). Results in §56: connectome direction INCREASES refusal; sloppy mean-diff wins (0% refusal). Representational ≠ behavioral directions.
+
+---
+
+## 64. Phase-Aware CoT Steering — Base Model (2026-02-28)
+
+Report: `reports/phase_aware_cot_steering_report.md`
+
+Tested whether steering can be toggled at the `<think>`/`</think>` boundary on Qwen3-VL-8B-Thinking:
+
+| Condition | Math | Sarcasm | Assistant | Knowledge |
+|-----------|------|---------|-----------|-----------|
+| **C3 (V4 only)** | **100%** | **100%** | **0%** | 80% |
+| C1 (static α=8) | 93.3% | 100% | 0% | 70% |
+| C2 (phase-aware) | 93.3% | 100% | 0% | 80% |
+
+**Key insight**: The Thinking model renders steering vectors redundant — V4 prompt alone saturates sarcasm to 100%. Phase-aware steering HURTS math by 6.7pp due to representational shock at the discontinuous alpha transition at `</think>`. The `<think>` mechanism already provides natural phase separation. **n=15 — directionally confident but not publication-grade.**
+
+---
+
+## 65. Phase-Aware CoT Steering — Abliterated Model (2026-03-01)
+
+Report: `reports/phase_aware_abliterated_report.md`
+
+Preliminary (n=15): Possible **condition preference reversal** — base model prefers C3 (V4 only), abliterated model may prefer C2 (phase-aware). If confirmed, suggests safety training interacts with the `<think>` phase mechanism. Two hypotheses: (A) safety is an emergent regularizer that phase-aware steering compensates for when removed, or (B) thinking behavior was conditioned on safety being present. **Underpowered — needs n=50+ with GSM8K before any claims.**
+
+---
+
+## 66. SAE Training — Qwen3.5-27B L50 + L44 (2026-03-01)
+
+Report: `reports/sae_27b_training_report.md`
+
+TopK SAEs (16× expansion, d_sae=81,920, k=64) trained at 50K steps on RTX PRO 6000:
+
+| Layer | FVE | Alive Features | MSE | Training Time |
+|-------|-----|----------------|-----|---------------|
+| L50 (super-hub) | 94.5% | 95.2% | 0.055 | 5h 36m |
+| L44 (sarcasm/brevity) | 96.5% | 95.4% | 0.035 | 4h 18m |
+
+**L44 outperforms L50**: 36-38% lower MSE at every checkpoint. L50's difficulty reflects its role as convergence point for 7/20 categories (super-hub dim 2028). Feature revival cascade at L50 steps 7K-25K revived 60,612 dead features. **27B SAEs vastly outperform 8B** (4.6% dead vs 83-85% dead) — longer training + better capacity matching.
+
+---
+
+## 67. SAE-Connectome Alignment Analysis (2026-03-01)
+
+Report: `reports/sae_connectome_alignment_report.md`
+
+Computed cosine similarity between 20 connectome z-score vectors and 81,920 SAE decoder columns:
+
+**Key results:**
+- **Monosemanticity**: L44 = 94/100 top-5 features monosemantic; L50 = 75/100. L44 is the cleaner layer.
+- **Verbosity: Brief strongest alignment**: cos=0.672 at L44 — confirms connectome's dim 526 is quasi-monosemantic.
+- **Dim 2028 PARTIAL decomposition**: Bipolar axis discovered — Sadness/Fear features load positively while Math/Code/Formal features load negatively on the super-hub neuron. What appeared polysemantic is actually opposite-sign encoding.
+- **Code remains entangled**: max cos=0.184 even at 16× expansion. Either genuinely distributed or in superposition.
+- **L50 stronger for**: Formal (0.498), Authority (0.435). **L44 stronger for**: Sarcasm (0.488), Brief (0.672), Fear (0.487).
+
+---
+
+## 68. 8B Personality Sweep — Factorial Big Five Grid (2026-03-01)
+
+Report: `reports/personality_sweep_8b_report.md`
+
+192 characters (3^5 Big Five grid + journal seeds) × 60 prompts = 11,520 responses, 5.9M tokens on Qwen3-VL-8B-Thinking. **All activations are from `<think>` phase only** (512 tokens insufficient for model to reach `</think>`).
+
+**Solid findings:**
+- Entropy: O/C → lower entropy (systematic), A → higher entropy (hedging), E = zero effect
+- Big Five directions NOT orthogonal: **O↔C = -0.430**, O↔N = +0.357, A↔N = +0.293
+- Personality is massively distributed: **55-69% of neurons** survive Bonferroni (median |d|≈0.2)
+- Factorial structure accounts for combo-mean variance in ~20 PCs (= 5 main effects + 10 pairwise interactions)
+
+**Pre-whitening Cohen's d (L22):** E=1.83, A=1.63, N=1.38, O=1.30, C=0.91. Signal increases L09→L29 for all dimensions, with jump between L15-L22 (7-layer window, cannot pinpoint hub).
+
+**Pending:** FineFineWeb baseline (50K samples, running) will determine how much d-values drop after whitening — this is the single most important test of whether the personality geometry story holds.
+
+---
+
+## 69. Sycophancy Probe — 8B & 27B (2026-02-28)
+
+Report: `reports/sycophancy_probe_report.md`
+
+3 experiments (leading wrong, bad opinions, pushback resistance) × 3 conditions (none, V4, honest) on both 8B and 27B:
+
+- **27B**: 0% sycophancy across all conditions for EXP2/EXP3; 1/10 with V4 in EXP1 (elaborate sarcasm substituted for correction)
+- **8B**: 20% sycophancy rate with V4 in EXP1 (physics, biology errors uncorrected), 0% with none/honest
+- **8B is 2× more sycophantic than 27B under V4** (20% vs 10%)
+- **Mechanism**: Sycophancy = character voice overriding factual correction, not traditional people-pleasing
+- **Direction correlations**: Sycophancy correlates most with **Sarcastic** (0.22-0.27), NOT Polite/Positive — anti-correlates with Authority/Analytical
+
+**Limitations**: Very few sycophantic examples (1-2 per condition), n=10 per experiment, keyword-based scoring ambiguity. Directional only.

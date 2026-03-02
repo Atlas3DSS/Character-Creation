@@ -163,6 +163,10 @@ fullrank_spectral/
 spectral_prompts/
 magnitude_calibrated_results/
 
+# ─── Activation data (large, reproducible from sweep scripts) ───
+activations_baseline/
+sweep_output/
+
 # ─── Temp ───
 /tmp/
 *.tmp

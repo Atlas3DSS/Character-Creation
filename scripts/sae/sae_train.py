@@ -309,10 +309,11 @@ def load_checkpoint(
         training_log = []
 
     if "rng_state_cpu" in ckpt and isinstance(ckpt["rng_state_cpu"], torch.Tensor):
-        torch.set_rng_state(ckpt["rng_state_cpu"])
+        torch.set_rng_state(ckpt["rng_state_cpu"].to(dtype=torch.uint8, device="cpu"))
     if torch.cuda.is_available() and "rng_state_cuda" in ckpt:
         cuda_state = ckpt["rng_state_cuda"]
         if isinstance(cuda_state, list):
+            cuda_state = [s.to(dtype=torch.uint8, device="cpu") if isinstance(s, torch.Tensor) else s for s in cuda_state]
             torch.cuda.set_rng_state_all(cuda_state)
 
     step = int(ckpt.get("step", 0))
