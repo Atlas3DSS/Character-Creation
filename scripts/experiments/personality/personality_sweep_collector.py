@@ -534,16 +534,45 @@ def load_model(model_name: str, device: str = "cuda:0", dtype: str = "bfloat16")
     return model, processor, layers, hidden_dim
 
 
+# ── Token boundary helpers ──────────────────────────────────
+
+def _resolve_eos_token_ids(processor: Any) -> set[int]:
+    eos_token_id: Any = None
+    if hasattr(processor, "tokenizer") and hasattr(processor.tokenizer, "eos_token_id"):
+        eos_token_id = processor.tokenizer.eos_token_id
+    elif hasattr(processor, "eos_token_id"):
+        eos_token_id = processor.eos_token_id
+
+    if eos_token_id is None:
+        return set()
+    if isinstance(eos_token_id, (list, tuple, set)):
+        return {int(x) for x in eos_token_id if x is not None}
+    return {int(eos_token_id)}
+
+
+def _effective_generated_length(
+    gen_ids: torch.Tensor,
+    pad_token_id: int | None,
+    eos_token_ids: set[int],
+) -> int:
+    ids = gen_ids.detach().to("cpu").tolist()
+    pad_is_distinct = (
+        pad_token_id is not None
+        and (not eos_token_ids or int(pad_token_id) not in eos_token_ids)
+    )
+
+    for pos, tok in enumerate(ids):
+        if eos_token_ids and int(tok) in eos_token_ids:
+            return pos + 1  # include first EOS token
+        if pad_is_distinct and int(tok) == int(pad_token_id):
+            return pos  # exclude padding
+    return len(ids)
+
+
 # ── Neural Data Capture ─────────────────────────────────────
 
 class NeuralCapture:
-    """Captures mean activations during batched generation — GPU-resident accumulation.
-
-    Accumulates on GPU to avoid per-step GPU→CPU sync overhead. Only transfers
-    to CPU at get_results() time (once per batch item per layer).
-    Uses per-layer step counters since hooks fire layer-by-layer within a single
-    forward pass.
-    """
+    """Captures mean activations during batched generation — GPU-resident buffering."""
 
     def __init__(
         self,
@@ -559,12 +588,16 @@ class NeuralCapture:
 
         self._batch_size: int = 1
         self._prefill_len: int = 0
-        # Per-layer step counters (each hook independently tracks position)
         self._step_counters: dict[int, int] = {}
-        # GPU-resident accumulators: [batch_size, hidden_dim] per layer
+
         self._gen_act_sums: dict[int, torch.Tensor] = {}
         self._gen_act_counts: dict[int, torch.Tensor] = {}
         self._last_token_acts: dict[int, torch.Tensor] = {}
+
+        # FIX #1: post-EOS contamination — store per-step activations and
+        # finalize with true sequence lengths after generation.
+        self._gen_step_acts: dict[int, list[torch.Tensor]] = {}
+        self._finalized: bool = False
 
         self._hooks: list[torch.utils.hooks.RemovableHandle] = []
         self._register_hooks()
@@ -583,18 +616,13 @@ class NeuralCapture:
             seq_len = int(hidden.shape[1])
             start_pos = self._step_counters.get(layer_idx, 0)
 
-            # First generation-token index within this chunk
             gen_start = max(0, self._prefill_len - start_pos)
 
             if gen_start < seq_len:
                 B = min(int(hidden.shape[0]), self._batch_size)
-                # Vectorized: slice all gen tokens at once [B, n_gen, H]
-                gen_acts = hidden[:B, gen_start:].detach().float()
-                n_new = gen_acts.shape[1]
-
-                self._gen_act_sums[layer_idx][:B] += gen_acts.sum(dim=1)
-                self._gen_act_counts[layer_idx][:B] += n_new
-                self._last_token_acts[layer_idx][:B] = gen_acts[:, -1]
+                gen_acts = hidden[:B, gen_start:].detach().to(dtype=torch.float16)
+                if gen_acts.shape[1] > 0:
+                    self._gen_step_acts[layer_idx].append(gen_acts)
 
             self._step_counters[layer_idx] = start_pos + seq_len
 
@@ -605,17 +633,75 @@ class NeuralCapture:
         self._batch_size = batch_size
         self._prefill_len = prefill_len
         self._step_counters = {idx: 0 for idx in self.target_indices}
+        self._finalized = False
 
         for idx in self.target_indices:
+            self._gen_step_acts[idx] = []
             self._gen_act_sums[idx] = torch.zeros(
-                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32)
+                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32
+            )
             self._gen_act_counts[idx] = torch.zeros(
-                batch_size, device=self.device, dtype=torch.float32)
+                batch_size, device=self.device, dtype=torch.float32
+            )
             self._last_token_acts[idx] = torch.zeros(
-                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32)
+                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32
+            )
+
+    def finalize(self, gen_lengths: list[int]) -> None:
+        """Finalize per-sample stats using true generated lengths."""
+        lengths = [max(0, int(x)) for x in gen_lengths]
+        if len(lengths) < self._batch_size:
+            lengths.extend([0] * (self._batch_size - len(lengths)))
+        elif len(lengths) > self._batch_size:
+            lengths = lengths[:self._batch_size]
+
+        for idx in self.target_indices:
+            sums = torch.zeros(
+                self._batch_size, self.hidden_dim, device=self.device, dtype=torch.float32
+            )
+            counts = torch.zeros(
+                self._batch_size, device=self.device, dtype=torch.float32
+            )
+            last = torch.zeros(
+                self._batch_size, self.hidden_dim, device=self.device, dtype=torch.float32
+            )
+
+            processed = [0] * self._batch_size
+            chunks = self._gen_step_acts.get(idx, [])
+            for chunk in chunks:
+                if chunk.ndim != 3:
+                    continue
+                Bc = min(int(chunk.shape[0]), self._batch_size)
+                n_new = int(chunk.shape[1])
+                if n_new <= 0:
+                    continue
+
+                for b in range(Bc):
+                    remaining = lengths[b] - processed[b]
+                    if remaining <= 0:
+                        continue
+                    take = min(remaining, n_new)
+                    if take <= 0:
+                        continue
+                    part = chunk[b, :take]
+                    sums[b] += part.sum(dim=0, dtype=torch.float32)
+                    counts[b] += float(take)
+                    last[b] = part[take - 1].to(dtype=torch.float32)
+                    processed[b] += take
+
+            self._gen_act_sums[idx] = sums
+            self._gen_act_counts[idx] = counts
+            self._last_token_acts[idx] = last
+            self._gen_step_acts[idx] = []
+
+        self._finalized = True
 
     def get_results(self, batch_idx: int = 0) -> dict[str, Any]:
         """Get mean and last-token activations for a specific batch item. Transfers to CPU."""
+        if not self._finalized:
+            # FIX #1: fallback for backward compatibility if finalize() was not called.
+            self.finalize([2**31 - 1] * self._batch_size)
+
         result: dict[str, Any] = {}
         for idx in self.target_indices:
             count = int(self._gen_act_counts[idx][batch_idx].item())
@@ -635,9 +721,11 @@ class NeuralCapture:
         for h in self._hooks:
             h.remove()
         self._hooks.clear()
+        self._gen_step_acts.clear()
         self._gen_act_sums.clear()
         self._gen_act_counts.clear()
         self._last_token_acts.clear()
+        self._finalized = False
 
 
 # ── Sweep Execution ─────────────────────────────────────────
@@ -708,13 +796,16 @@ def _process_single_output(
 
     Returns (gen_text, think_text, response_text, n_gen_tokens, mean_entropy).
     """
-    # Strip padding from generated tokens
-    gen_ids = gen_ids[gen_ids != pad_token_id]
-    n_gen = len(gen_ids)
+    # FIX #2: pad/eos collision — trim by first EOS position (not value filtering).
+    eos_token_ids = _resolve_eos_token_ids(processor)
+    trim_len = _effective_generated_length(gen_ids, pad_token_id, eos_token_ids)
+    gen_ids = gen_ids[:trim_len]
+    gen_id_list = gen_ids.detach().to("cpu").tolist()
+    n_gen = len(gen_id_list)
 
     # Decode WITH special tokens first to find <think>/</ think> boundaries
-    gen_text_raw = processor.decode(gen_ids, skip_special_tokens=False)
-    gen_text = processor.decode(gen_ids, skip_special_tokens=True)
+    gen_text_raw = processor.decode(gen_id_list, skip_special_tokens=False)
+    gen_text = processor.decode(gen_id_list, skip_special_tokens=True)
 
     # Split think/response using raw text (preserves <think> tags)
     think_text = ""
@@ -761,14 +852,17 @@ def run_sweep(
     activations_dir = output_dir / "activations"
     responses_dir.mkdir(parents=True, exist_ok=True)
 
+    # FIX #3: use capture.target_indices (not module-global TARGET_LAYERS) within run_sweep.
+    active_layers = list(capture.target_indices)
+
     # Create activation shard directories
-    for idx in TARGET_LAYERS:
+    for idx in active_layers:
         (activations_dir / f"L{idx:02d}").mkdir(parents=True, exist_ok=True)
 
     # Accumulate activation tensors for periodic shard writing
-    act_buffers: dict[int, list[torch.Tensor]] = {idx: [] for idx in TARGET_LAYERS}
-    act_meta: dict[int, list[dict[str, Any]]] = {idx: [] for idx in TARGET_LAYERS}
-    shard_counts: dict[int, int] = {idx: 0 for idx in TARGET_LAYERS}
+    act_buffers: dict[int, list[torch.Tensor]] = {idx: [] for idx in active_layers}
+    act_meta: dict[int, list[dict[str, Any]]] = {idx: [] for idx in active_layers}
+    shard_counts: dict[int, int] = {idx: 0 for idx in active_layers}
     SHARD_SIZE = 5000
 
     total_tokens = 0
@@ -785,6 +879,8 @@ def run_sweep(
         pad_token_id = 0
     if hasattr(processor, "padding_side"):
         processor.padding_side = "left"
+
+    eos_token_ids = _resolve_eos_token_ids(processor)
 
     print(f"[INFO] Batch size: {batch_size} | Padding: left | Device: {model_device}")
 
@@ -836,6 +932,16 @@ def run_sweep(
                     # Extract per-item logits: outputs.logits is tuple of [B, vocab]
                     has_logits = hasattr(outputs, "logits") and outputs.logits
 
+                    # FIX #1: finalize activation stats using true per-sample generation lengths.
+                    gen_lengths = []
+                    for i in range(B):
+                        raw_gen_ids = outputs.sequences[i][padded_input_len:]
+                        gen_len = _effective_generated_length(
+                            raw_gen_ids, pad_token_id, eos_token_ids
+                        )
+                        gen_lengths.append(gen_len)
+                    capture.finalize(gen_lengths)
+
                     for i, (cat, prompt) in enumerate(batch_prompts):
                         gen_ids = outputs.sequences[i][padded_input_len:]
 
@@ -856,7 +962,7 @@ def run_sweep(
                         neural = capture.get_results(batch_idx=i)
 
                         # Store mean activations for sharding
-                        for idx in TARGET_LAYERS:
+                        for idx in active_layers:
                             mean_key = f"L{idx:02d}_mean"
                             if mean_key in neural and isinstance(neural[mean_key], torch.Tensor):
                                 act_buffers[idx].append(neural[mean_key])
@@ -904,7 +1010,7 @@ def run_sweep(
                     continue
 
         # Flush activation shards periodically
-        for idx in TARGET_LAYERS:
+        for idx in active_layers:
             if len(act_buffers[idx]) >= SHARD_SIZE:
                 _write_act_shard(activations_dir, idx, act_buffers[idx], act_meta[idx],
                                  shard_counts[idx])
@@ -920,7 +1026,7 @@ def run_sweep(
             torch.cuda.empty_cache()
 
     # Flush remaining
-    for idx in TARGET_LAYERS:
+    for idx in active_layers:
         if act_buffers[idx]:
             _write_act_shard(activations_dir, idx, act_buffers[idx], act_meta[idx],
                              shard_counts[idx])
@@ -932,7 +1038,7 @@ def run_sweep(
         "n_prompts_per_char": len(prompts),
         "timestamp": datetime.now().isoformat(),
         "model": MODEL_NAME,
-        "target_layers": TARGET_LAYERS,
+        "target_layers": active_layers,
         "batch_size": batch_size,
         "mean_entropy_by_b5": {
             k: round(sum(v) / len(v), 4) for k, v in stats_by_b5.items() if v
@@ -953,10 +1059,26 @@ def _write_act_shard(
     """Write activation shard to disk."""
     layer_dir = activations_dir / f"L{layer_idx:02d}"
     stacked = torch.stack(tensors, dim=0)
-    torch.save(stacked, layer_dir / f"mean_shard_{shard_num:04d}.pt")
-    with (layer_dir / f"mean_shard_{shard_num:04d}_meta.jsonl").open("w", encoding="utf-8") as f:
-        for m in metas:
-            f.write(json.dumps(m, ensure_ascii=False) + "\n")
+
+    final_pt = layer_dir / f"mean_shard_{shard_num:04d}.pt"
+    final_meta = layer_dir / f"mean_shard_{shard_num:04d}_meta.jsonl"
+    tmp_pt = layer_dir / f"mean_shard_{shard_num:04d}.pt.tmp"
+    tmp_meta = layer_dir / f"mean_shard_{shard_num:04d}_meta.jsonl.tmp"
+
+    # FIX #5: atomic shard writes (.tmp + os.replace) to avoid partial-file corruption.
+    try:
+        torch.save(stacked, tmp_pt)
+        with tmp_meta.open("w", encoding="utf-8") as f:
+            for m in metas:
+                f.write(json.dumps(m, ensure_ascii=False) + "\n")
+        os.replace(tmp_pt, final_pt)
+        os.replace(tmp_meta, final_meta)
+    except Exception:
+        if tmp_pt.exists():
+            tmp_pt.unlink(missing_ok=True)
+        if tmp_meta.exists():
+            tmp_meta.unlink(missing_ok=True)
+        raise
 
 
 # ── Main ────────────────────────────────────────────────────
@@ -1112,7 +1234,7 @@ def main() -> None:
     print(f"[INFO] Model loaded: hidden_dim={hidden_dim}, layers={len(layers)}, "
           f"target_layers={TARGET_LAYERS}")
 
-    # Initialize neural capture (GPU-resident accumulation)
+    # Initialize neural capture (GPU-resident buffering)
     capture = NeuralCapture(layers, TARGET_LAYERS, hidden_dim, device=args.device)
 
     try:

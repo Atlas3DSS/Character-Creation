@@ -107,10 +107,45 @@ def load_model(model_name: str, device: str = "cuda:0", dtype: str = "bfloat16")
     return model, processor, layers, hidden_dim
 
 
-# ── Neural Data Capture (identical to personality_sweep_collector) ─
+# ── Token boundary helpers ──────────────────────────────────
+
+def _resolve_eos_token_ids(processor: Any) -> set[int]:
+    eos_token_id: Any = None
+    if hasattr(processor, "tokenizer") and hasattr(processor.tokenizer, "eos_token_id"):
+        eos_token_id = processor.tokenizer.eos_token_id
+    elif hasattr(processor, "eos_token_id"):
+        eos_token_id = processor.eos_token_id
+
+    if eos_token_id is None:
+        return set()
+    if isinstance(eos_token_id, (list, tuple, set)):
+        return {int(x) for x in eos_token_id if x is not None}
+    return {int(eos_token_id)}
+
+
+def _effective_generated_length(
+    gen_ids: torch.Tensor,
+    pad_token_id: int | None,
+    eos_token_ids: set[int],
+) -> int:
+    ids = gen_ids.detach().to("cpu").tolist()
+    pad_is_distinct = (
+        pad_token_id is not None
+        and (not eos_token_ids or int(pad_token_id) not in eos_token_ids)
+    )
+
+    for pos, tok in enumerate(ids):
+        if eos_token_ids and int(tok) in eos_token_ids:
+            return pos + 1  # include first EOS token
+        if pad_is_distinct and int(tok) == int(pad_token_id):
+            return pos  # exclude padding
+    return len(ids)
+
+
+# ── Neural Data Capture (identical interface to personality_sweep_collector) ─
 
 class NeuralCapture:
-    """GPU-resident batched activation capture — same as personality sweep."""
+    """GPU-resident batched activation capture — same interface as personality sweep."""
 
     def __init__(
         self,
@@ -127,9 +162,15 @@ class NeuralCapture:
         self._batch_size: int = 1
         self._prefill_len: int = 0
         self._step_counters: dict[int, int] = {}
+
         self._gen_act_sums: dict[int, torch.Tensor] = {}
         self._gen_act_counts: dict[int, torch.Tensor] = {}
         self._last_token_acts: dict[int, torch.Tensor] = {}
+
+        # FIX #1: post-EOS contamination — buffer per-step activations per layer
+        # and finalize with true per-sample generation lengths after generate().
+        self._gen_step_acts: dict[int, list[torch.Tensor]] = {}
+        self._finalized: bool = False
 
         self._hooks: list[torch.utils.hooks.RemovableHandle] = []
         self._register_hooks()
@@ -151,12 +192,9 @@ class NeuralCapture:
 
             if gen_start < seq_len:
                 B = min(int(hidden.shape[0]), self._batch_size)
-                gen_acts = hidden[:B, gen_start:].detach().float()
-                n_new = gen_acts.shape[1]
-
-                self._gen_act_sums[layer_idx][:B] += gen_acts.sum(dim=1)
-                self._gen_act_counts[layer_idx][:B] += n_new
-                self._last_token_acts[layer_idx][:B] = gen_acts[:, -1]
+                gen_acts = hidden[:B, gen_start:].detach().to(dtype=torch.float16)
+                if gen_acts.shape[1] > 0:
+                    self._gen_step_acts[layer_idx].append(gen_acts)
 
             self._step_counters[layer_idx] = start_pos + seq_len
 
@@ -166,16 +204,74 @@ class NeuralCapture:
         self._batch_size = batch_size
         self._prefill_len = prefill_len
         self._step_counters = {idx: 0 for idx in self.target_indices}
+        self._finalized = False
 
         for idx in self.target_indices:
+            self._gen_step_acts[idx] = []
             self._gen_act_sums[idx] = torch.zeros(
-                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32)
+                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32
+            )
             self._gen_act_counts[idx] = torch.zeros(
-                batch_size, device=self.device, dtype=torch.float32)
+                batch_size, device=self.device, dtype=torch.float32
+            )
             self._last_token_acts[idx] = torch.zeros(
-                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32)
+                batch_size, self.hidden_dim, device=self.device, dtype=torch.float32
+            )
+
+    def finalize(self, gen_lengths: list[int]) -> None:
+        """Finalize per-sample stats using true generated lengths."""
+        lengths = [max(0, int(x)) for x in gen_lengths]
+        if len(lengths) < self._batch_size:
+            lengths.extend([0] * (self._batch_size - len(lengths)))
+        elif len(lengths) > self._batch_size:
+            lengths = lengths[:self._batch_size]
+
+        for idx in self.target_indices:
+            sums = torch.zeros(
+                self._batch_size, self.hidden_dim, device=self.device, dtype=torch.float32
+            )
+            counts = torch.zeros(
+                self._batch_size, device=self.device, dtype=torch.float32
+            )
+            last = torch.zeros(
+                self._batch_size, self.hidden_dim, device=self.device, dtype=torch.float32
+            )
+
+            processed = [0] * self._batch_size
+            chunks = self._gen_step_acts.get(idx, [])
+            for chunk in chunks:
+                if chunk.ndim != 3:
+                    continue
+                Bc = min(int(chunk.shape[0]), self._batch_size)
+                n_new = int(chunk.shape[1])
+                if n_new <= 0:
+                    continue
+
+                for b in range(Bc):
+                    remaining = lengths[b] - processed[b]
+                    if remaining <= 0:
+                        continue
+                    take = min(remaining, n_new)
+                    if take <= 0:
+                        continue
+                    part = chunk[b, :take]
+                    sums[b] += part.sum(dim=0, dtype=torch.float32)
+                    counts[b] += float(take)
+                    last[b] = part[take - 1].to(dtype=torch.float32)
+                    processed[b] += take
+
+            self._gen_act_sums[idx] = sums
+            self._gen_act_counts[idx] = counts
+            self._last_token_acts[idx] = last
+            self._gen_step_acts[idx] = []
+
+        self._finalized = True
 
     def get_results(self, batch_idx: int = 0) -> dict[str, Any]:
+        if not self._finalized:
+            # FIX #1: fallback retains old behavior if caller forgets finalize().
+            self.finalize([2**31 - 1] * self._batch_size)
+
         result: dict[str, Any] = {}
         for idx in self.target_indices:
             count = int(self._gen_act_counts[idx][batch_idx].item())
@@ -195,9 +291,11 @@ class NeuralCapture:
         for h in self._hooks:
             h.remove()
         self._hooks.clear()
+        self._gen_step_acts.clear()
         self._gen_act_sums.clear()
         self._gen_act_counts.clear()
         self._last_token_acts.clear()
+        self._finalized = False
 
 
 # ── Dataset Sampling ────────────────────────────────────────
@@ -210,29 +308,38 @@ def sample_finefineweb_stratified(
 ) -> list[dict[str, str]]:
     """Stream FineFineWeb and stratified-sample across domains.
 
-    Strategy: compute per-domain quota (n_samples / n_domains), stream
-    through dataset taking texts until each domain quota is met. Texts
-    are truncated to max_text_words to keep generation time bounded.
+    Strategy: compute per-domain quota, stream through dataset taking texts
+    until each domain quota is met. Texts are truncated to max_text_words to
+    keep generation time bounded.
     """
     from datasets import load_dataset
 
     rng = random.Random(seed)
     n_domains = len(FINEFINEWEB_DOMAINS)
-    per_domain = max(1, n_samples // n_domains)
-    # Some domains may have fewer texts; we'll overshoot slightly on others
+
+    # FIX #4: stratified remainder handling (distribute remainder across first N domains).
+    base_per_domain = n_samples // n_domains
+    remainder = n_samples % n_domains
+    domain_targets: dict[str, int] = {
+        d: base_per_domain + (1 if i < remainder else 0)
+        for i, d in enumerate(FINEFINEWEB_DOMAINS)
+    }
+
     target_total = n_samples
 
-    print(f"[INFO] Stratified sampling: {n_samples} texts across {n_domains} domains "
-          f"(~{per_domain}/domain)")
+    print(
+        f"[INFO] Stratified sampling: {n_samples} texts across {n_domains} domains "
+        f"(base={base_per_domain}, remainder={remainder})"
+    )
     print(f"[INFO] Text length filter: {min_text_words}-{max_text_words} words")
 
     domain_buckets: dict[str, list[dict[str, str]]] = {d: [] for d in FINEFINEWEB_DOMAINS}
-    domains_full = set()
+    domains_full = {d for d, quota in domain_targets.items() if quota <= 0}
 
     ds = load_dataset("m-a-p/FineFineWeb", split="train", streaming=True)
     # Shuffle with buffer to avoid domain-sorted bias
     # Large buffer for good cross-domain mixing (dataset is sorted by domain)
-    shuffle_buf = min(100_000, n_samples * 5)
+    shuffle_buf = min(100_000, max(1, n_samples * 5))
     ds = ds.shuffle(seed=seed, buffer_size=shuffle_buf)
 
     scanned = 0
@@ -263,7 +370,7 @@ def sample_finefineweb_stratified(
         })
         collected += 1
 
-        if len(domain_buckets[domain]) >= per_domain:
+        if len(domain_buckets[domain]) >= domain_targets.get(domain, 0):
             domains_full.add(domain)
 
         if collected >= target_total:
@@ -276,15 +383,20 @@ def sample_finefineweb_stratified(
 
     # Flatten and shuffle
     samples = []
-    for domain, texts in domain_buckets.items():
+    for _domain, texts in domain_buckets.items():
         samples.extend(texts)
     rng.shuffle(samples)
 
     domain_counts = Counter(s["domain"] for s in samples)
     print(f"[INFO] Collected {len(samples)} samples from {len(domain_counts)} domains")
-    print(f"[INFO] Domain distribution: min={min(domain_counts.values())}, "
-          f"max={max(domain_counts.values())}, "
-          f"mean={sum(domain_counts.values())/len(domain_counts):.1f}")
+    if domain_counts:
+        print(
+            f"[INFO] Domain distribution: min={min(domain_counts.values())}, "
+            f"max={max(domain_counts.values())}, "
+            f"mean={sum(domain_counts.values())/len(domain_counts):.1f}"
+        )
+    else:
+        print("[WARN] Domain distribution unavailable (no samples collected)")
 
     return samples
 
@@ -315,13 +427,17 @@ def _process_single_output(
 ) -> tuple[str, str, str, int, float]:
     """Decode one generated sequence, split think/response, compute entropy.
 
-    Identical to personality_sweep_collector._process_single_output.
+    Identical output contract to personality_sweep_collector._process_single_output.
     """
-    gen_ids = gen_ids[gen_ids != pad_token_id]
-    n_gen = len(gen_ids)
+    # FIX #2: pad/eos collision — trim by first EOS position (not value filtering).
+    eos_token_ids = _resolve_eos_token_ids(processor)
+    trim_len = _effective_generated_length(gen_ids, pad_token_id, eos_token_ids)
+    gen_ids = gen_ids[:trim_len]
+    gen_id_list = gen_ids.detach().to("cpu").tolist()
+    n_gen = len(gen_id_list)
 
-    gen_text_raw = processor.decode(gen_ids, skip_special_tokens=False)
-    gen_text = processor.decode(gen_ids, skip_special_tokens=True)
+    gen_text_raw = processor.decode(gen_id_list, skip_special_tokens=False)
+    gen_text = processor.decode(gen_id_list, skip_special_tokens=True)
 
     think_text = ""
     response_text = gen_text
@@ -355,10 +471,26 @@ def _write_act_shard(
     """Write activation shard — same format as personality sweep."""
     layer_dir = activations_dir / f"L{layer_idx:02d}"
     stacked = torch.stack(tensors, dim=0)
-    torch.save(stacked, layer_dir / f"mean_shard_{shard_num:04d}.pt")
-    with (layer_dir / f"mean_shard_{shard_num:04d}_meta.jsonl").open("w", encoding="utf-8") as f:
-        for m in metas:
-            f.write(json.dumps(m, ensure_ascii=False) + "\n")
+
+    final_pt = layer_dir / f"mean_shard_{shard_num:04d}.pt"
+    final_meta = layer_dir / f"mean_shard_{shard_num:04d}_meta.jsonl"
+    tmp_pt = layer_dir / f"mean_shard_{shard_num:04d}.pt.tmp"
+    tmp_meta = layer_dir / f"mean_shard_{shard_num:04d}_meta.jsonl.tmp"
+
+    # FIX #5: atomic shard writes (.tmp + os.replace) to avoid partial-file corruption.
+    try:
+        torch.save(stacked, tmp_pt)
+        with tmp_meta.open("w", encoding="utf-8") as f:
+            for m in metas:
+                f.write(json.dumps(m, ensure_ascii=False) + "\n")
+        os.replace(tmp_pt, final_pt)
+        os.replace(tmp_meta, final_meta)
+    except Exception:
+        if tmp_pt.exists():
+            tmp_pt.unlink(missing_ok=True)
+        if tmp_meta.exists():
+            tmp_meta.unlink(missing_ok=True)
+        raise
 
 
 def run_baseline_collection(
@@ -396,6 +528,8 @@ def run_baseline_collection(
     if hasattr(processor, "padding_side"):
         processor.padding_side = "left"
 
+    eos_token_ids = _resolve_eos_token_ids(processor)
+
     total_tokens = 0
     total_samples = 0
     domain_entropies: dict[str, list[float]] = {}
@@ -403,108 +537,115 @@ def run_baseline_collection(
     print(f"[INFO] Batch size: {batch_size} | Padding: left | Device: {model_device}")
     print(f"[INFO] Processing {len(samples)} samples...")
 
-    # Open texts log
-    texts_fh = texts_file.open("w", encoding="utf-8")
+    # FIX #6: ensure texts_fh is closed on exception via context manager.
+    with texts_file.open("w", encoding="utf-8") as texts_fh:
+        pbar = tqdm(range(0, len(samples), batch_size), desc="Baseline batches")
+        for batch_start in pbar:
+            batch = samples[batch_start:batch_start + batch_size]
+            B = len(batch)
 
-    pbar = tqdm(range(0, len(samples), batch_size), desc="Baseline batches")
-    for batch_start in pbar:
-        batch = samples[batch_start:batch_start + batch_size]
-        B = len(batch)
+            texts = [_template_baseline(processor, s["text"]) for s in batch]
 
-        texts = [_template_baseline(processor, s["text"]) for s in batch]
+            inputs = processor(
+                text=texts, return_tensors="pt", padding=True,
+            ).to(model_device)
 
-        inputs = processor(
-            text=texts, return_tensors="pt", padding=True,
-        ).to(model_device)
+            padded_input_len = int(inputs["input_ids"].shape[1])
+            capture.reset(prefill_len=padded_input_len, batch_size=B)
 
-        padded_input_len = int(inputs["input_ids"].shape[1])
-        capture.reset(prefill_len=padded_input_len, batch_size=B)
+            try:
+                with torch.no_grad():
+                    outputs = model.generate(
+                        **inputs,
+                        max_new_tokens=max_gen_tokens,
+                        temperature=temperature,
+                        top_p=0.95,
+                        top_k=20,
+                        do_sample=True,
+                        repetition_penalty=1.05,
+                        return_dict_in_generate=True,
+                        output_logits=True,
+                    )
 
-        try:
-            with torch.no_grad():
-                outputs = model.generate(
-                    **inputs,
-                    max_new_tokens=max_gen_tokens,
-                    temperature=temperature,
-                    top_p=0.95,
-                    top_k=20,
-                    do_sample=True,
-                    repetition_penalty=1.05,
-                    return_dict_in_generate=True,
-                    output_logits=True,
-                )
+                has_logits = hasattr(outputs, "logits") and outputs.logits
 
-            has_logits = hasattr(outputs, "logits") and outputs.logits
+                # FIX #1: finalize activation stats using true per-sample generation lengths.
+                gen_lengths = []
+                for i in range(B):
+                    raw_gen_ids = outputs.sequences[i][padded_input_len:]
+                    gen_len = _effective_generated_length(
+                        raw_gen_ids, pad_token_id, eos_token_ids
+                    )
+                    gen_lengths.append(gen_len)
+                capture.finalize(gen_lengths)
 
-            for i, sample in enumerate(batch):
-                gen_ids = outputs.sequences[i][padded_input_len:]
+                for i, sample in enumerate(batch):
+                    gen_ids = outputs.sequences[i][padded_input_len:]
 
-                item_logits: list[torch.Tensor | None] = []
-                if has_logits:
-                    for step_logits in outputs.logits:
-                        if step_logits is not None and step_logits.ndim >= 2:
-                            item_logits.append(step_logits[i])
+                    item_logits: list[torch.Tensor | None] = []
+                    if has_logits:
+                        for step_logits in outputs.logits:
+                            if step_logits is not None and step_logits.ndim >= 2:
+                                item_logits.append(step_logits[i])
 
-                _, think_text, response_text, n_gen, mean_entropy = (
-                    _process_single_output(processor, gen_ids, item_logits, pad_token_id)
-                )
+                    _, think_text, response_text, n_gen, mean_entropy = (
+                        _process_single_output(processor, gen_ids, item_logits, pad_token_id)
+                    )
 
-                neural = capture.get_results(batch_idx=i)
+                    neural = capture.get_results(batch_idx=i)
 
-                for idx in target_layers:
-                    mean_key = f"L{idx:02d}_mean"
-                    if mean_key in neural and isinstance(neural[mean_key], torch.Tensor):
-                        act_buffers[idx].append(neural[mean_key])
-                        act_meta[idx].append({
-                            "sample_idx": batch_start + i,
-                            "domain": sample["domain"],
-                            "n_gen_tokens": neural.get(f"L{idx:02d}_n_gen_tokens", 0),
-                        })
+                    for idx in target_layers:
+                        mean_key = f"L{idx:02d}_mean"
+                        if mean_key in neural and isinstance(neural[mean_key], torch.Tensor):
+                            act_buffers[idx].append(neural[mean_key])
+                            act_meta[idx].append({
+                                "sample_idx": batch_start + i,
+                                "domain": sample["domain"],
+                                "n_gen_tokens": neural.get(f"L{idx:02d}_n_gen_tokens", 0),
+                            })
 
-                record = {
-                    "sample_idx": batch_start + i,
-                    "domain": sample["domain"],
-                    "url": sample.get("url", ""),
-                    "input_words": len(sample["text"].split()),
-                    "n_gen_tokens": n_gen,
-                    "think_text": think_text,
-                    "response_text": response_text,
-                    "mean_entropy": round(mean_entropy, 4),
-                    "timestamp": datetime.now().isoformat(),
-                }
-                texts_fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+                    record = {
+                        "sample_idx": batch_start + i,
+                        "domain": sample["domain"],
+                        "url": sample.get("url", ""),
+                        "input_words": len(sample["text"].split()),
+                        "n_gen_tokens": n_gen,
+                        "think_text": think_text,
+                        "response_text": response_text,
+                        "mean_entropy": round(mean_entropy, 4),
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                    texts_fh.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-                total_tokens += n_gen
-                total_samples += 1
-                domain_entropies.setdefault(sample["domain"], []).append(mean_entropy)
+                    total_tokens += n_gen
+                    total_samples += 1
+                    domain_entropies.setdefault(sample["domain"], []).append(mean_entropy)
 
-        except RuntimeError as exc:
-            if "out of memory" in str(exc).lower():
-                print(f"[WARN] OOM at batch {batch_start} (B={B}): {exc}")
-                torch.cuda.empty_cache()
-                gc.collect()
+            except RuntimeError as exc:
+                if "out of memory" in str(exc).lower():
+                    print(f"[WARN] OOM at batch {batch_start} (B={B}): {exc}")
+                    torch.cuda.empty_cache()
+                    gc.collect()
+                    continue
+                raise
+            except (ValueError, IndexError) as exc:
+                print(f"[WARN] Error at batch {batch_start}: {exc}")
                 continue
-            raise
-        except (ValueError, IndexError) as exc:
-            print(f"[WARN] Error at batch {batch_start}: {exc}")
-            continue
 
-        # Flush shards
-        for idx in target_layers:
-            if len(act_buffers[idx]) >= SHARD_SIZE:
-                _write_act_shard(activations_dir, idx, act_buffers[idx],
-                                 act_meta[idx], shard_counts[idx])
-                shard_counts[idx] += 1
-                act_buffers[idx] = []
-                act_meta[idx] = []
+            # Flush shards
+            for idx in target_layers:
+                if len(act_buffers[idx]) >= SHARD_SIZE:
+                    _write_act_shard(activations_dir, idx, act_buffers[idx],
+                                     act_meta[idx], shard_counts[idx])
+                    shard_counts[idx] += 1
+                    act_buffers[idx] = []
+                    act_meta[idx] = []
 
-        pbar.set_postfix_str(f"tokens={total_tokens:,}, samples={total_samples}")
+            pbar.set_postfix_str(f"tokens={total_tokens:,}, samples={total_samples}")
 
-        if (batch_start // batch_size) % 20 == 0:
-            gc.collect()
-            torch.cuda.empty_cache()
-
-    texts_fh.close()
+            if (batch_start // batch_size) % 20 == 0:
+                gc.collect()
+                torch.cuda.empty_cache()
 
     # Flush remaining
     for idx in target_layers:

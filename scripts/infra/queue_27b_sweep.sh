@@ -20,7 +20,7 @@ LOG_DIR="${PROJECT_DIR}/logs"
 # Baseline config (8B model, same as sweep)
 BASELINE_OUTPUT="${PROJECT_DIR}/activations_baseline"
 BASELINE_N_SAMPLES=50000
-BASELINE_BATCH=55
+BASELINE_BATCH=25
 
 # 27B model config
 MODEL_27B="Qwen/Qwen3.5-27B-FP8"
