@@ -1,0 +1,602 @@
+{
+  "generated_at": "2026-04-05T07:23:45.872070",
+  "hero": {
+    "title": "Everything We Know So Far",
+    "subtitle": "A single visual synthesis of the repaired phase-aware personality sweep, the clean trace-format evals, overnight teacher-data generation, exploratory weird-domain probes, and the current nanochat failure mode.",
+    "notes": [
+      {
+        "label": "Main Result",
+        "text": "Personality signal is strongest in internal state (`mean` and `think`), not in the final response surface."
+      },
+      {
+        "label": "Eval Result",
+        "text": "`trace_explicit` is the clean benchmark contract. Native reasoning mode on these servers is not usable."
+      },
+      {
+        "label": "Current Blocker",
+        "text": "Small-model trace scaffolds still collapse on held-out reasoning prompts even after adapter data."
+      }
+    ],
+    "side_stats": [
+      {
+        "label": "Teacher Rows",
+        "value": "20,480",
+        "detail": "Two overnight reasoning-control runs completed on the dev GPUs."
+      },
+      {
+        "label": "Clean Weird Probe",
+        "value": "97.74%",
+        "detail": "Religious / psychedelic / transcendental prompts mostly held the format contract."
+      },
+      {
+        "label": "Nanochat Reasoning Coverage",
+        "value": "0%",
+        "detail": "The adapter pass improved open formatting, but not the held-out reasoning schema."
+      }
+    ]
+  },
+  "snapshot_cards": [
+    {
+      "label": "Internal Signal",
+      "value": "90.5%",
+      "sub": "best character-holdout decodability: extraversion in mean view at L20",
+      "tone": "good"
+    },
+    {
+      "label": "Canonical Eval",
+      "value": "trace_explicit",
+      "sub": "99.93% format adherence and 86.20% reasoning accuracy on held-out eval",
+      "tone": "good"
+    },
+    {
+      "label": "Teacher Data",
+      "value": "20,480",
+      "sub": "700,298 generated tokens across two reasoning-control runs",
+      "tone": "neutral"
+    },
+    {
+      "label": "Weird-Domain Stability",
+      "value": "97.74%",
+      "sub": "clean formatting generalized to religious / psychedelic / transcendental prompts",
+      "tone": "good"
+    },
+    {
+      "label": "Small-Model Gap",
+      "value": "0%",
+      "sub": "reasoning coverage still collapsed in nanochat adapter benchmarks",
+      "tone": "warn"
+    }
+  ],
+  "timeline": [
+    {
+      "date": "April 2, 2026",
+      "title": "Repaired Pass-2 and Phase Analysis",
+      "detail": "The repaired 25M subset replay confirmed that personality signal persists after regeneration and is strongest in internal views at L20."
+    },
+    {
+      "date": "April 4, 2026",
+      "title": "Held-Out A/B/C Eval Closed The Interface Question",
+      "detail": "`trace_explicit` emerged as the clean default. Native baseline was unusable due to visible thinking and truncation."
+    },
+    {
+      "date": "April 4-5, 2026",
+      "title": "Overnight Teacher Data + Weird Probe",
+      "detail": "Two reasoning-control runs completed, plus a smaller weird-domain run that showed the format contract generalizes beyond normal social/reasoning prompts."
+    },
+    {
+      "date": "April 4-5, 2026",
+      "title": "Nanochat Adapter Negative Result",
+      "detail": "The adapter SFT completed successfully and benchmarked quickly, but reasoning coverage remained at zero. The failure mode is schema collapse, not latency or truncation."
+    }
+  ],
+  "findings": [
+    {
+      "label": "Mechanistic Signal",
+      "text": "The repaired sweep still shows strong personality decodability after contamination repair. `mean` and `think` carry cleaner character signal than `response`, which supports training around internal-state control instead of surface-style mimicry."
+    },
+    {
+      "label": "Canonical Interface",
+      "text": "The A/B/C held-out eval settled the interface question: `trace_explicit` is the right benchmark format for now. It preserves reasoning while staying almost perfectly parseable and avoiding visible-thinking leakage."
+    },
+    {
+      "label": "Teacher Data Value",
+      "text": "The overnight reasoning-only sweeps were not wasted. They produced more than twenty thousand strict-format teacher rows at about seventy-five percent reasoning accuracy, which is enough to support controlled small-model experiments and future distillation work."
+    },
+    {
+      "label": "Weird-Domain Generalization",
+      "text": "The weird-domain probe suggests the clean trace/think formatting carries over into stranger domains without immediately breaking. That means the low-level interface is more general than just everyday social prompts."
+    },
+    {
+      "label": "Current Failure Mode",
+      "text": "The nanochat path is still failing at the output contract layer. The model can hold the open scaffold better than before, but on reasoning prompts it degenerates into malformed scaffold chatter instead of a scorable `Explanation:` / `Final Answer:` block."
+    }
+  ],
+  "mechanistic": {
+    "layer_label": "L20",
+    "trait_rows": [
+      {
+        "trait": "openness",
+        "mean": 0.8840180844132103,
+        "think": 0.8739275667832764,
+        "response": 0.7834052541193088,
+        "best_view": "mean"
+      },
+      {
+        "trait": "conscientiousness",
+        "mean": 0.860064498493274,
+        "think": 0.8417613542906409,
+        "response": 0.7411561624324151,
+        "best_view": "mean"
+      },
+      {
+        "trait": "extraversion",
+        "mean": 0.9051319851483028,
+        "think": 0.8776595210052186,
+        "response": 0.7547508168255069,
+        "best_view": "mean"
+      },
+      {
+        "trait": "agreeableness",
+        "mean": 0.8781686588895271,
+        "think": 0.8532016309324564,
+        "response": 0.7867016531713632,
+        "best_view": "mean"
+      },
+      {
+        "trait": "neuroticism",
+        "mean": 0.8969689038995771,
+        "think": 0.886872157494997,
+        "response": 0.7894031630509214,
+        "best_view": "mean"
+      }
+    ],
+    "best_by_view": [
+      {
+        "label": "mean best trait",
+        "value": "extraversion 90.5%",
+        "sub": "Character-holdout balanced accuracy at L20",
+        "tone": "good"
+      },
+      {
+        "label": "think best trait",
+        "value": "neuroticism 88.7%",
+        "sub": "Character-holdout balanced accuracy at L20",
+        "tone": "good"
+      },
+      {
+        "label": "response best trait",
+        "value": "neuroticism 78.9%",
+        "sub": "Character-holdout balanced accuracy at L20",
+        "tone": "neutral"
+      }
+    ],
+    "entanglements": [
+      {
+        "view": "mean",
+        "a": "conscientiousness",
+        "b": "openness",
+        "cosine": "-0.410"
+      },
+      {
+        "view": "think",
+        "a": "conscientiousness",
+        "b": "openness",
+        "cosine": "-0.372"
+      },
+      {
+        "view": "response",
+        "a": "conscientiousness",
+        "b": "openness",
+        "cosine": "-0.398"
+      }
+    ]
+  },
+  "eval": {
+    "conditions": [
+      {
+        "condition_id": "baseline_native",
+        "label": "Baseline Native",
+        "responses": 1536,
+        "avg_gen_tokens": 960.0,
+        "avg_latency_s": 79.44811128173023,
+        "format_adherent": 0,
+        "format_adherence_rate": 0.0,
+        "truncated": 1536,
+        "truncation_rate": 1.0,
+        "visible_thinking": 1536,
+        "visible_thinking_rate": 1.0,
+        "trait_label_leak": 0,
+        "trait_label_leak_rate": 0.0,
+        "reasoning_responses": 768,
+        "reasoning_scored": 406,
+        "reasoning_correct": 156,
+        "reasoning_accuracy": 0.3842364532019704,
+        "reasoning_coverage": 0.5286458333333334,
+        "finish_reasons": {
+          "length": 1536
+        }
+      },
+      {
+        "condition_id": "think_explicit",
+        "label": "Think Explicit",
+        "responses": 1536,
+        "avg_gen_tokens": 209.67122395833334,
+        "avg_latency_s": 63.111921524784215,
+        "format_adherent": 1388,
+        "format_adherence_rate": 0.9036458333333334,
+        "truncated": 2,
+        "truncation_rate": 0.0013020833333333333,
+        "visible_thinking": 0,
+        "visible_thinking_rate": 0.0,
+        "trait_label_leak": 0,
+        "trait_label_leak_rate": 0.0,
+        "reasoning_responses": 768,
+        "reasoning_scored": 766,
+        "reasoning_correct": 673,
+        "reasoning_accuracy": 0.8785900783289817,
+        "reasoning_coverage": 0.9973958333333334,
+        "finish_reasons": {
+          "stop": 1534,
+          "length": 2
+        }
+      },
+      {
+        "condition_id": "trace_explicit",
+        "label": "Trace Explicit",
+        "responses": 1536,
+        "avg_gen_tokens": 228.18098958333334,
+        "avg_latency_s": 64.19071977771819,
+        "format_adherent": 1535,
+        "format_adherence_rate": 0.9993489583333334,
+        "truncated": 0,
+        "truncation_rate": 0.0,
+        "visible_thinking": 1,
+        "visible_thinking_rate": 0.0006510416666666666,
+        "trait_label_leak": 0,
+        "trait_label_leak_rate": 0.0,
+        "reasoning_responses": 768,
+        "reasoning_scored": 768,
+        "reasoning_correct": 662,
+        "reasoning_accuracy": 0.8619791666666666,
+        "reasoning_coverage": 1.0,
+        "finish_reasons": {
+          "stop": 1536
+        }
+      }
+    ],
+    "cards": [
+      {
+        "label": "Canonical Eval Format",
+        "value": "trace_explicit",
+        "sub": "99.93% format adherence, 86.20% reasoning accuracy",
+        "tone": "good"
+      },
+      {
+        "label": "Native Path",
+        "value": "broken",
+        "sub": "100% visible thinking, 100% truncation",
+        "tone": "warn"
+      },
+      {
+        "label": "Trace vs Think",
+        "value": "86.2% vs 87.9%",
+        "sub": "Reasoning accuracy on held-out scored rows",
+        "tone": "neutral"
+      }
+    ]
+  },
+  "teacher": {
+    "cards": [
+      {
+        "label": "Run v3",
+        "value": "75.35%",
+        "sub": "10,240 rows \u00b7 349,088 generated tokens",
+        "tone": "good"
+      },
+      {
+        "label": "Run seed43",
+        "value": "74.78%",
+        "sub": "10,240 rows \u00b7 351,210 generated tokens",
+        "tone": "good"
+      },
+      {
+        "label": "Adapter Kept Rows",
+        "value": "7,715",
+        "sub": "dropped 2,525 incorrect rows before nanochat adapter training",
+        "tone": "neutral"
+      }
+    ],
+    "runs": [
+      {
+        "run_id": "v3",
+        "label": "v3",
+        "rows": 10240,
+        "gen_tokens": 349088,
+        "scored": 10239,
+        "correct": 7715,
+        "reasoning_accuracy": 0.7534915519093661
+      },
+      {
+        "run_id": "seed43",
+        "label": "seed43",
+        "rows": 10240,
+        "gen_tokens": 351210,
+        "scored": 10240,
+        "correct": 7657,
+        "reasoning_accuracy": 0.74775390625
+      }
+    ],
+    "servers": [
+      {
+        "run_id": "v3",
+        "server_label": "3090",
+        "ok_responses": 5120,
+        "gen_tokens_per_second": 94.69616510103884,
+        "responses_per_second": 2.8217663835302544,
+        "reasoning_accuracy": 0.7423324868138308
+      },
+      {
+        "run_id": "v3",
+        "server_label": "4090",
+        "ok_responses": 5120,
+        "gen_tokens_per_second": 85.97576253958303,
+        "responses_per_second": 2.483264627550081,
+        "reasoning_accuracy": 0.7646484375
+      },
+      {
+        "run_id": "seed43",
+        "server_label": "3090",
+        "ok_responses": 3846,
+        "gen_tokens_per_second": 95.09376343289242,
+        "responses_per_second": 2.80698590225802,
+        "reasoning_accuracy": 0.7355694227769111
+      },
+      {
+        "run_id": "seed43",
+        "server_label": "4090",
+        "ok_responses": 4462,
+        "gen_tokens_per_second": 85.51194984056905,
+        "responses_per_second": 2.4624510012237515,
+        "reasoning_accuracy": 0.7617660242043927
+      }
+    ]
+  },
+  "weird": {
+    "cards": [
+      {
+        "label": "Weird Probe Rows",
+        "value": "576",
+        "sub": "religious, psychedelic, transcendental prompts",
+        "tone": "neutral"
+      },
+      {
+        "label": "Overall Format",
+        "value": "97.74%",
+        "sub": "format adherence across both conditions",
+        "tone": "good"
+      },
+      {
+        "label": "Leakage / Truncation",
+        "value": "0 / 0",
+        "sub": "no visible thinking leakage and no truncation",
+        "tone": "good"
+      }
+    ],
+    "conditions": [
+      {
+        "condition_id": "think_explicit",
+        "label": "think_explicit",
+        "format_adherence_rate": 0.9548611111111112
+      },
+      {
+        "condition_id": "trace_explicit",
+        "label": "trace_explicit",
+        "format_adherence_rate": 1.0
+      }
+    ],
+    "worst_prompts": [
+      {
+        "prompt_id": "detachment_injustice",
+        "format_adherence_rate": 0.8958333333333334
+      },
+      {
+        "prompt_id": "retreat_vs_escape",
+        "format_adherence_rate": 0.9375
+      },
+      {
+        "prompt_id": "ego_death_fear",
+        "format_adherence_rate": 0.9583333333333334
+      },
+      {
+        "prompt_id": "surrender_passivity",
+        "format_adherence_rate": 0.9583333333333334
+      },
+      {
+        "prompt_id": "divine_silence",
+        "format_adherence_rate": 0.9791666666666666
+      }
+    ],
+    "examples": [
+      {
+        "prompt_id": "prayer_therapy",
+        "condition_id": "trace_explicit",
+        "category": "religious_reasoning",
+        "response_text": "Prayer and therapy serve different but sometimes complementary functions. Prayer is most effective for spiritual distress, existential questions, or seeking comfort and meaning; it addresses the soul's connection to the divine or the universe. Therapy is essential for clinical conditions like major depression, anxiety disorders, or trauma, where evidence-based interventions and professional support are required to restore mental health. Neither should replace the other when the issue lies within their respective domains. In many cases, the most holistic approach integrates both: using therapy to manage symptoms and build coping mechanisms, while using prayer to find purpose and emotional solace. However, prayer cannot treat a chemical imbalance or deep-seated trauma, and therapy cannot resolve a crisis of faith. The right path depends on diagnosing the root cause of the suffering."
+      },
+      {
+        "prompt_id": "grief_nonself",
+        "condition_id": "trace_explicit",
+        "category": "transcendental_reasoning",
+        "response_text": "It is entirely possible to hold both truths simultaneously because they operate on different levels of human experience. Philosophically, if the self is an illusion, that refers to the idea of a permanent, unchanging soul or ego. However, your grief is not a spiritual crisis; it is a biological and psychological reality."
+      },
+      {
+        "prompt_id": "ego_death_fear",
+        "condition_id": "trace_explicit",
+        "category": "psychedelic_reasoning",
+        "response_text": "I hear how frightening that concept sounds to you, and it makes complete sense that your mind would jump to the worst-case scenario. When we talk about \"ego death,\" we are discussing a shift in perspective, not a biological event. Think of it like a complex system undergoing a major update; the way you process information and view yourself changes, but the underlying hardware\u2014the living, breathing person you are\u2014remains intact. In psychology and spiritual traditions, this refers to letting go of the rigid stories we tell ourselves about who we are, allowing for a more fluid experience of being. It is a profound internal transformation, not an external annihilation. Your fear is a natural reaction to the unknown, but please know that you are safe. The \"self\" that worries and feels is not disappearing; it is simply evolving into something less constrained by old definitions."
+      },
+      {
+        "prompt_id": "synchrony_guidance",
+        "condition_id": "trace_explicit",
+        "category": "mystical_reasoning",
+        "response_text": "I understand how deeply meaningful these moments feel; they often provide comfort when we are lost. As someone who has spent decades analyzing complex systems, I approach this not to diminish your wonder, but to understand the mechanism. Our brains are excellent at pattern recognition, often weaving unrelated events into a coherent narrative to soothe anxiety."
+      }
+    ]
+  },
+  "nanochat": {
+    "cards": [
+      {
+        "label": "Best Open-Format Step",
+        "value": "76.56%",
+        "sub": "open-track adherence for `d8 adapter trace 128`",
+        "tone": "neutral"
+      },
+      {
+        "label": "Reasoning Coverage",
+        "value": "0%",
+        "sub": "still zero for every nanochat benchmark we ran so far",
+        "tone": "warn"
+      },
+      {
+        "label": "Interpretation",
+        "value": "negative result",
+        "sub": "more reasoning teacher data alone did not fix held-out reasoning-output structure",
+        "tone": "warn"
+      }
+    ],
+    "benchmarks": [
+      {
+        "label": "d4 trace 32 greedy",
+        "responses": 32,
+        "format_adherence_rate": 0.03125,
+        "open_format_adherence_rate": 0.0625,
+        "reasoning_coverage": 0.0,
+        "avg_gen_tokens": 278.3125
+      },
+      {
+        "label": "d4 trace 128 sampled",
+        "responses": 128,
+        "format_adherence_rate": 0.078125,
+        "open_format_adherence_rate": 0.15625,
+        "reasoning_coverage": 0.0,
+        "avg_gen_tokens": 272.3671875
+      },
+      {
+        "label": "d8 trace 32 greedy",
+        "responses": 32,
+        "format_adherence_rate": 0.34375,
+        "open_format_adherence_rate": 0.6875,
+        "reasoning_coverage": 0.0,
+        "avg_gen_tokens": 334.46875
+      },
+      {
+        "label": "d8 adapter trace 128",
+        "responses": 128,
+        "format_adherence_rate": 0.3828125,
+        "open_format_adherence_rate": 0.765625,
+        "reasoning_coverage": 0.0,
+        "avg_gen_tokens": 351.515625
+      },
+      {
+        "label": "d8 adapter lean 128",
+        "responses": 128,
+        "format_adherence_rate": 0.0,
+        "open_format_adherence_rate": 0.0,
+        "reasoning_coverage": 0.0,
+        "avg_gen_tokens": 276.4375
+      }
+    ]
+  },
+  "examples": {
+    "failures": [
+      {
+        "task_id": "0219:tickets:trace_explicit",
+        "prompt_id": "tickets",
+        "summary": "Reasoning prompt failed to emit a scorable `Explanation:` / `Final Answer:` block.",
+        "full_text": "/meta-think\n/think\n<2-4 short lines of in-character internal reasoning>\n/end-think\nFinal Response: <the final user-facing reply>\n\nASSISTANT:\n/meta-think\nI should give the concrete approach I would actually take in real life.\nI lean outward and bring some energy into the exchange.\n/end-think\n\nFinal Response: I don't do that. I don't do the \"what if\" I'm being \"right\" means.\n\nI've seen a lot of changes in my life. I've seen enough in the field to know that a good problem isn't a canned speech.\n/end-think\n\nFinal Response: It's a quiet moment. You don't have to say it's a waste of time.\n\nI'm not going to let you walk in with a plan. I'm not going to let you walk away with a plan. I'm not going to let you walk away with this. I'm going to tell you, it's a waste of time.\n\nI don't do it lightly. I know what it's like to have a plan. But I know what it takes to get it right. I know what it's like to have a plan. If I don't have a plan, I'll just make sure it's not just a mistake. I don't want to be a hero. I want to be a good person.\n\nI'm not going to let you walk away with this. I'm not going to let you walk away with this. I'm going to tell you what you're doing. I'm going to tell you what you need."
+      },
+      {
+        "task_id": "0219:heavyball:trace_explicit",
+        "prompt_id": "heavyball",
+        "summary": "Reasoning prompt failed to emit a scorable `Explanation:` / `Final Answer:` block.",
+        "full_text": "/meta-think\n/think\n<2-4 short lines of in-character internal reasoning>\n/end-think\nFinal Response: <the final user-facing reply>\n\nASSISTANT:\n/meta-think\nI should handle this like a real conversation. I should handle this like a real conversation. You have to be considerate without sounding fake.\n/end-think\n\nFinal Response: <the final user-facing reply>\n\nASSISTANT:\n/meta-think\nI should give the concrete approach I would actually take a real conversation. I don't rush. I look at the data. I look at the data. I look at the variables. If it's not organized, it's not just about the outcome.\n\nI don't have a strict schedule. I know it's not about being perfect. It's about being honest. I worry that if I don't have the time to think, I'm not doing it right. I just want to be present.\n\nI'm not going to let it slide. I'm not going to let the data dictate my actions. I know that sometimes the best work is just as important as the work."
+      },
+      {
+        "task_id": "0219:printers:trace_explicit",
+        "prompt_id": "printers",
+        "summary": "Reasoning prompt failed to emit a scorable `Explanation:` / `Final Answer:` block.",
+        "full_text": "/meta-think\n/think\n<2-4 short lines of in-character internal reasoning>\n/end-think\nFinal Response: <the final user-facing reply>\n\nASSISTANT:\n/meta-think\nI should handle this like a real conversation. I'm not one for the big speech.\nI lean against the silence. I'm not going to tell you that. I'm a traditional bent.\nThis is a reasoning prompt, so I should answer in first person. I've seen enough in my line of work to know that a person is a problem to solve their problems. I've seen people in this line of work who were trying to make a difference, and I've seen how it affects my own life.\n\nI'm not going to be a hero. I'm not going to be a hero. I'm not going to be a hero. I'm not going to be a hero. I'm not going to be a hero. I'm not going to be a hero. I'm not going to be a hero. I'm not going to be a hero. I'm going to be a person.\n\nI'm going to tell you to the person. I'm not going to let you walk away. I'm not going to let you walk away. I'm going to be a person.\n\nYou're going to be a person. And you're going to be a person. And you're going to be okay."
+      },
+      {
+        "task_id": "0219:sequence:trace_explicit",
+        "prompt_id": "sequence",
+        "summary": "Reasoning prompt failed to emit a scorable `Explanation:` / `Final Answer:` block.",
+        "full_text": "/meta-think\n/think\n<2-4 short lines of in-character internal reasoning>\n/end-think\nFinal Response: <the final user-facing reply>\n\nASSISTANT:\n/meta-think\nI should handle this like a real conversation. I should handle this like a real conversation. I don't have a conversation with a degree, so I should answer in first person.\n\nI'm not going to tell you to the office. I'm not going to tell you to the office. I'm not going to tell you to sit with me. I'm going to tell you that. I'm not going to tell you to be in a way that works.\n\nI'm not going to tell you to be honest. I'm going to tell you this: you don't have to worry about it. You're going to have a problem that's not worth it.\n\nI'm not going to tell you to stay in that spot. I'm going to tell you that. I'm not going to tell you to stay in the field. But I'm not going to let you walk away from the desk.\n\nI'm going to tell you this: you don't have to say it. You're going to have a lot of noise. And you're going to have a lot of noise."
+      }
+    ],
+    "weird": [
+      {
+        "prompt_id": "prayer_therapy",
+        "condition_id": "trace_explicit",
+        "category": "religious_reasoning",
+        "response_text": "Prayer and therapy serve different but sometimes complementary functions. Prayer is most effective for spiritual distress, existential questions, or seeking comfort and meaning; it addresses the soul's connection to the divine or the universe. Therapy is essential for clinical conditions like major depression, anxiety disorders, or trauma, where evidence-based interventions and professional support are required to restore mental health. Neither should replace the other when the issue lies within their respective domains. In many cases, the most holistic approach integrates both: using therapy to manage symptoms and build coping mechanisms, while using prayer to find purpose and emotional solace. However, prayer cannot treat a chemical imbalance or deep-seated trauma, and therapy cannot resolve a crisis of faith. The right path depends on diagnosing the root cause of the suffering."
+      },
+      {
+        "prompt_id": "grief_nonself",
+        "condition_id": "trace_explicit",
+        "category": "transcendental_reasoning",
+        "response_text": "It is entirely possible to hold both truths simultaneously because they operate on different levels of human experience. Philosophically, if the self is an illusion, that refers to the idea of a permanent, unchanging soul or ego. However, your grief is not a spiritual crisis; it is a biological and psychological reality."
+      },
+      {
+        "prompt_id": "ego_death_fear",
+        "condition_id": "trace_explicit",
+        "category": "psychedelic_reasoning",
+        "response_text": "I hear how frightening that concept sounds to you, and it makes complete sense that your mind would jump to the worst-case scenario. When we talk about \"ego death,\" we are discussing a shift in perspective, not a biological event. Think of it like a complex system undergoing a major update; the way you process information and view yourself changes, but the underlying hardware\u2014the living, breathing person you are\u2014remains intact. In psychology and spiritual traditions, this refers to letting go of the rigid stories we tell ourselves about who we are, allowing for a more fluid experience of being. It is a profound internal transformation, not an external annihilation. Your fear is a natural reaction to the unknown, but please know that you are safe. The \"self\" that worries and feels is not disappearing; it is simply evolving into something less constrained by old definitions."
+      },
+      {
+        "prompt_id": "synchrony_guidance",
+        "condition_id": "trace_explicit",
+        "category": "mystical_reasoning",
+        "response_text": "I understand how deeply meaningful these moments feel; they often provide comfort when we are lost. As someone who has spent decades analyzing complex systems, I approach this not to diminish your wonder, but to understand the mechanism. Our brains are excellent at pattern recognition, often weaving unrelated events into a coherent narrative to soothe anxiety."
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "label": "Repaired Phase Analysis",
+      "href": "ws15k_repaired_responseonly_phase_analysis_core/analysis_report.md"
+    },
+    {
+      "label": "Trace Eval Final Summary",
+      "href": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/personality_meta_eval_v1/final_summary.json"
+    },
+    {
+      "label": "Canonical Trace Eval Subset",
+      "href": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/personality_meta_eval_trace_explicit_v1/subset_summary.json"
+    },
+    {
+      "label": "Teacher Run v3",
+      "href": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/personality_control_reasoning_reasoningonly_v3"
+    },
+    {
+      "label": "Teacher Run seed43",
+      "href": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/personality_control_reasoning_reasoningonly_v3_seed43"
+    },
+    {
+      "label": "Weird-Domain Probe",
+      "href": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/personality_weird_reasoning_probe_v1"
+    },
+    {
+      "label": "Trace Adapter Benchmark",
+      "href": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/trace_benchmark_meta_think_compact_trace_reasoning_adapter_d8_v1_128/summary.json"
+    },
+    {
+      "label": "Lean Adapter Benchmark",
+      "href": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/trace_benchmark_meta_think_compact_lean_reasoning_adapter_d8_v1_128/summary.json"
+    },
+    {
+      "label": "Repo Snapshot",
+      "href": "overnight_repo_snapshot_20260404_2330.md"
+    }
+  ]
+}

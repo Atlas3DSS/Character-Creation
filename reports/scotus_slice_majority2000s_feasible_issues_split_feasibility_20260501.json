@@ -1,0 +1,412 @@
+{
+  "components": [
+    {
+      "case_ids": [
+        "118390",
+        "134725",
+        "137733",
+        "137735",
+        "145641",
+        "145646",
+        "145664",
+        "145670",
+        "145694",
+        "145738",
+        "145781",
+        "145814",
+        "145844",
+        "145907",
+        "145921",
+        "799989"
+      ],
+      "component_id": "component_009",
+      "issue_area_label": "Criminal Procedure",
+      "issue_counts": {
+        "Criminal Procedure": 308
+      },
+      "justice_counts": {
+        "Ginsburg": 154,
+        "Scalia": 154
+      },
+      "label_counts": {
+        "0": 154,
+        "1": 154
+      },
+      "n_cases": 16,
+      "n_pairs": 154,
+      "n_rows": 308,
+      "original_split_counts": {
+        "train": 308
+      }
+    },
+    {
+      "case_ids": [
+        "118389",
+        "118412",
+        "118436",
+        "118443",
+        "121165",
+        "122265",
+        "134724",
+        "145633",
+        "145761",
+        "145853"
+      ],
+      "component_id": "component_004",
+      "issue_area_label": "Criminal Procedure",
+      "issue_counts": {
+        "Criminal Procedure": 210
+      },
+      "justice_counts": {
+        "Ginsburg": 105,
+        "Scalia": 105
+      },
+      "label_counts": {
+        "0": 105,
+        "1": 105
+      },
+      "n_cases": 10,
+      "n_pairs": 105,
+      "n_rows": 210,
+      "original_split_counts": {
+        "train": 210
+      }
+    },
+    {
+      "case_ids": [
+        "118492",
+        "145816"
+      ],
+      "component_id": "component_001",
+      "issue_area_label": "Criminal Procedure",
+      "issue_counts": {
+        "Criminal Procedure": 38
+      },
+      "justice_counts": {
+        "Ginsburg": 19,
+        "Scalia": 19
+      },
+      "label_counts": {
+        "0": 19,
+        "1": 19
+      },
+      "n_cases": 2,
+      "n_pairs": 19,
+      "n_rows": 38,
+      "original_split_counts": {
+        "dev": 38
+      }
+    },
+    {
+      "case_ids": [
+        "118507",
+        "136995"
+      ],
+      "component_id": "component_002",
+      "issue_area_label": "Criminal Procedure",
+      "issue_counts": {
+        "Criminal Procedure": 34
+      },
+      "justice_counts": {
+        "Ginsburg": 17,
+        "Scalia": 17
+      },
+      "label_counts": {
+        "0": 17,
+        "1": 17
+      },
+      "n_cases": 2,
+      "n_pairs": 17,
+      "n_rows": 34,
+      "original_split_counts": {
+        "test": 34
+      }
+    },
+    {
+      "case_ids": [
+        "118410",
+        "118457",
+        "118486",
+        "122257",
+        "130141",
+        "131157",
+        "799974"
+      ],
+      "component_id": "component_005",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 194
+      },
+      "justice_counts": {
+        "Ginsburg": 97,
+        "Scalia": 97
+      },
+      "label_counts": {
+        "0": 97,
+        "1": 97
+      },
+      "n_cases": 7,
+      "n_pairs": 97,
+      "n_rows": 194,
+      "original_split_counts": {
+        "train": 194
+      }
+    },
+    {
+      "case_ids": [
+        "118465",
+        "121152",
+        "127909",
+        "131153",
+        "131156",
+        "145683",
+        "145696",
+        "145721"
+      ],
+      "component_id": "component_007",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 118
+      },
+      "justice_counts": {
+        "Ginsburg": 59,
+        "Scalia": 59
+      },
+      "label_counts": {
+        "0": 59,
+        "1": 59
+      },
+      "n_cases": 8,
+      "n_pairs": 59,
+      "n_rows": 118,
+      "original_split_counts": {
+        "train": 118
+      }
+    },
+    {
+      "case_ids": [
+        "118471",
+        "122254",
+        "136985",
+        "145709"
+      ],
+      "component_id": "component_000",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 88
+      },
+      "justice_counts": {
+        "Ginsburg": 44,
+        "Scalia": 44
+      },
+      "label_counts": {
+        "0": 44,
+        "1": 44
+      },
+      "n_cases": 4,
+      "n_pairs": 44,
+      "n_rows": 88,
+      "original_split_counts": {
+        "dev": 88
+      }
+    },
+    {
+      "case_ids": [
+        "118402",
+        "118514",
+        "134744",
+        "145713",
+        "145784"
+      ],
+      "component_id": "component_006",
+      "issue_area_label": "Judicial Power",
+      "issue_counts": {
+        "Judicial Power": 70
+      },
+      "justice_counts": {
+        "Ginsburg": 35,
+        "Scalia": 35
+      },
+      "label_counts": {
+        "0": 35,
+        "1": 35
+      },
+      "n_cases": 5,
+      "n_pairs": 35,
+      "n_rows": 70,
+      "original_split_counts": {
+        "train": 70
+      }
+    },
+    {
+      "case_ids": [
+        "121150",
+        "127912",
+        "142885",
+        "2621076"
+      ],
+      "component_id": "component_008",
+      "issue_area_label": "Judicial Power",
+      "issue_counts": {
+        "Judicial Power": 60
+      },
+      "justice_counts": {
+        "Ginsburg": 30,
+        "Scalia": 30
+      },
+      "label_counts": {
+        "0": 30,
+        "1": 30
+      },
+      "n_cases": 4,
+      "n_pairs": 30,
+      "n_rows": 60,
+      "original_split_counts": {
+        "train": 60
+      }
+    },
+    {
+      "case_ids": [
+        "118478",
+        "145767"
+      ],
+      "component_id": "component_003",
+      "issue_area_label": "Judicial Power",
+      "issue_counts": {
+        "Judicial Power": 34
+      },
+      "justice_counts": {
+        "Ginsburg": 17,
+        "Scalia": 17
+      },
+      "label_counts": {
+        "0": 17,
+        "1": 17
+      },
+      "n_cases": 2,
+      "n_pairs": 17,
+      "n_rows": 34,
+      "original_split_counts": {
+        "test": 34
+      }
+    }
+  ],
+  "issue_feasibility": [
+    {
+      "blocking_reason": "",
+      "issue_area_label": "Criminal Procedure",
+      "n_cases": 30,
+      "n_components": 4,
+      "n_pairs": 295,
+      "n_rows": 590,
+      "strict_train_dev_test_feasible": true
+    },
+    {
+      "blocking_reason": "",
+      "issue_area_label": "Economic Activity",
+      "n_cases": 19,
+      "n_components": 3,
+      "n_pairs": 200,
+      "n_rows": 400,
+      "strict_train_dev_test_feasible": true
+    },
+    {
+      "blocking_reason": "",
+      "issue_area_label": "Judicial Power",
+      "n_cases": 11,
+      "n_components": 3,
+      "n_pairs": 82,
+      "n_rows": 164,
+      "strict_train_dev_test_feasible": true
+    }
+  ],
+  "n_components": 10,
+  "n_rows": 1154,
+  "original_split_table": [
+    {
+      "issue_area_label": "Criminal Procedure",
+      "justice": "Ginsburg",
+      "n_rows": 19,
+      "split": "dev"
+    },
+    {
+      "issue_area_label": "Criminal Procedure",
+      "justice": "Scalia",
+      "n_rows": 19,
+      "split": "dev"
+    },
+    {
+      "issue_area_label": "Criminal Procedure",
+      "justice": "Ginsburg",
+      "n_rows": 17,
+      "split": "test"
+    },
+    {
+      "issue_area_label": "Criminal Procedure",
+      "justice": "Scalia",
+      "n_rows": 17,
+      "split": "test"
+    },
+    {
+      "issue_area_label": "Criminal Procedure",
+      "justice": "Ginsburg",
+      "n_rows": 259,
+      "split": "train"
+    },
+    {
+      "issue_area_label": "Criminal Procedure",
+      "justice": "Scalia",
+      "n_rows": 259,
+      "split": "train"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Ginsburg",
+      "n_rows": 44,
+      "split": "dev"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Scalia",
+      "n_rows": 44,
+      "split": "dev"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Ginsburg",
+      "n_rows": 156,
+      "split": "train"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Scalia",
+      "n_rows": 156,
+      "split": "train"
+    },
+    {
+      "issue_area_label": "Judicial Power",
+      "justice": "Ginsburg",
+      "n_rows": 17,
+      "split": "test"
+    },
+    {
+      "issue_area_label": "Judicial Power",
+      "justice": "Scalia",
+      "n_rows": 17,
+      "split": "test"
+    },
+    {
+      "issue_area_label": "Judicial Power",
+      "justice": "Ginsburg",
+      "n_rows": 65,
+      "split": "train"
+    },
+    {
+      "issue_area_label": "Judicial Power",
+      "justice": "Scalia",
+      "n_rows": 65,
+      "split": "train"
+    }
+  ],
+  "run_dir": "sweep_v4/scotus_slice_bf16_majority2000s_feasible_issues_20260501_033918"
+}

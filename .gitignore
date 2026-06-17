@@ -95,6 +95,9 @@ build/
 .env
 .env.*
 *.secret
+dev_genius/
+.venv/
+venv/
 
 # ─── OS artifacts ───
 *:Zone.Identifier
@@ -111,7 +114,29 @@ Thumbs.db
 **/responses*.json
 **/*_results.json
 *.pt
+*.npz
+*.npy
 *.jsonl
+
+# ─── Trackable experiment provenance exceptions ───
+!data/**/*.json
+!data/scotus/**/*prompts*.jsonl
+!data/scotus/**/*frame_labels*.jsonl
+!data/scotus/**/*review*.jsonl
+!data/scotus/**/*adjudicated*.jsonl
+!data/scotus/**/*frame_contrast*.jsonl
+!data/scotus/**/*opinion_inventory*.jsonl
+!data/scotus/replay/*.jsonl
+!data/scotus/sae/*.jsonl
+!data/scotus/directions/*.npz
+
+# Large SCOTUS source/intermediate corpora stay local unless explicitly forced.
+data/scotus/raw/
+data/scotus/processed/
+data/scotus/*chunk_inventory*.jsonl
+data/scotus/*matched_pairs*.jsonl
+data/scotus/*section_inventory*.jsonl
+data/scotus/*pair_overlap_inventory*.jsonl
 
 # ─── Data directories (analysis JSON, activations, checkpoints) ───
 contrastive_data/
@@ -166,8 +191,16 @@ magnitude_calibrated_results/
 # ─── Activation data (large, reproducible from sweep scripts) ───
 activations_baseline/
 sweep_output/
+sweep_v2/
+sweep_v3/
+sweep_v4/
+logs/
+results/
+reports/*.html
 
 # ─── Temp ───
 /tmp/
+tmp/
+tmp_*/
 *.tmp
 results/debate_arena/debate_arena/round_*/activations/*.pt

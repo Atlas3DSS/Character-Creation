@@ -1,0 +1,18 @@
+{
+  "created_at": "2026-05-01T07:00:42-07:00",
+  "filter": "frame in {economic_commerce_broad_aggregation,economic_commerce_limits}; expected_frame == frame; has_multi_frame_conflict == false",
+  "labels": "/home/orwel/dev_genius/experiments/Character Creation/data/scotus/scotus_economic_source_frame_labels_v1.jsonl",
+  "max_per_side": 24,
+  "per_pocket_counts": {
+    "EA01_broad_remedy_market:contrast": 23,
+    "EA01_broad_remedy_market:target": 21,
+    "EA03_limits_school_zone:contrast": 24,
+    "EA03_limits_school_zone:target": 23
+  },
+  "prompts": "/home/orwel/dev_genius/experiments/Character Creation/data/scotus/scotus_poke_prompts_v1.jsonl",
+  "rows": 51,
+  "unique_frame_counts": {
+    "economic_commerce_broad_aggregation": 28,
+    "economic_commerce_limits": 23
+  }
+}

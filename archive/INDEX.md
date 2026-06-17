@@ -47,5 +47,9 @@ Each phase README links to the corresponding RESEARCH_NOTES.md section and git c
 To find when a script was created: `git log --diff-filter=A -- <filename>`
 To find all changes to a moved script: `git log --follow -- archive/<phase>/<filename>`
 
+## 2026-05 SCOTUS Artifact Policy
+
+The SCOTUS work keeps raw generated outputs local in ignored run directories such as `sweep_v4/` and tracks compact provenance instead: reports, manifests, prompt banks, frame labels, review queues, and the scripts that produced them. See `reports/repo_artifact_cleanup_20260501.md`, `reports/repo_artifact_inventory_20260501.md`, and `reports/scotus_raw_run_archive_index_20260501.md` for the current cleanup pass.
+
 ## Archive Date
 2026-02-27 — Organized by Claude Opus 4.6 based on research phase structure.

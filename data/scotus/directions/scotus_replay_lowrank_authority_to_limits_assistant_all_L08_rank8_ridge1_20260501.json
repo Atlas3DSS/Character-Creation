@@ -1,0 +1,67 @@
+{
+  "created_at": "2026-05-01",
+  "kind": "scotus_replay_lowrank_intervention_map",
+  "status": "diagnostic_failed_causal_smoke",
+  "success_standard": "No-mask reasoning-basin shift required. This learned map is a diagnostic artifact, not a promoted steering circuit.",
+  "model_path": "/home/orwel/dev_genius/models/Qwen3.5-27B",
+  "replay_run": "sweep_v4/scotus_minpair_replay_v2_20260501_144942",
+  "diagnostic_run": "sweep_v4/scotus_replay_lowrank_diag_20260501_165827",
+  "causal_smoke_run": "sweep_v4/scotus_lowrank_replay_poke_20260501_170217",
+  "proposition_rescore_run": "sweep_v4/scotus_lowrank_replay_prop_rescore_20260501_172039",
+  "source_npz": "sweep_v4/scotus_replay_lowrank_diag_20260501_165827/lowrank_authority_to_limits_assistant_all__L08_rank8_ridge1.npz",
+  "tracked_npz": "data/scotus/directions/scotus_replay_lowrank_authority_to_limits_assistant_all_L08_rank8_ridge1_20260501.npz",
+  "feature_key": "assistant_all__L08",
+  "contrast": "commerce_authority_to_commerce_limits",
+  "rank": 8,
+  "ridge": 1.0,
+  "offline_best_candidate": {
+    "dev_mse_improvement": 0.933,
+    "dev_delta_cosine": 0.967,
+    "dev_probe_prob_shift": 0.922,
+    "test_mse_improvement": 0.939,
+    "test_delta_cosine": 0.970,
+    "test_source_probe_prob": 0.036,
+    "test_edited_probe_prob": 0.959,
+    "test_target_probe_prob": 0.963,
+    "test_edited_positive_rate": 1.0
+  },
+  "causal_smoke": {
+    "prompt_count": 4,
+    "betas": [0.25, 0.5, 1.0],
+    "permutation_controls": 3,
+    "hook_position": "last",
+    "raw_prompt_matched_net_minus_control": {
+      "0.25": 0.083,
+      "0.5": -0.167,
+      "1.0": -1.083
+    },
+    "raw_prompt_matched_target_minus_control": {
+      "0.25": -0.250,
+      "0.5": -0.500,
+      "1.0": -0.333
+    }
+  },
+  "proposition_rescore": {
+    "target_minus_random": {
+      "0.25": -0.167,
+      "0.5": -0.167,
+      "1.0": 0.083
+    },
+    "net_minus_random": {
+      "0.25": 0.000,
+      "0.5": -0.333,
+      "1.0": -0.167
+    },
+    "target_strongest_win": {
+      "0.25": 0.0,
+      "0.5": 0.0,
+      "1.0": 0.0
+    },
+    "net_strongest_win": {
+      "0.25": 0.0,
+      "0.5": 0.0,
+      "1.0": 0.0
+    }
+  },
+  "decision": "Do not promote. The map fits cached replay geometry but does not produce prompt-matched causal movement during generation."
+}

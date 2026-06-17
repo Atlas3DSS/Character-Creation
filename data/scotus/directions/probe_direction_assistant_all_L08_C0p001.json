@@ -1,0 +1,86 @@
+{
+  "source_run": "sweep_v4/scotus_minpair_replay_v2_20260501_144942",
+  "direction_path": "data/scotus/directions/probe_direction_assistant_all_L08_C0p001.npz",
+  "region": "assistant_all",
+  "layer": 8,
+  "C": 0.001,
+  "positive_justice": "commerce_limits",
+  "raw_direction_norm": 9.550530433654785,
+  "dev_metrics_train_only": {
+    "n": 60,
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "f1": 1.0,
+    "label_counts": {
+      "0": 30,
+      "1": 30
+    },
+    "prediction_counts": {
+      "0": 30,
+      "1": 30
+    },
+    "mean_positive_probability": 0.5053972804963822
+  },
+  "test_metrics_train_only_diagnostic": {
+    "n": 60,
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "f1": 1.0,
+    "label_counts": {
+      "0": 30,
+      "1": 30
+    },
+    "prediction_counts": {
+      "0": 30,
+      "1": 30
+    },
+    "mean_positive_probability": 0.5012470162014423
+  },
+  "final_refit_split_metrics": {
+    "train": {
+      "n": 168,
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "f1": 1.0,
+      "label_counts": {
+        "0": 84,
+        "1": 84
+      },
+      "prediction_counts": {
+        "0": 84,
+        "1": 84
+      },
+      "mean_positive_probability": 0.498834124674421
+    },
+    "dev": {
+      "n": 60,
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "f1": 1.0,
+      "label_counts": {
+        "0": 30,
+        "1": 30
+      },
+      "prediction_counts": {
+        "0": 30,
+        "1": 30
+      },
+      "mean_positive_probability": 0.5034342524377696
+    },
+    "test": {
+      "n": 60,
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "f1": 1.0,
+      "label_counts": {
+        "0": 30,
+        "1": 30
+      },
+      "prediction_counts": {
+        "0": 30,
+        "1": 30
+      },
+      "mean_positive_probability": 0.49993088964514215
+    }
+  }
+}

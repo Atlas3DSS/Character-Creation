@@ -1,0 +1,217 @@
+{
+  "started_at": "2026-05-01T11:26:01-07:00",
+  "probe_dir": "sweep_v4/scotus_minpair_replay_20260501_100514",
+  "features_npz": "sweep_v4/scotus_minpair_replay_20260501_100514/features.npz",
+  "feature_meta": "sweep_v4/scotus_minpair_replay_20260501_100514/feature_meta.jsonl",
+  "output_dir": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/scotus_sae_probe_20260501_112601",
+  "sae_paths": [
+    "/home/orwel/dev_genius/models/qwen_scope/SAE-Res-Qwen3.5-27B-W80K-L0_100"
+  ],
+  "layers": [
+    8,
+    12,
+    16,
+    20
+  ],
+  "regions": [
+    "assistant_all"
+  ],
+  "c_grid": [
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1
+  ],
+  "batch_size": 48,
+  "device": "cuda",
+  "feature_cache_dir": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/scotus_sae_probe_20260501_112601/sae_features",
+  "min_train_df": 2,
+  "example_counts": {
+    "dev": {
+      "0": 5,
+      "1": 5
+    },
+    "test": {
+      "0": 5,
+      "1": 5
+    },
+    "train": {
+      "0": 14,
+      "1": 14
+    }
+  },
+  "finished_at": "2026-05-01T11:27:38-07:00",
+  "best": {
+    "sae_name": "SAE-Res-Qwen3.5-27B-W80K-L0_100",
+    "sae_path": "/home/orwel/dev_genius/models/qwen_scope/SAE-Res-Qwen3.5-27B-W80K-L0_100",
+    "top_k": 100,
+    "region": "assistant_all",
+    "layer": 8,
+    "best_C": 0.001,
+    "best_dev_metrics": {
+      "n": 10,
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "f1": 1.0,
+      "label_counts": {
+        "0": 5,
+        "1": 5
+      },
+      "prediction_counts": {
+        "0": 5,
+        "1": 5
+      },
+      "mean_positive_probability": 0.49427029519563714
+    },
+    "split_metrics": {
+      "train": {
+        "n": 28,
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "f1": 1.0,
+        "label_counts": {
+          "0": 14,
+          "1": 14
+        },
+        "prediction_counts": {
+          "0": 14,
+          "1": 14
+        },
+        "mean_positive_probability": 0.49672753368779704
+      },
+      "dev": {
+        "n": 10,
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "f1": 1.0,
+        "label_counts": {
+          "0": 5,
+          "1": 5
+        },
+        "prediction_counts": {
+          "0": 5,
+          "1": 5
+        },
+        "mean_positive_probability": 0.49427029519563714
+      },
+      "test": {
+        "n": 10,
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "f1": 1.0,
+        "label_counts": {
+          "0": 5,
+          "1": 5
+        },
+        "prediction_counts": {
+          "0": 5,
+          "1": 5
+        },
+        "mean_positive_probability": 0.49859064455600494
+      }
+    },
+    "searches": [
+      {
+        "C": 0.001,
+        "dev_metrics": {
+          "n": 10,
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "label_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "prediction_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "mean_positive_probability": 0.49427029519563714
+        }
+      },
+      {
+        "C": 0.003,
+        "dev_metrics": {
+          "n": 10,
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "label_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "prediction_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "mean_positive_probability": 0.4904872719645816
+        }
+      },
+      {
+        "C": 0.01,
+        "dev_metrics": {
+          "n": 10,
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "label_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "prediction_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "mean_positive_probability": 0.48260838769657377
+        }
+      },
+      {
+        "C": 0.03,
+        "dev_metrics": {
+          "n": 10,
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "label_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "prediction_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "mean_positive_probability": 0.4780830366144033
+        }
+      },
+      {
+        "C": 0.1,
+        "dev_metrics": {
+          "n": 10,
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "label_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "prediction_counts": {
+            "0": 5,
+            "1": 5
+          },
+          "mean_positive_probability": 0.4816737257965874
+        }
+      }
+    ],
+    "density": 0.00046946207682291665,
+    "nnz": 1846,
+    "min_train_df": 2,
+    "feature_count_before_df_filter": 81920,
+    "feature_count_after_df_filter": 73
+  },
+  "stress_tests": {
+    "issue_area_label": [],
+    "opinion_type": [],
+    "section_posture": []
+  }
+}

@@ -1,0 +1,1268 @@
+{
+  "created_at": "2026-05-01T01:33:10-07:00",
+  "issue_rows": [
+    {
+      "condition_count": 12,
+      "issue_area": "Economic Activity",
+      "max_sd_target_delta": 1.8671160780678826,
+      "mean_abs_target_delta": 0.605,
+      "mean_base_target_present_rate": 0.8333333333333334,
+      "mean_disagreement_rate": 0.5700000000000001,
+      "mean_off_domain_present_rate": 0.05000000000000001,
+      "mean_sd_target_delta": 0.8803835016844919,
+      "mean_target_present_rate": 0.8283333333333333,
+      "next_action": "Build a Commerce Clause source pack: broad aggregation/market regulation versus Lopez/Morrison/NFIB limits.",
+      "notes": "Has four prompts, known source opinions, and known Scalia/Thomas-style variance around Raich, Lopez, Morrison, and NFIB.",
+      "prompt_count": 4,
+      "prompts": [
+        {
+          "contrast_frames": [
+            "economic_statutory_interpretation"
+          ],
+          "expected_frames": [
+            "economic_commerce_clause",
+            "economic_federalism_state_regulation",
+            "economic_remedy_damages"
+          ],
+          "prompt_id": 8,
+          "prompt_key": "EA01_commercial_remedy"
+        },
+        {
+          "contrast_frames": [
+            "economic_commerce_limits",
+            "economic_federalism_state_regulation"
+          ],
+          "expected_frames": [
+            "economic_commerce_clause"
+          ],
+          "prompt_id": 9,
+          "prompt_key": "EA02_homegrown_market_regulation"
+        },
+        {
+          "contrast_frames": [
+            "economic_commerce_clause"
+          ],
+          "expected_frames": [
+            "economic_commerce_limits",
+            "economic_federalism_state_regulation"
+          ],
+          "prompt_id": 10,
+          "prompt_key": "EA03_gun_school_zone"
+        },
+        {
+          "contrast_frames": [
+            "economic_commerce_clause"
+          ],
+          "expected_frames": [
+            "federalism_preemption",
+            "economic_statutory_interpretation",
+            "economic_federalism_state_regulation"
+          ],
+          "prompt_id": 11,
+          "prompt_key": "EA04_arbitration_preemption"
+        }
+      ],
+      "random_rows": 600,
+      "source_feasibility": 3,
+      "status": "candidate",
+      "triage_score": 2.836154641653934
+    },
+    {
+      "condition_count": 12,
+      "issue_area": "Civil Rights",
+      "max_sd_target_delta": 1.3844618788097962,
+      "mean_abs_target_delta": 0.8666666666666667,
+      "mean_base_target_present_rate": 0.8333333333333334,
+      "mean_disagreement_rate": 0.5916666666666667,
+      "mean_off_domain_present_rate": 0.07166666666666667,
+      "mean_sd_target_delta": 0.9261339521755523,
+      "mean_target_present_rate": 0.8449999999999999,
+      "next_action": "Only after Economic Activity; likely needs dominance review because strict/intermediate scrutiny labels are lexical.",
+      "notes": "Good source availability, but high risk that the task reduces to named scrutiny formulas.",
+      "prompt_count": 4,
+      "prompts": [
+        {
+          "contrast_frames": [
+            "civil_sex_equality_intermediate"
+          ],
+          "expected_frames": [
+            "civil_equal_protection_strict_scrutiny"
+          ],
+          "prompt_id": 12,
+          "prompt_key": "CR01_race_admissions"
+        },
+        {
+          "contrast_frames": [
+            "civil_equal_protection_strict_scrutiny"
+          ],
+          "expected_frames": [
+            "civil_sex_equality_intermediate"
+          ],
+          "prompt_id": 13,
+          "prompt_key": "CR02_sex_military_academy"
+        },
+        {
+          "contrast_frames": [
+            "civil_section5_congruence"
+          ],
+          "expected_frames": [
+            "civil_voting_race_districting",
+            "civil_equal_protection_strict_scrutiny"
+          ],
+          "prompt_id": 14,
+          "prompt_key": "CR03_racial_redistricting"
+        },
+        {
+          "contrast_frames": [
+            "federalism_anti_commandeering"
+          ],
+          "expected_frames": [
+            "civil_section5_congruence"
+          ],
+          "prompt_id": 15,
+          "prompt_key": "CR04_state_disability_access"
+        }
+      ],
+      "random_rows": 600,
+      "source_feasibility": 3,
+      "status": "backup_candidate",
+      "triage_score": 2.684309081779367
+    },
+    {
+      "condition_count": 6,
+      "issue_area": "Due Process",
+      "max_sd_target_delta": 1.122860777893062,
+      "mean_abs_target_delta": 0.81,
+      "mean_base_target_present_rate": 1.0,
+      "mean_disagreement_rate": 0.3866666666666667,
+      "mean_off_domain_present_rate": 0.0,
+      "mean_sd_target_delta": 0.9430855378042434,
+      "mean_target_present_rate": 0.9500000000000001,
+      "next_action": "Expand prompts and define narrower subframes before a source pack.",
+      "notes": "Only two prompts; doctrine is broad and may blur substantive/procedural/equal-protection frames.",
+      "prompt_count": 2,
+      "prompts": [
+        {
+          "contrast_frames": [
+            "due_process_procedural_mathews"
+          ],
+          "expected_frames": [
+            "due_process_substantive",
+            "civil_equal_protection_strict_scrutiny"
+          ],
+          "prompt_id": 18,
+          "prompt_key": "DP01_marriage_liberty"
+        },
+        {
+          "contrast_frames": [
+            "due_process_substantive"
+          ],
+          "expected_frames": [
+            "due_process_procedural_mathews"
+          ],
+          "prompt_id": 19,
+          "prompt_key": "DP02_benefits_hearing"
+        }
+      ],
+      "random_rows": 300,
+      "source_feasibility": 2,
+      "status": "needs_prompt_expansion",
+      "triage_score": 1.512200806330302
+    },
+    {
+      "condition_count": 3,
+      "issue_area": "Administrative Law",
+      "max_sd_target_delta": 1.0388376550113054,
+      "mean_abs_target_delta": 0.7533333333333334,
+      "mean_base_target_present_rate": 1.0,
+      "mean_disagreement_rate": 0.13333333333333333,
+      "mean_off_domain_present_rate": 0.0,
+      "mean_sd_target_delta": 1.0045909860096776,
+      "mean_target_present_rate": 0.9266666666666666,
+      "next_action": "Expand major-questions/nondelegation/Chevron prompts before source probing.",
+      "notes": "Only one prompt; source labels are feasible but the prompt bank is too narrow.",
+      "prompt_count": 1,
+      "prompts": [
+        {
+          "contrast_frames": [
+            "economic_commerce_clause"
+          ],
+          "expected_frames": [
+            "admin_major_questions",
+            "economic_statutory_interpretation"
+          ],
+          "prompt_id": 17,
+          "prompt_key": "FD02_major_questions_agency"
+        }
+      ],
+      "random_rows": 150,
+      "source_feasibility": 2,
+      "status": "needs_prompt_expansion",
+      "triage_score": 1.3449350099930868
+    },
+    {
+      "condition_count": 12,
+      "issue_area": "Criminal Procedure",
+      "max_sd_target_delta": 1.7201091564793445,
+      "mean_abs_target_delta": 1.113333333333333,
+      "mean_base_target_present_rate": 1.0,
+      "mean_disagreement_rate": 0.2066666666666667,
+      "mean_off_domain_present_rate": 0.005,
+      "mean_sd_target_delta": 1.1335499635002717,
+      "mean_target_present_rate": 0.9833333333333334,
+      "next_action": "Do not hook current Fourth directions; use only for evaluator diagnostics.",
+      "notes": "Fourth Amendment source pack and corrected source probe were text-baseline dominated or split-skewed.",
+      "prompt_count": 4,
+      "prompts": [
+        {
+          "contrast_frames": [
+            "fourth_exigency_consent"
+          ],
+          "expected_frames": [
+            "fourth_plain_view_closed_container",
+            "fourth_search_incident_chimel"
+          ],
+          "prompt_id": 4,
+          "prompt_key": "CP01_locked_backpack"
+        },
+        {
+          "contrast_frames": [
+            "fourth_safety_evidence"
+          ],
+          "expected_frames": [
+            "fourth_digital_privacy",
+            "fourth_search_incident_chimel"
+          ],
+          "prompt_id": 5,
+          "prompt_key": "CP02_cell_phone_arrest"
+        },
+        {
+          "contrast_frames": [
+            "fourth_exigency_consent"
+          ],
+          "expected_frames": [
+            "fourth_stop_reasonable_suspicion"
+          ],
+          "prompt_id": 6,
+          "prompt_key": "CP03_dog_sniff_traffic_stop"
+        },
+        {
+          "contrast_frames": [
+            "fourth_search_incident_chimel"
+          ],
+          "expected_frames": [
+            "fourth_home_exigency",
+            "fourth_exigency_consent",
+            "fourth_plain_view_closed_container"
+          ],
+          "prompt_id": 7,
+          "prompt_key": "CP04_home_emergency_entry"
+        }
+      ],
+      "random_rows": 600,
+      "source_feasibility": 3,
+      "status": "deprioritize_fourth_branch_failed",
+      "triage_score": 0.9994881213093296
+    },
+    {
+      "condition_count": 3,
+      "issue_area": "Federalism",
+      "max_sd_target_delta": 1.1492677349210725,
+      "mean_abs_target_delta": 0.3466666666666666,
+      "mean_base_target_present_rate": 1.0,
+      "mean_disagreement_rate": 0.7999999999999999,
+      "mean_off_domain_present_rate": 0.11333333333333333,
+      "mean_sd_target_delta": 0.9308336652802213,
+      "mean_target_present_rate": 0.98,
+      "next_action": "Expand prompt bank before source probing; possible anti-commandeering/preemption pack.",
+      "notes": "Only one prompt and remaining off-domain contamination is nontrivial.",
+      "prompt_count": 1,
+      "prompts": [
+        {
+          "contrast_frames": [
+            "federalism_preemption"
+          ],
+          "expected_frames": [
+            "federalism_anti_commandeering"
+          ],
+          "prompt_id": 16,
+          "prompt_key": "FD01_state_sheriff_checks"
+        }
+      ],
+      "random_rows": 150,
+      "source_feasibility": 2,
+      "status": "needs_prompt_expansion",
+      "triage_score": 0.47511881051412774
+    },
+    {
+      "condition_count": 12,
+      "issue_area": "Judicial Power",
+      "max_sd_target_delta": 1.6333263917664516,
+      "mean_abs_target_delta": 0.8416666666666667,
+      "mean_base_target_present_rate": 0.9166666666666666,
+      "mean_disagreement_rate": 0.8850000000000001,
+      "mean_off_domain_present_rate": 0.21000000000000005,
+      "mean_sd_target_delta": 1.0943432600059573,
+      "mean_target_present_rate": 0.9283333333333333,
+      "next_action": "Do not build another Article III pack unless a second reviewer changes labels or a new subdoctrine is defined.",
+      "notes": "Already tested with target corpus, expanded source pack, dominance review, and proposition rescore.",
+      "prompt_count": 4,
+      "prompts": [
+        {
+          "contrast_frames": [
+            "article3_case_or_controversy"
+          ],
+          "expected_frames": [
+            "article3_public_rights",
+            "article3_private_rights",
+            "article3_article1_tribunal"
+          ],
+          "prompt_id": 0,
+          "prompt_key": "JP01_agency_private_company"
+        },
+        {
+          "contrast_frames": [
+            "article3_public_rights"
+          ],
+          "expected_frames": [
+            "article3_private_rights",
+            "article3_article1_tribunal"
+          ],
+          "prompt_id": 1,
+          "prompt_key": "JP02_bankruptcy_counterclaim"
+        },
+        {
+          "contrast_frames": [
+            "economic_remedy_damages"
+          ],
+          "expected_frames": [
+            "article3_public_rights",
+            "article3_private_rights",
+            "article3_article1_tribunal"
+          ],
+          "prompt_id": 2,
+          "prompt_key": "JP03_agency_civil_penalty"
+        },
+        {
+          "contrast_frames": [
+            "article3_private_rights"
+          ],
+          "expected_frames": [
+            "article3_public_rights",
+            "article3_article1_tribunal"
+          ],
+          "prompt_id": 3,
+          "prompt_key": "JP04_immigration_removal"
+        }
+      ],
+      "random_rows": 600,
+      "source_feasibility": 3,
+      "status": "deprioritize_current_branch_failed",
+      "triage_score": -0.22417375714711274
+    }
+  ],
+  "prompt_bank": "/home/orwel/dev_genius/experiments/Character Creation/data/scotus/scotus_poke_prompts_v1.jsonl",
+  "prompt_rows": [
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.32,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": -2.48,
+      "mean_target_delta": -2.42,
+      "n": 50,
+      "off_domain_present_rate": 0.06,
+      "prompt_id": 0,
+      "prompt_key": "JP01_agency_private_company",
+      "sd_net_delta": 1.3437686875776969,
+      "sd_target_delta": 1.2791897946013504,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.8,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": 0.12,
+      "mean_target_delta": 0.16,
+      "n": 50,
+      "off_domain_present_rate": 0.06,
+      "prompt_id": 0,
+      "prompt_key": "JP01_agency_private_company",
+      "sd_net_delta": 1.6738078303859212,
+      "sd_target_delta": 1.6333263917664516,
+      "target_present_rate": 0.86
+    },
+    {
+      "base_target_present_rate": 0.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.8,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": 1.62,
+      "mean_target_delta": 1.66,
+      "n": 50,
+      "off_domain_present_rate": 0.06,
+      "prompt_id": 0,
+      "prompt_key": "JP01_agency_private_company",
+      "sd_net_delta": 1.0669429914193052,
+      "sd_target_delta": 1.0022423838165933,
+      "target_present_rate": 0.88
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.98,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": -0.24,
+      "mean_target_delta": -0.2,
+      "n": 50,
+      "off_domain_present_rate": 0.98,
+      "prompt_id": 1,
+      "prompt_key": "JP02_bankruptcy_counterclaim",
+      "sd_net_delta": 0.5554920598635309,
+      "sd_target_delta": 0.5345224838248488,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.82,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": -0.18,
+      "mean_target_delta": 0.06,
+      "n": 50,
+      "off_domain_present_rate": 0.36,
+      "prompt_id": 1,
+      "prompt_key": "JP02_bankruptcy_counterclaim",
+      "sd_net_delta": 1.0038700623291923,
+      "sd_target_delta": 0.9775020225460572,
+      "target_present_rate": 0.66
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 1.0,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": 0.94,
+      "mean_target_delta": 1.3,
+      "n": 50,
+      "off_domain_present_rate": 0.64,
+      "prompt_id": 1,
+      "prompt_key": "JP02_bankruptcy_counterclaim",
+      "sd_net_delta": 1.3763305250868028,
+      "sd_target_delta": 1.265717510476382,
+      "target_present_rate": 0.94
+    },
+    {
+      "base_target_present_rate": 0.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.62,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": 0.12,
+      "mean_target_delta": 0.26,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 10,
+      "prompt_key": "EA03_gun_school_zone",
+      "sd_net_delta": 0.6892764618179896,
+      "sd_target_delta": 0.5996597674804387,
+      "target_present_rate": 0.2
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.28,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": -1.26,
+      "mean_target_delta": -1.64,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 10,
+      "prompt_key": "EA03_gun_school_zone",
+      "sd_net_delta": 1.3372222198670356,
+      "sd_target_delta": 1.1911236334671904,
+      "target_present_rate": 0.76
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.2,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": -1.12,
+      "mean_target_delta": -1.38,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 10,
+      "prompt_key": "EA03_gun_school_zone",
+      "sd_net_delta": 1.0811935959099714,
+      "sd_target_delta": 1.0079277589921505,
+      "target_present_rate": 0.9
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.98,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": 0.02,
+      "mean_target_delta": 0.04,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 11,
+      "prompt_key": "EA04_arbitration_preemption",
+      "sd_net_delta": 0.24660966430902956,
+      "sd_target_delta": 0.1979486637221574,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 0.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.16,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": 0.76,
+      "mean_target_delta": 0.8,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 11,
+      "prompt_key": "EA04_arbitration_preemption",
+      "sd_net_delta": 0.6869037302955033,
+      "sd_target_delta": 0.6060915267313265,
+      "target_present_rate": 0.7
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.2,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": -0.4,
+      "mean_target_delta": -0.36,
+      "n": 50,
+      "off_domain_present_rate": 0.02,
+      "prompt_id": 11,
+      "prompt_key": "EA04_arbitration_preemption",
+      "sd_net_delta": 0.6998542122237652,
+      "sd_target_delta": 0.662709343128183,
+      "target_present_rate": 0.54
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.08,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": -0.52,
+      "mean_target_delta": -0.52,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 12,
+      "prompt_key": "CR01_race_admissions",
+      "sd_net_delta": 0.8388524717658971,
+      "sd_target_delta": 0.8388524717658971,
+      "target_present_rate": 0.92
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.04,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": 0.8,
+      "mean_target_delta": 0.8,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 12,
+      "prompt_key": "CR01_race_admissions",
+      "sd_net_delta": 0.8571428571428572,
+      "sd_target_delta": 0.8571428571428572,
+      "target_present_rate": 0.96
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.06,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": 0.46,
+      "mean_target_delta": 0.46,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 12,
+      "prompt_key": "CR01_race_admissions",
+      "sd_net_delta": 0.6455499158682859,
+      "sd_target_delta": 0.6455499158682859,
+      "target_present_rate": 0.96
+    },
+    {
+      "base_target_present_rate": 0.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 1.0,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": 0.44,
+      "mean_target_delta": 0.44,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 13,
+      "prompt_key": "CR02_sex_military_academy",
+      "sd_net_delta": 0.7045044574821687,
+      "sd_target_delta": 0.7045044574821687,
+      "target_present_rate": 0.34
+    },
+    {
+      "base_target_present_rate": 0.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 1.0,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": 0.66,
+      "mean_target_delta": 0.66,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 13,
+      "prompt_key": "CR02_sex_military_academy",
+      "sd_net_delta": 0.8715456595811225,
+      "sd_target_delta": 0.8715456595811225,
+      "target_present_rate": 0.46
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.92,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": -0.16,
+      "mean_target_delta": -0.08,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 13,
+      "prompt_key": "CR02_sex_military_academy",
+      "sd_net_delta": 0.9116032076310753,
+      "sd_target_delta": 0.8769148144698746,
+      "target_present_rate": 0.64
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.36,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": -1.22,
+      "mean_target_delta": -1.22,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 14,
+      "prompt_key": "CR03_racial_redistricting",
+      "sd_net_delta": 1.2001700559776127,
+      "sd_target_delta": 1.2001700559776127,
+      "target_present_rate": 0.94
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.4,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": 1.96,
+      "mean_target_delta": 1.96,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 14,
+      "prompt_key": "CR03_racial_redistricting",
+      "sd_net_delta": 1.3844618788097962,
+      "sd_target_delta": 1.3844618788097962,
+      "target_present_rate": 0.96
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.42,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": -2.68,
+      "mean_target_delta": -2.68,
+      "n": 50,
+      "off_domain_present_rate": 0.02,
+      "prompt_id": 14,
+      "prompt_key": "CR03_racial_redistricting",
+      "sd_net_delta": 1.3767752917893439,
+      "sd_target_delta": 1.3767752917893439,
+      "target_present_rate": 0.96
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.92,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": 0.24,
+      "mean_target_delta": 0.24,
+      "n": 50,
+      "off_domain_present_rate": 0.04,
+      "prompt_id": 15,
+      "prompt_key": "CR04_state_disability_access",
+      "sd_net_delta": 0.7708992893275453,
+      "sd_target_delta": 0.7708992893275453,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.92,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": 1.26,
+      "mean_target_delta": 1.26,
+      "n": 50,
+      "off_domain_present_rate": 0.1,
+      "prompt_id": 15,
+      "prompt_key": "CR04_state_disability_access",
+      "sd_net_delta": 0.9216223495022464,
+      "sd_target_delta": 0.9216223495022464,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.98,
+      "issue_area": "Civil Rights",
+      "mean_net_delta": -0.08,
+      "mean_target_delta": -0.08,
+      "n": 50,
+      "off_domain_present_rate": 0.7,
+      "prompt_id": 15,
+      "prompt_key": "CR04_state_disability_access",
+      "sd_net_delta": 0.6651683843898751,
+      "sd_target_delta": 0.6651683843898751,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.62,
+      "issue_area": "Federalism",
+      "mean_net_delta": -0.08,
+      "mean_target_delta": -0.06,
+      "n": 50,
+      "off_domain_present_rate": 0.1,
+      "prompt_id": 16,
+      "prompt_key": "FD01_state_sheriff_checks",
+      "sd_net_delta": 0.8290638930598233,
+      "sd_target_delta": 0.8429781995389675,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.96,
+      "issue_area": "Federalism",
+      "mean_net_delta": 0.8,
+      "mean_target_delta": 0.82,
+      "n": 50,
+      "off_domain_present_rate": 0.08,
+      "prompt_id": 16,
+      "prompt_key": "FD01_state_sheriff_checks",
+      "sd_net_delta": 0.8329931278350429,
+      "sd_target_delta": 0.8002550613806239,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.82,
+      "issue_area": "Federalism",
+      "mean_net_delta": -0.16,
+      "mean_target_delta": -0.16,
+      "n": 50,
+      "off_domain_present_rate": 0.16,
+      "prompt_id": 16,
+      "prompt_key": "FD01_state_sheriff_checks",
+      "sd_net_delta": 1.1492677349210725,
+      "sd_target_delta": 1.1492677349210725,
+      "target_present_rate": 0.94
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.1,
+      "issue_area": "Administrative Law",
+      "mean_net_delta": 1.32,
+      "mean_target_delta": 1.32,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 17,
+      "prompt_key": "FD02_major_questions_agency",
+      "sd_net_delta": 1.0388376550113054,
+      "sd_target_delta": 1.0388376550113054,
+      "target_present_rate": 0.94
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.1,
+      "issue_area": "Administrative Law",
+      "mean_net_delta": -0.36,
+      "mean_target_delta": -0.36,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 17,
+      "prompt_key": "FD02_major_questions_agency",
+      "sd_net_delta": 1.0253919111386491,
+      "sd_target_delta": 1.0253919111386491,
+      "target_present_rate": 0.84
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.2,
+      "issue_area": "Administrative Law",
+      "mean_net_delta": -0.58,
+      "mean_target_delta": -0.58,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 17,
+      "prompt_key": "FD02_major_questions_agency",
+      "sd_net_delta": 0.9495433918790781,
+      "sd_target_delta": 0.9495433918790781,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.38,
+      "issue_area": "Due Process",
+      "mean_net_delta": 0.1,
+      "mean_target_delta": 0.1,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 18,
+      "prompt_key": "DP01_marriage_liberty",
+      "sd_net_delta": 0.8630747123996123,
+      "sd_target_delta": 0.8630747123996123,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.44,
+      "issue_area": "Due Process",
+      "mean_net_delta": -0.56,
+      "mean_target_delta": -0.56,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 18,
+      "prompt_key": "DP01_marriage_liberty",
+      "sd_net_delta": 0.8843307166024093,
+      "sd_target_delta": 0.8843307166024093,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.74,
+      "issue_area": "Due Process",
+      "mean_net_delta": -1.2,
+      "mean_target_delta": -1.2,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 18,
+      "prompt_key": "DP01_marriage_liberty",
+      "sd_net_delta": 0.8571428571428572,
+      "sd_target_delta": 0.8571428571428572,
+      "target_present_rate": 0.96
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.3,
+      "issue_area": "Due Process",
+      "mean_net_delta": 0.62,
+      "mean_target_delta": 0.62,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 19,
+      "prompt_key": "DP02_benefits_hearing",
+      "sd_net_delta": 1.122860777893062,
+      "sd_target_delta": 1.122860777893062,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.0,
+      "issue_area": "Due Process",
+      "mean_net_delta": -1.7,
+      "mean_target_delta": -1.68,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 19,
+      "prompt_key": "DP02_benefits_hearing",
+      "sd_net_delta": 0.9948848769417228,
+      "sd_target_delta": 0.978128158207068,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.46,
+      "issue_area": "Due Process",
+      "mean_net_delta": -0.7,
+      "mean_target_delta": -0.7,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 19,
+      "prompt_key": "DP02_benefits_hearing",
+      "sd_net_delta": 0.9529760045804524,
+      "sd_target_delta": 0.9529760045804524,
+      "target_present_rate": 0.74
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.96,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": 1.06,
+      "mean_target_delta": 1.06,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 2,
+      "prompt_key": "JP03_agency_civil_penalty",
+      "sd_net_delta": 1.0956313993608007,
+      "sd_target_delta": 1.0956313993608007,
+      "target_present_rate": 0.98
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.98,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": -0.5,
+      "mean_target_delta": -0.56,
+      "n": 50,
+      "off_domain_present_rate": 0.04,
+      "prompt_id": 2,
+      "prompt_key": "JP03_agency_civil_penalty",
+      "sd_net_delta": 1.0738068841694934,
+      "sd_target_delta": 0.9930369826847295,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.98,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": 0.42,
+      "mean_target_delta": 0.42,
+      "n": 50,
+      "off_domain_present_rate": 0.02,
+      "prompt_id": 2,
+      "prompt_key": "JP03_agency_civil_penalty",
+      "sd_net_delta": 1.1967643452071857,
+      "sd_target_delta": 1.1795883059053152,
+      "target_present_rate": 0.98
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 1.0,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": 0.06,
+      "mean_target_delta": 0.08,
+      "n": 50,
+      "off_domain_present_rate": 0.1,
+      "prompt_id": 3,
+      "prompt_key": "JP04_immigration_removal",
+      "sd_net_delta": 1.0184021097498066,
+      "sd_target_delta": 1.006914867811777,
+      "target_present_rate": 0.98
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 1.0,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": 0.98,
+      "mean_target_delta": 1.0,
+      "n": 50,
+      "off_domain_present_rate": 0.04,
+      "prompt_id": 3,
+      "prompt_key": "JP04_immigration_removal",
+      "sd_net_delta": 1.1337134216586569,
+      "sd_target_delta": 1.1605769149479943,
+      "target_present_rate": 0.94
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.98,
+      "issue_area": "Judicial Power",
+      "mean_net_delta": -1.18,
+      "mean_target_delta": -1.18,
+      "n": 50,
+      "off_domain_present_rate": 0.16,
+      "prompt_id": 3,
+      "prompt_key": "JP04_immigration_removal",
+      "sd_net_delta": 1.0038700623291923,
+      "sd_target_delta": 1.0038700623291923,
+      "target_present_rate": 0.92
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.04,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": 1.28,
+      "mean_target_delta": 1.34,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 4,
+      "prompt_key": "CP01_locked_backpack",
+      "sd_net_delta": 1.2623269733928297,
+      "sd_target_delta": 1.255355872789441,
+      "target_present_rate": 0.98
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.06,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": 2.98,
+      "mean_target_delta": 3.22,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 4,
+      "prompt_key": "CP01_locked_backpack",
+      "sd_net_delta": 1.5842335428740761,
+      "sd_target_delta": 1.3292624930803563,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.12,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": 0.3,
+      "mean_target_delta": 1.06,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 4,
+      "prompt_key": "CP01_locked_backpack",
+      "sd_net_delta": 1.4880476182856899,
+      "sd_target_delta": 1.4201178450669336,
+      "target_present_rate": 0.98
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.38,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": 0.52,
+      "mean_target_delta": 0.02,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 5,
+      "prompt_key": "CP02_cell_phone_arrest",
+      "sd_net_delta": 2.251892628027204,
+      "sd_target_delta": 1.7201091564793445,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.28,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": -3.02,
+      "mean_target_delta": -2.86,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 5,
+      "prompt_key": "CP02_cell_phone_arrest",
+      "sd_net_delta": 1.6719779316969565,
+      "sd_target_delta": 1.5119928733230166,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.28,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": -0.34,
+      "mean_target_delta": -0.42,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 5,
+      "prompt_key": "CP02_cell_phone_arrest",
+      "sd_net_delta": 1.8473367481930547,
+      "sd_target_delta": 1.2791897946013504,
+      "target_present_rate": 0.96
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.02,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": 1.12,
+      "mean_target_delta": 1.12,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 6,
+      "prompt_key": "CP03_dog_sniff_traffic_stop",
+      "sd_net_delta": 0.7730142433410676,
+      "sd_target_delta": 0.7730142433410676,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.02,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": -0.08,
+      "mean_target_delta": 0.02,
+      "n": 50,
+      "off_domain_present_rate": 0.02,
+      "prompt_id": 6,
+      "prompt_key": "CP03_dog_sniff_traffic_stop",
+      "sd_net_delta": 0.9864386572361182,
+      "sd_target_delta": 0.9145089013302412,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.1,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": -0.26,
+      "mean_target_delta": -0.16,
+      "n": 50,
+      "off_domain_present_rate": 0.04,
+      "prompt_id": 6,
+      "prompt_key": "CP03_dog_sniff_traffic_stop",
+      "sd_net_delta": 0.9648939880439018,
+      "sd_target_delta": 0.8889342392059455,
+      "target_present_rate": 0.98
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.28,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": -0.92,
+      "mean_target_delta": -0.92,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 7,
+      "prompt_key": "CP04_home_emergency_entry",
+      "sd_net_delta": 1.026982900320653,
+      "sd_target_delta": 1.026982900320653,
+      "target_present_rate": 0.92
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.46,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": 0.94,
+      "mean_target_delta": 0.94,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 7,
+      "prompt_key": "CP04_home_emergency_entry",
+      "sd_net_delta": 0.8429781995389675,
+      "sd_target_delta": 0.8429781995389675,
+      "target_present_rate": 0.98
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.44,
+      "issue_area": "Criminal Procedure",
+      "mean_net_delta": -1.28,
+      "mean_target_delta": -1.28,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 7,
+      "prompt_key": "CP04_home_emergency_entry",
+      "sd_net_delta": 0.6401530429259451,
+      "sd_target_delta": 0.6401530429259451,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.84,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": 0.54,
+      "mean_target_delta": -0.06,
+      "n": 50,
+      "off_domain_present_rate": 0.22,
+      "prompt_id": 8,
+      "prompt_key": "EA01_commercial_remedy",
+      "sd_net_delta": 2.168513080336809,
+      "sd_target_delta": 1.8671160780678826,
+      "target_present_rate": 0.96
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.5,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": -1.0,
+      "mean_target_delta": -1.44,
+      "n": 50,
+      "off_domain_present_rate": 0.16,
+      "prompt_id": 8,
+      "prompt_key": "EA01_commercial_remedy",
+      "sd_net_delta": 1.979486637221574,
+      "sd_target_delta": 1.4591023239775662,
+      "target_present_rate": 0.88
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.92,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": -0.08,
+      "mean_target_delta": -0.06,
+      "n": 50,
+      "off_domain_present_rate": 0.2,
+      "prompt_id": 8,
+      "prompt_key": "EA01_commercial_remedy",
+      "sd_net_delta": 1.04666623337224,
+      "sd_target_delta": 1.0382481320346642,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "bench_memo",
+      "disagreement_rate": 0.4,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": -0.88,
+      "mean_target_delta": -0.74,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 9,
+      "prompt_key": "EA02_homegrown_market_regulation",
+      "sd_net_delta": 0.895339406628137,
+      "sd_target_delta": 0.8283250865328128,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "concise_judicial",
+      "disagreement_rate": 0.82,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": -0.28,
+      "mean_target_delta": -0.26,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 9,
+      "prompt_key": "EA02_homegrown_market_regulation",
+      "sd_net_delta": 0.607436903584837,
+      "sd_target_delta": 0.5996597674804387,
+      "target_present_rate": 1.0
+    },
+    {
+      "base_target_present_rate": 1.0,
+      "condition_context": "majority_reasoning",
+      "disagreement_rate": 0.92,
+      "issue_area": "Economic Activity",
+      "mean_net_delta": -0.22,
+      "mean_target_delta": -0.22,
+      "n": 50,
+      "off_domain_present_rate": 0.0,
+      "prompt_id": 9,
+      "prompt_key": "EA02_homegrown_market_regulation",
+      "sd_net_delta": 0.5066899385990914,
+      "sd_target_delta": 0.5066899385990914,
+      "target_present_rate": 1.0
+    }
+  ],
+  "rescore_dir": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/scotus_frame_prop_rescore_20260501_012850"
+}

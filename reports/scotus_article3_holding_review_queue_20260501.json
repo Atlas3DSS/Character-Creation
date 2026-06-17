@@ -1,0 +1,11 @@
+{
+  "blind": "data/scotus/scotus_article3_holding_review_blind_20260501.jsonl",
+  "finished_at": "2026-05-01T23:26:33-07:00",
+  "generations": "sweep_v4/scotus_counterfactual_thoughts_20260501_231331/generations.jsonl",
+  "key": "data/scotus/scotus_article3_holding_review_key_20260501.jsonl",
+  "polarity": "sweep_v4/scotus_article3_conclusion_polarity_20260501_232256/polarity_rows.jsonl",
+  "report": "reports/scotus_article3_holding_review_queue_20260501.md",
+  "review_rows": 24,
+  "started_at": "2026-05-01T23:26:33-07:00",
+  "visible_thought_redacted": true
+}

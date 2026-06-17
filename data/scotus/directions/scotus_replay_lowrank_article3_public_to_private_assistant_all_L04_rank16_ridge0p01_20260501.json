@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-05-01",
+  "artifact": "data/scotus/directions/scotus_replay_lowrank_article3_public_to_private_assistant_all_L04_rank16_ridge0p01_20260501.npz",
+  "source_run": "sweep_v4/scotus_replay_lowrank_diag_20260501_203153",
+  "source_model_path": "/home/orwel/dev_genius/models/Qwen3.5-27B",
+  "replay_run": "sweep_v4/scotus_article3_controlled_replay_v2_20260501_172957",
+  "feature_key": "assistant_all__L04",
+  "pair_field": "pair_id",
+  "label_field": "frame_label",
+  "source_label": "article3_public_rights",
+  "target_label": "article3_private_rights",
+  "rank": 16,
+  "ridge": 0.01,
+  "offline_dev_mse_improvement": 0.996,
+  "offline_dev_delta_cosine": 0.998,
+  "offline_test_mse_improvement": 0.996,
+  "offline_test_delta_cosine": 0.998,
+  "causal_runs": [
+    "sweep_v4/scotus_thinking_lowrank_poke_20260501_203434",
+    "sweep_v4/scotus_thinking_lowrank_poke_20260501_204712"
+  ],
+  "decision": "negative",
+  "why_track": "Best offline Article III public-to-private low-rank map; retained as a negative diagnostic because no-mask thinking pokes failed promotion."
+}

@@ -1,0 +1,86 @@
+{
+  "source_run": "sweep_v4/scotus_minpair_replay_20260501_100514",
+  "direction_path": "data/scotus/directions/probe_direction_assistant_all_L16_C0p001.npz",
+  "region": "assistant_all",
+  "layer": 16,
+  "C": 0.001,
+  "positive_justice": "commerce_limits",
+  "raw_direction_norm": 2.2754344940185547,
+  "dev_metrics_train_only": {
+    "n": 10,
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "f1": 1.0,
+    "label_counts": {
+      "0": 5,
+      "1": 5
+    },
+    "prediction_counts": {
+      "0": 5,
+      "1": 5
+    },
+    "mean_positive_probability": 0.49873775090770706
+  },
+  "test_metrics_train_only_diagnostic": {
+    "n": 10,
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "f1": 1.0,
+    "label_counts": {
+      "0": 5,
+      "1": 5
+    },
+    "prediction_counts": {
+      "0": 5,
+      "1": 5
+    },
+    "mean_positive_probability": 0.49779938034965376
+  },
+  "final_refit_split_metrics": {
+    "train": {
+      "n": 28,
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "f1": 1.0,
+      "label_counts": {
+        "0": 14,
+        "1": 14
+      },
+      "prediction_counts": {
+        "0": 14,
+        "1": 14
+      },
+      "mean_positive_probability": 0.4999121794625548
+    },
+    "dev": {
+      "n": 10,
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "f1": 1.0,
+      "label_counts": {
+        "0": 5,
+        "1": 5
+      },
+      "prediction_counts": {
+        "0": 5,
+        "1": 5
+      },
+      "mean_positive_probability": 0.49893290451874767
+    },
+    "test": {
+      "n": 10,
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "f1": 1.0,
+      "label_counts": {
+        "0": 5,
+        "1": 5
+      },
+      "prediction_counts": {
+        "0": 5,
+        "1": 5
+      },
+      "mean_positive_probability": 0.49834515653663247
+    }
+  }
+}

@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personality Sweep Visualizer</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6efe3;
+      --bg-accent: #f2d8b6;
+      --panel: rgba(255, 251, 245, 0.9);
+      --panel-strong: #fffaf2;
+      --ink: #17212b;
+      --muted: #5c6773;
+      --line: rgba(23, 33, 43, 0.12);
+      --accent: #ba4a2f;
+      --accent-2: #2d7a78;
+      --accent-3: #d98b2b;
+      --shadow: 0 18px 48px rgba(38, 32, 25, 0.12);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(217, 139, 43, 0.18), transparent 35%),
+        radial-gradient(circle at 100% 10%, rgba(45, 122, 120, 0.12), transparent 40%),
+        linear-gradient(180deg, #fbf6ee 0%, #f6efe3 100%);
+      min-height: 100vh;
+    }
+    .shell {
+      width: min(1500px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 72px;
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(255, 247, 235, 0.96), rgba(248, 240, 228, 0.94)),
+        linear-gradient(90deg, rgba(186, 74, 47, 0.06), rgba(45, 122, 120, 0.06));
+      border: 1px solid rgba(23, 33, 43, 0.08);
+      box-shadow: var(--shadow);
+      padding: 28px 28px 24px;
+      margin-bottom: 18px;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -60px auto;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(186, 74, 47, 0.16), transparent 68%);
+      pointer-events: none;
+    }
+    .kicker {
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    h1 { font-size: clamp(34px, 5vw, 58px); line-height: 0.98; max-width: 12ch; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+      gap: 22px;
+      align-items: end;
+    }
+    .lede {
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 16px 0 0;
+      max-width: 66ch;
+    }
+    .meta-stack {
+      display: grid;
+      gap: 10px;
+      justify-items: start;
+      align-content: start;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: rgba(23, 33, 43, 0.06);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .chip.accent { background: rgba(186, 74, 47, 0.11); color: #8d311d; }
+    .chip.teal { background: rgba(45, 122, 120, 0.12); color: #1d5d5b; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 18px;
+      backdrop-filter: blur(10px);
+    }
+    .span-12 { grid-column: span 12; }
+    .span-8 { grid-column: span 8; }
+    .span-7 { grid-column: span 7; }
+    .span-6 { grid-column: span 6; }
+    .span-5 { grid-column: span 5; }
+    .span-4 { grid-column: span 4; }
+    .span-3 { grid-column: span 3; }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .stat-card {
+      background: var(--panel-strong);
+      border: 1px solid rgba(23, 33, 43, 0.08);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .stat-value {
+      font-size: clamp(24px, 3vw, 34px);
+      font-weight: 800;
+      line-height: 1;
+    }
+    .stat-sub {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+    .panel-title { font-size: 26px; }
+    .panel-copy {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      max-width: 72ch;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    select {
+      appearance: none;
+      border: 1px solid rgba(23, 33, 43, 0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fffdf8;
+      color: var(--ink);
+      min-width: 170px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .plot { min-height: 420px; }
+    .plot.short { min-height: 320px; }
+    .twocol {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .mini-note {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .callout {
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(186, 74, 47, 0.16);
+      background: rgba(186, 74, 47, 0.06);
+      color: #6c3428;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .leaderboard {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .leaderboard th,
+    .leaderboard td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(23, 33, 43, 0.08);
+      vertical-align: top;
+    }
+    .leaderboard th {
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .triplet-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      margin-bottom: 12px;
+    }
+    .triplet-shell {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .response-card {
+      background: var(--panel-strong);
+      border: 1px solid rgba(23, 33, 43, 0.08);
+      border-radius: 18px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      min-height: 100%;
+    }
+    .response-card.low { box-shadow: inset 0 0 0 2px rgba(45, 122, 120, 0.18); }
+    .response-card.mid { box-shadow: inset 0 0 0 2px rgba(217, 139, 43, 0.18); }
+    .response-card.high { box-shadow: inset 0 0 0 2px rgba(186, 74, 47, 0.18); }
+    .response-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+    .response-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .response-title {
+      font-size: 22px;
+      font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    }
+    .response-body {
+      white-space: pre-wrap;
+      line-height: 1.55;
+      font-size: 14px;
+      color: var(--ink);
+      max-height: 340px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .response-meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    details {
+      border-top: 1px dashed rgba(23, 33, 43, 0.14);
+      padding-top: 10px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 280px;
+      border: 1px dashed rgba(23, 33, 43, 0.16);
+      border-radius: 18px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.34);
+      padding: 20px;
+      text-align: center;
+      line-height: 1.55;
+    }
+    @media (max-width: 1100px) {
+      .hero-grid, .twocol, .triplet-shell, .stat-grid { grid-template-columns: 1fr; }
+      .span-8, .span-7, .span-6, .span-5, .span-4, .span-3 { grid-column: span 12; }
+      .shell { width: min(100vw - 18px, 1500px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="kicker">Mechanistic Personality Dashboard</div>
+          <h1 id="title"></h1>
+          <p class="lede" id="lede"></p>
+        </div>
+        <div class="meta-stack">
+          <div class="chip-row" id="heroChips"></div>
+          <div class="callout" id="heroCallout"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="panel span-12">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Sweep Pulse</h2>
+            <div class="panel-copy">High-level state of the dataset, replay, and token mix. This lets you see whether the mechanistic readouts are grounded in enough data and whether pass 2 is still filling in the views.</div>
+          </div>
+        </div>
+        <div class="stat-grid" id="summaryStats"></div>
+      </section>
+
+      <section class="panel span-7">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Replay Coverage</h2>
+            <div class="panel-copy">Each cell is the fraction of responses that already have activation metadata for that view and layer. If a row lags, don’t overread the downstream analysis yet.</div>
+          </div>
+        </div>
+        <div id="coveragePlot" class="plot short"></div>
+      </section>
+
+      <section class="panel span-5">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Prompt Mix</h2>
+            <div class="panel-copy">Category volume and average token budgets. If one category dominates, your probe quality can look better than it really generalizes.</div>
+          </div>
+        </div>
+        <div id="promptPlot" class="plot short"></div>
+      </section>
+
+      <section class="panel span-8">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Linear Readability</h2>
+            <div class="panel-copy" id="decodabilityCopy"></div>
+          </div>
+          <div class="controls">
+            <div>
+              <label for="viewSelect">Activation View</label><br>
+              <select id="viewSelect"></select>
+            </div>
+            <div>
+              <label for="splitSelect">Evaluation Split</label><br>
+              <select id="splitSelect"></select>
+            </div>
+          </div>
+        </div>
+        <div id="decodabilityPlot" class="plot"></div>
+      </section>
+
+      <section class="panel span-4">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Best Probes</h2>
+            <div class="panel-copy">Highest balanced accuracies across views and layers. Character holdout is the one to trust most for “same trait, new persona.”</div>
+          </div>
+        </div>
+        <div id="leaderboardWrap"></div>
+      </section>
+
+      <section class="panel span-6">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Trait Trajectories</h2>
+            <div class="panel-copy">Layerwise curves for one trait across all views. This is the quickest way to see whether a trait is mostly in `think`, `response`, or the whole mean.</div>
+          </div>
+          <div class="controls">
+            <div>
+              <label for="traitSelect">Trait</label><br>
+              <select id="traitSelect"></select>
+            </div>
+          </div>
+        </div>
+        <div id="trajectoryPlot" class="plot short"></div>
+      </section>
+
+      <section class="panel span-6">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Matched Direction Strength</h2>
+            <div class="panel-copy">Magnitude of the matched H-L direction after holding prompt and the other four traits fixed. This is a cleaner separability view than raw probe accuracy alone.</div>
+          </div>
+        </div>
+        <div id="normPlot" class="plot short"></div>
+      </section>
+
+      <section class="panel span-6">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Direction Entanglement</h2>
+            <div class="panel-copy">Cosine overlap between matched trait directions at one view/layer. Near-zero off-diagonals are what you want if the control knobs are genuinely separate.</div>
+          </div>
+          <div class="controls">
+            <div>
+              <label for="cosineLayerSelect">Layer</label><br>
+              <select id="cosineLayerSelect"></select>
+            </div>
+          </div>
+        </div>
+        <div id="cosinePlot" class="plot short"></div>
+      </section>
+
+      <section class="panel span-12">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Matched Direction Map</h2>
+            <div class="panel-copy">2D sample projections along two matched trait directions. This is the most concrete visual answer to “are these knobs actually separating in activation space?”</div>
+          </div>
+          <div class="controls">
+            <div>
+              <label for="projViewSelect">Projection View</label><br>
+              <select id="projViewSelect"></select>
+            </div>
+            <div>
+              <label for="projTraitXSelect">X Trait</label><br>
+              <select id="projTraitXSelect"></select>
+            </div>
+            <div>
+              <label for="projTraitYSelect">Y Trait</label><br>
+              <select id="projTraitYSelect"></select>
+            </div>
+          </div>
+        </div>
+        <div id="projectionLayerNote" class="footer-note"></div>
+        <div id="projectionPlot" class="plot"></div>
+      </section>
+
+      <section class="panel span-6">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Prompt Inventory</h2>
+            <div class="panel-copy">Most repeated prompt stems in the sampled sweep. Use this to sanity-check whether the examples you inspect come from the heavy parts of the corpus or the tail.</div>
+          </div>
+        </div>
+        <div id="promptInventory"></div>
+      </section>
+
+      <section class="panel span-12">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Factorial Example Browser</h2>
+            <div class="panel-copy">These slices hold the prompt and the other four Big Five levels fixed, then show low / medium / high for one target trait. It is not a perfect causal match because demographics change with the combo in this sweep, but it is still the most useful qualitative lens on what the dataset is teaching the model.</div>
+          </div>
+          <div class="controls">
+            <div>
+              <label for="tripletTraitSelect">Target Trait</label><br>
+              <select id="tripletTraitSelect"></select>
+            </div>
+            <div>
+              <label for="tripletSelect">Factorial Slice</label><br>
+              <select id="tripletSelect"></select>
+            </div>
+          </div>
+        </div>
+        <div id="tripletMeta"></div>
+        <div id="tripletCards"></div>
+      </section>
+
+      <section class="panel span-6">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Reasoning Retention</h2>
+            <div class="panel-copy">The control dataset is the operational check on the meta goal. If the personality manipulations are useful but they cost accuracy, this is where it shows up first.</div>
+          </div>
+        </div>
+        <div id="controlModePlot" class="plot short"></div>
+      </section>
+
+      <section class="panel span-6">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Trait Cost Map</h2>
+            <div class="panel-copy">Reasoning accuracy by target trait and level. A clean tunable-control story wants this map to stay flat instead of having a few personality knobs quietly break the solver.</div>
+          </div>
+        </div>
+        <div id="controlTraitPlot" class="plot short"></div>
+      </section>
+
+      <section class="panel span-12">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Pairwise Reasoning Delta</h2>
+            <div class="panel-copy">For each scaffold and prompt, compare the high-trait persona against the low-trait persona. Values near zero mean the personality knob is not systematically helping or hurting reasoning on that slice. The chart uses all scored pairs; the table on the right is a failure inventory only.</div>
+          </div>
+        </div>
+        <div class="twocol">
+          <div id="controlDeltaPlot" class="plot short"></div>
+          <div id="controlFailures"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script id="bundle-data" type="application/json">__BUNDLE_JSON__</script>
+  <script>
+    const DATA = JSON.parse(document.getElementById("bundle-data").textContent);
+    const TRAITS = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"];
+    const TRAIT_LABELS = {
+      openness: "Openness",
+      conscientiousness: "Conscientiousness",
+      extraversion: "Extraversion",
+      agreeableness: "Agreeableness",
+      neuroticism: "Neuroticism",
+    };
+    const VIEW_LABELS = {
+      mean: "Mean",
+      think: "Think",
+      response: "Response",
+      early: "Early",
+      late: "Late",
+    };
+    const SPLIT_LABELS = {
+      random_split: "Random Split",
+      character_holdout: "Character Holdout",
+      prompt_holdout: "Prompt Holdout",
+      category_holdout: "Category Holdout",
+    };
+    const VIEW_COLORS = {
+      mean: "#ba4a2f",
+      think: "#2d7a78",
+      response: "#d98b2b",
+      early: "#6a5acd",
+      late: "#37465d",
+    };
+    const LEVEL_LABELS = { L: "Low", M: "Medium", H: "High" };
+    const LEVEL_COLORS = { L: "#2d7a78", M: "#d98b2b", H: "#ba4a2f" };
+    const LEVEL_SYMBOLS = { L: "circle", M: "diamond", H: "square" };
+
+    function fmtInt(x) {
+      if (x === null || x === undefined || Number.isNaN(x)) return "n/a";
+      return Number(x).toLocaleString();
+    }
+    function fmtFloat(x, digits = 3) {
+      if (x === null || x === undefined || Number.isNaN(x)) return "n/a";
+      return Number(x).toFixed(digits);
+    }
+    function fmtPct(x) {
+      if (x === null || x === undefined || Number.isNaN(x)) return "n/a";
+      return `${(Number(x) * 100).toFixed(1)}%`;
+    }
+    function humanView(view) {
+      return VIEW_LABELS[view] || view;
+    }
+    function humanSplit(split) {
+      return SPLIT_LABELS[split] || split;
+    }
+    function humanTrait(trait) {
+      return TRAIT_LABELS[trait] || trait;
+    }
+    function humanLevel(level) {
+      return LEVEL_LABELS[level] || level;
+    }
+    function emptyState(targetId, message) {
+      document.getElementById(targetId).innerHTML = `<div class="empty">${message}</div>`;
+    }
+
+    function buildHero() {
+      document.getElementById("title").textContent = DATA.title;
+      const summary = DATA.summary;
+      const analysis = DATA.analysis;
+      const pass2 = DATA.pass2_status;
+      document.getElementById("lede").textContent =
+        `This dashboard turns the sweep into visual questions: where personality is linearly readable, which phase carries it, how entangled the trait directions are, and what the actual matched text slices look like.`;
+
+      const chips = [];
+      chips.push(`<span class="chip accent">${fmtInt(summary.n_responses)} responses</span>`);
+      chips.push(`<span class="chip teal">${fmtInt(summary.total_gen_tokens)} generated tokens</span>`);
+      chips.push(`<span class="chip">${summary.activation_views.map(humanView).join(" · ") || "No replay views yet"}</span>`);
+      if (analysis.available) {
+        chips.push(`<span class="chip accent">analysis ready</span>`);
+      } else {
+        chips.push(`<span class="chip">analysis pending</span>`);
+      }
+      if (DATA.control?.available && DATA.control?.n_records) {
+        chips.push(`<span class="chip teal">control ${fmtInt(DATA.control.n_records)} rows</span>`);
+      }
+      document.getElementById("heroChips").innerHTML = chips.join("");
+
+      const callout = [];
+      if (pass2) {
+        callout.push(`<strong>Replay:</strong> ${fmtInt(pass2.chars_done)}/${fmtInt(pass2.chars_total)} chars, ${fmtFloat(pass2.gen_tokens_per_s, 1)} gen tok/s, ${fmtFloat(pass2.seq_tokens_per_s, 1)} seq tok/s.`);
+      }
+      if (DATA.control?.available && DATA.control?.reasoning_accuracy !== undefined && DATA.control?.reasoning_accuracy !== null) {
+        callout.push(
+          `<strong>Control accuracy:</strong> ${fmtPct(DATA.control.reasoning_accuracy)} on ` +
+          `${fmtInt(DATA.control.n_reasoning_scored)} scored reasoning prompts ` +
+          `(${fmtPct(DATA.control.reasoning_coverage)} coverage).`
+        );
+      }
+      callout.push(`<strong>Interpretation lens:</strong> ${DATA.notes.decodability}`);
+      document.getElementById("heroCallout").innerHTML = callout.join(" ");
+    }
+
+    function buildSummaryStats() {
+      const summary = DATA.summary;
+      const pass2 = DATA.pass2_status;
+      const stats = [
+        {
+          label: "Responses",
+          value: fmtInt(summary.n_responses),
+          sub: `${fmtInt(summary.n_characters)} characters`,
+        },
+        {
+          label: "Generated Tokens",
+          value: fmtInt(summary.total_gen_tokens),
+          sub: `${fmtFloat(summary.avg_gen_tokens, 1)} avg per response`,
+        },
+        {
+          label: "Thinking Share",
+          value: fmtPct(summary.avg_think_share),
+          sub: `${fmtInt(summary.total_think_tokens)} think vs ${fmtInt(summary.total_response_tokens)} response tokens`,
+        },
+        {
+          label: "Replay Rate",
+          value: pass2 ? fmtFloat(pass2.gen_tokens_per_s, 1) : "n/a",
+          sub: pass2 ? `${fmtInt(pass2.chars_done)}/${fmtInt(pass2.chars_total)} chars replayed` : "pass2 log not found",
+        },
+      ];
+      document.getElementById("summaryStats").innerHTML = stats.map((item) => `
+        <div class="stat-card">
+          <div class="stat-label">${item.label}</div>
+          <div class="stat-value">${item.value}</div>
+          <div class="stat-sub">${item.sub}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderCoverage() {
+      const coverage = DATA.coverage;
+      const views = Object.keys(coverage.views);
+      const layers = coverage.layers || [];
+      if (!views.length || !layers.length) {
+        emptyState("coveragePlot", "No activation metadata found yet.");
+        return;
+      }
+      const z = views.map((view) => layers.map((layer) => {
+        const entry = coverage.views[view].layers[String(layer)];
+        return entry ? entry.completion : null;
+      }));
+      Plotly.newPlot("coveragePlot", [{
+        type: "heatmap",
+        x: layers.map((layer) => `L${String(layer).padStart(2, "0")}`),
+        y: views.map(humanView),
+        z,
+        zmin: 0,
+        zmax: 1,
+        colorscale: [
+          [0.0, "#f6e8d5"],
+          [0.4, "#f0c27a"],
+          [0.7, "#c77343"],
+          [1.0, "#8f2d1c"],
+        ],
+        colorbar: { title: "coverage" },
+        hovertemplate: "%{y} · %{x}<br>%{z:.1%}<extra></extra>",
+      }], {
+        margin: { t: 10, l: 70, r: 20, b: 40 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: "#17212b" },
+      }, { responsive: true });
+    }
+
+    function renderPromptMix() {
+      const categories = Object.keys(DATA.summary.prompt_categories || {});
+      if (!categories.length) {
+        emptyState("promptPlot", "No response inventory yet.");
+        return;
+      }
+      const counts = categories.map((category) => DATA.summary.prompt_categories[category]);
+      const means = categories.map((category) => DATA.summary.prompt_category_token_means[category]?.avg_gen_tokens || 0);
+      Plotly.newPlot("promptPlot", [
+        {
+          type: "bar",
+          x: categories,
+          y: counts,
+          name: "responses",
+          marker: { color: "#ba4a2f" },
+          hovertemplate: "%{x}<br>%{y} responses<extra></extra>",
+        },
+        {
+          type: "scatter",
+          x: categories,
+          y: means,
+          name: "avg gen tokens",
+          yaxis: "y2",
+          mode: "lines+markers",
+          line: { color: "#2d7a78", width: 3 },
+          marker: { size: 8 },
+          hovertemplate: "%{x}<br>%{y:.1f} avg gen tokens<extra></extra>",
+        }
+      ], {
+        margin: { t: 10, l: 50, r: 50, b: 40 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: "#17212b" },
+        yaxis: { title: "Responses" },
+        yaxis2: { title: "Avg Gen Tokens", overlaying: "y", side: "right" },
+        legend: { orientation: "h", x: 0, y: 1.12 },
+      }, { responsive: true });
+    }
+
+    function initAnalysisControls() {
+      const analysis = DATA.analysis;
+      const viewSelect = document.getElementById("viewSelect");
+      const splitSelect = document.getElementById("splitSelect");
+      const traitSelect = document.getElementById("traitSelect");
+      const cosineLayerSelect = document.getElementById("cosineLayerSelect");
+
+      if (!analysis.available) {
+        document.getElementById("decodabilityCopy").textContent = "Analysis JSON is not present yet. The visualizer will still show prompt coverage and matched examples, then unlock the mechanistic plots once analysis finishes and this HTML is regenerated.";
+        emptyState("decodabilityPlot", "Analysis pending. Rerender this dashboard after `analysis_results.json` exists.");
+        emptyState("leaderboardWrap", "Analysis pending.");
+        emptyState("trajectoryPlot", "Analysis pending.");
+        emptyState("normPlot", "Analysis pending.");
+        emptyState("cosinePlot", "Analysis pending.");
+        viewSelect.disabled = true;
+        splitSelect.disabled = true;
+        traitSelect.disabled = true;
+        cosineLayerSelect.disabled = true;
+        return;
+      }
+
+      document.getElementById("decodabilityCopy").textContent = DATA.notes.decodability;
+      viewSelect.innerHTML = analysis.views.map((view) => `<option value="${view}">${humanView(view)}</option>`).join("");
+      splitSelect.innerHTML = analysis.splits.map((split) => `<option value="${split}">${humanSplit(split)}</option>`).join("");
+      traitSelect.innerHTML = TRAITS.map((trait) => `<option value="${trait}">${humanTrait(trait)}</option>`).join("");
+      cosineLayerSelect.innerHTML = analysis.layers.map((layer) => `<option value="${layer}">L${String(layer).padStart(2, "0")}</option>`).join("");
+
+      splitSelect.value = "character_holdout";
+      viewSelect.value = analysis.views.includes("response") ? "response" : analysis.views[0];
+      traitSelect.value = "extraversion";
+      const defaultLayer = analysis.best_by_trait_split.extraversion?.character_holdout?.layer || analysis.layers[Math.floor(analysis.layers.length / 2)];
+      cosineLayerSelect.value = String(defaultLayer);
+
+      const rerender = () => {
+        renderDecodability(viewSelect.value, splitSelect.value);
+        renderTrajectory(traitSelect.value, splitSelect.value);
+        renderNorm(viewSelect.value);
+        renderCosine(viewSelect.value, Number(cosineLayerSelect.value));
+        renderLeaderboard(splitSelect.value);
+      };
+      viewSelect.addEventListener("change", rerender);
+      splitSelect.addEventListener("change", rerender);
+      traitSelect.addEventListener("change", rerender);
+      cosineLayerSelect.addEventListener("change", () => renderCosine(viewSelect.value, Number(cosineLayerSelect.value)));
+      rerender();
+    }
+
+    function renderDecodability(view, split) {
+      const payload = DATA.analysis.score_matrices?.[view]?.[split];
+      if (!payload) {
+        emptyState("decodabilityPlot", "No decodability matrix for this selection.");
+        return;
+      }
+      Plotly.newPlot("decodabilityPlot", [{
+        type: "heatmap",
+        x: payload.layers.map((layer) => `L${String(layer).padStart(2, "0")}`),
+        y: payload.traits.map(humanTrait),
+        z: payload.z,
+        zmin: 0.33,
+        zmax: 1.0,
+        colorscale: [
+          [0.0, "#f8f2e9"],
+          [0.35, "#f0c27a"],
+          [0.7, "#d4673a"],
+          [1.0, "#7a1e12"],
+        ],
+        colorbar: { title: "balanced acc" },
+        hovertemplate: "%{y} · %{x}<br>%{z:.3f}<extra></extra>",
+      }], {
+        title: { text: `${humanView(view)} · ${humanSplit(split)}`, x: 0.02, y: 0.98 },
+        margin: { t: 44, l: 150, r: 20, b: 50 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: "#17212b" },
+      }, { responsive: true });
+    }
+
+    function renderLeaderboard(split) {
+      const rows = (DATA.analysis.best_scores || []).filter((row) => row.split === split).slice(0, 12);
+      if (!rows.length) {
+        emptyState("leaderboardWrap", "No best-score rows for this split.");
+        return;
+      }
+      document.getElementById("leaderboardWrap").innerHTML = `
+        <table class="leaderboard">
+          <thead>
+            <tr>
+              <th>Trait</th>
+              <th>View</th>
+              <th>Layer</th>
+              <th>Score</th>
+              <th>Pairs</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td>${humanTrait(row.trait)}</td>
+                <td>${humanView(row.view)}</td>
+                <td>L${String(row.layer).padStart(2, "0")}</td>
+                <td><strong>${fmtFloat(row.score, 3)}</strong></td>
+                <td>${fmtInt(row.matched_pairs)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div class="footer-note">${DATA.notes.direction_norm}</div>
+      `;
+    }
+
+    function renderTrajectory(trait, split) {
+      const analysis = DATA.analysis;
+      const traces = (analysis.views || []).map((view) => {
+        const payload = analysis.score_matrices?.[view]?.[split];
+        if (!payload) return null;
+        const rowIndex = payload.traits.indexOf(trait);
+        if (rowIndex < 0) return null;
+        return {
+          type: "scatter",
+          mode: "lines+markers",
+          name: humanView(view),
+          x: payload.layers.map((layer) => `L${String(layer).padStart(2, "0")}`),
+          y: payload.z[rowIndex],
+          line: { width: 3, color: VIEW_COLORS[view] || "#37465d" },
+          marker: { size: 8 },
+          hovertemplate: `${humanTrait(trait)} · ${humanView(view)}<br>%{x}: %{y:.3f}<extra></extra>`,
+        };
+      }).filter(Boolean);
+      if (!traces.length) {
+        emptyState("trajectoryPlot", "No trajectory data for this trait.");
+        return;
+      }
+      Plotly.newPlot("trajectoryPlot", traces, {
+        margin: { t: 18, l: 50, r: 10, b: 46 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: "#17212b" },
+        legend: { orientation: "h", x: 0, y: 1.18 },
+        yaxis: { title: "balanced acc", range: [0.33, 1.0] },
+      }, { responsive: true });
+    }
+
+    function renderNorm(view) {
+      const payload = DATA.analysis.norm_matrices?.[view];
+      if (!payload) {
+        emptyState("normPlot", "No matched-direction norms for this view.");
+        return;
+      }
+      Plotly.newPlot("normPlot", [{
+        type: "heatmap",
+        x: payload.layers.map((layer) => `L${String(layer).padStart(2, "0")}`),
+        y: payload.traits.map(humanTrait),
+        z: payload.z,
+        colorscale: [
+          [0.0, "#f7f1e8"],
+          [0.25, "#e9d0a3"],
+          [0.55, "#d98b2b"],
+          [1.0, "#8f2d1c"],
+        ],
+        colorbar: { title: "raw norm" },
+        hovertemplate: "%{y} · %{x}<br>%{z:.2f}<extra></extra>",
+      }], {
+        margin: { t: 12, l: 150, r: 20, b: 46 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: "#17212b" },
+      }, { responsive: true });
+    }
+
+    function renderCosine(view, layer) {
+      const payload = DATA.analysis.cosine_matrices?.[view]?.[String(layer)];
+      if (!payload) {
+        emptyState("cosinePlot", "No direction cosine matrix for this layer.");
+        return;
+      }
+      Plotly.newPlot("cosinePlot", [{
+        type: "heatmap",
+        x: payload.traits.map(humanTrait),
+        y: payload.traits.map(humanTrait),
+        z: payload.z,
+        zmin: -1,
+        zmax: 1,
+        colorscale: [
+          [0.0, "#1c4e6e"],
+          [0.5, "#f7f3ed"],
+          [1.0, "#a32020"],
+        ],
+        colorbar: { title: "cos sim" },
+        hovertemplate: "%{y} × %{x}<br>%{z:.3f}<extra></extra>",
+      }], {
+        title: { text: `${humanView(view)} · L${String(layer).padStart(2, "0")}`, x: 0.03 },
+        margin: { t: 42, l: 110, r: 20, b: 92 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: "#17212b" },
+      }, { responsive: true });
+    }
+
+    function canonicalPairKey(a, b) {
+      return TRAITS.indexOf(a) <= TRAITS.indexOf(b) ? `${a}__${b}` : `${b}__${a}`;
+    }
+
+    function getProjectionPayload(view, traitA, traitB) {
+      const viewPayload = DATA.projections?.per_view?.[view];
+      if (!viewPayload?.available) return null;
+      const pair = viewPayload.pairs?.[canonicalPairKey(traitA, traitB)];
+      if (!pair) return null;
+      const swap = TRAITS.indexOf(traitA) > TRAITS.indexOf(traitB);
+      if (!swap) return pair;
+      return {
+        points: (pair.points || []).map((point) => ({
+          x: point.y,
+          y: point.x,
+          a_level: point.b_level,
+          b_level: point.a_level,
+          prompt_category: point.prompt_category,
+          prompt_idx: point.prompt_idx,
+          char_id: point.char_id,
+        })),
+        centroids: (pair.centroids || []).map((point) => ({
+          x: point.y,
+          y: point.x,
+          a_level: point.b_level,
+          b_level: point.a_level,
+          n: point.n,
+        })),
+      };
+    }
+
+    function initProjectionControls() {
+      const proj = DATA.projections;
+      const viewSelect = document.getElementById("projViewSelect");
+      const xSelect = document.getElementById("projTraitXSelect");
+      const ySelect = document.getElementById("projTraitYSelect");
+
+      if (!proj?.available || !(proj.views || []).length) {
+        emptyState("projectionPlot", "Projection data will appear after analysis is built.");
+        document.getElementById("projectionLayerNote").textContent = DATA.notes.projection;
+        viewSelect.disabled = true;
+        xSelect.disabled = true;
+        ySelect.disabled = true;
+        return;
+      }
+
+      const availableViews = proj.views.filter((view) => proj.per_view?.[view]?.available);
+      if (!availableViews.length) {
+        emptyState("projectionPlot", "Projection data could not be built for the available views.");
+        document.getElementById("projectionLayerNote").textContent = proj.per_view?.[proj.views[0]]?.error || DATA.notes.projection;
+        viewSelect.disabled = true;
+        xSelect.disabled = true;
+        ySelect.disabled = true;
+        return;
+      }
+
+      viewSelect.innerHTML = availableViews.map((view) => `<option value="${view}">${humanView(view)}</option>`).join("");
+      xSelect.innerHTML = TRAITS.map((trait) => `<option value="${trait}">${humanTrait(trait)}</option>`).join("");
+      ySelect.innerHTML = TRAITS.map((trait) => `<option value="${trait}">${humanTrait(trait)}</option>`).join("");
+
+      viewSelect.value = availableViews.includes("response") ? "response" : availableViews[0];
+      xSelect.value = "extraversion";
+      ySelect.value = "neuroticism";
+
+      const rerender = () => {
+        if (xSelect.value === ySelect.value) {
+          const fallback = TRAITS.find((trait) => trait !== xSelect.value) || TRAITS[0];
+          ySelect.value = fallback;
+        }
+        renderProjection(viewSelect.value, xSelect.value, ySelect.value);
+      };
+
+      viewSelect.addEventListener("change", rerender);
+      xSelect.addEventListener("change", rerender);
+      ySelect.addEventListener("change", rerender);
+      rerender();
+    }
+
+    function renderProjection(view, traitA, traitB) {
+      const viewPayload = DATA.projections?.per_view?.[view];
+      const payload = getProjectionPayload(view, traitA, traitB);
+      if (!viewPayload?.available || !payload) {
+        emptyState("projectionPlot", "No projection payload for that view/trait pair.");
+        document.getElementById("projectionLayerNote").textContent = DATA.notes.projection;
+        return;
+      }
+
+      const comboOrder = [
+        ["L", "L"], ["L", "M"], ["L", "H"],
+        ["M", "L"], ["M", "M"], ["M", "H"],
+        ["H", "L"], ["H", "M"], ["H", "H"],
+      ];
+      const traces = [];
+      for (const [aLevel, bLevel] of comboOrder) {
+        const points = (payload.points || []).filter((point) => point.a_level === aLevel && point.b_level === bLevel);
+        if (!points.length) continue;
+        traces.push({
+          type: "scattergl",
+          mode: "markers",
+          name: `${humanTrait(traitA)} ${humanLevel(aLevel)} · ${humanTrait(traitB)} ${humanLevel(bLevel)}`,
+          x: points.map((point) => point.x),
+          y: points.map((point) => point.y),
+          marker: {
+            size: 7,
+            opacity: 0.34,
+            color: LEVEL_COLORS[aLevel],
+            symbol: LEVEL_SYMBOLS[bLevel],
+            line: { width: 0 },
+          },
+          hovertemplate:
+            `${humanTrait(traitA)} ${humanLevel(aLevel)}<br>` +
+            `${humanTrait(traitB)} ${humanLevel(bLevel)}<br>` +
+            `prompt %{customdata[0]} / char %{customdata[1]}<br>` +
+            `x=%{x:.2f}, y=%{y:.2f}<extra></extra>`,
+          customdata: points.map((point) => [point.prompt_idx, point.char_id]),
+        });
+      }
+
+      const centroids = payload.centroids || [];
+      if (centroids.length) {
+        traces.push({
+          type: "scatter",
+          mode: "markers+text",
+          name: "Centroids",
+          x: centroids.map((point) => point.x),
+          y: centroids.map((point) => point.y),
+          text: centroids.map((point) => `${humanLevel(point.a_level)}/${humanLevel(point.b_level)}`),
+          textposition: "top center",
+          marker: {
+            size: 15,
+            color: centroids.map((point) => LEVEL_COLORS[point.a_level]),
+            symbol: centroids.map((point) => LEVEL_SYMBOLS[point.b_level]),
+            line: { color: "#17212b", width: 1.2 },
+          },
+          hovertemplate:
+            `${humanTrait(traitA)} %{text}<br>` +
+            `n=%{customdata}<br>` +
+            `x=%{x:.2f}, y=%{y:.2f}<extra></extra>`,
+          customdata: centroids.map((point) => point.n),
+        });
+      }
+
+      document.getElementById("projectionLayerNote").textContent =
+        `${DATA.notes.projection} View ${humanView(view)} uses L${String(viewPayload.layer).padStart(2, "0")} because it has the strongest average character-holdout score for that view (${fmtFloat(viewPayload.layer_score, 3)}).`;
+
+      Plotly.newPlot("projectionPlot", traces, {
+        margin: { t: 20, l: 60, r: 20, b: 60 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: "#17212b" },
+        xaxis: { title: `${humanTrait(traitA)} direction`, zeroline: false },
+        yaxis: { title: `${humanTrait(traitB)} direction`, zeroline: false },
+        legend: { orientation: "h", x: 0, y: 1.16 },
+      }, { responsive: true });
+    }
+
+    function renderPromptInventory() {
+      const prompts = DATA.summary.top_prompts || [];
+      if (!prompts.length) {
+        emptyState("promptInventory", "No prompt inventory available.");
+        return;
+      }
+      document.getElementById("promptInventory").innerHTML = `
+        <table class="leaderboard">
+          <thead>
+            <tr><th>Prompt</th><th>Category</th><th>Count</th></tr>
+          </thead>
+          <tbody>
+            ${prompts.map((row) => `
+              <tr>
+                <td>${row.prompt}</td>
+                <td>${row.prompt_category}</td>
+                <td>${fmtInt(row.count)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderControlPanels() {
+      const control = DATA.control;
+      if (!control?.available || !control?.n_records) {
+        emptyState("controlModePlot", "No control-dataset records yet.");
+        emptyState("controlTraitPlot", "No control-dataset records yet.");
+        emptyState("controlDeltaPlot", "No paired reasoning deltas yet.");
+        emptyState("controlFailures", "No failure inventory yet.");
+        return;
+      }
+
+      const modeNames = Object.keys(control.mode_accuracy || {});
+      if (modeNames.length) {
+        Plotly.newPlot("controlModePlot", [{
+          type: "bar",
+          x: modeNames.map((mode) => mode[0].toUpperCase() + mode.slice(1)),
+          y: modeNames.map((mode) => control.mode_accuracy[mode].accuracy),
+          text: modeNames.map((mode) => {
+            const row = control.mode_accuracy[mode];
+            return `${fmtInt(row.correct)}/${fmtInt(row.scored)} scored`;
+          }),
+          textposition: "outside",
+          marker: { color: ["#ba4a2f", "#2d7a78"] },
+          customdata: modeNames.map((mode) => [control.mode_accuracy[mode].coverage]),
+          hovertemplate: "%{x}<br>accuracy=%{y:.1%}<br>scoring coverage=%{customdata[0]:.1%}<extra></extra>",
+        }], {
+          margin: { t: 20, l: 50, r: 10, b: 40 },
+          paper_bgcolor: "rgba(0,0,0,0)",
+          plot_bgcolor: "rgba(0,0,0,0)",
+          font: { color: "#17212b" },
+          yaxis: { title: "accuracy", range: [0, 1] },
+        }, { responsive: true });
+      } else {
+        emptyState("controlModePlot", "No scored reasoning rows yet.");
+      }
+
+      const traits = TRAITS.filter((trait) => control.trait_accuracy?.[trait]);
+      const levels = ["low", "high"];
+      if (traits.length) {
+        const z = levels.map((level) => traits.map((trait) => control.trait_accuracy?.[trait]?.[level]?.accuracy ?? null));
+        Plotly.newPlot("controlTraitPlot", [{
+          type: "heatmap",
+          x: traits.map(humanTrait),
+          y: levels.map((level) => level[0].toUpperCase() + level.slice(1)),
+          z,
+          zmin: 0,
+          zmax: 1,
+          colorscale: [
+            [0.0, "#7a1e12"],
+            [0.5, "#f0c27a"],
+            [1.0, "#2d7a78"],
+          ],
+          colorbar: { title: "accuracy" },
+          hovertemplate: "%{y} · %{x}<br>%{z:.1%}<extra></extra>",
+        }], {
+          margin: { t: 20, l: 70, r: 20, b: 80 },
+          paper_bgcolor: "rgba(0,0,0,0)",
+          plot_bgcolor: "rgba(0,0,0,0)",
+          font: { color: "#17212b" },
+        }, { responsive: true });
+      } else {
+        emptyState("controlTraitPlot", "No trait accuracy data yet.");
+      }
+
+      const deltas = control.paired_delta || [];
+      if (deltas.length) {
+        const modes = [...new Set(deltas.map((row) => row.mode))];
+        const traces = modes.map((mode) => ({
+          type: "bar",
+          name: mode[0].toUpperCase() + mode.slice(1),
+          x: TRAITS.map(humanTrait),
+          y: TRAITS.map((trait) => {
+            const row = deltas.find((item) => item.trait === trait && item.mode === mode);
+            return row ? row.mean_high_minus_low : null;
+          }),
+          customdata: TRAITS.map((trait) => {
+            const row = deltas.find((item) => item.trait === trait && item.mode === mode);
+            return row ? [row.n_pairs, row.n_pairs_total, row.coverage] : [0, 0, null];
+          }),
+          hovertemplate:
+            "%{x}<br>Δ=%{y:.3f}<br>" +
+            "valid pairs=%{customdata[0]}/%{customdata[1]}<br>" +
+            "pair coverage=%{customdata[2]:.1%}<extra></extra>",
+        }));
+        Plotly.newPlot("controlDeltaPlot", traces, {
+          margin: { t: 20, l: 50, r: 10, b: 80 },
+          paper_bgcolor: "rgba(0,0,0,0)",
+          plot_bgcolor: "rgba(0,0,0,0)",
+          font: { color: "#17212b" },
+          barmode: "group",
+          yaxis: { title: "mean high - low correctness", zeroline: true, zerolinecolor: "rgba(23,33,43,0.2)" },
+        }, { responsive: true });
+      } else {
+        emptyState("controlDeltaPlot", "Waiting for low/high paired reasoning rows.");
+      }
+
+      const failures = control.failures || [];
+      const pairAudit = control.pair_audit || {};
+      const pairedExamples = control.paired_examples || [];
+      if (!pairedExamples.length && !failures.length) {
+        emptyState("controlFailures", "No paired audit rows or failure inventory yet. The paired-delta chart still reflects all scored pairs.");
+      } else {
+        document.getElementById("controlFailures").innerHTML = `
+          <div class="callout"><strong>Scored reasoning accuracy:</strong> ${fmtPct(control.reasoning_accuracy)} across ${fmtInt(control.n_reasoning_scored)} scored prompts, with ${fmtPct(control.reasoning_coverage)} scoring coverage over ${fmtInt(control.n_reasoning)} total reasoning rows. Pair audit: ${fmtInt(pairAudit.complete_pairs)} / ${fmtInt(pairAudit.total_pairs)} complete low/high pairs, ${fmtInt(pairAudit.fully_scored_pairs)} fully scored pairs, ${fmtInt(pairAudit.changed_pairs)} changed-outcome pairs, ${fmtInt(pairAudit.observed_anomaly_count)} malformed observed answers. ${DATA.notes.correctness}</div>
+          ${pairedExamples.length ? `
+            <div class="mini-note" style="margin-top:12px">Paired audit rows: low and high responses from the same reasoning prompt, shown side by side so the delta chart has something directly inspectable underneath it.</div>
+            <table class="leaderboard" style="margin-top:12px">
+              <thead>
+                <tr><th>Trait</th><th>Mode</th><th>Scenario</th><th>Expected</th><th>Low</th><th>High</th><th>Δ</th></tr>
+              </thead>
+              <tbody>
+                ${pairedExamples.map((row) => `
+                  <tr>
+                    <td>${humanTrait(row.trait)}</td>
+                    <td>${row.mode}</td>
+                    <td>${row.scenario_id}</td>
+                    <td>${row.expected || "n/a"}</td>
+                    <td>${row.low_status}: ${row.low_answer || "n/a"}<br><span class="footer-note">${row.low_excerpt || "No preview available."}</span></td>
+                    <td>${row.high_status}: ${row.high_answer || "n/a"}<br><span class="footer-note">${row.high_excerpt || "No preview available."}</span></td>
+                    <td>${row.delta === null ? "n/a" : row.delta > 0 ? "+1" : row.delta < 0 ? "-1" : "0"}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          ` : ""}
+          ${failures.length ? `
+            <div class="mini-note" style="margin-top:12px">Single-row failure inventory: this table lists only incorrect or unscorable reasoning rows. It is not a random sample of all paired responses.</div>
+            <table class="leaderboard" style="margin-top:12px">
+              <thead>
+                <tr><th>Trait</th><th>Mode</th><th>Scenario</th><th>Status</th><th>Expected</th><th>Observed Final Answer</th><th>Notes</th></tr>
+              </thead>
+              <tbody>
+                ${failures.map((row) => `
+                  <tr>
+                    <td>${humanTrait(row.trait)} ${row.level}</td>
+                    <td>${row.mode}</td>
+                    <td>${row.scenario_id}</td>
+                    <td>${row.status}</td>
+                    <td>${row.expected || "n/a"}</td>
+                    <td>${row.answer_extracted || "n/a"}</td>
+                    <td>${row.score_note}<br><span class="footer-note">${row.response_excerpt || "No preview available."}</span></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          ` : ""}
+        `;
+      }
+    }
+
+    function initTriplets() {
+      const traitSelect = document.getElementById("tripletTraitSelect");
+      const sliceSelect = document.getElementById("tripletSelect");
+      const traitOptions = TRAITS.filter((trait) => (DATA.triplets_by_trait?.[trait] || []).length > 0);
+      if (!traitOptions.length) {
+        emptyState("tripletMeta", "No matched low/high slices found yet.");
+        emptyState("tripletCards", "");
+        traitSelect.disabled = true;
+        sliceSelect.disabled = true;
+        return;
+      }
+      traitSelect.innerHTML = traitOptions.map((trait) => `<option value="${trait}">${humanTrait(trait)}</option>`).join("");
+      traitSelect.value = traitOptions.includes("extraversion") ? "extraversion" : traitOptions[0];
+
+      const syncSlices = () => {
+        const trait = traitSelect.value;
+        const slices = DATA.triplets_by_trait[trait] || [];
+        sliceSelect.innerHTML = slices.map((slice, idx) => {
+          const others = Object.entries(slice.other_levels).map(([k, v]) => `${humanTrait(k)}=${v}`).join(" · ");
+          return `<option value="${idx}">P${String(slice.prompt_idx).padStart(2, "0")} · ${slice.prompt_category} · ${others}</option>`;
+        }).join("");
+        sliceSelect.value = "0";
+        renderTriplet();
+      };
+
+      const renderTriplet = () => {
+        const trait = traitSelect.value;
+        const slices = DATA.triplets_by_trait[trait] || [];
+        const slice = slices[Number(sliceSelect.value) || 0];
+        if (!slice) {
+          emptyState("tripletMeta", "No slice selected.");
+          emptyState("tripletCards", "");
+          return;
+        }
+        const others = Object.entries(slice.other_levels).map(([k, v]) => `<span class="chip">${humanTrait(k)} = ${v}</span>`).join("");
+        document.getElementById("tripletMeta").innerHTML = `
+          <div class="triplet-meta">
+            <span class="chip accent">Prompt ${fmtInt(slice.prompt_idx)}</span>
+            <span class="chip teal">${slice.prompt_category}</span>
+            <span class="chip">${slice.available_levels.map((level) => level === "L" ? "Low" : level === "M" ? "Medium" : "High").join(" / ")}</span>
+            ${others}
+          </div>
+          <div class="callout"><strong>Prompt:</strong> ${slice.prompt}</div>
+          <div class="footer-note">${DATA.notes.matched_contrast}</div>
+        `;
+        const cards = [
+          { key: "low", title: "Low", css: "low" },
+          { key: "mid", title: "Medium", css: "mid" },
+          { key: "high", title: "High", css: "high" },
+        ].map((slot) => {
+          const rec = slice[slot.key];
+          if (!rec) {
+            return `<div class="response-card ${slot.css}"><div class="response-label">${slot.title}</div><div class="mini-note">No ${slot.title.toLowerCase()} example available in this slice.</div></div>`;
+          }
+          const meta = rec.char_meta || {};
+          const traitBadge = `${humanTrait(trait)} = ${slot.title}`;
+          const identity = [meta.age ? `${meta.age}` : null, meta.gender, meta.occupation, meta.industry].filter(Boolean).join(" · ");
+          const tokenBits = `${fmtInt(rec.n_gen_tokens)} gen · ${fmtInt(rec.n_think_tokens)} think · ${fmtInt(rec.n_response_tokens)} response`;
+          const responseNote = rec.response_status === "recovered"
+            ? "Recovered visible response from a row whose stored response field contained thinking text."
+            : rec.response_status === "missing_from_thinking"
+              ? "No clean final response recovered. This row appears truncated inside thinking."
+              : "";
+          return `
+            <article class="response-card ${slot.css}">
+              <div class="response-head">
+                <div>
+                  <div class="response-label">${slot.title}</div>
+                  <div class="response-title">${rec.char_name}</div>
+                </div>
+                <div class="chip">${traitBadge}</div>
+              </div>
+              <div class="response-meta">${identity}<br>${tokenBits}<br>${meta.communication_style ? `style: ${meta.communication_style}` : ""}</div>
+              ${responseNote ? `<div class="mini-note">${responseNote}</div>` : ""}
+              <div class="response-body">${rec.response_excerpt || "No clean response text captured."}</div>
+              <details>
+                <summary>Thinking Excerpt</summary>
+                <div class="response-body">${rec.think_excerpt || "No thinking text captured."}</div>
+              </details>
+            </article>
+          `;
+        }).join("");
+        document.getElementById("tripletCards").innerHTML = `<div class="triplet-shell">${cards}</div>`;
+      };
+
+      traitSelect.addEventListener("change", syncSlices);
+      sliceSelect.addEventListener("change", renderTriplet);
+      syncSlices();
+    }
+
+    buildHero();
+    buildSummaryStats();
+    renderCoverage();
+    renderPromptMix();
+    initAnalysisControls();
+    initProjectionControls();
+    renderPromptInventory();
+    renderControlPanels();
+    initTriplets();
+  </script>
+</body>
+</html>

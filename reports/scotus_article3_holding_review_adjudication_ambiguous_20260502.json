@@ -1,0 +1,76 @@
+{
+  "automatic_agreement": {
+    "eligible_rows": 24,
+    "exact_agreement_rate": 0.75,
+    "exact_agreement_rows": 18
+  },
+  "automatic_confusion_table": [
+    [
+      "article3_objection_fails_public_rights_permissible",
+      "article3_objection_fails_public_rights_permissible",
+      13
+    ],
+    [
+      "article3_objection_fails_public_rights_permissible",
+      "article3_objection_succeeds_private_rights",
+      3
+    ],
+    [
+      "article3_objection_succeeds_private_rights",
+      "article3_objection_succeeds_private_rights",
+      5
+    ],
+    [
+      "mixed_or_distinction_only",
+      "article3_objection_fails_public_rights_permissible",
+      3
+    ]
+  ],
+  "condition_table": [
+    [
+      "neutral",
+      8,
+      1,
+      7,
+      0,
+      0,
+      "1.00"
+    ],
+    [
+      "private_rights",
+      8,
+      6,
+      2,
+      0,
+      0,
+      "1.00"
+    ],
+    [
+      "public_rights",
+      8,
+      1,
+      7,
+      0,
+      0,
+      "1.00"
+    ]
+  ],
+  "holding_label_counts": {
+    "article3_objection_fails_public_rights_permissible": 16,
+    "article3_objection_succeeds_private_rights": 8
+  },
+  "inputs": {
+    "blind": "data/scotus/scotus_article3_holding_review_blind_ambiguous_20260502.jsonl",
+    "key": "data/scotus/scotus_article3_holding_review_key_ambiguous_20260502.jsonl"
+  },
+  "mask_label_counts": {
+    "direct_reasoning": 24
+  },
+  "mode": "codex-triage-ambiguous-20260502",
+  "n_rows": 24,
+  "output": "data/scotus/scotus_article3_holding_review_adjudicated_ambiguous_20260502.jsonl",
+  "reasoning_quality_counts": {
+    "legally_coherent": 24
+  },
+  "reviewer": "internal_codex_triage"
+}

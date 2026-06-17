@@ -1,0 +1,871 @@
+{
+  "created_at": "2026-05-01",
+  "purpose": "Compact provenance artifacts promoted out of ignored SCOTUS raw run directories.",
+  "raw_run_dirs": [
+    "sweep_v4/scotus_article3_ambiguous_thought_state_localization_20260502_003317",
+    "sweep_v4/scotus_article3_answer_continuation_trace_20260502_051337",
+    "sweep_v4/scotus_article3_answer_continuation_trace_20260502_051921",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260501_232256",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_000626",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_001538",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_004803",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_012416",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_021856",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_033340",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_042512",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_045650",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_051905",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_053601",
+    "sweep_v4/scotus_article3_conclusion_polarity_20260502_060442",
+    "sweep_v4/scotus_article3_controlled_prop_rescore_20260501_182759",
+    "sweep_v4/scotus_article3_controlled_replay_v2_20260501_172957",
+    "sweep_v4/scotus_article3_counterfactual_answer_state_localization_20260502_053619",
+    "sweep_v4/scotus_article3_generated_thought_baseline_localization_20260502_043317",
+    "sweep_v4/scotus_article3_holding_logit_trace_20260502_050407",
+    "sweep_v4/scotus_article3_holding_logit_trace_20260502_050539",
+    "sweep_v4/scotus_article3_holding_logit_trace_20260502_050633",
+    "sweep_v4/scotus_article3_holding_logit_trace_20260502_050730",
+    "sweep_v4/scotus_article3_localized_conditional_diag_20260502_034404",
+    "sweep_v4/scotus_article3_localized_conditional_diag_20260502_060952",
+    "sweep_v4/scotus_attention_head_patch_20260501_141506",
+    "sweep_v4/scotus_attention_head_patch_20260501_141557",
+    "sweep_v4/scotus_component_trace_patch_20260501_134936",
+    "sweep_v4/scotus_component_trace_patch_20260501_135028",
+    "sweep_v4/scotus_component_trace_patch_20260501_215707",
+    "sweep_v4/scotus_controlled_bundle_poke_20260501_183716",
+    "sweep_v4/scotus_controlled_bundle_prop_rescore_20260501_193155",
+    "sweep_v4/scotus_counterfactual_thoughts_20260501_231331",
+    "sweep_v4/scotus_counterfactual_thoughts_20260502_051531",
+    "sweep_v4/scotus_counterfactual_thoughts_20260502_052323",
+    "sweep_v4/scotus_counterfactual_thoughts_server_20260502_000338",
+    "sweep_v4/scotus_counterfactual_thoughts_server_20260502_001228",
+    "sweep_v4/scotus_head_prop_rescore_20260501_145000",
+    "sweep_v4/scotus_lowrank_replay_poke_20260501_170217",
+    "sweep_v4/scotus_lowrank_replay_prop_rescore_20260501_172039",
+    "sweep_v4/scotus_minpair_replay_20260501_100514",
+    "sweep_v4/scotus_minpair_replay_v2_20260501_144942",
+    "sweep_v4/scotus_replay_lowrank_diag_20260501_165827",
+    "sweep_v4/scotus_replay_lowrank_diag_20260501_203153",
+    "sweep_v4/scotus_replay_v2_causal_prop_rescore_20260501_165100",
+    "sweep_v4/scotus_sae_poke_20260501_150402",
+    "sweep_v4/scotus_sae_poke_20260501_173621",
+    "sweep_v4/scotus_sae_probe_20260501_112601",
+    "sweep_v4/scotus_thinking_bundle_poke_20260501_200321",
+    "sweep_v4/scotus_thinking_bundle_poke_20260501_200935",
+    "sweep_v4/scotus_thinking_bundle_poke_20260501_201846",
+    "sweep_v4/scotus_thinking_localized_direction_poke_20260502_003719",
+    "sweep_v4/scotus_thinking_localized_direction_poke_20260502_005241",
+    "sweep_v4/scotus_thinking_localized_direction_poke_20260502_012514",
+    "sweep_v4/scotus_thinking_localized_direction_poke_20260502_022548",
+    "sweep_v4/scotus_thinking_localized_direction_poke_20260502_043452",
+    "sweep_v4/scotus_thinking_localized_direction_poke_20260502_054329",
+    "sweep_v4/scotus_thinking_lowrank_poke_20260501_203434",
+    "sweep_v4/scotus_thinking_lowrank_poke_20260501_204712",
+    "sweep_v4/scotus_thinking_smoke_20260501_194950",
+    "sweep_v4/scotus_thinking_smoke_20260501_195321",
+    "sweep_v4/scotus_thinking_text_ablation_20260501_230522",
+    "sweep_v4/scotus_thinking_trace_patch_20260501_220629",
+    "sweep_v4/scotus_thinking_trace_patch_20260501_221231",
+    "sweep_v4/scotus_thinking_trace_patch_20260501_224155",
+    "sweep_v4/scotus_thinking_trace_patch_20260502_035453",
+    "sweep_v4/scotus_trace_patch_20260501_132038",
+    "sweep_v4/scotus_trace_patch_20260501_132228",
+    "sweep_v4/scotus_trace_patch_20260501_133127",
+    "sweep_v4/scotus_trace_patch_20260501_133630",
+    "sweep_v4/scotus_trace_patch_20260501_215034"
+  ],
+  "artifacts": [
+    {
+      "path": "data/scotus/directions/probe_direction_assistant_all_L08_C0p001.json",
+      "source": "scripts/experiments/scotus/export_probe_direction.py",
+      "sha256": "3d7245cd3c69543746ecf9fd8465ad17a42a20946148f7c13e24f68c79f11409",
+      "why_track": "Manifest and split metrics for the replay-v2 L8 Commerce-limits direction."
+    },
+    {
+      "path": "data/scotus/directions/probe_direction_assistant_all_L08_C0p001.npz",
+      "source": "sweep_v4/scotus_minpair_replay_v2_20260501_144942/features.npz::assistant_all__L08",
+      "sha256": "95b598587dac412d81212b00866dd10afca7fab5b75de28bc5f369a37982093d",
+      "why_track": "Replay-v2 L8 Commerce-limits direction used for the bounded causal poke."
+    },
+    {
+      "path": "data/scotus/directions/probe_direction_assistant_all_L08_C0p001_inverse_authority.json",
+      "source": "negated replay-v2 L8 direction metadata",
+      "sha256": "40f9e6f02d3a27ca388484530eba643f8a3da6d01c8f97aaaeaff5844cab24b3",
+      "why_track": "Manifest for the inverse Commerce-authority contrast direction used in the replay-v2 causal poke."
+    },
+    {
+      "path": "data/scotus/directions/probe_direction_assistant_all_L08_C0p001_inverse_authority.npz",
+      "source": "negated replay-v2 L8 Commerce-limits direction",
+      "sha256": "cde3c4625942f6ae41b30ef8bfaf1b50c539148a2ea91ad3a6a6215f7b495b3f",
+      "why_track": "Inverse Commerce-authority contrast direction used in the bounded replay-v2 causal poke."
+    },
+    {
+      "path": "data/scotus/directions/probe_direction_assistant_all_L16_C0p001.json",
+      "source": "scripts/experiments/scotus/export_probe_direction.py",
+      "sha256": "577c9ab68fa7442105ac109806acd012f12befa40060a91db60ec5f035795ba3",
+      "why_track": "Manifest and split metrics for the L16 late residual direction."
+    },
+    {
+      "path": "data/scotus/directions/probe_direction_assistant_all_L16_C0p001.npz",
+      "source": "sweep_v4/scotus_minpair_replay_20260501_100514/features.npz::assistant_all__L16",
+      "sha256": "bae9a4208ee19444b344726af8be10ec91ef54da87270dd4572a5979b36c145e",
+      "why_track": "Late residual Commerce-limits direction that survived template-pair holdout and is used for causal follow-up."
+    },
+    {
+      "path": "data/scotus/directions/probe_direction_assistant_all_L20_C0p001.json",
+      "source": "scripts/experiments/scotus/export_probe_direction.py",
+      "sha256": "25f5f2b3200eb75abc945445907ce82805b94a1154408a70749b1dd731ec359a",
+      "why_track": "Manifest and split metrics for the L20 late residual direction."
+    },
+    {
+      "path": "data/scotus/directions/probe_direction_assistant_all_L20_C0p001.npz",
+      "source": "sweep_v4/scotus_minpair_replay_20260501_100514/features.npz::assistant_all__L20",
+      "sha256": "67496934f2705e6e1f46072ef7285888d51c01882547cae40b5a1081edfa617c",
+      "why_track": "Late residual Commerce-limits direction that survived template-pair holdout and is available for causal follow-up."
+    },
+    {
+      "path": "data/scotus/directions/scotus_article3_controlled_replay_v2_assistant_all_L04_private_rights_20260501.json",
+      "source": "reports/scotus_article3_controlled_replay_v2_causal_20260501.md",
+      "sha256": "ae98e2272c308c26c7b1d20a72c847d8b1a15512b2653e3e6bbe4b2376bf1d90",
+      "why_track": "Metadata and failure decision for the Article III controlled replay v2 L4 direction."
+    },
+    {
+      "path": "data/scotus/directions/scotus_article3_controlled_replay_v2_assistant_all_L04_private_rights_20260501.npz",
+      "source": "sweep_v4/scotus_article3_controlled_replay_v2_20260501_172957/best_probe_direction.npz",
+      "sha256": "cbcc39c93a37d311f8d2d51a1c4dff88219a95c38b5347d01e9f7be4f7cf8c0c",
+      "why_track": "Best Article III controlled replay v2 private-rights probe direction; retained as a negative causal diagnostic."
+    },
+    {
+      "path": "data/scotus/directions/scotus_minpair_replay_assistant_all_L4_direction_20260501.npz",
+      "source": "sweep_v4/scotus_minpair_replay_20260501_100514/best_probe_direction.npz",
+      "sha256": "7c32f63f01ee7fed41d088812e4a74e5b64255fed2c97b37269aa090277ac71f",
+      "why_track": "Compact best linear-probe direction used by the causal poke follow-up."
+    },
+    {
+      "path": "data/scotus/directions/scotus_replay_lowrank_article3_public_to_private_assistant_all_L04_rank16_ridge0p01_20260501.json",
+      "source": "sweep_v4/scotus_replay_lowrank_diag_20260501_203153 and sweep_v4/scotus_thinking_lowrank_poke_20260501_204712",
+      "sha256": "7414eb1e08d61d04f770356870e1b2663588ab04dbcd73d884f918695db14366",
+      "why_track": "Metadata and failure decision for the Article III public-to-private L4 low-rank map."
+    },
+    {
+      "path": "data/scotus/directions/scotus_replay_lowrank_article3_public_to_private_assistant_all_L04_rank16_ridge0p01_20260501.npz",
+      "source": "sweep_v4/scotus_replay_lowrank_diag_20260501_203153/lowrank_article3_public_rights_to_article3_private_rights_assistant_all__L04_rank16_ridge0.01.npz",
+      "sha256": "2e4c76d61440d2cea649396fc7335b6ed2baa445376d5cec13d0a17dc874abb4",
+      "why_track": "Best offline Article III public-to-private low-rank map; retained as a negative no-mask causal diagnostic artifact."
+    },
+    {
+      "path": "data/scotus/directions/scotus_replay_lowrank_authority_to_limits_assistant_all_L08_rank8_ridge1_20260501.json",
+      "source": "sweep_v4/scotus_replay_lowrank_diag_20260501_165827 and sweep_v4/scotus_lowrank_replay_prop_rescore_20260501_172039",
+      "sha256": "5cc7d0236d11f794c7b965a662242b386396587cd5a6654a9d0966d4bb2f6afd",
+      "why_track": "Metadata and failure decision for the replay-v2 L8 low-rank map."
+    },
+    {
+      "path": "data/scotus/directions/scotus_replay_lowrank_authority_to_limits_assistant_all_L08_rank8_ridge1_20260501.npz",
+      "source": "sweep_v4/scotus_replay_lowrank_diag_20260501_165827/lowrank_authority_to_limits_assistant_all__L08_rank8_ridge1.npz",
+      "sha256": "6a8cf802fb6678f667996e1543986d669d419d62026e29e49ff594c898e8fe77",
+      "why_track": "Best offline replay-v2 low-rank map used in the causal smoke test; retained as a negative diagnostic artifact."
+    },
+    {
+      "path": "data/scotus/replay/scotus_minpair_replay_examples_20260501.jsonl",
+      "source": "sweep_v4/scotus_minpair_replay_20260501_100514/examples.jsonl",
+      "sha256": "e2dfb974068a38feed3189de1597a473a612c58856ead137698192c0c6bd0d36",
+      "why_track": "Minimal-pair Commerce authority/limits replay examples with split labels."
+    },
+    {
+      "path": "data/scotus/replay/scotus_minpair_replay_feature_meta_20260501.jsonl",
+      "source": "sweep_v4/scotus_minpair_replay_20260501_100514/feature_meta.jsonl",
+      "sha256": "84f0e0dc932ccf56a83a4190e61e9ef046d9e6076c02fe7a5a41d213ccbc498a",
+      "why_track": "Feature metadata tying probe rows back to replay examples and splits."
+    },
+    {
+      "path": "data/scotus/replay/scotus_minpair_replay_layer_region_search_20260501.jsonl",
+      "source": "sweep_v4/scotus_minpair_replay_20260501_100514/layer_region_search.jsonl",
+      "sha256": "17226a5f207f7f46ec6a668f8d1c6d76309f4fcf79687856ccccbafb72d861db",
+      "why_track": "Layer/region/C sweep table for the minimal-pair replay probe."
+    },
+    {
+      "path": "data/scotus/replay/scotus_minpair_replay_manifest_20260501.json",
+      "source": "sweep_v4/scotus_minpair_replay_20260501_100514/manifest.json",
+      "sha256": "30e46c1a45f62d5270711e8dca52ab272a0e0113faeff50a0affd7eed21a7269",
+      "why_track": "Run metadata for the minimal-pair replay probe."
+    },
+    {
+      "path": "data/scotus/replay/scotus_minpair_replay_v2_examples_20260501.jsonl",
+      "source": "scripts/experiments/scotus/build_scotus_minpair_replay_v2.py",
+      "sha256": "43bde370263593b2601b7d3eb5385cfb840e0ee3d7db5cbebff29354b49288e4",
+      "why_track": "Repaired Commerce minimal-pair replay-v2 examples used for the May 1 activation and holdout audits."
+    },
+    {
+      "path": "data/scotus/replay/scotus_minpair_replay_v2_manifest_20260501.json",
+      "source": "scripts/experiments/scotus/build_scotus_minpair_replay_v2.py",
+      "sha256": "b09605e50025de63d7ec70d6e20efde9bac89f8a27f26c5720d1886dfcbf78dd",
+      "why_track": "Manifest for replay-v2 row counts, labels, and output path."
+    },
+    {
+      "path": "data/scotus/sae/scotus_minpair_l0_100_feature_examples_20260501.jsonl",
+      "source": "sweep_v4/scotus_sae_probe_20260501_112601/top_sae_feature_examples.jsonl",
+      "sha256": "545879f1457c89ba19d3685690d9b93efa1176695ad9d964c2344503f66adf46",
+      "why_track": "Top activating examples for the SAE features, used to identify answer-template artifacts."
+    },
+    {
+      "path": "data/scotus/sae/scotus_minpair_l0_100_layer_region_search_20260501.jsonl",
+      "source": "sweep_v4/scotus_sae_probe_20260501_112601/sae_layer_region_search.jsonl",
+      "sha256": "f3c82cff2d21649b2bce36ad56e3abbe4deacd59c70c9131620d61f45e6d04de",
+      "why_track": "Layer/region/C sweep table for the SAE feature probe."
+    },
+    {
+      "path": "data/scotus/sae/scotus_minpair_l0_100_manifest_20260501.json",
+      "source": "sweep_v4/scotus_sae_probe_20260501_112601/manifest.json",
+      "sha256": "e2d991f65304fcdd22d448f75cf1793827c863664235ef74d58370bb34ddb2d6",
+      "why_track": "Run metadata for the SAE feature probe."
+    },
+    {
+      "path": "data/scotus/sae/scotus_minpair_l0_100_summary_20260501.json",
+      "source": "sweep_v4/scotus_sae_probe_20260501_112601/summary.json",
+      "sha256": "a872054548cd2c1e9dc29c6b69570a60b183e5097d46b5f80faf2983582c741d",
+      "why_track": "Compact SAE probe summary for future review."
+    },
+    {
+      "path": "data/scotus/sae/scotus_minpair_l0_100_top_features_20260501.jsonl",
+      "source": "sweep_v4/scotus_sae_probe_20260501_112601/top_sae_features.jsonl",
+      "sha256": "f14c421de0da949a2679b1fd853de5ab79161ca64336bf3ba426c7ee904937ba",
+      "why_track": "Top Qwen-Scope SAE features separating Commerce limits from authority in replay states."
+    },
+    {
+      "path": "data/scotus/scotus_article3_ambiguous_poke_prompts_v1.jsonl",
+      "source": "new ambiguous Article III public/private-rights prompt bank",
+      "sha256": "32766f48c47725a5a76023e150efd8e081379fdefb5e7816c70b82423fd01fd4",
+      "why_track": "Balanced prompt bank designed to make public-rights and private-rights holdings both plausible enough to detect reasoning-basin movement instead of fact-pattern inevitability."
+    },
+    {
+      "path": "data/scotus/scotus_article3_bundle_no_mask_review_blind_20260501.jsonl",
+      "source": "sweep_v4/scotus_controlled_bundle_prop_rescore_20260501_193155",
+      "sha256": "6a3051d1efbcda58fa29daa7c4ea4a4ad2d636110c022450bb9f7a0224545d2d",
+      "why_track": "Blind pairwise review queue for the Article III generated-token bundle candidate cells."
+    },
+    {
+      "path": "data/scotus/scotus_article3_bundle_no_mask_review_key_20260501.jsonl",
+      "source": "sweep_v4/scotus_controlled_bundle_prop_rescore_20260501_193155",
+      "sha256": "6b83a3a9461d129a8aa823bb7a0a2dd70688551fb608bc815f0698ba0d382f08",
+      "why_track": "Key and proposition metrics for the Article III generated-token bundle no-mask review queue."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_adjudicated_20260501.jsonl",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py",
+      "sha256": "b7c021639227970df8d5eedc6dc75eef25f274ee14c65a423ef87635fa6682ce",
+      "why_track": "Internal Codex triage labels for Article III final holding direction, marked as non-independent and not a final promotion gate."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_adjudicated_ambiguous_20260502.jsonl",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py --mode codex-triage-ambiguous-20260502",
+      "sha256": "7a72f0691634f2dd57caa3eda44bcfb2beca78044dfbd9e874a77767bcdb10a0",
+      "why_track": "Internal final-holding triage labels for the ambiguous Article III long-answer counterfactual calibration."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_adjudicated_long_20260502.jsonl",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py --mode codex-triage-long-20260502",
+      "sha256": "03e5ff05faae89f15685affb1e12819aa7e8351c12e4ee48f07a4a0e9fa62c7d",
+      "why_track": "Internal Codex triage labels for long-answer Article III final holding direction; non-independent and not a final promotion gate."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_blind_20260501.jsonl",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "sha256": "09ac4ff73307e2c3c9bb417d024f2c4948d14121886d685e2aebc2a799095837",
+      "why_track": "Blind answer-only review queue for final Article III holding direction over neutral/private/public counterfactual-thought answers."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_blind_ambiguous_20260502.jsonl",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py from ambiguous long-answer calibration",
+      "sha256": "e58a712a48793f9c2bbbc51a3e0f3dfd7ac987287b3e2c10131ba1db416e6272",
+      "why_track": "Blind final-holding review queue for the ambiguous Article III long-answer counterfactual calibration."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_blind_long_20260502.jsonl",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "sha256": "710773f3a323fc66d23e8f1990d61958d7bc120ba0c77aeda38f28cc97a6393a",
+      "why_track": "Blind answer-only holding review queue for the long-answer Article III counterfactual run."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_key_20260501.jsonl",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "sha256": "2dda923646b2eacd0f1cb4902f1db02f13552208f0746b8278914739553b997e",
+      "why_track": "Key file mapping holding-review rows to inserted-thought condition, automatic polarity scores, and proposition metrics."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_key_ambiguous_20260502.jsonl",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py from ambiguous long-answer calibration",
+      "sha256": "3fcae24bb48badcf1938edb23ef9f10a7ff12fd772dbd91b2613981bd3245900",
+      "why_track": "Hidden condition key and automatic scorer context for the ambiguous Article III holding review queue."
+    },
+    {
+      "path": "data/scotus/scotus_article3_holding_review_key_long_20260502.jsonl",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "sha256": "7871b36825e7e3e476d5c61ffc2652a2ab5734622cfe81062b44f454cabe1900",
+      "why_track": "Hidden key for the long-answer Article III holding review queue, including inserted-thought condition and automatic scores."
+    },
+    {
+      "path": "data/scotus/scotus_article3_private_public_poke_prompts_v2.jsonl",
+      "source": "new no-persona Article III causal prompt bank",
+      "sha256": "b5c2184409bb99904caf91aceca9e8266b55b1144bdfd9a4cb0f9c9614732552",
+      "why_track": "Neutral Article III prompt bank used to test private-rights direction movement against public-rights contrast."
+    },
+    {
+      "path": "data/scotus/scotus_controlled_replay_v2_examples_20260501.jsonl",
+      "source": "scripts/experiments/scotus/build_controlled_legal_replay_v2.py",
+      "sha256": "5bd934c35c6b0abb6dc30e156e55e7ce8e904d4cb10c3d1c9611b7330bd5c447",
+      "why_track": "Controlled Article III public/private-rights paired replay examples."
+    },
+    {
+      "path": "data/scotus/scotus_controlled_replay_v2_manifest_20260501.json",
+      "source": "scripts/experiments/scotus/build_controlled_legal_replay_v2.py",
+      "sha256": "dc99759aa87847645a1881ec60ef924227c30dca71cdae8aea234125dc55440e",
+      "why_track": "Manifest and text-baseline audit for the controlled Article III replay v2 bank."
+    },
+    {
+      "path": "reports/scotus_article3_ambiguous_prompt_bank_v1_20260502.md",
+      "source": "new ambiguous Article III prompt-bank report",
+      "sha256": "2f0ae68f00444aa5c8b5480f4e0c66baf8c0d0ae016ddf3f985a99bfd1000fc6",
+      "why_track": "Documents the ambiguous Article III prompt design and intended use as the next evaluator surface."
+    },
+    {
+      "path": "reports/scotus_article3_ambiguous_thought_state_localization_20260502.md",
+      "source": "sweep_v4/scotus_article3_ambiguous_thought_state_localization_20260502_003317",
+      "sha256": "30482718d6a44b85f3c85e1a2eb33e253ee340778a84ee3b8cd36edea29c499c",
+      "why_track": "Compact report for the teacher-forced ambiguous Article III thought-state localization pass; nominates a late residual/MLP/mixer surface but explicitly does not promote actuator evidence."
+    },
+    {
+      "path": "reports/scotus_article3_answer_continuation_trace_20260502.md",
+      "source": "compact report for May 2 Article III actual-answer continuation trace screen",
+      "why_track": "Records that Qwen 3.6 reference answers created a model-mismatch evaluator issue, local Qwen 3.5 references repaired that mismatch, and the generated-baseline top-six sites still failed source-control causal tracing.",
+      "sha256": "fa69d2da3268a4e0277337d2781499341a58cf7a933ea51ebb13fb003460a78c"
+    },
+    {
+      "path": "reports/scotus_answer_state_conditional_controller_diag_20260502.md",
+      "source": "sweep_v4/scotus_article3_localized_conditional_diag_20260502_060952",
+      "sha256": "e525872ba5e1423f7536f04bca77a309126139ea8604701ef3d8976fa1b6c5dc",
+      "why_track": "Compact report for the offline conditional low-rank controller diagnostic over the answer-state top-four localized sites, documenting failure to beat mean-delta and permutation controls."
+    },
+    {
+      "path": "reports/scotus_counterfactual_answer_state_localized_direction_poke_20260502.md",
+      "source": "sweep_v4/scotus_article3_counterfactual_answer_state_localization_20260502_053619 and sweep_v4/scotus_thinking_localized_direction_poke_20260502_054329",
+      "sha256": "2d357ccfd6ee82679cb75e3637f2549684951415f82538fd4e9ddec3763a0df6",
+      "why_track": "Compact report for the complete-budget no-mask causal gate over late answer-state localized Article III directions, documenting failure against same-site random controls and conclusion-polarity scoring."
+    },
+    {
+      "path": "reports/scotus_article3_bundle_no_mask_review_queue_20260501.json",
+      "source": "scripts/experiments/scotus/build_scotus_no_mask_review_queue.py",
+      "sha256": "dc060092e104067299a27af1eb94bcaa6ddc6ac28f09653f19b7b6a0ff05d9c8",
+      "why_track": "Machine-readable manifest for the Article III no-mask review queue."
+    },
+    {
+      "path": "reports/scotus_article3_bundle_no_mask_review_queue_20260501.md",
+      "source": "scripts/experiments/scotus/build_scotus_no_mask_review_queue.py",
+      "sha256": "5fd9b502b9334ffb258314a59560eefad2cda2048d40a6bb38db59c9e317978f",
+      "why_track": "Report summarizing the no-mask blind review queue and visible-thinking coverage."
+    },
+    {
+      "path": "reports/scotus_article3_component_trace_patch_smoke_20260501.md",
+      "source": "sweep_v4/scotus_component_trace_patch_20260501_215707",
+      "sha256": "b1528d1e5ff8106fca7345f5e44cb113e8869554977cc3adbcac114ff2783a20",
+      "why_track": "Compact report for the cheap Article III component-output trace patch screen and decision not to promote answer-trace L4/L8 mixer/MLP patches."
+    },
+    {
+      "path": "reports/scotus_article3_conclusion_polarity_20260501.md",
+      "source": "sweep_v4/scotus_article3_conclusion_polarity_20260501_232256",
+      "sha256": "80d4e0ca118a9f268380a9918cf617437b4875ba5fa8eada074ad279bb9bc73d",
+      "why_track": "Compact report for the first Article III conclusion-polarity scorer applied to counterfactual visible-thought outputs."
+    },
+    {
+      "path": "reports/scotus_article3_conclusion_polarity_ambiguous_20260502.md",
+      "source": "sweep_v4/scotus_article3_conclusion_polarity_20260502_001538",
+      "sha256": "aadb75893551d51a131d41d1ba8a1599487a2ceacda51d3ed5d251d6acfe9003",
+      "why_track": "Automatic conclusion-polarity triage for the ambiguous Article III long-answer counterfactual calibration."
+    },
+    {
+      "path": "reports/scotus_article3_conclusion_polarity_long_20260502.md",
+      "source": "sweep_v4/scotus_article3_conclusion_polarity_20260502_000626/report.md",
+      "sha256": "f91c80beb475dae524ed37e2511b5f4c2d6dcefba47c78a31fae9a47df087d50",
+      "why_track": "Compact report for conclusion-polarity scoring on the long-answer Article III counterfactual run."
+    },
+    {
+      "path": "reports/scotus_article3_controlled_replay_v2_causal_20260501.md",
+      "source": "sweep_v4/scotus_article3_controlled_replay_v2_20260501_172957, sweep_v4/scotus_sae_poke_20260501_173621, and sweep_v4/scotus_article3_controlled_prop_rescore_20260501_182759",
+      "sha256": "54b0c71aa10f59f7410f4a3075b0ed9071c19634b8b1b2fcdef03e645d031b32",
+      "why_track": "Compact report for the Article III controlled replay v2 probe, causal poke, and decision not to promote the L4 direction."
+    },
+    {
+      "path": "reports/scotus_article3_controlled_replay_v2_probe_20260501.md",
+      "source": "sweep_v4/scotus_article3_controlled_replay_v2_20260501_172957",
+      "sha256": "9f6c929700d84b8cf88b7eb47881d89ac22077098c27a5615d6d26dbe4c29ffb",
+      "why_track": "Activation-probe report for the controlled Article III replay v2 bank."
+    },
+    {
+      "path": "reports/scotus_article3_holding_logit_trace_20260502.md",
+      "source": "compact report for May 2 Article III holding-logit causal trace screen",
+      "why_track": "Records that early thought-mean patch effects were generic source-state replacement rather than private-source-specific actuator evidence; closes long generation sweeps from L06/L10 thought_mean under this screen.",
+      "sha256": "9c525a3fea237d3c114a8813b872f449e0c88953a3640c540077c1a5c5a92b8d"
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_adjudication_20260501.json",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py",
+      "sha256": "d6a09bb3107473b49a60cb1a70e3ca684737eba141b0d1c439e5c878358f3130",
+      "why_track": "Machine-readable summary of the Article III holding-direction triage adjudication."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_adjudication_20260501.md",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py",
+      "sha256": "6b75161e4488f8a6809fb12257163c2cb969186a545b2778177e19e41660739d",
+      "why_track": "Compact report showing automatic holding-polarity agreement, condition-level holding counts, and the decision to regenerate complete answers before further Article III promotion."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_adjudication_ambiguous_20260502.json",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py --mode codex-triage-ambiguous-20260502",
+      "sha256": "e9f890d85197eb0b5465c532037b591890de762a8ddae7a133f7efd45aa220bf",
+      "why_track": "Machine-readable adjudication summary for the ambiguous Article III long-answer calibration."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_adjudication_ambiguous_20260502.md",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py --mode codex-triage-ambiguous-20260502",
+      "sha256": "6c90db72a46ba1ac1e0bd13ef48944a8d39dbb6929cdc787140f2b269083be7f",
+      "why_track": "Compact adjudication report showing that private-rights visible thoughts move reviewed final holdings on ambiguous Article III prompts."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_adjudication_long_20260502.json",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py --mode codex-triage-long-20260502",
+      "sha256": "1e536a88766835b6a9e3031fb8395c4bf552186d1bbfe0013a125cf5ac0ef7f8",
+      "why_track": "Machine-readable summary of the long-answer Article III holding-direction triage adjudication."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_adjudication_long_20260502.md",
+      "source": "scripts/experiments/scotus/adjudicate_article3_holding_review.py --mode codex-triage-long-20260502",
+      "sha256": "ebaca9ede2508cc64ee971741a23a761b1a8d1610eff88d3120348fc9153540f",
+      "why_track": "Compact adjudication report showing complete-answer labels, weak inserted-thought holding movement, and low automatic polarity agreement."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_queue_20260501.json",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "sha256": "b3416363a2e7127c799fdff61eed48542622186b6a97e2f2ba1a80ec9a5db51f",
+      "why_track": "Machine-readable manifest for the Article III holding-direction review queue."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_queue_20260501.md",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "sha256": "63731c7618aa94297259b23b338d8e1d3af58e6cdb902ef9ef688a3614c54f97",
+      "why_track": "Compact report describing the Article III holding-direction review queue and automatic polarity distribution."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_queue_ambiguous_20260502.json",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py from ambiguous long-answer calibration",
+      "sha256": "98debc0404a17a7e45b24b22c203199bfe0d012214a35522f1188532122a99fb",
+      "why_track": "Machine-readable queue-construction summary for the ambiguous Article III holding review queue."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_queue_ambiguous_20260502.md",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py from ambiguous long-answer calibration",
+      "sha256": "7d6b529e1ad8caaa8f600be308754ee8149943abf0460221437d36a98b0643c8",
+      "why_track": "Compact report for the ambiguous Article III holding review queue construction."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_queue_long_20260502.json",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "sha256": "44e34045db53d5806b618d8e43568c9bf0186a8dd4ed5992d6dc7d53ca967022",
+      "why_track": "Machine-readable manifest for the long-answer Article III holding-direction review queue."
+    },
+    {
+      "path": "reports/scotus_article3_holding_review_queue_long_20260502.md",
+      "source": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "sha256": "469dc5b96a2f058d298c53848c188e510cb416744f6ba1793a920b21b5ef34bb",
+      "why_track": "Compact report for the long-answer Article III holding-direction review queue, including answer-token budget and automatic polarity distribution."
+    },
+    {
+      "path": "reports/scotus_article3_localized_conditional_diag_20260502.md",
+      "source": "sweep_v4/scotus_article3_localized_conditional_diag_20260502_034404",
+      "sha256": "01b5a59007e7e0c8437848a044ab8faeb32fe538bbc62dfa413bf33d0fc20d80",
+      "why_track": "Compact report for the localized conditional-controller offline diagnostic; records that KRR/nearest-neighbor conditioning adds no useful signal beyond a stable mean inserted-thought tail delta."
+    },
+    {
+      "path": "reports/scotus_article3_lowrank_thinking_poke_20260501.md",
+      "source": "sweep_v4/scotus_replay_lowrank_diag_20260501_203153, sweep_v4/scotus_thinking_lowrank_poke_20260501_203434, and sweep_v4/scotus_thinking_lowrank_poke_20260501_204712",
+      "sha256": "5bc9b1a1c25c3fbef8d3be719965edef87f1cbe8c3bdf0f266ec58d7542a2948",
+      "why_track": "Compact report for the Article III L4 low-rank offline diagnostic, two-stage no-mask thinking pokes, and decision not to promote the single-layer low-rank hook."
+    },
+    {
+      "path": "reports/scotus_article3_trace_patch_smoke_20260501.md",
+      "source": "sweep_v4/scotus_trace_patch_20260501_215034",
+      "sha256": "3fbc2e611f3cc6c1a0116c54c85de6500cb144c0902105e59acfc83151171848",
+      "why_track": "Compact report for the cheap Article III residual trace replacement smoke and decision not to promote broad answer-trace patching."
+    },
+    {
+      "path": "reports/scotus_attention_head_patch_20260501.md",
+      "source": "sweep_v4/scotus_attention_head_patch_20260501_141506,141557",
+      "sha256": "661aa13e0cacbc0c188bf48c376ce96c0a49e711971490541cc1c5ba8302749a",
+      "why_track": "Compact report for the full-attention head path-patching follow-up and decision not to promote L15/L19/L23 heads."
+    },
+    {
+      "path": "reports/scotus_attention_head_prop_rescore_20260501.md",
+      "source": "sweep_v4/scotus_head_prop_rescore_20260501_145000",
+      "sha256": "a127f09e942dd75c110d8cef65ee8ce76690e2a508eac033f97bfedd308e572d",
+      "why_track": "Compact proposition-level rescore of the attention-head trace-patch run and decision not to promote any head."
+    },
+    {
+      "path": "reports/scotus_component_trace_patch_20260501.md",
+      "source": "sweep_v4/scotus_component_trace_patch_20260501_134936,135028",
+      "sha256": "2f7ec3da8ed4c47edada3408de40560d5e9c8e7cd3099848b414e13b2279072d",
+      "why_track": "Compact report for the component-level path-patching follow-up and decision not to promote L16/L20 mixer/MLP components."
+    },
+    {
+      "path": "reports/scotus_controlled_bundle_decode_poke_20260501.md",
+      "source": "sweep_v4/scotus_controlled_bundle_poke_20260501_183716 and sweep_v4/scotus_controlled_bundle_prop_rescore_20260501_193155",
+      "sha256": "2681bcfd610e0a9696fbbef32919ee4eb759d057a43b1edc808a5003f2bbb738",
+      "why_track": "Compact report for the Article III four-layer generated-token bundle poke and decision not to promote it."
+    },
+    {
+      "path": "reports/scotus_controlled_replay_v2_audit_20260501.md",
+      "source": "scripts/experiments/scotus/build_controlled_legal_replay_v2.py",
+      "sha256": "b8593d83f46c98cecf51277845786290af3671da96309d10e93c672c1e9cc2aa",
+      "why_track": "Compact audit showing prompt/style leakage checks for the controlled Article III replay bank."
+    },
+    {
+      "path": "reports/scotus_counterfactual_thoughts_20260501.md",
+      "source": "sweep_v4/scotus_counterfactual_thoughts_20260501_231331",
+      "sha256": "4c0435f9820731245362c5cbbff8ae261d1eaee83ecac8e38e59b90b36b82801",
+      "why_track": "Compact report showing coherent private-rights scratchpads can move final answers, while public-rights answers expose the need for conclusion-polarity scoring."
+    },
+    {
+      "path": "reports/scotus_counterfactual_thoughts_ambiguous_server_20260502.md",
+      "source": "sweep_v4/scotus_counterfactual_thoughts_server_20260502_001228",
+      "sha256": "75c9472ab53cfe49e8ca9437ce59a2fb6cbfcb82060260cba29b0161edca3052",
+      "why_track": "Compact report for the long-answer server counterfactual visible-thought calibration on ambiguous Article III prompts; evaluator-positive but not actuator evidence."
+    },
+    {
+      "path": "reports/scotus_counterfactual_thoughts_long_server_20260502.md",
+      "source": "sweep_v4/scotus_counterfactual_thoughts_server_20260502_000338/report.md",
+      "sha256": "8b700f4d098d4b48e04cd709e2768d45bcc8f14772f73da483b6a4c8f0a35f93",
+      "why_track": "Compact report for the 4096-token Article III counterfactual visible-thought server run; all rows stopped naturally with no truncation."
+    },
+    {
+      "path": "reports/scotus_generated_baseline_localized_direction_poke_smoke_20260502.md",
+      "source": "compact report for generated-baseline localization and localized direction causal gate",
+      "why_track": "Records that generated-baseline localization nominated a surface distinct from inserted-thought late-tail sites, but the top-six additive bundle failed the no-mask final-holding causal gate against random control.",
+      "sha256": "a3dd2a2f3ffbbe6cd3b4d176454480d9a8bb1930a825cb42ee1efc965c78040e"
+    },
+    {
+      "path": "reports/scotus_generated_trace_private_source_patch_smoke_20260502.md",
+      "source": "sweep_v4/scotus_thinking_trace_patch_20260502_035453 and sweep_v4/scotus_article3_conclusion_polarity_20260502_042512",
+      "sha256": "14493ca2f611c6f19605390de7f8dafb90b3d8f09e4d53afb9fa76dc50f4fda6",
+      "why_track": "Compact complete-budget report showing the private-source generated-thinking trace patch at L62 residual w000_064 failed to move Article III holdings private and failed the source-control gate."
+    },
+    {
+      "path": "reports/scotus_lowrank_replay_poke_20260501.md",
+      "source": "sweep_v4/scotus_replay_lowrank_diag_20260501_165827, sweep_v4/scotus_lowrank_replay_poke_20260501_170217, and sweep_v4/scotus_lowrank_replay_prop_rescore_20260501_172039",
+      "sha256": "81d0ec4d94efd6ca86ec76aea1319d2b5729105969905bd811bec534625331ad",
+      "why_track": "Compact report for the replay-v2 L8 low-rank diagnostic and decision not to promote the learned map."
+    },
+    {
+      "path": "reports/scotus_minimal_pair_replay_v2_20260501.md",
+      "source": "sweep_v4/scotus_minpair_replay_v2_20260501_144942",
+      "sha256": "c85bb3c0ed8434769f6c6277373068d2e2e20022bf70cb6b59fe39df487e646c",
+      "why_track": "Compact activation-probe report for the repaired replay-v2 Commerce bank."
+    },
+    {
+      "path": "reports/scotus_minpair_replay_v2_builder_20260501.md",
+      "source": "scripts/experiments/scotus/build_scotus_minpair_replay_v2.py",
+      "sha256": "cfde8b8288bf02ae384bd5f394fc4e0409e3c04ee7bf4333eea910e39e55f7d9",
+      "why_track": "Compact builder report documenting replay-v2 counts, duplicate checks, and cheap leakage baselines."
+    },
+    {
+      "path": "reports/scotus_minpair_replay_v2_holdout_audit_20260501.md",
+      "source": "sweep_v4/scotus_minpair_replay_v2_20260501_144942/features.npz",
+      "sha256": "efcbac28e8a1faac352ebda13e48693987d22518fecb4cbcab7c0a5d73b59ec4",
+      "why_track": "Compact report showing replay-v2 prompt states remain near chance while assistant answer states are strongly decodable."
+    },
+    {
+      "path": "reports/scotus_qwen35_ambiguous_baseline_prompt_selection_20260502.md",
+      "source": "sweep_v4/scotus_thinking_localized_direction_poke_20260502_005241 and sweep_v4/scotus_article3_conclusion_polarity_20260502_012416",
+      "sha256": "b94e044be92c481bb0ce05a2c4942774f44f034cc473e93e68b228b35e147664",
+      "why_track": "Compact prompt-selection report identifying local Qwen3.5 public-baseline ambiguous Article III prompts for private-rights actuator tests and documenting manual holding labels."
+    },
+    {
+      "path": "reports/scotus_raw_run_archive_index_20260501.md",
+      "source": "scripts/infra/index_scotus_raw_runs.py refreshed after answer-state localized causal gate",
+      "sha256": "63d1a0069ce1f565b8c8e70032a09e48254363c1cc2d8d49f85d6af645193d3d",
+      "why_track": "Local index of ignored SCOTUS raw run directories, including holding-logit traces, local Qwen3.5 counterfactual references, conclusion-polarity scoring, answer-continuation traces, answer-state localization, localized causal gates, and offline conditional-controller diagnostics."
+    },
+    {
+      "path": "reports/scotus_replay_v2_causal_poke_20260501.md",
+      "source": "sweep_v4/scotus_sae_poke_20260501_150402 and sweep_v4/scotus_replay_v2_causal_prop_rescore_20260501_165100",
+      "sha256": "ad96c65d7cc026c0722747fc46f980d126587014c24bc41d5cdde5785444f3f1",
+      "why_track": "Compact report for the replay-v2 L8 causal poke and decision not to promote the direction."
+    },
+    {
+      "path": "reports/scotus_thinking_bundle_poke_20260501.md",
+      "source": "sweep_v4/scotus_thinking_bundle_poke_20260501_200321, sweep_v4/scotus_thinking_bundle_poke_20260501_200935, and sweep_v4/scotus_thinking_bundle_poke_20260501_201846",
+      "sha256": "117c6841dbb56aaa7c92e88c5b78ee47c8d2ed85b5af54b68c0493209d5a51be",
+      "why_track": "Compact report showing the Article III four-layer residual bundle weakly moved answers but failed no-mask thinking-trace and strongest-random gates."
+    },
+    {
+      "path": "reports/scotus_thinking_localized_direction_poke_smoke_20260502.md",
+      "source": "sweep_v4/scotus_thinking_localized_direction_poke_20260502_003719 and sweep_v4/scotus_article3_conclusion_polarity_20260502_004803",
+      "sha256": "c9d6caec147edbf53b745cb903a637d6e2f9839bf1c6211b3974cc03d74ddcd9",
+      "why_track": "Compact report for the first localized-direction no-mask smoke; records no visible-thinking movement and no promotion for the top4 residual bundle."
+    },
+    {
+      "path": "reports/scotus_thinking_localized_direction_public_baseline_smoke_20260502.md",
+      "source": "sweep_v4/scotus_thinking_localized_direction_poke_20260502_012514 and sweep_v4/scotus_article3_conclusion_polarity_20260502_021856",
+      "sha256": "f1d370e85cca46ac92b3a9d5da7024216297f9043619fe8dc753775147265fcd",
+      "why_track": "Compact report for the corrected public-baseline localized-direction no-mask smoke; records failure to beat prompt-matched random controls and closes the exact top-8 unit-add actuator shape."
+    },
+    {
+      "path": "reports/scotus_thinking_localized_direction_reverse_smoke_20260502.md",
+      "source": "sweep_v4/scotus_thinking_localized_direction_poke_20260502_022548 and sweep_v4/scotus_article3_conclusion_polarity_20260502_033340",
+      "sha256": "c1b9ce2bcac319012e124dc80930cbf384978c40dadd2c48cb25d9d042c6822a",
+      "why_track": "Compact report for the negative-alpha reverse-direction localized Article III smoke; records failure to move private-baseline prompts toward public-rights holdings and closes the simple bidirectional unit-add branch."
+    },
+    {
+      "path": "reports/scotus_thinking_smoke_20260501.md",
+      "source": "sweep_v4/scotus_thinking_smoke_20260501_194950 and sweep_v4/scotus_thinking_smoke_20260501_195321",
+      "sha256": "c840e8d8eba107e346faaa6df733cd7a5aa8662a55296462e39049dc57733ea1",
+      "why_track": "Compact report showing Qwen3.5 visible thinking is capturable but did not close into a final answer under the tested token budgets."
+    },
+    {
+      "path": "reports/scotus_thinking_text_ablation_20260501.md",
+      "source": "sweep_v4/scotus_thinking_text_ablation_20260501_230522",
+      "sha256": "2b38d72f986bddd2017776d61513bd679c24fa03ea429c564aa87e4fe995a980",
+      "why_track": "Compact report for the Article III visible-thought text attribution screen showing nonspecific corruption-sensitive answer movement rather than a localized actuator surface."
+    },
+    {
+      "path": "reports/scotus_thinking_trace_patch_grid_20260501.md",
+      "source": "sweep_v4/scotus_thinking_trace_patch_20260501_221231",
+      "sha256": "08cde7e7df079f5b1431ff17db7fcbdd336ea57cedd64c8d08c8f32b67198604",
+      "why_track": "Compact report for the Article III visible-thinking trace-patch layer/component grid and decision not to promote any tested window."
+    },
+    {
+      "path": "reports/scotus_thinking_trace_patch_smoke_20260501.md",
+      "source": "sweep_v4/scotus_thinking_trace_patch_20260501_220629",
+      "sha256": "1e76c0e9b819f69909674a9f112739e42791ec214d75df9897de16cd65fc6661",
+      "why_track": "Compact report for the first visible-thinking trajectory patch smoke and decision not to promote the L08 MLP window."
+    },
+    {
+      "path": "reports/scotus_thinking_trace_patch_token_windows_20260501.md",
+      "source": "sweep_v4/scotus_thinking_trace_patch_20260501_224155",
+      "sha256": "68d5d2bf408a05afbc8886b4cb5ca460d36c872d3c0ad0ee91036cce9a298cac",
+      "why_track": "Compact report for the L8 visible-thinking token-window trace patch follow-up and decision to close this Article III source-trace replacement branch."
+    },
+    {
+      "path": "reports/scotus_trace_patch_probe_20260501.md",
+      "source": "sweep_v4/scotus_trace_patch_20260501_132038,132228,133127,133630",
+      "sha256": "6bc8dc27f2239ed03896854e05ca5e8bd794e5bc03e3ba7887fa9b617205bbd7",
+      "why_track": "Compact report for the trace-patching follow-up and decision not to promote the Commerce minimal-pair replay branch."
+    },
+    {
+      "path": "scripts/experiments/scotus/README.md",
+      "source": "SCOTUS experiment script run-constructor checklist",
+      "why_track": "Documents the Qwen complete-generation-budget invariant for future SCOTUS/Qwen constructors: default 3072, minimum 2048, explicit smoke-only opt-in for shorter runs, and manifest/report budget metadata including promotion eligibility.",
+      "sha256": "88638b7bfa13d4d4eff8bb18f72e1440dfc3533c88c2d69cd4ecf3b42515d061"
+    },
+    {
+      "path": "scripts/experiments/scotus/ablate_scotus_thinking_text.py",
+      "source": "new visible-thought text attribution runner",
+      "sha256": "b27b992c0b027b1dc83473a593a618949b9fe2280c298a6c12e1d8a35171099a",
+      "why_track": "Regenerates final answers from edited visible thought text to test whether scratchpad windows causally affect proposition framing beyond random text-deletion controls. Budget invariant update: requires Qwen complete-answer budgets for visible-thought text attribution; short runs must be explicit smoke/debug."
+    },
+    {
+      "path": "scripts/experiments/scotus/adjudicate_article3_holding_review.py",
+      "source": "Article III holding review adjudicator with long and ambiguous internal triage modes",
+      "sha256": "c567ede9417ac213fba2f4df2b65675f8289aeedc38f4cc0fb7a54a508dff7eb",
+      "why_track": "Labels final Article III holdings for blind review queues, including the long-answer and ambiguous-prompt calibration queues used to repair the evaluator."
+    },
+    {
+      "path": "scripts/experiments/scotus/audit_scotus_replay_v2_holdouts.py",
+      "source": "new replay-v2 group holdout audit script",
+      "sha256": "d98643e337607802ab2cfc1ba480d66968fd6819b0d292b8c425f4e24dcab63b",
+      "why_track": "Audits replay-v2 separability under leave-one-style-variant and leave-one-fact-pattern holdouts from captured activations."
+    },
+    {
+      "path": "scripts/experiments/scotus/build_article3_holding_review_queue.py",
+      "source": "new Article III final-holding blind review queue builder",
+      "sha256": "1afc39abd872519f91ef50be5b9b2eeb7bfa996bfde2150bbde4ad856579d347",
+      "why_track": "Builds answer-only blind review queues for Article III final holding direction, hiding inserted scratchpad conditions from reviewers. Budget invariant update: records source generation answer-token budget and flags short-budget queues as smoke-only."
+    },
+    {
+      "path": "scripts/experiments/scotus/build_controlled_legal_replay_v2.py",
+      "source": "new controlled Article III public/private-rights replay bank builder and text-leakage auditor",
+      "sha256": "a87971d4b60cfad345a6a7df138f77dfae243225aa6df3f331341922e9cdf99f",
+      "why_track": "Builds paired no-persona legal answer states with prompt/fact/style leakage audits for the next candidate source."
+    },
+    {
+      "path": "scripts/experiments/scotus/build_scotus_minpair_replay_v2.py",
+      "source": "new replay-v2 Commerce minimal-pair builder",
+      "sha256": "20757b2a110334fff3869474117d7250dc23245022c62c35aeb85a43c4374de6",
+      "why_track": "Builds the repaired Commerce minimal-pair replay bank without exact assistant-template reuse."
+    },
+    {
+      "path": "scripts/experiments/scotus/build_scotus_no_mask_review_queue.py",
+      "source": "new generic no-mask causal review queue builder",
+      "sha256": "6c8389e542e1eff419a343c75a6d4cdbddf0520124d3a14db6a57c78dcb312f3",
+      "why_track": "Builds blind pairwise review queues from raw or proposition-rescored SCOTUS generation artifacts, separating visible thinking from final answers when present."
+    },
+    {
+      "path": "scripts/experiments/scotus/diagnose_article3_localized_lowrank.py",
+      "source": "new offline conditional-controller diagnostic for localized Article III thought-state sites",
+      "sha256": "f843030e8dcb850601191f9f9a3f1499731298eec2dee4ffce15aded313d2d33",
+      "why_track": "Recomputes neutral/private/public teacher-forced states for selected localized sites and tests leave-one-prompt-out mean, nearest-neighbor, and low-rank KRR delta predictors against permutation controls before spending long generation runs."
+    },
+    {
+      "path": "scripts/experiments/scotus/localize_article3_ambiguous_thought_states.py",
+      "source": "new teacher-forced ambiguous Article III thought-state localization screen",
+      "sha256": "ec7bc6c1a91710dafb3b1bb65aee31714876b254e0598851cde993e9e2e2d530",
+      "why_track": "Captures residual/mixer/MLP states under neutral/private/public inserted visible thoughts on the ambiguous Article III bank, ranks private-minus-public sites against shuffled-label nulls, and saves compact candidate directions for later no-mask actuator tests."
+    },
+    {
+      "path": "scripts/experiments/scotus/localize_article3_generated_thought_baselines.py",
+      "source": "generated-baseline visible-thought localization over manually reviewed Article III prompt tendencies",
+      "why_track": "Nominates distributed private-minus-public surfaces from Qwen generated baseline thinking rather than inserted teacher-forced scratchpads, with source-generation budget checks so short Qwen runs remain smoke/debug only.",
+      "sha256": "37450fcfd15a7b2a569b68e8f0b32fc9fce3506867270d0966eba944af7411e2"
+    },
+    {
+      "path": "scripts/experiments/scotus/localize_article3_counterfactual_answer_states.py",
+      "source": "local Qwen 3.5 counterfactual answer-state localization over inserted visible-thought references",
+      "sha256": "6e30f517382d05f699f608286865318056dc03b14429cc1d107f84b78bacbb63",
+      "why_track": "Nominates private-minus-public directions from local generated answer trajectories under coherent inserted thoughts, with complete source-budget checks and shuffled-label nulls; used for the late answer-state no-mask causal gate."
+    },
+    {
+      "path": "scripts/experiments/scotus/patch_scotus_attention_heads.py",
+      "source": "new full-attention head trace-patch intervention script",
+      "sha256": "6dd4b71f5035e619699bd0649c4f8c40b932b21ad7d1789a23e00236b6121178",
+      "why_track": "Attention-head-level trace replacement script used to test the full-attention blind spot around L15/L19/L23. Budget invariant update: defaults to a complete-answer Qwen budget for evaluator use; short generated-answer caps require explicit smoke/debug opt-in and manifest warning metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/patch_scotus_component_traces.py",
+      "source": "new component-level trace-patch intervention script",
+      "sha256": "dedef687c93275fb65d4caeb43a62d24ec158e571b133e5eaa20ef2d2592f7b2",
+      "why_track": "Token-mixer and MLP output trace replacement script used to test component-level path patching. Budget invariant update: defaults to a complete-answer Qwen budget for evaluator use; short generated-answer caps require explicit smoke/debug opt-in and manifest warning metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/patch_scotus_replay_prototypes.py",
+      "source": "budget invariant repair",
+      "why_track": "Budget invariant update: defaults to a complete-answer Qwen budget for evaluator use; short generated-answer caps require explicit smoke/debug opt-in and manifest warning metadata.",
+      "sha256": "b58eae4cfa249bfc5a0eb3d76e3df82dcce83b23bb53ee510f53dd6a96c7474e"
+    },
+    {
+      "path": "scripts/experiments/scotus/patch_scotus_replay_traces.py",
+      "source": "new trace-patch intervention script",
+      "sha256": "73516d791473a3e9d1c2ddfe6a8fa0a67d461fd4ffb56565918fc5cc8221b93d",
+      "why_track": "Token-local residual trace replacement script used to test the distributed-shape hypothesis. Budget invariant update: defaults to a complete-answer Qwen budget for evaluator use; short generated-answer caps require explicit smoke/debug opt-in and manifest warning metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/patch_scotus_thinking_traces.py",
+      "source": "new visible-thinking trajectory patch localization runner",
+      "sha256": "abeaa8cc2ee0d8ac09467fe71fe20bd11ec0ed696cde8c5009a0fa5bf41dba12",
+      "why_track": "Captures teacher-forced traces from stored Qwen thinking text and patches them during newly generated visible thought before unpatched answer generation, including optional generated-thinking token windows. Budget invariant update: requires Qwen complete-answer budgets for answer-side evaluation in visible-thinking trace patching; short runs must be explicit smoke/localization. Visible-thinking budget invariant update: thought-token caps now default to complete Qwen evaluator budgets, require explicit short-thinking opt-in, and write centralized promotion-eligibility metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/poke_scotus_controlled_replay_bundle.py",
+      "source": "new generated-token controlled replay bundle poke runner",
+      "sha256": "25dd24ba52f45a9357c3ef3128915b539dcb7f942c1aa092005faa2bf137474a",
+      "why_track": "Builds multi-layer target-reference bundles from controlled replay features and applies them during generated-token decode steps with random bundle controls. Budget invariant update: defaults to a complete-answer Qwen budget for evaluator use; short generated-answer caps require explicit smoke/debug opt-in and manifest warning metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/poke_scotus_lowrank_replay.py",
+      "source": "generic low-rank replay causal smoke script",
+      "sha256": "1a7ce3ff2efc9e3bf2aa7c18682789f2d65fde3ab6ba574e791d20ce692833cf",
+      "why_track": "Applies learned low-rank replay maps during generation with generic source/target labels and same-family permutation controls. Budget invariant update: defaults to a complete-answer Qwen budget for evaluator use; short generated-answer caps require explicit smoke/debug opt-in and manifest warning metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/poke_scotus_multilayer_replay.py",
+      "source": "budget invariant repair",
+      "why_track": "Budget invariant update: defaults to a complete-answer Qwen budget for evaluator use; short generated-answer caps require explicit smoke/debug opt-in and manifest warning metadata.",
+      "sha256": "878b04b32d3556a89a79a56248e5ce56979e83170deefcc4c7a9a04ddff1e6c4"
+    },
+    {
+      "path": "scripts/experiments/scotus/poke_scotus_sae_layers.py",
+      "source": "budget invariant repair",
+      "why_track": "Budget invariant update: defaults to a complete-answer Qwen budget for evaluator use; short generated-answer caps require explicit smoke/debug opt-in and manifest warning metadata.",
+      "sha256": "cb69c90e97e0d7dd11e9025a48115048392f4835d65ff14e14b3b6d59fca87a7"
+    },
+    {
+      "path": "scripts/experiments/scotus/poke_scotus_thinking_bundle.py",
+      "source": "new two-stage no-mask thinking audit runner for controlled replay bundles",
+      "sha256": "6abcfb0e065282ed8841032ab464250ac0c07c6874bc66a0049c36b184e12f1c",
+      "why_track": "Generates visible thought, mechanically closes it, then generates final answers while applying candidate and random-control bundles during both stages. Budget invariant update: requires Qwen complete-answer budgets for two-stage no-mask bundle pokes; short runs must be explicit smoke/debug. Visible-thinking budget invariant update: thought-token caps now default to complete Qwen evaluator budgets, require explicit short-thinking opt-in, and write centralized promotion-eligibility metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/poke_scotus_thinking_localized_directions.py",
+      "source": "new two-stage no-mask poke runner for localized thought-state directions",
+      "sha256": "f51a54970f6bd5defb0f25a176b89f830911cad20d7e3de0d335d1b677646932",
+      "why_track": "Applies frozen multi-site component directions nominated by thought-state or answer-state localization passes during generated thinking and final-answer decode, with same-site random controls and centralized Qwen thinking/answer budget metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/poke_scotus_thinking_lowrank.py",
+      "source": "new two-stage no-mask thinking audit runner for learned low-rank SCOTUS maps",
+      "sha256": "3b25fe229eed442f7f7631a91052104a0e901cf5ac571d047fedc74b2fc64565",
+      "why_track": "Applies learned low-rank replay maps during visible thought generation and final-answer generation with permutation and mean-delta controls. Budget invariant update: requires Qwen complete-answer budgets for two-stage low-rank no-mask pokes; short runs must be explicit smoke/debug. Visible-thinking budget invariant update: thought-token caps now default to complete Qwen evaluator budgets, require explicit short-thinking opt-in, and write centralized promotion-eligibility metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/probe_scotus_counterfactual_thoughts.py",
+      "source": "new coherent counterfactual visible-thought diagnostic runner",
+      "sha256": "06e554f765be7d1f312b191d7d7143b535e49929cffee68064a665f7ac51d44d",
+      "why_track": "Inserts neutral, private-rights, and public-rights visible scratchpads before unhooked answer generation to calibrate whether coherent visible reasoning can route final answers. Budget invariant update: requires Qwen complete-answer budgets for counterfactual visible-thought calibration; short runs must be explicit smoke/debug and manifest metadata now records promotion eligibility."
+    },
+    {
+      "path": "scripts/experiments/scotus/probe_scotus_counterfactual_thoughts_server.py",
+      "source": "long-answer OpenAI-compatible server counterfactual visible-thought diagnostic",
+      "sha256": "4e5e8b8593fbbb7262e2df6768525762d3cc916f86af132394d3e079742227ad",
+      "why_track": "Runs no-hook Qwen counterfactual visible-thought calibrations through optimized llama.cpp/OpenAI-compatible endpoints while preserving complete-answer budget guards, manifest warnings, and promotion-eligibility metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/probe_scotus_minimal_pair_replay.py",
+      "source": "updated minimal-pair replay probe script",
+      "sha256": "bf468304ea635d38dcc210d790a5e4af22a30db70c3cbb3cccdcd90d104bea0b",
+      "why_track": "Activation probe script updated to accept explicit replay example files, resume from feature directories, skip partial region arrays, and report generic task labels."
+    },
+    {
+      "path": "scripts/experiments/scotus/qwen4bit_proxy_generation.py",
+      "source": "remote/local 4-bit Qwen proxy generation runner with long-answer budget guard",
+      "sha256": "58f3784eb562c30129149f84ea66ba510286db4f7577058d8cf59439b8fdcb08",
+      "why_track": "Generates long-answer legal-frame proxy samples through OpenAI-compatible llama.cpp endpoints when hooks are not required, and now defaults to complete Qwen answer budgets rather than short smoke budgets while recording promotion-eligibility metadata."
+    },
+    {
+      "path": "scripts/experiments/scotus/qwen_eval_budget.py",
+      "source": "shared Qwen SCOTUS evaluation-budget guardrail helper",
+      "sha256": "adb3da06f96b82f69e32045ac7e1e7ef26bfbe65b4cbe058b1754f01eed3788a",
+      "why_track": "Centralizes the 2048-token minimum, 3072-token default, explicit short-budget opt-in, manifest warning metadata, and promotion-eligibility flags for future SCOTUS generation/evaluation constructors."
+    },
+    {
+      "path": "scripts/experiments/scotus/rescore_scotus_frame_propositions.py",
+      "source": "proposition-level frame rescore script, updated for target-candidate matched controls",
+      "sha256": "e1106ace20d75a492802657d1e0670453c593506cbbd8f4d640e739fc7b3c4dd",
+      "why_track": "Stricter legal proposition scorer used to audit whether hook-generation frame movement is more than keyword movement."
+    },
+    {
+      "path": "scripts/experiments/scotus/run_scotus_thinking_smoke.py",
+      "source": "Qwen3.5 thinking-trace smoke runner for no-mask audit plumbing",
+      "sha256": "7d92a05703d40ebdb65d06928f26088e06a1701bad17205ae598be5423e9cc7c",
+      "why_track": "Checks whether Qwen3.5 exposes usable SCOTUS reasoning traces. It is now explicitly smoke-only in manifest/report metadata and records short-budget status so few-hundred-token traces cannot be mistaken for evaluator evidence."
+    },
+    {
+      "path": "scripts/experiments/scotus/score_article3_conclusion_polarity.py",
+      "source": "Article III conclusion-polarity scorer patched during long proxy-null setup",
+      "sha256": "29bbc6cd0b0204bc1af8c5551fae2e35eceed4498a408734f6302390161b1c3d",
+      "why_track": "Scores final Article III holding polarity for public/private-rights prompts. Now preserves alpha, random_index, sample_type, control_index, and layer metadata, and writes prompt-condition polarity null summaries so intervention sweeps and proxy base/random nulls are not collapsed into ambiguous condition-level aggregates."
+    },
+    {
+      "path": "scripts/experiments/scotus/trace_article3_answer_continuation_patches.py",
+      "source": "Article III actual-answer continuation causal trace screen",
+      "why_track": "Scores private-conditioned versus public-conditioned actual answer continuations under generated-thought hidden-state patches, repairing the earlier fixed holding-label evaluator and checking source-specificity against public controls.",
+      "sha256": "2ef35b80963ea2116e9bb12e658edbad5a1f7bbd1a5064f5fa149d5c453fa6cc"
+    },
+    {
+      "path": "scripts/experiments/scotus/trace_article3_holding_logit_patches.py",
+      "source": "Article III holding-logit causal trace screen over generated-thought hidden-state patches",
+      "why_track": "Patches private-source and public-source-control generated-thought states into public targets and scores private/public holding logprob margins; now also exposes max-label-token truncation used by actual-answer continuation tracing.",
+      "sha256": "c4eb7aef40e7a09c27d390d510d3c01095f08c11ee5f87af8f549ca47c4470b9"
+    },
+    {
+      "path": "scripts/experiments/scotus/train_scotus_replay_lowrank_intervention.py",
+      "source": "generic frozen-feature low-rank intervention diagnostic script",
+      "sha256": "f1fa1147fc7ac804253ebbb4d1cc1997a70bdc8420fd4ab2937132c781c5d64b",
+      "why_track": "Trains low-rank maps from replay states to generic paired source/target deltas and compares against permutation controls."
+    }
+  ]
+}

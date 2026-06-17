@@ -8,6 +8,12 @@ set -e
 
 cd "/home/orwel/dev_genius/experiments/Character Creation"
 source /home/orwel/dev_genius/qwen35_venv/bin/activate
+VENV_PY="/home/orwel/dev_genius/qwen35_venv/bin/python"
+GUARD_PY="scripts/infra/run_with_vram_guard.py"
+MAX_VRAM_FRACTION="${MAX_VRAM_FRACTION:-0.89}"
+GUARD_POLL_SECONDS="${GUARD_POLL_SECONDS:-5}"
+ABLIT_LOG="logs/queue_abliterated_connectome_guard.log"
+EVAL_LOG="logs/queue_abliterated_head_to_head_guard.log"
 
 echo "$(date): Waiting for GPU to be free..."
 echo "  Monitoring: magnitude_calibrated_steering, fullrank_spectral_analysis"
@@ -36,12 +42,22 @@ echo "$(date): Starting abliterated model connectome mapping"
 echo "$(date): Model: huihui-ai/Huihui-Qwen3.5-27B-abliterated (bf16, ~52GB)"
 echo "$(date): Phases: 1 (baseline) + 2 (connectome probe)"
 echo "$(date): Expected runtime: ~4-6 hours"
+echo "$(date): Guard log: ${ABLIT_LOG}"
 echo "$(date): =============================================="
 echo ""
 
 # Run Phase 1 (baseline eval) and Phase 2 (connectome) only
 # Skip Phase 3 (layer scan) and Phase 4 (comparison) — we have a dedicated comparison script
-python -u scripts/experiments/connectome/map_qwen35.py --model 27b-abliterated --output ./qwen35_map --resume 2>&1
+"$VENV_PY" "$GUARD_PY" \
+  --gpu-index 0 \
+  --max-vram-fraction "$MAX_VRAM_FRACTION" \
+  --poll-seconds "$GUARD_POLL_SECONDS" \
+  --breach-polls 1 \
+  --kill-timeout-seconds 15 \
+  --log-file "$ABLIT_LOG" \
+  --chdir "/home/orwel/dev_genius/experiments/Character Creation" \
+  -- \
+  "$VENV_PY" -u scripts/experiments/connectome/map_qwen35.py --model 27b-abliterated --output ./qwen35_map --resume
 
 echo ""
 echo "$(date): Abliterated connectome COMPLETE."
@@ -56,10 +72,20 @@ echo "$(date): =============================================="
 echo "$(date): Starting head-to-head eval: abliterated vs base vs steered"
 echo "$(date): 50 math + 30 knowledge + 20 sarcasm + 10 identity + 10 refusal"
 echo "$(date): Expected runtime: ~1-2 hours"
+echo "$(date): Guard log: ${EVAL_LOG}"
 echo "$(date): =============================================="
 echo ""
 
-python -u scripts/eval/eval_head_to_head.py --resume --output ./abliteration_comparison 2>&1
+"$VENV_PY" "$GUARD_PY" \
+  --gpu-index 0 \
+  --max-vram-fraction "$MAX_VRAM_FRACTION" \
+  --poll-seconds "$GUARD_POLL_SECONDS" \
+  --breach-polls 1 \
+  --kill-timeout-seconds 15 \
+  --log-file "$EVAL_LOG" \
+  --chdir "/home/orwel/dev_genius/experiments/Character Creation" \
+  -- \
+  "$VENV_PY" -u scripts/eval/eval_head_to_head.py --resume --output ./abliteration_comparison
 
 echo ""
 echo "$(date): Head-to-head eval COMPLETE."

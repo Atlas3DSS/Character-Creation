@@ -1,0 +1,98 @@
+{
+  "automatic_agreement": {
+    "eligible_rows": 24,
+    "exact_agreement_rate": 0.5833,
+    "exact_agreement_rows": 14
+  },
+  "automatic_confusion_table": [
+    [
+      "article3_objection_fails_public_rights_permissible",
+      "article3_objection_fails_public_rights_permissible",
+      7
+    ],
+    [
+      "article3_objection_fails_public_rights_permissible",
+      "article3_objection_succeeds_private_rights",
+      2
+    ],
+    [
+      "article3_objection_fails_public_rights_permissible",
+      "mixed_or_distinction_only",
+      1
+    ],
+    [
+      "article3_objection_succeeds_private_rights",
+      "article3_objection_fails_public_rights_permissible",
+      1
+    ],
+    [
+      "article3_objection_succeeds_private_rights",
+      "article3_objection_succeeds_private_rights",
+      7
+    ],
+    [
+      "article3_objection_succeeds_private_rights",
+      "mixed_or_distinction_only",
+      1
+    ],
+    [
+      "mixed_or_distinction_only",
+      "article3_objection_fails_public_rights_permissible",
+      4
+    ],
+    [
+      "mixed_or_distinction_only",
+      "article3_objection_succeeds_private_rights",
+      1
+    ]
+  ],
+  "condition_table": [
+    [
+      "neutral",
+      8,
+      3,
+      5,
+      0,
+      0,
+      "0.94"
+    ],
+    [
+      "private_rights",
+      8,
+      4,
+      2,
+      2,
+      0,
+      "0.88"
+    ],
+    [
+      "public_rights",
+      8,
+      3,
+      5,
+      0,
+      0,
+      "0.94"
+    ]
+  ],
+  "holding_label_counts": {
+    "article3_objection_fails_public_rights_permissible": 12,
+    "article3_objection_succeeds_private_rights": 10,
+    "mixed_or_distinction_only": 2
+  },
+  "inputs": {
+    "blind": "data/scotus/scotus_article3_holding_review_blind_long_20260502.jsonl",
+    "key": "data/scotus/scotus_article3_holding_review_key_long_20260502.jsonl"
+  },
+  "mask_label_counts": {
+    "direct_reasoning": 24
+  },
+  "mode": "codex-triage-long-20260502",
+  "n_rows": 24,
+  "output": "data/scotus/scotus_article3_holding_review_adjudicated_long_20260502.jsonl",
+  "reasoning_quality_counts": {
+    "legally_coherent": 20,
+    "partly_coherent": 4
+  },
+  "reviewer": "internal_codex_triage"
+}

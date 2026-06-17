@@ -17,6 +17,7 @@ Usage:
 import argparse
 import json
 import os
+import shlex
 import signal
 import subprocess
 import sys
@@ -25,7 +26,10 @@ from datetime import datetime
 from pathlib import Path
 
 VENV = "/home/orwel/dev_genius/qwen35_venv/bin/activate"
+VENV_PY = "/home/orwel/dev_genius/qwen35_venv/bin/python"
 PROJECT = "/home/orwel/dev_genius/experiments/Character Creation"
+GUARD_PY = f"{PROJECT}/scripts/infra/run_with_vram_guard.py"
+MAX_VRAM_FRACTION = 0.89
 LOG_27B = None  # Set from args
 LOG_35B = "/tmp/map_qwen35_35b.log"
 LOG_FAST_27B = "/tmp/fast_scan_27b.log"
@@ -113,12 +117,36 @@ def run_script(cmd: str, log_path: str, description: str) -> subprocess.Popen:
     log(f"Launching: {description}")
     log(f"  Command: {cmd}")
     log(f"  Log: {log_path}")
+    log(f"  Guard VRAM cap: {MAX_VRAM_FRACTION:.2f}")
 
-    full_cmd = f'source {VENV} && cd "{PROJECT}" && {cmd}'
+    Path(log_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(log_path).write_text("")
+    guard_cmd = [
+        VENV_PY,
+        GUARD_PY,
+        "--gpu-index",
+        "0",
+        "--max-vram-fraction",
+        str(MAX_VRAM_FRACTION),
+        "--poll-seconds",
+        "5",
+        "--breach-polls",
+        "1",
+        "--kill-timeout-seconds",
+        "15",
+        "--log-file",
+        log_path,
+        "--chdir",
+        PROJECT,
+        "--",
+        "bash",
+        "-lc",
+        f"source {shlex.quote(VENV)} && exec {cmd}",
+    ]
     proc = subprocess.Popen(
-        ["bash", "-c", full_cmd],
-        stdout=open(log_path, "w"),
-        stderr=subprocess.STDOUT,
+        guard_cmd,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
         start_new_session=True,
     )
     log(f"  PID: {proc.pid}")
@@ -270,13 +298,7 @@ def main() -> None:
                 wait_for_budget(90)
                 if proc_35b.poll() is None:
                     log("Killing 35B Phase 3 to free GPU...")
-                    try:
-                        os.kill(proc_35b.pid, signal.SIGTERM)
-                        time.sleep(10)
-                        if proc_35b.poll() is None:
-                            os.kill(proc_35b.pid, signal.SIGKILL)
-                    except (ProcessLookupError, PermissionError):
-                        pass
+                    kill_process(proc_35b.pid)
                 break
             time.sleep(60)
 

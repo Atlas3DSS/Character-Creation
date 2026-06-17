@@ -1,0 +1,280 @@
+{
+  "components": [
+    {
+      "case_ids": [
+        "118410",
+        "118457",
+        "118486",
+        "122257",
+        "130141",
+        "131157",
+        "799974"
+      ],
+      "component_id": "component_005",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 194
+      },
+      "justice_counts": {
+        "Ginsburg": 97,
+        "Scalia": 97
+      },
+      "label_counts": {
+        "0": 97,
+        "1": 97
+      },
+      "n_cases": 7,
+      "n_pairs": 97,
+      "n_rows": 194,
+      "original_split_counts": {
+        "train": 194
+      }
+    },
+    {
+      "case_ids": [
+        "112569",
+        "112694",
+        "112867",
+        "117856",
+        "117880",
+        "117888",
+        "118127",
+        "118337"
+      ],
+      "component_id": "component_004",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 140
+      },
+      "justice_counts": {
+        "Ginsburg": 70,
+        "Scalia": 70
+      },
+      "label_counts": {
+        "0": 70,
+        "1": 70
+      },
+      "n_cases": 8,
+      "n_pairs": 70,
+      "n_rows": 140,
+      "original_split_counts": {
+        "train": 140
+      }
+    },
+    {
+      "case_ids": [
+        "1087670",
+        "112769",
+        "117844",
+        "117859",
+        "117989",
+        "118143",
+        "118349"
+      ],
+      "component_id": "component_002",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 130
+      },
+      "justice_counts": {
+        "Ginsburg": 65,
+        "Scalia": 65
+      },
+      "label_counts": {
+        "0": 65,
+        "1": 65
+      },
+      "n_cases": 7,
+      "n_pairs": 65,
+      "n_rows": 130,
+      "original_split_counts": {
+        "train": 130
+      }
+    },
+    {
+      "case_ids": [
+        "118465",
+        "121152",
+        "127909",
+        "131153",
+        "131156",
+        "145683",
+        "145696",
+        "145721"
+      ],
+      "component_id": "component_006",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 118
+      },
+      "justice_counts": {
+        "Ginsburg": 59,
+        "Scalia": 59
+      },
+      "label_counts": {
+        "0": 59,
+        "1": 59
+      },
+      "n_cases": 8,
+      "n_pairs": 59,
+      "n_rows": 118,
+      "original_split_counts": {
+        "train": 118
+      }
+    },
+    {
+      "case_ids": [
+        "118471",
+        "122254",
+        "136985",
+        "145709"
+      ],
+      "component_id": "component_000",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 88
+      },
+      "justice_counts": {
+        "Ginsburg": 44,
+        "Scalia": 44
+      },
+      "label_counts": {
+        "0": 44,
+        "1": 44
+      },
+      "n_cases": 4,
+      "n_pairs": 44,
+      "n_rows": 88,
+      "original_split_counts": {
+        "dev": 88
+      }
+    },
+    {
+      "case_ids": [
+        "112509",
+        "112598",
+        "112915"
+      ],
+      "component_id": "component_003",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 50
+      },
+      "justice_counts": {
+        "Ginsburg": 25,
+        "Scalia": 25
+      },
+      "label_counts": {
+        "0": 25,
+        "1": 25
+      },
+      "n_cases": 3,
+      "n_pairs": 25,
+      "n_rows": 50,
+      "original_split_counts": {
+        "train": 50
+      }
+    },
+    {
+      "case_ids": [
+        "112641",
+        "118253"
+      ],
+      "component_id": "component_001",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 30
+      },
+      "justice_counts": {
+        "Ginsburg": 15,
+        "Scalia": 15
+      },
+      "label_counts": {
+        "0": 15,
+        "1": 15
+      },
+      "n_cases": 2,
+      "n_pairs": 15,
+      "n_rows": 30,
+      "original_split_counts": {
+        "test": 30
+      }
+    },
+    {
+      "case_ids": [
+        "137006"
+      ],
+      "component_id": "component_007",
+      "issue_area_label": "Economic Activity",
+      "issue_counts": {
+        "Economic Activity": 28
+      },
+      "justice_counts": {
+        "Ginsburg": 14,
+        "Scalia": 14
+      },
+      "label_counts": {
+        "0": 14,
+        "1": 14
+      },
+      "n_cases": 1,
+      "n_pairs": 14,
+      "n_rows": 28,
+      "original_split_counts": {
+        "train": 28
+      }
+    }
+  ],
+  "issue_feasibility": [
+    {
+      "blocking_reason": "",
+      "issue_area_label": "Economic Activity",
+      "n_cases": 40,
+      "n_components": 8,
+      "n_pairs": 389,
+      "n_rows": 778,
+      "strict_train_dev_test_feasible": true
+    }
+  ],
+  "n_components": 8,
+  "n_rows": 778,
+  "original_split_table": [
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Ginsburg",
+      "n_rows": 44,
+      "split": "dev"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Scalia",
+      "n_rows": 44,
+      "split": "dev"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Ginsburg",
+      "n_rows": 15,
+      "split": "test"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Scalia",
+      "n_rows": 15,
+      "split": "test"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Ginsburg",
+      "n_rows": 330,
+      "split": "train"
+    },
+    {
+      "issue_area_label": "Economic Activity",
+      "justice": "Scalia",
+      "n_rows": 330,
+      "split": "train"
+    }
+  ],
+  "run_dir": "sweep_v4/scotus_slice_bf16_economic_style_normal_20260501_023619"
+}

@@ -1,0 +1,1838 @@
+{
+  "Scalia_vs_Ginsburg/masked": {
+    "train_n": 3216,
+    "label_counts": {
+      "Scalia": 1796,
+      "Ginsburg": 1796
+    },
+    "splits": {
+      "dev": 238,
+      "test": 138
+    },
+    "models": {
+      "dev": {
+        "majority": {
+          "n": 238,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 119.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 238.0
+            }
+          },
+          "majority_label": "Scalia"
+        },
+        "word_tfidf_logreg": {
+          "n": 238,
+          "accuracy": 0.7436974789915967,
+          "balanced_accuracy": 0.7436974789915967,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.8152173913043478,
+              "recall": 0.6302521008403361,
+              "f1-score": 0.7109004739336493,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.6986301369863014,
+              "recall": 0.8571428571428571,
+              "f1-score": 0.769811320754717,
+              "support": 119.0
+            },
+            "accuracy": 0.7436974789915967,
+            "macro avg": {
+              "precision": 0.7569237641453246,
+              "recall": 0.7436974789915967,
+              "f1-score": 0.7403558973441832,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.7569237641453245,
+              "recall": 0.7436974789915967,
+              "f1-score": 0.7403558973441832,
+              "support": 238.0
+            }
+          },
+          "feature_count": 66347
+        },
+        "char_tfidf_logreg": {
+          "n": 238,
+          "accuracy": 0.7647058823529411,
+          "balanced_accuracy": 0.7647058823529411,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.8181818181818182,
+              "recall": 0.680672268907563,
+              "f1-score": 0.7431192660550459,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.7266187050359713,
+              "recall": 0.8487394957983193,
+              "f1-score": 0.7829457364341085,
+              "support": 119.0
+            },
+            "accuracy": 0.7647058823529411,
+            "macro avg": {
+              "precision": 0.7724002616088947,
+              "recall": 0.7647058823529411,
+              "f1-score": 0.7630325012445771,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.7724002616088947,
+              "recall": 0.7647058823529411,
+              "f1-score": 0.7630325012445772,
+              "support": 238.0
+            }
+          },
+          "feature_count": 70129
+        },
+        "word_char_tfidf_logreg": {
+          "n": 238,
+          "accuracy": 0.7605042016806722,
+          "balanced_accuracy": 0.7605042016806722,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.8163265306122449,
+              "recall": 0.6722689075630253,
+              "f1-score": 0.7373271889400922,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.7214285714285714,
+              "recall": 0.8487394957983193,
+              "f1-score": 0.7799227799227799,
+              "support": 119.0
+            },
+            "accuracy": 0.7605042016806722,
+            "macro avg": {
+              "precision": 0.7688775510204082,
+              "recall": 0.7605042016806722,
+              "f1-score": 0.7586249844314361,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.7688775510204081,
+              "recall": 0.7605042016806722,
+              "f1-score": 0.7586249844314361,
+              "support": 238.0
+            }
+          },
+          "feature_count": 136476
+        },
+        "metadata_logreg": {
+          "n": 238,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 119.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 238.0
+            }
+          },
+          "feature_count": 115
+        },
+        "length_citation_logreg": {
+          "n": 238,
+          "accuracy": 0.5504201680672269,
+          "balanced_accuracy": 0.5504201680672269,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.5461538461538461,
+              "recall": 0.5966386554621849,
+              "f1-score": 0.570281124497992,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.5555555555555556,
+              "recall": 0.5042016806722689,
+              "f1-score": 0.5286343612334802,
+              "support": 119.0
+            },
+            "accuracy": 0.5504201680672269,
+            "macro avg": {
+              "precision": 0.5508547008547009,
+              "recall": 0.5504201680672269,
+              "f1-score": 0.5494577428657361,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.5508547008547009,
+              "recall": 0.5504201680672269,
+              "f1-score": 0.549457742865736,
+              "support": 238.0
+            }
+          }
+        }
+      },
+      "test": {
+        "majority": {
+          "n": 138,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 69.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 138.0
+            }
+          },
+          "majority_label": "Scalia"
+        },
+        "word_tfidf_logreg": {
+          "n": 138,
+          "accuracy": 0.717391304347826,
+          "balanced_accuracy": 0.7173913043478262,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.75,
+              "recall": 0.6521739130434783,
+              "f1-score": 0.6976744186046512,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.6923076923076923,
+              "recall": 0.782608695652174,
+              "f1-score": 0.7346938775510204,
+              "support": 69.0
+            },
+            "accuracy": 0.717391304347826,
+            "macro avg": {
+              "precision": 0.7211538461538461,
+              "recall": 0.7173913043478262,
+              "f1-score": 0.7161841480778358,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.7211538461538461,
+              "recall": 0.717391304347826,
+              "f1-score": 0.7161841480778358,
+              "support": 138.0
+            }
+          },
+          "feature_count": 66347
+        },
+        "char_tfidf_logreg": {
+          "n": 138,
+          "accuracy": 0.7536231884057971,
+          "balanced_accuracy": 0.7536231884057971,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.7536231884057971,
+              "recall": 0.7536231884057971,
+              "f1-score": 0.7536231884057971,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.7536231884057971,
+              "recall": 0.7536231884057971,
+              "f1-score": 0.7536231884057971,
+              "support": 69.0
+            },
+            "accuracy": 0.7536231884057971,
+            "macro avg": {
+              "precision": 0.7536231884057971,
+              "recall": 0.7536231884057971,
+              "f1-score": 0.7536231884057971,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.7536231884057971,
+              "recall": 0.7536231884057971,
+              "f1-score": 0.7536231884057971,
+              "support": 138.0
+            }
+          },
+          "feature_count": 70129
+        },
+        "word_char_tfidf_logreg": {
+          "n": 138,
+          "accuracy": 0.7753623188405797,
+          "balanced_accuracy": 0.7753623188405797,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.8064516129032258,
+              "recall": 0.7246376811594203,
+              "f1-score": 0.7633587786259542,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.75,
+              "recall": 0.8260869565217391,
+              "f1-score": 0.7862068965517242,
+              "support": 69.0
+            },
+            "accuracy": 0.7753623188405797,
+            "macro avg": {
+              "precision": 0.7782258064516129,
+              "recall": 0.7753623188405797,
+              "f1-score": 0.7747828375888393,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.7782258064516129,
+              "recall": 0.7753623188405797,
+              "f1-score": 0.7747828375888393,
+              "support": 138.0
+            }
+          },
+          "feature_count": 136476
+        },
+        "metadata_logreg": {
+          "n": 138,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 69.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 138.0
+            }
+          },
+          "feature_count": 115
+        },
+        "length_citation_logreg": {
+          "n": 138,
+          "accuracy": 0.5942028985507246,
+          "balanced_accuracy": 0.5942028985507246,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.5730337078651685,
+              "recall": 0.7391304347826086,
+              "f1-score": 0.6455696202531646,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.6326530612244898,
+              "recall": 0.4492753623188406,
+              "f1-score": 0.5254237288135594,
+              "support": 69.0
+            },
+            "accuracy": 0.5942028985507246,
+            "macro avg": {
+              "precision": 0.6028433845448291,
+              "recall": 0.5942028985507246,
+              "f1-score": 0.585496674533362,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.6028433845448291,
+              "recall": 0.5942028985507246,
+              "f1-score": 0.585496674533362,
+              "support": 138.0
+            }
+          }
+        }
+      }
+    }
+  },
+  "Scalia_vs_Ginsburg/raw_clean": {
+    "train_n": 3216,
+    "label_counts": {
+      "Scalia": 1796,
+      "Ginsburg": 1796
+    },
+    "splits": {
+      "dev": 238,
+      "test": 138
+    },
+    "models": {
+      "dev": {
+        "majority": {
+          "n": 238,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 119.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 238.0
+            }
+          },
+          "majority_label": "Scalia"
+        },
+        "word_tfidf_logreg": {
+          "n": 238,
+          "accuracy": 0.7478991596638656,
+          "balanced_accuracy": 0.7478991596638656,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.8105263157894737,
+              "recall": 0.6470588235294118,
+              "f1-score": 0.719626168224299,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.7062937062937062,
+              "recall": 0.8487394957983193,
+              "f1-score": 0.7709923664122137,
+              "support": 119.0
+            },
+            "accuracy": 0.7478991596638656,
+            "macro avg": {
+              "precision": 0.7584100110415899,
+              "recall": 0.7478991596638656,
+              "f1-score": 0.7453092673182564,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.75841001104159,
+              "recall": 0.7478991596638656,
+              "f1-score": 0.7453092673182563,
+              "support": 238.0
+            }
+          },
+          "feature_count": 68470
+        },
+        "char_tfidf_logreg": {
+          "n": 238,
+          "accuracy": 0.7689075630252101,
+          "balanced_accuracy": 0.76890756302521,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.82,
+              "recall": 0.6890756302521008,
+              "f1-score": 0.7488584474885844,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.7318840579710145,
+              "recall": 0.8487394957983193,
+              "f1-score": 0.7859922178988327,
+              "support": 119.0
+            },
+            "accuracy": 0.7689075630252101,
+            "macro avg": {
+              "precision": 0.7759420289855072,
+              "recall": 0.76890756302521,
+              "f1-score": 0.7674253326937086,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.7759420289855072,
+              "recall": 0.7689075630252101,
+              "f1-score": 0.7674253326937086,
+              "support": 238.0
+            }
+          },
+          "feature_count": 73525
+        },
+        "word_char_tfidf_logreg": {
+          "n": 238,
+          "accuracy": 0.773109243697479,
+          "balanced_accuracy": 0.773109243697479,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.8421052631578947,
+              "recall": 0.6722689075630253,
+              "f1-score": 0.7476635514018691,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.7272727272727273,
+              "recall": 0.8739495798319328,
+              "f1-score": 0.7938931297709924,
+              "support": 119.0
+            },
+            "accuracy": 0.773109243697479,
+            "macro avg": {
+              "precision": 0.784688995215311,
+              "recall": 0.773109243697479,
+              "f1-score": 0.7707783405864308,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.784688995215311,
+              "recall": 0.773109243697479,
+              "f1-score": 0.7707783405864307,
+              "support": 238.0
+            }
+          },
+          "feature_count": 141995
+        },
+        "metadata_logreg": {
+          "n": 238,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 119.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 238.0
+            }
+          },
+          "feature_count": 115
+        },
+        "length_citation_logreg": {
+          "n": 238,
+          "accuracy": 0.5294117647058824,
+          "balanced_accuracy": 0.5294117647058824,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.5275590551181102,
+              "recall": 0.5630252100840336,
+              "f1-score": 0.5447154471544715,
+              "support": 119.0
+            },
+            "Scalia": {
+              "precision": 0.5315315315315315,
+              "recall": 0.4957983193277311,
+              "f1-score": 0.5130434782608696,
+              "support": 119.0
+            },
+            "accuracy": 0.5294117647058824,
+            "macro avg": {
+              "precision": 0.5295452933248208,
+              "recall": 0.5294117647058824,
+              "f1-score": 0.5288794627076705,
+              "support": 238.0
+            },
+            "weighted avg": {
+              "precision": 0.5295452933248208,
+              "recall": 0.5294117647058824,
+              "f1-score": 0.5288794627076705,
+              "support": 238.0
+            }
+          }
+        }
+      },
+      "test": {
+        "majority": {
+          "n": 138,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 69.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 138.0
+            }
+          },
+          "majority_label": "Scalia"
+        },
+        "word_tfidf_logreg": {
+          "n": 138,
+          "accuracy": 0.717391304347826,
+          "balanced_accuracy": 0.717391304347826,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.7586206896551724,
+              "recall": 0.6376811594202898,
+              "f1-score": 0.6929133858267716,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.6875,
+              "recall": 0.7971014492753623,
+              "f1-score": 0.738255033557047,
+              "support": 69.0
+            },
+            "accuracy": 0.717391304347826,
+            "macro avg": {
+              "precision": 0.7230603448275862,
+              "recall": 0.717391304347826,
+              "f1-score": 0.7155842096919094,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.7230603448275862,
+              "recall": 0.717391304347826,
+              "f1-score": 0.7155842096919094,
+              "support": 138.0
+            }
+          },
+          "feature_count": 68470
+        },
+        "char_tfidf_logreg": {
+          "n": 138,
+          "accuracy": 0.7318840579710145,
+          "balanced_accuracy": 0.7318840579710144,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.75,
+              "recall": 0.6956521739130435,
+              "f1-score": 0.7218045112781954,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.7162162162162162,
+              "recall": 0.7681159420289855,
+              "f1-score": 0.7412587412587412,
+              "support": 69.0
+            },
+            "accuracy": 0.7318840579710145,
+            "macro avg": {
+              "precision": 0.7331081081081081,
+              "recall": 0.7318840579710144,
+              "f1-score": 0.7315316262684683,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.7331081081081081,
+              "recall": 0.7318840579710145,
+              "f1-score": 0.7315316262684683,
+              "support": 138.0
+            }
+          },
+          "feature_count": 73525
+        },
+        "word_char_tfidf_logreg": {
+          "n": 138,
+          "accuracy": 0.7681159420289855,
+          "balanced_accuracy": 0.7681159420289856,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.8032786885245902,
+              "recall": 0.7101449275362319,
+              "f1-score": 0.7538461538461538,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.7402597402597403,
+              "recall": 0.8260869565217391,
+              "f1-score": 0.7808219178082192,
+              "support": 69.0
+            },
+            "accuracy": 0.7681159420289855,
+            "macro avg": {
+              "precision": 0.7717692143921653,
+              "recall": 0.7681159420289856,
+              "f1-score": 0.7673340358271865,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.7717692143921653,
+              "recall": 0.7681159420289855,
+              "f1-score": 0.7673340358271865,
+              "support": 138.0
+            }
+          },
+          "feature_count": 141995
+        },
+        "metadata_logreg": {
+          "n": 138,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 69.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 138.0
+            }
+          },
+          "feature_count": 115
+        },
+        "length_citation_logreg": {
+          "n": 138,
+          "accuracy": 0.6666666666666666,
+          "balanced_accuracy": 0.6666666666666667,
+          "labels": [
+            "Ginsburg",
+            "Scalia"
+          ],
+          "classification_report": {
+            "Ginsburg": {
+              "precision": 0.632183908045977,
+              "recall": 0.7971014492753623,
+              "f1-score": 0.7051282051282052,
+              "support": 69.0
+            },
+            "Scalia": {
+              "precision": 0.7254901960784313,
+              "recall": 0.5362318840579711,
+              "f1-score": 0.6166666666666667,
+              "support": 69.0
+            },
+            "accuracy": 0.6666666666666666,
+            "macro avg": {
+              "precision": 0.6788370520622042,
+              "recall": 0.6666666666666667,
+              "f1-score": 0.660897435897436,
+              "support": 138.0
+            },
+            "weighted avg": {
+              "precision": 0.6788370520622042,
+              "recall": 0.6666666666666666,
+              "f1-score": 0.660897435897436,
+              "support": 138.0
+            }
+          }
+        }
+      }
+    }
+  },
+  "Thomas_vs_Souter/masked": {
+    "train_n": 2466,
+    "label_counts": {
+      "Thomas": 1435,
+      "Souter": 1435
+    },
+    "splits": {
+      "dev": 148,
+      "test": 256
+    },
+    "models": {
+      "dev": {
+        "majority": {
+          "n": 148,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 74.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 148.0
+            }
+          },
+          "majority_label": "Thomas"
+        },
+        "word_tfidf_logreg": {
+          "n": 148,
+          "accuracy": 0.7162162162162162,
+          "balanced_accuracy": 0.7162162162162162,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.6904761904761905,
+              "recall": 0.7837837837837838,
+              "f1-score": 0.7341772151898734,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.75,
+              "recall": 0.6486486486486487,
+              "f1-score": 0.6956521739130435,
+              "support": 74.0
+            },
+            "accuracy": 0.7162162162162162,
+            "macro avg": {
+              "precision": 0.7202380952380952,
+              "recall": 0.7162162162162162,
+              "f1-score": 0.7149146945514584,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.7202380952380952,
+              "recall": 0.7162162162162162,
+              "f1-score": 0.7149146945514584,
+              "support": 148.0
+            }
+          },
+          "feature_count": 54028
+        },
+        "char_tfidf_logreg": {
+          "n": 148,
+          "accuracy": 0.6959459459459459,
+          "balanced_accuracy": 0.6959459459459459,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.6705882352941176,
+              "recall": 0.7702702702702703,
+              "f1-score": 0.7169811320754716,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.7301587301587301,
+              "recall": 0.6216216216216216,
+              "f1-score": 0.6715328467153284,
+              "support": 74.0
+            },
+            "accuracy": 0.6959459459459459,
+            "macro avg": {
+              "precision": 0.7003734827264239,
+              "recall": 0.6959459459459459,
+              "f1-score": 0.6942569893954,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.7003734827264239,
+              "recall": 0.6959459459459459,
+              "f1-score": 0.6942569893954,
+              "support": 148.0
+            }
+          },
+          "feature_count": 58132
+        },
+        "word_char_tfidf_logreg": {
+          "n": 148,
+          "accuracy": 0.722972972972973,
+          "balanced_accuracy": 0.722972972972973,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.6987951807228916,
+              "recall": 0.7837837837837838,
+              "f1-score": 0.7388535031847133,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.7538461538461538,
+              "recall": 0.6621621621621622,
+              "f1-score": 0.7050359712230215,
+              "support": 74.0
+            },
+            "accuracy": 0.722972972972973,
+            "macro avg": {
+              "precision": 0.7263206672845227,
+              "recall": 0.722972972972973,
+              "f1-score": 0.7219447372038674,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.7263206672845227,
+              "recall": 0.722972972972973,
+              "f1-score": 0.7219447372038674,
+              "support": 148.0
+            }
+          },
+          "feature_count": 112160
+        },
+        "metadata_logreg": {
+          "n": 148,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 74.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 148.0
+            }
+          },
+          "feature_count": 102
+        },
+        "length_citation_logreg": {
+          "n": 148,
+          "accuracy": 0.42567567567567566,
+          "balanced_accuracy": 0.42567567567567566,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.40350877192982454,
+              "recall": 0.3108108108108108,
+              "f1-score": 0.3511450381679389,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.43956043956043955,
+              "recall": 0.5405405405405406,
+              "f1-score": 0.48484848484848486,
+              "support": 74.0
+            },
+            "accuracy": 0.42567567567567566,
+            "macro avg": {
+              "precision": 0.421534605745132,
+              "recall": 0.42567567567567566,
+              "f1-score": 0.41799676150821186,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.421534605745132,
+              "recall": 0.42567567567567566,
+              "f1-score": 0.41799676150821186,
+              "support": 148.0
+            }
+          }
+        }
+      },
+      "test": {
+        "majority": {
+          "n": 256,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 128.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 256.0
+            }
+          },
+          "majority_label": "Thomas"
+        },
+        "word_tfidf_logreg": {
+          "n": 256,
+          "accuracy": 0.78125,
+          "balanced_accuracy": 0.78125,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.8157894736842105,
+              "recall": 0.7265625,
+              "f1-score": 0.768595041322314,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.7535211267605634,
+              "recall": 0.8359375,
+              "f1-score": 0.7925925925925926,
+              "support": 128.0
+            },
+            "accuracy": 0.78125,
+            "macro avg": {
+              "precision": 0.7846553002223869,
+              "recall": 0.78125,
+              "f1-score": 0.7805938169574533,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.7846553002223869,
+              "recall": 0.78125,
+              "f1-score": 0.7805938169574533,
+              "support": 256.0
+            }
+          },
+          "feature_count": 54028
+        },
+        "char_tfidf_logreg": {
+          "n": 256,
+          "accuracy": 0.78515625,
+          "balanced_accuracy": 0.78515625,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.7829457364341085,
+              "recall": 0.7890625,
+              "f1-score": 0.7859922178988327,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.7874015748031497,
+              "recall": 0.78125,
+              "f1-score": 0.7843137254901961,
+              "support": 128.0
+            },
+            "accuracy": 0.78515625,
+            "macro avg": {
+              "precision": 0.7851736556186291,
+              "recall": 0.78515625,
+              "f1-score": 0.7851529716945144,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.7851736556186291,
+              "recall": 0.78515625,
+              "f1-score": 0.7851529716945144,
+              "support": 256.0
+            }
+          },
+          "feature_count": 58132
+        },
+        "word_char_tfidf_logreg": {
+          "n": 256,
+          "accuracy": 0.7890625,
+          "balanced_accuracy": 0.7890625,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.7846153846153846,
+              "recall": 0.796875,
+              "f1-score": 0.7906976744186046,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.7936507936507936,
+              "recall": 0.78125,
+              "f1-score": 0.7874015748031497,
+              "support": 128.0
+            },
+            "accuracy": 0.7890625,
+            "macro avg": {
+              "precision": 0.7891330891330891,
+              "recall": 0.7890625,
+              "f1-score": 0.7890496246108771,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.7891330891330891,
+              "recall": 0.7890625,
+              "f1-score": 0.7890496246108771,
+              "support": 256.0
+            }
+          },
+          "feature_count": 112160
+        },
+        "metadata_logreg": {
+          "n": 256,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 128.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 256.0
+            }
+          },
+          "feature_count": 102
+        },
+        "length_citation_logreg": {
+          "n": 256,
+          "accuracy": 0.44921875,
+          "balanced_accuracy": 0.44921875,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.44537815126050423,
+              "recall": 0.4140625,
+              "f1-score": 0.4291497975708502,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.45255474452554745,
+              "recall": 0.484375,
+              "f1-score": 0.4679245283018868,
+              "support": 128.0
+            },
+            "accuracy": 0.44921875,
+            "macro avg": {
+              "precision": 0.44896644789302587,
+              "recall": 0.44921875,
+              "f1-score": 0.44853716293636847,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.44896644789302587,
+              "recall": 0.44921875,
+              "f1-score": 0.44853716293636847,
+              "support": 256.0
+            }
+          }
+        }
+      }
+    }
+  },
+  "Thomas_vs_Souter/raw_clean": {
+    "train_n": 2466,
+    "label_counts": {
+      "Thomas": 1435,
+      "Souter": 1435
+    },
+    "splits": {
+      "dev": 148,
+      "test": 256
+    },
+    "models": {
+      "dev": {
+        "majority": {
+          "n": 148,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 74.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 148.0
+            }
+          },
+          "majority_label": "Thomas"
+        },
+        "word_tfidf_logreg": {
+          "n": 148,
+          "accuracy": 0.7297297297297297,
+          "balanced_accuracy": 0.7297297297297298,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.6976744186046512,
+              "recall": 0.8108108108108109,
+              "f1-score": 0.75,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.7741935483870968,
+              "recall": 0.6486486486486487,
+              "f1-score": 0.7058823529411765,
+              "support": 74.0
+            },
+            "accuracy": 0.7297297297297297,
+            "macro avg": {
+              "precision": 0.735933983495874,
+              "recall": 0.7297297297297298,
+              "f1-score": 0.7279411764705883,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.7359339834958739,
+              "recall": 0.7297297297297297,
+              "f1-score": 0.7279411764705883,
+              "support": 148.0
+            }
+          },
+          "feature_count": 55789
+        },
+        "char_tfidf_logreg": {
+          "n": 148,
+          "accuracy": 0.6891891891891891,
+          "balanced_accuracy": 0.6891891891891893,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.6666666666666666,
+              "recall": 0.7567567567567568,
+              "f1-score": 0.7088607594936709,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.71875,
+              "recall": 0.6216216216216216,
+              "f1-score": 0.6666666666666666,
+              "support": 74.0
+            },
+            "accuracy": 0.6891891891891891,
+            "macro avg": {
+              "precision": 0.6927083333333333,
+              "recall": 0.6891891891891893,
+              "f1-score": 0.6877637130801688,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.6927083333333333,
+              "recall": 0.6891891891891891,
+              "f1-score": 0.6877637130801688,
+              "support": 148.0
+            }
+          },
+          "feature_count": 61505
+        },
+        "word_char_tfidf_logreg": {
+          "n": 148,
+          "accuracy": 0.7432432432432432,
+          "balanced_accuracy": 0.7432432432432432,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.7093023255813954,
+              "recall": 0.8243243243243243,
+              "f1-score": 0.7625,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.7903225806451613,
+              "recall": 0.6621621621621622,
+              "f1-score": 0.7205882352941176,
+              "support": 74.0
+            },
+            "accuracy": 0.7432432432432432,
+            "macro avg": {
+              "precision": 0.7498124531132784,
+              "recall": 0.7432432432432432,
+              "f1-score": 0.7415441176470587,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.7498124531132784,
+              "recall": 0.7432432432432432,
+              "f1-score": 0.7415441176470589,
+              "support": 148.0
+            }
+          },
+          "feature_count": 117294
+        },
+        "metadata_logreg": {
+          "n": 148,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 74.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 148.0
+            }
+          },
+          "feature_count": 102
+        },
+        "length_citation_logreg": {
+          "n": 148,
+          "accuracy": 0.4391891891891892,
+          "balanced_accuracy": 0.4391891891891892,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.43283582089552236,
+              "recall": 0.3918918918918919,
+              "f1-score": 0.41134751773049644,
+              "support": 74.0
+            },
+            "Thomas": {
+              "precision": 0.4444444444444444,
+              "recall": 0.4864864864864865,
+              "f1-score": 0.4645161290322581,
+              "support": 74.0
+            },
+            "accuracy": 0.4391891891891892,
+            "macro avg": {
+              "precision": 0.43864013266998336,
+              "recall": 0.4391891891891892,
+              "f1-score": 0.43793182338137726,
+              "support": 148.0
+            },
+            "weighted avg": {
+              "precision": 0.4386401326699835,
+              "recall": 0.4391891891891892,
+              "f1-score": 0.4379318233813772,
+              "support": 148.0
+            }
+          }
+        }
+      },
+      "test": {
+        "majority": {
+          "n": 256,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 128.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 256.0
+            }
+          },
+          "majority_label": "Thomas"
+        },
+        "word_tfidf_logreg": {
+          "n": 256,
+          "accuracy": 0.7734375,
+          "balanced_accuracy": 0.7734375,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.8017241379310345,
+              "recall": 0.7265625,
+              "f1-score": 0.7622950819672131,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.75,
+              "recall": 0.8203125,
+              "f1-score": 0.7835820895522388,
+              "support": 128.0
+            },
+            "accuracy": 0.7734375,
+            "macro avg": {
+              "precision": 0.7758620689655172,
+              "recall": 0.7734375,
+              "f1-score": 0.772938585759726,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.7758620689655172,
+              "recall": 0.7734375,
+              "f1-score": 0.772938585759726,
+              "support": 256.0
+            }
+          },
+          "feature_count": 55789
+        },
+        "char_tfidf_logreg": {
+          "n": 256,
+          "accuracy": 0.78125,
+          "balanced_accuracy": 0.78125,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.7727272727272727,
+              "recall": 0.796875,
+              "f1-score": 0.7846153846153846,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.7903225806451613,
+              "recall": 0.765625,
+              "f1-score": 0.7777777777777778,
+              "support": 128.0
+            },
+            "accuracy": 0.78125,
+            "macro avg": {
+              "precision": 0.781524926686217,
+              "recall": 0.78125,
+              "f1-score": 0.7811965811965812,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.781524926686217,
+              "recall": 0.78125,
+              "f1-score": 0.7811965811965812,
+              "support": 256.0
+            }
+          },
+          "feature_count": 61505
+        },
+        "word_char_tfidf_logreg": {
+          "n": 256,
+          "accuracy": 0.7890625,
+          "balanced_accuracy": 0.7890625,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.7846153846153846,
+              "recall": 0.796875,
+              "f1-score": 0.7906976744186046,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.7936507936507936,
+              "recall": 0.78125,
+              "f1-score": 0.7874015748031497,
+              "support": 128.0
+            },
+            "accuracy": 0.7890625,
+            "macro avg": {
+              "precision": 0.7891330891330891,
+              "recall": 0.7890625,
+              "f1-score": 0.7890496246108771,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.7891330891330891,
+              "recall": 0.7890625,
+              "f1-score": 0.7890496246108771,
+              "support": 256.0
+            }
+          },
+          "feature_count": 117294
+        },
+        "metadata_logreg": {
+          "n": 256,
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.5,
+              "recall": 1.0,
+              "f1-score": 0.6666666666666666,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 128.0
+            },
+            "accuracy": 0.5,
+            "macro avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.25,
+              "recall": 0.5,
+              "f1-score": 0.3333333333333333,
+              "support": 256.0
+            }
+          },
+          "feature_count": 102
+        },
+        "length_citation_logreg": {
+          "n": 256,
+          "accuracy": 0.40234375,
+          "balanced_accuracy": 0.40234375,
+          "labels": [
+            "Souter",
+            "Thomas"
+          ],
+          "classification_report": {
+            "Souter": {
+              "precision": 0.391304347826087,
+              "recall": 0.3515625,
+              "f1-score": 0.37037037037037035,
+              "support": 128.0
+            },
+            "Thomas": {
+              "precision": 0.41134751773049644,
+              "recall": 0.453125,
+              "f1-score": 0.4312267657992565,
+              "support": 128.0
+            },
+            "accuracy": 0.40234375,
+            "macro avg": {
+              "precision": 0.4013259327782917,
+              "recall": 0.40234375,
+              "f1-score": 0.4007985680848134,
+              "support": 256.0
+            },
+            "weighted avg": {
+              "precision": 0.4013259327782917,
+              "recall": 0.40234375,
+              "f1-score": 0.4007985680848134,
+              "support": 256.0
+            }
+          }
+        }
+      }
+    }
+  }
+}

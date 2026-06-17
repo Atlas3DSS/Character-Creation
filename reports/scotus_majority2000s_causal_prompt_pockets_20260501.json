@@ -1,0 +1,11 @@
+{
+  "blind": "/home/orwel/dev_genius/experiments/Character Creation/data/scotus/scotus_majority2000s_causal_review_blind_20260501.jsonl",
+  "key": "/home/orwel/dev_genius/experiments/Character Creation/data/scotus/scotus_majority2000s_causal_review_key_20260501.jsonl",
+  "report": "/home/orwel/dev_genius/experiments/Character Creation/reports/scotus_majority2000s_causal_prompt_pockets_20260501.md",
+  "review_rows": 22,
+  "runs": [
+    "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/scotus_sae_poke_20260501_045156",
+    "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/scotus_sae_poke_20260501_060425"
+  ],
+  "selected_candidates": 8
+}

@@ -1,0 +1,97 @@
+{
+  "automatic_agreement": {
+    "eligible_rows": 23,
+    "exact_agreement_rate": 0.6522,
+    "exact_agreement_rows": 15
+  },
+  "automatic_confusion_table": [
+    [
+      "article3_objection_fails_public_rights_permissible",
+      "article3_objection_fails_public_rights_permissible",
+      8
+    ],
+    [
+      "article3_objection_fails_public_rights_permissible",
+      "mixed_or_distinction_only",
+      3
+    ],
+    [
+      "article3_objection_succeeds_private_rights",
+      "article3_objection_succeeds_private_rights",
+      5
+    ],
+    [
+      "article3_objection_succeeds_private_rights",
+      "mixed_or_distinction_only",
+      1
+    ],
+    [
+      "mixed_or_distinction_only",
+      "article3_objection_fails_public_rights_permissible",
+      4
+    ],
+    [
+      "mixed_or_distinction_only",
+      "mixed_or_distinction_only",
+      2
+    ],
+    [
+      "mixed_or_distinction_only",
+      "unclear_or_incoherent",
+      1
+    ]
+  ],
+  "condition_table": [
+    [
+      "neutral",
+      8,
+      2,
+      6,
+      0,
+      0,
+      "0.69"
+    ],
+    [
+      "private_rights",
+      8,
+      2,
+      2,
+      4,
+      0,
+      "0.81"
+    ],
+    [
+      "public_rights",
+      8,
+      1,
+      4,
+      2,
+      1,
+      "0.81"
+    ]
+  ],
+  "holding_label_counts": {
+    "article3_objection_fails_public_rights_permissible": 12,
+    "article3_objection_succeeds_private_rights": 5,
+    "mixed_or_distinction_only": 6,
+    "unclear_or_incoherent": 1
+  },
+  "inputs": {
+    "blind": "data/scotus/scotus_article3_holding_review_blind_20260501.jsonl",
+    "key": "data/scotus/scotus_article3_holding_review_key_20260501.jsonl"
+  },
+  "mask_label_counts": {
+    "direct_reasoning": 18,
+    "not_assessable": 6
+  },
+  "mode": "codex-triage",
+  "n_rows": 24,
+  "output": "data/scotus/scotus_article3_holding_review_adjudicated_20260501.jsonl",
+  "reasoning_quality_counts": {
+    "legally_coherent": 11,
+    "legally_confused": 2,
+    "nonresponsive_or_truncated": 6,
+    "partly_coherent": 5
+  },
+  "reviewer": "internal_codex_triage"
+}

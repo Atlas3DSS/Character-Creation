@@ -1,0 +1,16 @@
+{
+  "blind": "data/scotus/scotus_article3_holding_review_blind_ambiguous_20260502.jsonl",
+  "finished_at": "2026-05-02T00:15:44-07:00",
+  "generation_answer_tokens": 4096,
+  "generation_manifest": "sweep_v4/scotus_counterfactual_thoughts_server_20260502_001228/manifest.json",
+  "generations": "sweep_v4/scotus_counterfactual_thoughts_server_20260502_001228/generations.jsonl",
+  "key": "data/scotus/scotus_article3_holding_review_key_ambiguous_20260502.jsonl",
+  "min_complete_answer_tokens": 2048,
+  "polarity": "sweep_v4/scotus_article3_conclusion_polarity_20260502_001538/polarity_rows.jsonl",
+  "report": "reports/scotus_article3_holding_review_queue_ambiguous_20260502.md",
+  "review_rows": 24,
+  "short_generation_answer_budget": false,
+  "short_generation_answer_budget_note": "",
+  "started_at": "2026-05-02T00:15:44-07:00",
+  "visible_thought_redacted": true
+}

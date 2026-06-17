@@ -1,0 +1,197 @@
+{
+  "audit": {
+    "baselines": {
+      "assistant_cue_masked": {
+        "dev": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 48
+        },
+        "test": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 48
+        },
+        "train": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 192
+        }
+      },
+      "assistant_length": {
+        "dev": {
+          "accuracy": 0.5833333333333334,
+          "balanced_accuracy": 0.5833333333333333,
+          "f1": 0.5454545454545454,
+          "n": 48
+        },
+        "test": {
+          "accuracy": 0.5833333333333334,
+          "balanced_accuracy": 0.5833333333333333,
+          "f1": 0.5454545454545454,
+          "n": 48
+        },
+        "train": {
+          "accuracy": 0.5833333333333334,
+          "balanced_accuracy": 0.5833333333333333,
+          "f1": 0.5454545454545454,
+          "n": 192
+        }
+      },
+      "assistant_text": {
+        "dev": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 48
+        },
+        "test": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 48
+        },
+        "train": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 192
+        }
+      },
+      "prompt": {
+        "dev": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 48
+        },
+        "test": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 48
+        },
+        "train": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 192
+        }
+      },
+      "prompt_cue_masked": {
+        "dev": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 48
+        },
+        "test": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 48
+        },
+        "train": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 192
+        }
+      },
+      "surface_style_id": {
+        "dev": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 48
+        },
+        "test": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 48
+        },
+        "train": {
+          "accuracy": 0.5,
+          "balanced_accuracy": 0.5,
+          "f1": 0.0,
+          "n": 192
+        }
+      },
+      "text": {
+        "dev": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 48
+        },
+        "test": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 48
+        },
+        "train": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 192
+        }
+      },
+      "text_cue_masked": {
+        "dev": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 48
+        },
+        "test": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 48
+        },
+        "train": {
+          "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
+          "f1": 1.0,
+          "n": 192
+        }
+      }
+    },
+    "fact_split_conflicts": [],
+    "max_rows_per_prompt": 12,
+    "prompt_label_pairs": 48,
+    "row_count": 288,
+    "split_label_counts": {
+      "dev/0": 24,
+      "dev/1": 24,
+      "test/0": 24,
+      "test/1": 24,
+      "train/0": 96,
+      "train/1": 96
+    },
+    "task_counts": {
+      "article3_private_vs_public/dev/0": 24,
+      "article3_private_vs_public/dev/1": 24,
+      "article3_private_vs_public/test/0": 24,
+      "article3_private_vs_public/test/1": 24,
+      "article3_private_vs_public/train/0": 96,
+      "article3_private_vs_public/train/1": 96
+    },
+    "unique_facts": 24,
+    "unique_prompts": 24
+  },
+  "created_at": "2026-05-01T17:29:38-07:00",
+  "dataset_path": "/home/orwel/dev_genius/experiments/Character Creation/data/scotus/scotus_controlled_replay_v2_examples_20260501.jsonl",
+  "manifest_path": "/home/orwel/dev_genius/experiments/Character Creation/data/scotus/scotus_controlled_replay_v2_manifest_20260501.json",
+  "report_path": "/home/orwel/dev_genius/experiments/Character Creation/reports/scotus_controlled_replay_v2_audit_20260501.md",
+  "success_standard": "No persona prompting. This bank can only nominate candidates; promotion requires no-mask causal generation and reasoning-trace checks where available.",
+  "tasks": [
+    "article3_private_vs_public"
+  ],
+  "variants_per_fact": 6
+}

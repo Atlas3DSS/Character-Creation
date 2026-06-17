@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personality Synthesis Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4efe4;
+      --paper: rgba(255, 251, 244, 0.86);
+      --ink: #1f211d;
+      --muted: #5b5f56;
+      --line: rgba(31, 33, 29, 0.12);
+      --accent: #0e7c6b;
+      --accent-soft: rgba(14, 124, 107, 0.12);
+      --warn: #b65b3a;
+      --warn-soft: rgba(182, 91, 58, 0.12);
+      --gold: #c7941b;
+      --gold-soft: rgba(199, 148, 27, 0.14);
+      --shadow: 0 20px 50px rgba(38, 36, 31, 0.08);
+      --radius: 22px;
+      --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+      --sans: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+      --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 10% 15%, rgba(14, 124, 107, 0.14), transparent 28%),
+        radial-gradient(circle at 90% 12%, rgba(199, 148, 27, 0.16), transparent 24%),
+        radial-gradient(circle at 80% 90%, rgba(182, 91, 58, 0.11), transparent 28%),
+        linear-gradient(180deg, #fbf7ef 0%, #f2eadc 100%);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(31, 33, 29, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(31, 33, 29, 0.018) 1px, transparent 1px);
+      background-size: 30px 30px;
+      opacity: 0.45;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      width: min(1440px, calc(100vw - 32px));
+      margin: 18px auto 48px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-main {
+      padding: 26px 28px;
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background:
+        linear-gradient(140deg, rgba(14, 124, 107, 0.14), transparent 34%),
+        linear-gradient(320deg, rgba(199, 148, 27, 0.10), transparent 40%),
+        var(--paper);
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: var(--serif);
+      line-height: 0.96;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: clamp(40px, 5vw, 68px);
+      max-width: 12ch;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 64ch;
+      line-height: 1.5;
+    }
+
+    .hero-notes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .live-meta {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.64);
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+
+    .note-chip {
+      padding: 12px 13px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid var(--line);
+      min-height: 72px;
+    }
+
+    .note-chip strong {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-family: var(--mono);
+    }
+
+    .hero-side {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      justify-content: space-between;
+    }
+
+    .side-stat {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid var(--line);
+    }
+
+    .side-stat .label {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+
+    .side-stat .value {
+      margin-top: 10px;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .side-stat .detail {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .toc {
+      position: sticky;
+      top: 16px;
+      padding: 18px;
+    }
+
+    .toc h2 {
+      font-size: 22px;
+      margin-bottom: 14px;
+    }
+
+    .toc a {
+      display: block;
+      color: var(--ink);
+      text-decoration: none;
+      padding: 9px 11px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .toc a:hover {
+      background: rgba(255, 255, 255, 0.65);
+      border-color: var(--line);
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .section {
+      padding: 22px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(28px, 3.2vw, 40px);
+    }
+
+    .section-head p {
+      margin: 0;
+      max-width: 56ch;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .metric-card {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid var(--line);
+      min-height: 132px;
+    }
+
+    .metric-card.good { box-shadow: inset 0 0 0 1px rgba(14, 124, 107, 0.08); }
+    .metric-card.warn { box-shadow: inset 0 0 0 1px rgba(182, 91, 58, 0.10); }
+    .metric-card.neutral { box-shadow: inset 0 0 0 1px rgba(31, 33, 29, 0.04); }
+
+    .metric-card .label {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .metric-card .value {
+      margin-top: 12px;
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .metric-card .sub {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .finding-list,
+    .artifact-list,
+    .timeline,
+    .example-list,
+    .entanglement-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .finding,
+    .artifact,
+    .timeline-item,
+    .example,
+    .entanglement {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.58);
+      border-radius: 18px;
+      padding: 16px 18px;
+    }
+
+    .finding strong,
+    .timeline-item strong,
+    .example strong,
+    .artifact strong,
+    .entanglement strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .timeline-item em {
+      display: block;
+      margin-bottom: 6px;
+      font-style: normal;
+      font-weight: 700;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.54);
+      border: 1px solid var(--line);
+    }
+
+    thead th {
+      text-align: left;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--mono);
+      padding: 14px 14px 12px;
+      background: rgba(31, 33, 29, 0.03);
+    }
+
+    tbody td {
+      padding: 13px 14px;
+      border-top: 1px solid var(--line);
+      vertical-align: top;
+      line-height: 1.4;
+      font-size: 14px;
+    }
+
+    tbody tr.highlight td {
+      background: rgba(14, 124, 107, 0.08);
+    }
+
+    .metric-bars {
+      display: grid;
+      gap: 10px;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) 80px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .metric-row .name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .metric-row .value {
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .bar-track {
+      height: 14px;
+      border-radius: 999px;
+      background: rgba(31, 33, 29, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), #2fa68f);
+    }
+
+    .bar-fill.warn {
+      background: linear-gradient(90deg, var(--warn), #cf7b53);
+    }
+
+    .bar-fill.gold {
+      background: linear-gradient(90deg, var(--gold), #e0b84e);
+    }
+
+    .dual-bars {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .code {
+      margin-top: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      color: #2a312d;
+      background: rgba(31, 33, 29, 0.04);
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 240px;
+      overflow: auto;
+    }
+
+    .artifact a {
+      color: var(--accent);
+      text-decoration: none;
+      font-family: var(--mono);
+      word-break: break-all;
+    }
+
+    .artifact a:hover {
+      text-decoration: underline;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.65);
+      margin-right: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    @media (max-width: 1080px) {
+      .hero { grid-template-columns: 1fr; }
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+    }
+
+    @media (max-width: 760px) {
+      .page { width: min(100vw - 18px, 100%); margin: 9px auto 28px; }
+      .hero-main, .hero-side, .section, .toc { padding: 18px; }
+      .hero-notes { grid-template-columns: 1fr; }
+      .metric-row { grid-template-columns: 1fr; }
+      .metric-row .value { text-align: left; }
+      h1 { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <section class="panel hero-main">
+        <div>
+          <div class="eyebrow">Mechanistic Personality Synthesis</div>
+          <h1 id="hero-title"></h1>
+          <p class="subtitle" id="hero-subtitle"></p>
+          <div class="live-meta">
+            <div class="live-pill" id="live-updated"></div>
+            <div class="live-pill" id="live-refresh"></div>
+          </div>
+        </div>
+        <div class="hero-notes" id="hero-notes"></div>
+      </section>
+      <aside class="panel hero-side" id="hero-side"></aside>
+    </header>
+
+    <div class="layout">
+      <nav class="panel toc" id="toc"></nav>
+      <main class="content">
+        <section class="panel section" id="snapshot">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Snapshot</div>
+              <h2>What We Know</h2>
+            </div>
+            <p>Top-level takeaways across the repaired personality sweep, trace-format evals, overnight teacher-data runs, weird-domain probes, and nanochat benchmark attempts.</p>
+          </div>
+          <div class="cards" id="snapshot-cards"></div>
+        </section>
+
+        <section class="panel section" id="timeline">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Timeline</div>
+              <h2>Milestones</h2>
+            </div>
+            <p>Operational and empirical checkpoints that shifted the direction of the project.</p>
+          </div>
+          <div class="timeline" id="timeline-list"></div>
+        </section>
+
+        <section class="panel section" id="findings">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Synthesis</div>
+              <h2>Core Findings</h2>
+            </div>
+            <p>The dashboard’s short interpretation layer. These are the conclusions the current evidence actually supports.</p>
+          </div>
+          <div class="finding-list" id="finding-list"></div>
+        </section>
+
+        <section class="panel section" id="mechanistic">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Mechanistic Signal</div>
+              <h2>Internal Personality Structure</h2>
+            </div>
+            <p>Character-holdout balanced accuracy from the repaired phase-aware sweep at layer <span id="mech-layer"></span>, plus the strongest entanglements between learned trait directions.</p>
+          </div>
+          <div class="cards" id="mechanistic-cards"></div>
+          <div style="height:12px"></div>
+          <div class="dual-bars">
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Character Holdout By View</h3>
+              <table id="mechanistic-table"></table>
+            </div>
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Top Direction Entanglements</h3>
+              <div class="entanglement-list" id="entanglement-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section" id="eval">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Eval Format</div>
+              <h2>Trace Beats Native</h2>
+            </div>
+            <p>The held-out A/B/C eval established the canonical clean benchmark format and exposed the native SGLang/Qwen path as unusable on these servers.</p>
+          </div>
+          <div class="cards" id="eval-cards"></div>
+          <div style="height:12px"></div>
+          <div class="dual-bars">
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Format Adherence</h3>
+              <div class="metric-bars" id="eval-format-bars"></div>
+            </div>
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Reasoning Accuracy</h3>
+              <div class="metric-bars" id="eval-reasoning-bars"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section" id="teacher">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Teacher Data</div>
+              <h2>Reasoning-Control Runs</h2>
+            </div>
+            <p>Two full reasoning-only teacher-data sweeps on the dev box. These runs are useful even though the first small-model adapter pass did not solve the downstream format contract.</p>
+          </div>
+          <div class="cards" id="teacher-cards"></div>
+          <div style="height:12px"></div>
+          <div class="dual-bars">
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Per-Run Accuracy</h3>
+              <div class="metric-bars" id="teacher-run-bars"></div>
+            </div>
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Per-Server Throughput</h3>
+              <table id="teacher-server-table"></table>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section" id="weird">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Exploratory Probe</div>
+              <h2>Religious, Psychedelic, Transcendental</h2>
+            </div>
+            <p>Small exploratory run to see whether the clean trace/think formatting generalizes to stranger domains before we invest in bigger dataset branches.</p>
+          </div>
+          <div class="cards" id="weird-cards"></div>
+          <div style="height:12px"></div>
+          <div class="dual-bars">
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">By Condition</h3>
+              <div class="metric-bars" id="weird-condition-bars"></div>
+            </div>
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Weakest Prompts</h3>
+              <div class="metric-bars" id="weird-prompt-bars"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section" id="nanochat">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Small-Model Probe</div>
+              <h2>Nanochat Progression</h2>
+            </div>
+            <p>The cheap falsification path. Improvement on open prompts is real, but the reasoning-output contract is still collapsing badly on held-out evals.</p>
+          </div>
+          <div class="cards" id="nanochat-cards"></div>
+          <div style="height:12px"></div>
+          <table id="nanochat-table"></table>
+        </section>
+
+        <section class="panel section" id="examples">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Examples</div>
+              <h2>Failure And Success Cases</h2>
+            </div>
+            <p>Representative text from the current failure mode and from the weird-domain run that did produce clean structured outputs.</p>
+          </div>
+          <div class="dual-bars">
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Nanochat Failure Samples</h3>
+              <div class="example-list" id="failure-examples"></div>
+            </div>
+            <div>
+              <h3 style="font-size:24px; margin-bottom:12px;">Weird-Domain Clean Samples</h3>
+              <div class="example-list" id="weird-examples"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section" id="artifacts">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Artifacts</div>
+              <h2>Source Files</h2>
+            </div>
+            <p>Direct links to the underlying reports, summaries, and benchmark outputs used to build this page.</p>
+          </div>
+          <div class="artifact-list" id="artifact-list"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const DATA = __DATA_JSON__;
+
+    function formatTimestamp(iso) {
+      if (!iso) return "n/a";
+      const dt = new Date(iso);
+      return dt.toLocaleString([], {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short"
+      });
+    }
+
+    function pct(v, digits = 1) {
+      if (v === null || v === undefined || Number.isNaN(v)) return "n/a";
+      return `${(v * 100).toFixed(digits)}%`;
+    }
+
+    function num(v) {
+      if (v === null || v === undefined || Number.isNaN(v)) return "n/a";
+      return new Intl.NumberFormat("en-US").format(v);
+    }
+
+    function dec(v, digits = 2) {
+      if (v === null || v === undefined || Number.isNaN(v)) return "n/a";
+      return Number(v).toFixed(digits);
+    }
+
+    function toneClass(tone) {
+      if (tone === "warn") return "warn";
+      if (tone === "good") return "good";
+      return "neutral";
+    }
+
+    function metricCardHtml(card) {
+      return `
+        <article class="metric-card ${toneClass(card.tone)}">
+          <div class="label">${card.label}</div>
+          <div class="value">${card.value}</div>
+          <div class="sub">${card.sub || ""}</div>
+        </article>
+      `;
+    }
+
+    function metricRowHtml(item, value, opts = {}) {
+      const max = opts.max || 1;
+      const width = Math.max(0, Math.min(100, (value / max) * 100));
+      const tone = opts.tone || "accent";
+      const fillClass = tone === "warn" ? "warn" : tone === "gold" ? "gold" : "";
+      const formatter = opts.formatter || ((v) => pct(v));
+      return `
+        <div class="metric-row">
+          <div class="name">${item.label}</div>
+          <div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${width}%"></div></div>
+          <div class="value">${formatter(value)}</div>
+        </div>
+      `;
+    }
+
+    function buildTable(tableId, columns, rows, rowClassFn = null) {
+      const table = document.getElementById(tableId);
+      const thead = `<thead><tr>${columns.map((c) => `<th>${c.label}</th>`).join("")}</tr></thead>`;
+      const tbody = `<tbody>${rows.map((row) => {
+        const klass = rowClassFn ? rowClassFn(row) : "";
+        return `<tr class="${klass}">${columns.map((c) => `<td>${c.render(row)}</td>`).join("")}</tr>`;
+      }).join("")}</tbody>`;
+      table.innerHTML = thead + tbody;
+    }
+
+    document.getElementById("hero-title").textContent = DATA.hero.title;
+    document.getElementById("hero-subtitle").textContent = DATA.hero.subtitle;
+    document.getElementById("live-updated").textContent = `Last rebuilt ${formatTimestamp(DATA.generated_at)}`;
+    document.getElementById("live-refresh").textContent = `Auto-refresh every ${DATA.auto_refresh_seconds}s`;
+    document.getElementById("hero-notes").innerHTML = DATA.hero.notes.map((note) => `
+      <div class="note-chip">
+        <strong>${note.label}</strong>
+        <div>${note.text}</div>
+      </div>
+    `).join("");
+    document.getElementById("hero-side").innerHTML = DATA.hero.side_stats.map((stat) => `
+      <div class="side-stat">
+        <div class="label">${stat.label}</div>
+        <div class="value">${stat.value}</div>
+        <div class="detail">${stat.detail}</div>
+      </div>
+    `).join("");
+
+    const tocItems = [
+      ["snapshot", "What We Know"],
+      ["timeline", "Milestones"],
+      ["findings", "Core Findings"],
+      ["mechanistic", "Internal Structure"],
+      ["eval", "Trace Eval"],
+      ["teacher", "Teacher Runs"],
+      ["weird", "Weird-Domain Probe"],
+      ["nanochat", "Nanochat"],
+      ["examples", "Examples"],
+      ["artifacts", "Artifacts"]
+    ];
+    document.getElementById("toc").innerHTML = `
+      <div class="eyebrow">Index</div>
+      <h2>Sections</h2>
+      ${tocItems.map(([id, label]) => `<a href="#${id}">${label}</a>`).join("")}
+    `;
+
+    document.getElementById("snapshot-cards").innerHTML = DATA.snapshot_cards.map(metricCardHtml).join("");
+    document.getElementById("timeline-list").innerHTML = DATA.timeline.map((item) => `
+      <div class="timeline-item">
+        <strong>${item.date}</strong>
+        <em>${item.title}</em>
+        <div>${item.detail}</div>
+      </div>
+    `).join("");
+    document.getElementById("finding-list").innerHTML = DATA.findings.map((item) => `
+      <div class="finding">
+        <strong>${item.label}</strong>
+        <div>${item.text}</div>
+      </div>
+    `).join("");
+
+    document.getElementById("mech-layer").textContent = DATA.mechanistic.layer_label;
+    document.getElementById("mechanistic-cards").innerHTML = DATA.mechanistic.best_by_view.map(metricCardHtml).join("");
+    buildTable(
+      "mechanistic-table",
+      [
+        { label: "Trait", render: (r) => r.trait },
+        { label: "Mean", render: (r) => pct(r.mean, 1) },
+        { label: "Think", render: (r) => pct(r.think, 1) },
+        { label: "Response", render: (r) => pct(r.response, 1) },
+        { label: "Best View", render: (r) => `<span class="pill">${r.best_view}</span>` }
+      ],
+      DATA.mechanistic.trait_rows,
+      (row) => row.best_view === "mean" ? "highlight" : ""
+    );
+    document.getElementById("entanglement-list").innerHTML = DATA.mechanistic.entanglements.map((item) => `
+      <div class="entanglement">
+        <strong>${item.view}</strong>
+        <div><em style="font-style:normal; font-weight:700;">${item.a} ↔ ${item.b}</em></div>
+        <div>cosine: ${item.cosine}</div>
+      </div>
+    `).join("");
+
+    document.getElementById("eval-cards").innerHTML = DATA.eval.cards.map(metricCardHtml).join("");
+    document.getElementById("eval-format-bars").innerHTML = DATA.eval.conditions.map((item) => metricRowHtml(
+      { label: item.label },
+      item.format_adherence_rate,
+      { max: 1, formatter: (v) => pct(v, 2), tone: item.condition_id === "baseline_native" ? "warn" : "accent" }
+    )).join("");
+    document.getElementById("eval-reasoning-bars").innerHTML = DATA.eval.conditions.map((item) => metricRowHtml(
+      { label: item.label },
+      item.reasoning_accuracy || 0,
+      { max: 1, formatter: (v) => pct(v, 2), tone: item.condition_id === "baseline_native" ? "warn" : "gold" }
+    )).join("");
+
+    document.getElementById("teacher-cards").innerHTML = DATA.teacher.cards.map(metricCardHtml).join("");
+    document.getElementById("teacher-run-bars").innerHTML = DATA.teacher.runs.map((item) => metricRowHtml(
+      { label: item.label },
+      item.reasoning_accuracy,
+      { max: 1, formatter: (v) => `${pct(v, 2)} | ${num(item.rows)} rows`, tone: "gold" }
+    )).join("");
+    buildTable(
+      "teacher-server-table",
+      [
+        { label: "Run", render: (r) => r.run_id },
+        { label: "Server", render: (r) => r.server_label },
+        { label: "Rows", render: (r) => num(r.ok_responses) },
+        { label: "Tok/S", render: (r) => dec(r.gen_tokens_per_second, 1) },
+        { label: "Resp/S", render: (r) => dec(r.responses_per_second, 2) },
+        { label: "Acc", render: (r) => pct(r.reasoning_accuracy, 1) }
+      ],
+      DATA.teacher.servers
+    );
+
+    document.getElementById("weird-cards").innerHTML = DATA.weird.cards.map(metricCardHtml).join("");
+    document.getElementById("weird-condition-bars").innerHTML = DATA.weird.conditions.map((item) => metricRowHtml(
+      { label: item.label },
+      item.format_adherence_rate,
+      { max: 1, formatter: (v) => pct(v, 2), tone: item.condition_id === "think_explicit" ? "gold" : "accent" }
+    )).join("");
+    document.getElementById("weird-prompt-bars").innerHTML = DATA.weird.worst_prompts.map((item) => metricRowHtml(
+      { label: item.prompt_id },
+      item.format_adherence_rate,
+      { max: 1, formatter: (v) => pct(v, 2), tone: "warn" }
+    )).join("");
+
+    document.getElementById("nanochat-cards").innerHTML = DATA.nanochat.cards.map(metricCardHtml).join("");
+    buildTable(
+      "nanochat-table",
+      [
+        { label: "Checkpoint", render: (r) => r.label },
+        { label: "Rows", render: (r) => num(r.responses) },
+        { label: "Overall Format", render: (r) => pct(r.format_adherence_rate, 2) },
+        { label: "Open Format", render: (r) => pct(r.open_format_adherence_rate, 2) },
+        { label: "Reasoning Coverage", render: (r) => pct(r.reasoning_coverage, 2) },
+        { label: "Avg Gen Tokens", render: (r) => dec(r.avg_gen_tokens, 1) }
+      ],
+      DATA.nanochat.benchmarks,
+      (row) => row.label.includes("adapter trace") ? "highlight" : ""
+    );
+
+    document.getElementById("failure-examples").innerHTML = DATA.examples.failures.map((item) => `
+      <div class="example">
+        <strong>${item.prompt_id} · ${item.task_id}</strong>
+        <div>${item.summary}</div>
+        <div class="code">${item.full_text}</div>
+      </div>
+    `).join("");
+    document.getElementById("weird-examples").innerHTML = DATA.examples.weird.map((item) => `
+      <div class="example">
+        <strong>${item.prompt_id} · ${item.condition_id}</strong>
+        <div>${item.category}</div>
+        <div class="code">${item.response_text}</div>
+      </div>
+    `).join("");
+
+    document.getElementById("artifact-list").innerHTML = DATA.artifacts.map((item) => `
+      <div class="artifact">
+        <strong>${item.label}</strong>
+        <a href="${item.href}">${item.href}</a>
+      </div>
+    `).join("");
+
+    if (DATA.auto_refresh_seconds && DATA.auto_refresh_seconds > 0) {
+      window.setTimeout(() => window.location.reload(), DATA.auto_refresh_seconds * 1000);
+    }
+  </script>
+</body>
+</html>

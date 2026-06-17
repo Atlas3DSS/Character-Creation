@@ -1,0 +1,557 @@
+{
+  "created_at": "2026-05-01T11:41:11-07:00",
+  "probe_dir": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/scotus_minpair_replay_20260501_100514",
+  "sae_run_dir": "/home/orwel/dev_genius/experiments/Character Creation/sweep_v4/scotus_sae_probe_20260501_112601",
+  "row_count": 48,
+  "unique_assistant_templates": 6,
+  "template_pair_group_count": 3,
+  "template_groups": [
+    {
+      "template_pair_group": "6276c3d5b59a__3028eecc6a61",
+      "n": 16,
+      "label_counts": {
+        "0": 8,
+        "1": 8
+      },
+      "split_counts": {
+        "dev": 4,
+        "test": 4,
+        "train": 8
+      },
+      "authority_snippet": "Holding: The federal remedy falls within Congress's Commerce Clause authority. Reasoning: The regulated transactions are commercial in chara",
+      "limits_snippet": "Holding: The federal law cannot be sustained under the Commerce Clause. Reasoning: The activity is not part of a broader market regulation o"
+    },
+    {
+      "template_pair_group": "c9ba436b5fde__5cb61be09d71",
+      "n": 16,
+      "label_counts": {
+        "0": 8,
+        "1": 8
+      },
+      "split_counts": {
+        "dev": 2,
+        "test": 4,
+        "train": 10
+      },
+      "authority_snippet": "Holding: The statute is a valid exercise of the commerce power. Reasoning: The relevant activity uses channels or instrumentalities of inter",
+      "limits_snippet": "Holding: The statute exceeds Congress's enumerated power. Reasoning: The statute lacks a concrete jurisdictional hook tying the particular c"
+    },
+    {
+      "template_pair_group": "ebed2cb9fde3__737a63265d32",
+      "n": 16,
+      "label_counts": {
+        "0": 8,
+        "1": 8
+      },
+      "split_counts": {
+        "dev": 4,
+        "test": 2,
+        "train": 10
+      },
+      "authority_snippet": "Holding: Congress has authority to regulate this class of activity. Reasoning: The statute targets economic conduct connected to a national ",
+      "limits_snippet": "Holding: Congress lacks authority on these facts. Reasoning: The regulated conduct is local and non-economic. Lopez and Morrison mark the li"
+    }
+  ],
+  "original_split_template_baseline": {
+    "n": 10,
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "f1": 1.0,
+    "label_counts": {
+      "0": 5,
+      "1": 5
+    },
+    "prediction_counts": {
+      "0": 5,
+      "1": 5
+    }
+  },
+  "diagnostics": {
+    "prompt_tfidf": {
+      "folds": [
+        {
+          "held_out_group": "6276c3d5b59a__3028eecc6a61",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.5,
+            "f1": 0.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 16
+            }
+          }
+        },
+        {
+          "held_out_group": "c9ba436b5fde__5cb61be09d71",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.5,
+            "f1": 0.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 16
+            }
+          }
+        },
+        {
+          "held_out_group": "ebed2cb9fde3__737a63265d32",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.5,
+            "f1": 0.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 16
+            }
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_balanced_accuracy": 0.5,
+        "min_balanced_accuracy": 0.5,
+        "max_balanced_accuracy": 0.5,
+        "mean_accuracy": 0.5
+      }
+    },
+    "assistant_text_tfidf": {
+      "folds": [
+        {
+          "held_out_group": "6276c3d5b59a__3028eecc6a61",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.5,
+            "f1": 0.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 16
+            }
+          }
+        },
+        {
+          "held_out_group": "c9ba436b5fde__5cb61be09d71",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.0,
+            "balanced_accuracy": 0.0,
+            "f1": 0.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        },
+        {
+          "held_out_group": "ebed2cb9fde3__737a63265d32",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.0,
+            "balanced_accuracy": 0.0,
+            "f1": 0.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_balanced_accuracy": 0.16666666666666666,
+        "min_balanced_accuracy": 0.0,
+        "max_balanced_accuracy": 0.5,
+        "mean_accuracy": 0.16666666666666666
+      }
+    },
+    "residual_assistant_all__L04": {
+      "folds": [
+        {
+          "held_out_group": "6276c3d5b59a__3028eecc6a61",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.6875,
+            "balanced_accuracy": 0.6875,
+            "f1": 0.7619047619047619,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 3,
+              "1": 13
+            }
+          }
+        },
+        {
+          "held_out_group": "c9ba436b5fde__5cb61be09d71",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.5,
+            "f1": 0.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 16
+            }
+          }
+        },
+        {
+          "held_out_group": "ebed2cb9fde3__737a63265d32",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_balanced_accuracy": 0.7291666666666666,
+        "min_balanced_accuracy": 0.5,
+        "max_balanced_accuracy": 1.0,
+        "mean_accuracy": 0.7291666666666666
+      }
+    },
+    "residual_assistant_all__L08": {
+      "folds": [
+        {
+          "held_out_group": "6276c3d5b59a__3028eecc6a61",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        },
+        {
+          "held_out_group": "c9ba436b5fde__5cb61be09d71",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.8125,
+            "balanced_accuracy": 0.8125,
+            "f1": 0.8421052631578947,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 5,
+              "1": 11
+            }
+          }
+        },
+        {
+          "held_out_group": "ebed2cb9fde3__737a63265d32",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_balanced_accuracy": 0.9375,
+        "min_balanced_accuracy": 0.8125,
+        "max_balanced_accuracy": 1.0,
+        "mean_accuracy": 0.9375
+      }
+    },
+    "residual_assistant_all__L12": {
+      "folds": [
+        {
+          "held_out_group": "6276c3d5b59a__3028eecc6a61",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        },
+        {
+          "held_out_group": "c9ba436b5fde__5cb61be09d71",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.9375,
+            "balanced_accuracy": 0.9375,
+            "f1": 0.9411764705882353,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 7,
+              "1": 9
+            }
+          }
+        },
+        {
+          "held_out_group": "ebed2cb9fde3__737a63265d32",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_balanced_accuracy": 0.9791666666666666,
+        "min_balanced_accuracy": 0.9375,
+        "max_balanced_accuracy": 1.0,
+        "mean_accuracy": 0.9791666666666666
+      }
+    },
+    "residual_assistant_all__L16": {
+      "folds": [
+        {
+          "held_out_group": "6276c3d5b59a__3028eecc6a61",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        },
+        {
+          "held_out_group": "c9ba436b5fde__5cb61be09d71",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        },
+        {
+          "held_out_group": "ebed2cb9fde3__737a63265d32",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_balanced_accuracy": 1.0,
+        "min_balanced_accuracy": 1.0,
+        "max_balanced_accuracy": 1.0,
+        "mean_accuracy": 1.0
+      }
+    },
+    "residual_assistant_all__L20": {
+      "folds": [
+        {
+          "held_out_group": "6276c3d5b59a__3028eecc6a61",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        },
+        {
+          "held_out_group": "c9ba436b5fde__5cb61be09d71",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        },
+        {
+          "held_out_group": "ebed2cb9fde3__737a63265d32",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            }
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_balanced_accuracy": 1.0,
+        "min_balanced_accuracy": 1.0,
+        "max_balanced_accuracy": 1.0,
+        "mean_accuracy": 1.0
+      }
+    },
+    "sae_best_l0_100_assistant_all_L8": {
+      "folds": [
+        {
+          "held_out_group": "6276c3d5b59a__3028eecc6a61",
+          "metrics": {
+            "n": 16,
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "f1": 1.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "feature_count": 68
+          }
+        },
+        {
+          "held_out_group": "c9ba436b5fde__5cb61be09d71",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.75,
+            "balanced_accuracy": 0.75,
+            "f1": 0.75,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "feature_count": 68
+          }
+        },
+        {
+          "held_out_group": "ebed2cb9fde3__737a63265d32",
+          "metrics": {
+            "n": 16,
+            "accuracy": 0.5,
+            "balanced_accuracy": 0.5,
+            "f1": 0.0,
+            "label_counts": {
+              "0": 8,
+              "1": 8
+            },
+            "prediction_counts": {
+              "0": 16
+            },
+            "feature_count": 72
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_balanced_accuracy": 0.75,
+        "min_balanced_accuracy": 0.5,
+        "max_balanced_accuracy": 1.0,
+        "mean_accuracy": 0.75
+      }
+    }
+  },
+  "verdict": "Some activation evidence survives template-pair holdout. Candidate features still need decoder-column steering and random/same-layer controls before promotion."
+}

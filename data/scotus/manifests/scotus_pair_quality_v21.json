@@ -1,0 +1,81 @@
+{
+  "chunk_counts": {
+    "Ginsburg": {
+      "eligible": 3956
+    },
+    "Ginsburg/posture": {
+      "concurrence_in_judgment": 100,
+      "concurrence": 58,
+      "dissent": 586,
+      "concurrence_in_part": 25,
+      "concurrence_in_part_dissent_in_part": 126,
+      "majority": 3038,
+      "judgment": 23
+    },
+    "Scalia": {
+      "eligible": 4728
+    },
+    "Scalia/posture": {
+      "majority": 3473,
+      "concurrence_in_judgment": 206,
+      "judgment": 163,
+      "concurrence": 53,
+      "concurrence_in_part": 104,
+      "dissent": 682,
+      "concurrence_in_part_dissent_in_part": 47
+    },
+    "Souter": {
+      "eligible": 4321
+    },
+    "Souter/posture": {
+      "judgment": 143,
+      "dissent": 678,
+      "concurrence": 64,
+      "concurrence_in_judgment": 32,
+      "concurrence_in_part": 39,
+      "concurrence_in_part_dissent_in_part": 93,
+      "majority": 3272
+    },
+    "Thomas": {
+      "eligible": 4006
+    },
+    "Thomas/posture": {
+      "dissent": 928,
+      "concurrence": 100,
+      "concurrence_in_part_dissent_in_part": 99,
+      "concurrence_in_judgment": 91,
+      "concurrence_in_part": 47,
+      "majority": 2600,
+      "judgment": 141
+    }
+  },
+  "pair_counts": {
+    "Scalia_vs_Ginsburg/masked": {
+      "dev": 119,
+      "test": 69,
+      "train": 1608
+    },
+    "Scalia_vs_Ginsburg/raw_clean": {
+      "dev": 119,
+      "test": 69,
+      "train": 1608
+    },
+    "Thomas_vs_Souter/masked": {
+      "dev": 74,
+      "test": 128,
+      "train": 1233
+    },
+    "Thomas_vs_Souter/raw_clean": {
+      "dev": 74,
+      "test": 128,
+      "train": 1233
+    }
+  },
+  "same_case_pair_counts": {
+    "Scalia_vs_Ginsburg/masked": 14,
+    "Scalia_vs_Ginsburg/raw_clean": 14,
+    "Thomas_vs_Souter/masked": 16,
+    "Thomas_vs_Souter/raw_clean": 16
+  },
+  "total_pairs": 6462
+}
