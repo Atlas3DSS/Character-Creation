@@ -131,3 +131,13 @@ No substantive claims should be made from this log alone.
 - Remote instruct lens B: `18/32` prompts fitted on RTX 4090.
 - Remote follow-up watcher is still waiting for both instruct `jacobian_lens.pt` artifacts before launching base lens, J-ReFT, and Delta-J.
 - No findings yet; all hypothesis statuses remain unresolved.
+
+### 2026-07-09 01:02 PDT
+
+- Git publish branch: `agent/jlens-three-briefs`.
+- Commit: `1085285` (`Add J-lens three-brief experiment pipeline`).
+- Draft PR: `https://github.com/Atlas3DSS/Character-Creation/pull/1`.
+- 27B persona fingerprinting: `11/40` records captured.
+- Remote instruct lens A: `22/32` prompts fitted on RTX 3090.
+- Remote instruct lens B: `21/32` prompts fitted on RTX 4090.
+- No findings yet; all hypothesis statuses remain unresolved.
