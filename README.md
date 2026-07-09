@@ -1,79 +1,75 @@
 # Character Creation
 
-Research code and artifacts for studying whether an open-weight language model can be moved from prompt-level persona imitation toward durable changes in generated reasoning and voice.
+Mechanistic experiments in personality, style, reasoning-frame, and output-disposition steering for open-weight language models.
 
-The repository began as a fictional-character personality baking project and later expanded into a cleaner public-domain test bed using Supreme Court opinion style and legal-reasoning contrasts. The current emphasis is mechanistic: activation probes, causal patching, steering attempts, SAE feature inspection, and evaluation harnesses that distinguish decodable style from actually controllable generation behavior.
+This repository is an active research workspace. It is not a packaged library and it intentionally contains failed branches, negative results, control runs, and work-in-progress experiment constructors. The main standard is evidential: a result should be promoted only when the run has enough controls, token budget, provenance, and artifact logging to survive later paper-grade review.
 
-## Current Status
+## Current Research Position
 
-This is an active research workspace, not a packaged library.
+The project started as an attempt to bake a fictional character voice into Qwen-family models without relying on a system prompt at inference time. It then expanded into public-domain legal-reasoning and style-frame experiments using Supreme Court materials. As of July 2026, the active work is centered on Jacobian-lens / J-space measurements:
 
-The strongest honest result so far is:
+- Persona, source style, and legal-reasoning frames are often linearly decodable from hidden states.
+- Decodable directions often fail causal steering or generation tests.
+- Prompt-only and text-only baselines can look deceptively strong, so activation claims need text baselines and random/null controls.
+- Qwen thinking models are verbose; short generations are smoke tests, not full reasoning evaluations.
+- Current J-lens work asks whether persona/style signatures concentrate in top-k output-facing transport subspaces, whether constrained J-ReFT can preserve capability better than unconstrained adapters, and whether fine-tuning changes the transport map itself.
 
-- Personality, source style, and legal-reasoning frames are often linearly decodable from model activations.
-- Many decoded directions do not survive causal generation tests.
-- Prompt-only or text-only baselines can look deceptively strong, so promoted claims need strict controls.
-- For SCOTUS/Qwen legal reasoning work, short generations are smoke tests only. Complete-answer evaluation should use at least 2048 generated tokens, preferably 3072-4096.
+The central distinction is:
 
-The repo intentionally includes negative results. A central finding is that "style is decodable" and "style is a reusable steering actuator" are different claims.
+> "A style is decodable" is not the same claim as "a style is a reusable steering actuator."
 
-## Research Threads
+## Active July 2026 J-Lens Program
 
-### 1. Fictional Character Personality Baking
+The current coordinated objective is documented in:
 
-Original target: encode a Skippy-like fictional voice into Qwen-family models without relying on a system prompt at inference time.
+- `reports/jlens_three_brief_goal_statement_20260709.md`
+- `reports/jlens_three_brief_execution_log_20260709.md`
 
-Work explored:
+It implements three July 8 briefs in dependency order:
 
-- Contrastive activation directions and permanent weight ablation.
-- LoRA SFT, DPO, GRPO, and self-distillation fine-tuning.
-- Identity and assistant-mode neuron probes.
-- Push/pull neuron regularization for persona behavior.
-- AIME-style reasoning preservation checks.
+1. **J-space persona fingerprinting**
+   - Generate long-form responses from an unmodified Qwen model under system-prompt personas.
+   - Capture generated-token residual activations only.
+   - Compare raw activations, `P_J h`, `(I - P_J) h`, random same-dimensional subspaces, final-layer controls, logit controls, label-shuffle nulls, TF-IDF text baselines, fingerprint stability, and token readouts.
 
-Most detailed notes are in `RESEARCH_NOTES.md`, `reports/`, and older archived scripts under `archive/`.
+2. **J-ReFT / J-LoRA pilot**
+   - Fit or verify a local lens for the exact unmodified `Qwen/Qwen3.5-9B` instruct checkpoint.
+   - Train/evaluate arms A-F: J-space, random subspace seeds, unconstrained, complement, V4/prompt baseline, and raw baseline.
+   - Evaluate held-out no-system generations for persona/style movement, answer-checkable capability retention, coherence, and repetition risk.
 
-### 2. SCOTUS Judicial Reasoning Steering
+3. **Delta-J transport-map comparison**
+   - Establish a mandatory refit-noise floor by fitting the same model twice on disjoint prompt slices.
+   - Compare model pairs only as multiples of that noise floor.
+   - Report subspace geometry, map similarity, vocab-resolved transported-vector drift, and layer profiles.
 
-The public-domain follow-up uses Supreme Court opinions to test a cleaner question:
-
-> Can a model's legal-reasoning trajectory be causally shifted between controlled jurisprudential frames without merely role-playing a named justice?
-
-This branch includes:
-
-- Court opinion data preparation and source-frame labels.
-- Masked text baselines and case/source holdouts.
-- Activation probes across layers and token regions.
-- Controlled replay/minimal-pair banks.
-- No-mask generation pokes with random/source/text controls.
-- Visible-thinking and final-answer evaluation reports.
-
-Start with:
-
-- `SCOTUS.md`
-- `SCOTUS_Phase4.md`
-- `data/scotus/README.md`
-- `scripts/experiments/scotus/README.md`
+No 27B main adaptation run should be launched until the 9B pilot gate is explicitly met and logged.
 
 ## Repository Map
 
 | Path | Contents |
 |---|---|
-| `scripts/experiments/scotus/` | SCOTUS data prep, probing, patching, poking, review, and budget helpers |
-| `scripts/experiments/personality/` | Personality, meta-cognition, and symphonic-voice experiment scripts |
-| `scripts/eval/` | Evaluation harnesses and steering/eval utilities |
-| `scripts/sae/` | SAE activation collection, training, and analysis scripts |
-| `scripts/infra/` | Local orchestration, GPU monitoring, sweep tooling, and artifact inventory |
-| `data/` | Compact prompt banks, manifests, labels, and review queues |
-| `data/scotus/` | Trackable SCOTUS artifacts and compact direction files |
-| `reports/` | Experiment reports, audits, adjudication notes, and decision logs |
-| `ui/` | Static dashboards and visualization templates |
-| `archive/` | Older Skippy pipeline scripts, phase reports, and legacy docs |
-| `logs/`, `results/`, `sweep_v*/` | Local run outputs; many large artifacts are intentionally ignored |
+| `scripts/experiments/jlens_common.py` | Shared J-lens cache checks, projection math, probes, reporting helpers |
+| `scripts/experiments/personality/jlens_persona_fingerprint.py` | J-space persona fingerprint capture and analysis |
+| `scripts/experiments/personality/jlora_pilot.py` | J-ReFT/J-LoRA constrained adaptation pilot |
+| `scripts/experiments/connectome/fit_local_jlens.py` | Local Jacobian-lens fitting wrapper with manifests and resume checkpoints |
+| `scripts/experiments/connectome/jlens_delta_comparison.py` | Delta-J transport-map comparison against refit-noise floor |
+| `scripts/experiments/connectome/` | Qwen connectome, spectral, steering, and J-lens analysis scripts |
+| `scripts/experiments/personality/` | Personality, self-distillation, meta-cognition, and no-mask evaluation scripts |
+| `scripts/experiments/scotus/` | SCOTUS data prep, probing, patching, generation, review, and budget helpers |
+| `scripts/infra/` | Orchestration, GPU monitoring, preflights, watchers, and remote handoff scripts |
+| `scripts/eval/` | General evaluation harnesses |
+| `scripts/sae/` | SAE activation collection, training, and analysis |
+| `data/personas/` | Compact persona prompt banks for fingerprinting |
+| `data/scotus/` | Trackable SCOTUS labels, queues, manifests, compact directions, and reviewed artifacts |
+| `reports/` | Briefs, execution logs, decision logs, diagnostics, and paper-facing summaries |
+| `sweep_v4/`, `logs/`, `results/` | Local generated outputs; intentionally ignored by git |
+| `external/` | Local dependency checkouts; intentionally ignored by git |
 
-## Setup
+## Environment
 
-Use Python 3.11+ with CUDA. The local convention for this workspace is a virtual environment named `dev_genius`.
+Use Python 3.11+ with CUDA-capable PyTorch. The project convention is a virtual environment named `dev_genius`.
+
+Generic setup:
 
 ```bash
 git clone https://github.com/Atlas3DSS/Character-Creation.git
@@ -86,13 +82,38 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-For CUDA builds of PyTorch, install the appropriate wheel for your machine before or during dependency setup. This workspace was developed on NVIDIA GPUs and assumes GPU access for serious activation capture, training, and vLLM generation.
+Workstation-specific note: some long J-lens runs use the provisioned CUDA 13 environment at `/home/orwel/dev_genius/venv` rather than the project-local `./dev_genius` venv. Use the environment that actually has a working CUDA build for the target GPU.
 
-## Model And Data Notes
+Verify the active environment before expensive runs:
 
-Large model checkpoints, raw corpora, hidden-state matrices, and full sweep outputs are not guaranteed to be present in the public repo.
+```bash
+source /home/orwel/dev_genius/venv/bin/activate
+python scripts/infra/jlens_three_brief_preflight.py
+```
 
-Before loading Hugging Face models, check the local cache and avoid silent downloads of large checkpoints. The project convention is:
+Expected J-lens dependencies include:
+
+- `torch`, `torchvision`
+- `transformers`, `accelerate`
+- `peft`, `datasets`
+- `jlens`
+- `numpy`, `scikit-learn`
+- `tqdm`
+
+## Model And Cache Rules
+
+Large checkpoints and fitted lenses are not committed to git. Always check local cache state before loading or downloading models.
+
+Project policy:
+
+- Check Hugging Face cache before every heavyweight model load.
+- Print cache status in scripts.
+- Do not silently download 16 GB+ models.
+- Use BF16/full precision for current J-lens tests unless explicitly instructed otherwise.
+- Do not quantize real J-lens/J-ReFT experiments unless a run is explicitly marked quantized.
+- Use unmodified Qwen checkpoints for the current Delta-J base/instruct test; do not substitute abliterated models unless that pair is the explicit experiment.
+
+Reusable cache-check pattern:
 
 ```python
 import os
@@ -109,88 +130,240 @@ def model_cached(model_name: str) -> bool:
     )
 ```
 
-Book-derived source material and large training outputs should remain local unless they are explicitly cleared for sharing. Compact public artifacts and manifests live under `data/` and `reports/`.
+## Artifact And Reporting Standards
 
-## Common Workflows
+Every nontrivial run should write enough evidence that a later report can be reconstructed without chat history:
 
-Run general eval battery:
+- `manifest.json`: model, lens, cache paths, scripts, seeds, token budgets, dtype, device, prompt counts, layers, ranks, claim eligibility, git status.
+- `events.jsonl`: append-only progress and lifecycle events.
+- `records.jsonl`: per-example or per-layer records used for analysis.
+- `report.md`: human-readable summary with methods, controls, results, claim status, and known caveats.
+- `prompt_audit.json` or equivalent prompt inventory for generated/fitted runs.
+- Log files under `logs/` or the run directory.
+
+Reports must clearly distinguish:
+
+- real pilot findings
+- smoke/debug outputs
+- failed gates
+- incomplete runs
+- unresolved hypotheses
+- known confounds
+
+For arXiv-facing summaries, include null controls, random controls, text baselines, token budgets, exact model/lens identifiers, and whether generated outputs were promotion eligible.
+
+## J-Lens Workflows
+
+### Phase 0 Preflight
 
 ```bash
-source dev_genius/bin/activate
-python scripts/eval/eval_runner.py --model Qwen/Qwen3-VL-8B-Thinking --n-per-category 50
+source /home/orwel/dev_genius/venv/bin/activate
+python scripts/infra/jlens_three_brief_preflight.py
 ```
 
-Run SAE training:
+### Persona Fingerprinting Pilot
 
 ```bash
-source dev_genius/bin/activate
-python scripts/sae/sae_train.py --config scripts/sae/sae_config.py
+source /home/orwel/dev_genius/venv/bin/activate
+python scripts/experiments/personality/jlens_persona_fingerprint.py \
+  --allow-real-model-run \
+  --output-dir sweep_v4/jlens_persona_fingerprint_real_$(date +%Y%m%d_%H%M%S) \
+  --pilot-personas 3 \
+  --pilot-prompts 10 \
+  --pilot-layers 2 \
+  --k-values 8,32,128,512 \
+  --max-new-tokens 3072 \
+  --device cuda
 ```
 
-Run local overnight orchestration:
+Key controls:
+
+- generated-token activations only
+- raw `h`
+- `P_J h`
+- `(I - P_J) h`
+- random same-dimensional subspaces
+- label-shuffle nulls
+- TF-IDF text baseline
+- final-layer and output-logit controls
+- split-half signature stability
+
+### Fit Local 9B Lenses
+
+Same-model refit-noise fits use disjoint prompt slices:
 
 ```bash
-source dev_genius/bin/activate
-bash scripts/infra/overnight_local.sh
+python scripts/experiments/connectome/fit_local_jlens.py \
+  --model Qwen/Qwen3.5-9B \
+  --model-class causal-lm \
+  --output-dir sweep_v4/lens_qwen35_9b_instruct_a \
+  --source-layers 8,16,24 \
+  --n-prompts 32 \
+  --skip-prompts 0 \
+  --max-seq-len 128 \
+  --dim-batch 1 \
+  --checkpoint-every 1 \
+  --resume \
+  --device cuda
 ```
 
-Launch GPU monitor:
+Use a second run with `--skip-prompts 32` for the refit-noise floor, then fit the paired checkpoint, for example `Qwen/Qwen3.5-9B-Base`, with the same fit config and a disjoint prompt slice.
+
+### J-ReFT / J-LoRA Pilot
 
 ```bash
-source dev_genius/bin/activate
-python scripts/infra/gpu_monitor.py
+python scripts/experiments/personality/jlora_pilot.py \
+  --allow-real-model-run \
+  --output-dir sweep_v4/jlora_pilot_$(date +%Y%m%d_%H%M%S) \
+  --model-name Qwen/Qwen3.5-9B \
+  --local-instruct-lens sweep_v4/lens_qwen35_9b_instruct_a/jacobian_lens.pt \
+  --train-file sweep_v4/qwen36_devbox_balanced_pairs_20260706_233429/pairs.jsonl \
+  --layers 8,16,24 \
+  --j-rank 128 \
+  --reft-rank 16 \
+  --max-train-steps 120 \
+  --batch-size 1 \
+  --grad-accum 8 \
+  --eval-limit 12 \
+  --capability-limit 16 \
+  --max-new-tokens 3072 \
+  --device cuda
 ```
 
-Inspect compact SCOTUS run-constructor rules before creating new Qwen legal generations:
+Trained arms must be evaluated without a system prompt. Prompt baselines may use the prompt by definition, but must be labeled as prompt baselines rather than weight-baked persona success.
+
+### Delta-J Comparison
+
+```bash
+python scripts/experiments/connectome/jlens_delta_comparison.py \
+  --allow-real-comparison \
+  --output-dir sweep_v4/delta_qwen35_9b_instruct_vs_base \
+  --pair-label qwen35_9b_instruct_vs_base_unmodified \
+  --noise-floor-a sweep_v4/lens_qwen35_9b_instruct_a/jacobian_lens.pt \
+  --noise-floor-b sweep_v4/lens_qwen35_9b_instruct_b/jacobian_lens.pt \
+  --model-a-lens sweep_v4/lens_qwen35_9b_instruct_a/jacobian_lens.pt \
+  --model-b-lens sweep_v4/lens_qwen35_9b_base/jacobian_lens.pt \
+  --model-a Qwen/Qwen3.5-9B \
+  --model-b Qwen/Qwen3.5-9B-Base \
+  --tokenizer-model Qwen/Qwen3.5-9B \
+  --k-values 8,32,128,512
+```
+
+No Delta-J finding is valid without a same-model refit-noise floor.
+
+### Overnight Orchestration
+
+```bash
+source /home/orwel/dev_genius/venv/bin/activate
+bash scripts/infra/run_jlens_three_briefs_overnight.sh
+```
+
+Remote watcher scripts:
+
+- `scripts/infra/watch_persona_fingerprint_reanalysis.sh`
+- `scripts/infra/run_remote_9b_followups.sh`
+
+These are designed to avoid a simple overnight blocker: they wait for prerequisite artifacts, refuse partial reanalysis, and log follow-up handoffs.
+
+## SCOTUS/Qwen Evaluation Budget Rule
+
+For legal reasoning and complete-answer Qwen evaluations:
+
+- Minimum answer/generation budget: `2048` tokens.
+- Preferred final reasoning/evaluation budget: `3072-4096` tokens.
+- Runs below `2048` answer tokens are smoke/debug only.
+- Smoke/debug runs must not be used for promotion, scorer calibration, or learned-result claims.
+
+New SCOTUS generation/evaluation constructors should import and use:
+
+```python
+from scripts.experiments.scotus.qwen_eval_budget import qwen_budget_metadata
+```
+
+Before creating new SCOTUS/Qwen generation runs, read:
 
 ```bash
 sed -n '1,220p' scripts/experiments/scotus/README.md
 ```
 
-## SCOTUS/Qwen Evaluation Budget Rule
-
-Qwen is verbose. A few hundred generated tokens is not enough for complete legal-holding evaluation.
-
-Use `scripts/experiments/scotus/qwen_eval_budget.py` in new SCOTUS generation constructors. Any run below 2048 answer tokens must be labeled smoke/debug and must not be used for promotion, scorer calibration, or learned-result claims.
-
-Reports and manifests should record:
-
-- answer and thinking token budgets
-- short-budget opt-in flags
-- `budget_note`
-- `promotion_eligible_budget`
-
 ## Serving And Steering Architecture
 
-The project separates hook-heavy experimentation from fast serving:
+The project uses two inference modes:
 
 | Phase | Engine | Reason |
 |---|---|---|
-| Extraction, activation capture, steering, and tuning | Hugging Face Transformers | Needs hooks, hidden states, and custom interventions |
-| Review loops and post-ablation serving | vLLM | Fast inference when hooks are not needed |
+| Extraction, activation capture, steering, J-ReFT, and hidden-state analysis | Hugging Face Transformers | Requires hooks, hidden states, and custom interventions |
+| Fast serving or review loops for merged/ablated models | vLLM or llama.cpp | Fast generation when hooks are not needed |
 
-vLLM is useful for serving ablated or merged models, but it is not the right tool for inference-time activation steering that depends on PyTorch hooks.
+vLLM is not the right tool for inference-time activation steering that depends on PyTorch hooks.
 
-Example vLLM server:
+## Research Threads
 
-```bash
-source dev_genius/bin/activate
-python -m vllm.entrypoints.openai.api_server \
-  --model ./skippy_vectors/ablated_model \
-  --dtype float16 \
-  --gpu-memory-utilization 0.85 \
-  --port 8000
-```
+### Personality And Character Voice
+
+Original question: can a model internalize a persona or voice without a system prompt?
+
+Representative work:
+
+- contrastive activation directions
+- field steering
+- no-mask evaluation
+- LoRA/SFT and self-distillation
+- persona-vs-capability preservation
+- J-space-constrained adaptation
+
+### SCOTUS Legal Reasoning
+
+Public-domain follow-up question:
+
+> Can a model's legal-reasoning trajectory be causally shifted between controlled jurisprudential frames without merely role-playing a named justice?
+
+Start with:
+
+- `SCOTUS.md`
+- `SCOTUS_Phase4.md`
+- `data/scotus/README.md`
+- `scripts/experiments/scotus/README.md`
+
+### J-Lens / Connectome
+
+Current mechanistic question:
+
+> Does output-facing transport geometry explain where persona/style/reasoning information is represented, whether constrained updates preserve capability, and whether training changes the transport map?
+
+Start with:
+
+- `reports/jlens_scotus_diagnostic_brief_20260706.md`
+- `reports/jlens_persona_fingerprint_brief_20260708.md`
+- `reports/jlens_jlora_brief_20260708.md`
+- `reports/jlens_lens_comparison_brief_20260708.md`
+- `reports/jlens_three_brief_goal_statement_20260709.md`
+- `reports/jlens_three_brief_execution_log_20260709.md`
+
+## What Not To Commit
+
+Do not commit:
+
+- `.env` or API keys
+- local model checkpoints
+- raw copyrighted book text
+- large activations or tensor dumps
+- `sweep_v4/`, `logs/`, `results/`
+- local dependency checkouts under `external/`
+- generated response dumps unless deliberately compact and cleared for sharing
+
+The repository should contain scripts, compact prompt banks, manifests, labels, reports, and reproducibility metadata. Large outputs stay local unless explicitly promoted.
 
 ## Reading Order
 
 For a quick orientation:
 
-1. `SCOTUS.md` for the current judicial-reasoning research status.
-2. `reports/scotus_phase5_decision_20260501.md` for a concise decision log on failed/promoted branches.
-3. `data/scotus/README.md` for compact artifact provenance.
-4. `RESEARCH_NOTES.md` for older personality-baking notes.
-5. `archive/INDEX.md` for legacy phase material.
+1. `README.md` for repository structure and current run standards.
+2. `reports/jlens_three_brief_goal_statement_20260709.md` for the active J-lens objective.
+3. `reports/jlens_three_brief_execution_log_20260709.md` for current run provenance.
+4. `reports/jlens_scotus_diagnostic_brief_20260706.md` for the J-lens setup and layer-convention context.
+5. `reports/scotus_phase5_decision_20260501.md` for an example decision log separating negative and promoted branches.
+6. `scripts/experiments/scotus/README.md` before constructing new SCOTUS/Qwen generation runs.
 
 ## Citation
 
