@@ -163,3 +163,14 @@ No substantive claims should be made from this log alone.
 - Retry dataset manifest: `102` train rows, `12` eval rows, `8` capability rows, system prompts stripped.
 - Base lens status at this update: `3/32` prompts fitted.
 - No findings yet; all hypothesis statuses remain unresolved.
+
+### 2026-07-09 02:06 PDT
+
+- J-ReFT retry completed arm `A` (`j_space`) training and long-budget evaluation.
+- Arm `A` artifact counts: `18` generation rows, `18` eval rows, `1` arm summary row.
+- Arm `A` automatic proxy metrics: persona fidelity `3.4618`, capability retention `0.625` over `8` capability rows, coherence `0.5588`, `doom_loop_flag=true`.
+- Arm `A` generation lengths by whitespace tokens: min `809`, mean `1521.1`, max `1987`; the run used the configured `3072` max-new-token budget.
+- Claim status remains unpromoted: these are automatic proxy metrics, not an external critic score, and the doom-loop flag is a negative gate.
+- J-ReFT proceeded to random-subspace control arm `B1` evaluation.
+- Base lens status at this update: `14/32` prompts fitted.
+- 27B persona fingerprinting status at this update: `31/40` records captured.
