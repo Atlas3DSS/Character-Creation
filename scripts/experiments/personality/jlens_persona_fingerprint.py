@@ -28,6 +28,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.experiments.jlens_common import (  # noqa: E402
+    LINEAR_PROBE_CLASSIFIER,
     RunLogger,
     append_jsonl,
     complement_rows,
@@ -1024,6 +1025,7 @@ def main() -> None:
         "k_values": [min(k, int(lens["J"][layers[0]].shape[1])) for k in requested_k],
         "random_subspace_seeds": args.random_subspace_seeds,
         "label_shuffle_nulls": args.label_shuffle_nulls,
+        "linear_probe_classifier": LINEAR_PROBE_CLASSIFIER,
         "model_path": str(args.model_path),
         "lens_path": lens_path,
         "lens_repo": args.lens_repo,

@@ -20,14 +20,15 @@ from typing import Any, Iterable
 import numpy as np
 import torch
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import GroupKFold, StratifiedKFold
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.linear_model import RidgeClassifier
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LINEAR_PROBE_CLASSIFIER = "StandardScaler + RidgeClassifier(alpha=1.0, class_weight='balanced')"
 
 
 def now_iso() -> str:
@@ -311,11 +312,9 @@ def cv_balanced_accuracy(
             continue
         clf = make_pipeline(
             StandardScaler(),
-            LogisticRegression(
-                max_iter=1000,
+            RidgeClassifier(
+                alpha=1.0,
                 class_weight="balanced",
-                random_state=seed + fold_idx,
-                solver="lbfgs",
             ),
         )
         clf.fit(x[train_idx], y[train_idx])
@@ -334,6 +333,7 @@ def cv_balanced_accuracy(
         "balanced_accuracy": float(np.nanmean(scores)) if scores else float("nan"),
         "folds": fold_rows,
         "splitter": splitter_name,
+        "classifier": LINEAR_PROBE_CLASSIFIER,
         "classes": encoder.classes_.tolist(),
     }
 

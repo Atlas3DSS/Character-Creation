@@ -116,11 +116,11 @@ The watcher aborts rather than hanging if the instruct lens processes exit befor
 
 ## Claim Status
 
-- Persona fingerprinting: running; no findings yet.
-- J-ReFT/J-LoRA pilot: waiting on exact-checkpoint 9B instruct lens; no findings yet.
-- Delta-J comparison: waiting on two instruct noise-floor lenses plus base lens; no findings yet.
+- Persona fingerprinting: completed real 27B pilot after reset recovery; decodability is present, but J-specific concentration is not supported because text, raw, complement, final-layer, logit, and random controls are also strong.
+- J-ReFT/J-LoRA pilot: completed real 9B pilot; gate not passed because J-space did not beat the prompt baseline and every arm carried a doom-loop flag.
+- Delta-J comparison: completed real 9B instruct-vs-base comparison; observed deltas are indistinguishable or small relative to same-model refit noise.
 
-No substantive claims should be made from this log alone.
+No promoted causal-steering claim should be made from this log alone.
 
 ## Status Updates
 
@@ -189,3 +189,20 @@ No substantive claims should be made from this log alone.
   - Delta-J completed with `3` layer records, manifest, vocab summaries, and report.
 - J-ReFT gate status: not passed. Arm `A` (`j_space`) did not beat the prompt baseline and every arm, including baselines, had `doom_loop_flag=true`; no 27B main adaptation run should be launched from this pilot.
 - Delta-J status: unmodified `Qwen/Qwen3.5-9B` instruct vs unmodified `Qwen/Qwen3.5-9B-Base` was `indistinguishable_or_small_vs_noise` at layers `8`, `16`, and `24` relative to the same-model refit-noise floor.
+
+### 2026-07-09 07:32 PDT
+
+- 27B persona fingerprinting completed after resumable recovery.
+- Final artifacts in `sweep_v4/jlens_persona_fingerprint_real_20260709_001511`:
+  - `records.jsonl`: `40` generation/capture records.
+  - `probe_records.jsonl`: `34` probe/control rows.
+  - `manifest.json`, `report.md`, `text_baseline.json`, `stability.json`, `readouts.json`, `logit_control_tokens.json`.
+- Final manifest mode: `real_model_reanalysis`; generation budget `3072`; layers `[0, 62]`; k values `[8, 32, 128, 512]`.
+- Resume provenance: `captured_new=2`, `skipped_existing=38`, `invalid_existing=0`.
+- Probe implementation note: switched the shared linear probe helper to `StandardScaler + RidgeClassifier(alpha=1.0, class_weight='balanced')` after the original logistic-regression path proved too slow for the null-control battery on high-dimensional 27B activations. The control set and fold structure were preserved.
+- Persona report headline:
+  - TF-IDF text baseline balanced accuracy: `1.000`.
+  - Fingerprint nearest-signature stability: `1.000` over `20` held-out responses.
+  - Raw, complement, final-layer, output-logit, and several random same-dimension controls also reached `1.000` balanced accuracy.
+  - Readout top tokens were semantically aligned with persona labels, e.g. acerbic terms for `acerbic_polemicist`, folksy terms for `folksy_grandparent`, and contract/business terms for `formal_business_register`.
+- Claim status: real decodability pilot completed, but J-space-specific concentration is not supported by this run because non-J and text controls are equally strong.
