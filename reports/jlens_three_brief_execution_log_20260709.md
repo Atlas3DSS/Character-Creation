@@ -151,3 +151,15 @@ No substantive claims should be made from this log alone.
 - Remote instruct lens B: `24/32` prompts fitted on the RTX 4090.
 - Remote follow-up watcher has not yet launched base-lens fitting, J-ReFT, or Delta-J because both instruct `jacobian_lens.pt` artifacts are still pending.
 - No findings yet; all hypothesis statuses remain unresolved.
+
+### 2026-07-09 01:39 PDT
+
+- Remote instruct lenses A and B completed and wrote `jacobian_lens.pt`; they now provide the same-model refit-noise floor for Delta-J.
+- Remote watcher launched base-lens fitting and J-ReFT at `2026-07-09T08:30:55+00:00`.
+- The first J-ReFT launch failed immediately because the dev-box run tree was missing `data/sarcasm_markers.json`; no model training or evaluation records were produced in that failed attempt.
+- Copied the tracked local `data/sarcasm_markers.json` to the dev box and archived the failed `jlora_pilot` directory.
+- Relaunched J-ReFT manually in tmux session `jlora_retry_20260709_0835`, pinned by UUID to the physical RTX 3090 to avoid colliding with base fitting on the RTX 4090.
+- Retry log: `sweep_v4/jlens_remote_9b_real_20260709_070746/logs/jlora_pilot_retry_gpu3090.log`.
+- Retry dataset manifest: `102` train rows, `12` eval rows, `8` capability rows, system prompts stripped.
+- Base lens status at this update: `3/32` prompts fitted.
+- No findings yet; all hypothesis statuses remain unresolved.
