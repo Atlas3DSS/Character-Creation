@@ -141,3 +141,13 @@ No substantive claims should be made from this log alone.
 - Remote instruct lens A: `22/32` prompts fitted on RTX 3090.
 - Remote instruct lens B: `21/32` prompts fitted on RTX 4090.
 - No findings yet; all hypothesis statuses remain unresolved.
+
+### 2026-07-09 01:09 PDT
+
+- README rewrite pushed to the same draft PR in commit `d241181` (`Update project README for J-lens workflow`).
+- PR now contains the pipeline commit, execution-log update, and README rewrite.
+- 27B persona fingerprinting: `13/40` records captured on the RTX Pro 6000 workstation run.
+- Remote instruct lens A: `25/32` prompts fitted on the RTX 3090.
+- Remote instruct lens B: `24/32` prompts fitted on the RTX 4090.
+- Remote follow-up watcher has not yet launched base-lens fitting, J-ReFT, or Delta-J because both instruct `jacobian_lens.pt` artifacts are still pending.
+- No findings yet; all hypothesis statuses remain unresolved.
