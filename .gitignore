@@ -177,6 +177,9 @@ sae_models/
 # ─── Reference papers (PDFs, 170MB+) ───
 references/
 
+# ─── Local external dependency checkouts ───
+external/
+
 # ─── AI conversation logs (may contain API keys or sensitive context) ───
 codex_conversation/
 gemini_conversation/

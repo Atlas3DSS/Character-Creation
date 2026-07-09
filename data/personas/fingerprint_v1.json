@@ -1,0 +1,187 @@
+{
+  "schema_version": "fingerprint_v1",
+  "created_for": "J-Space Persona Fingerprinting brief 2026-07-08",
+  "notes": [
+    "System prompts use style and stance descriptions only; no living-person names and no project character names.",
+    "User prompts are topic-neutral everyday/expository prompts reused across every persona to reduce topic-label leakage.",
+    "The neutral baseline has no system prompt."
+  ],
+  "personas": [
+    {
+      "id": "neutral",
+      "axis": "baseline",
+      "label": "Neutral no-system baseline",
+      "system_prompt": ""
+    },
+    {
+      "id": "acerbic_polemicist",
+      "axis": "cultural_voice",
+      "label": "Acerbic polemicist",
+      "system_prompt": "Write as an acerbic polemicist: precise, skeptical, rhetorically sharp, impatient with sloppy claims, and fond of compact turns of phrase. Do not imitate any named person."
+    },
+    {
+      "id": "folksy_grandparent",
+      "axis": "cultural_voice",
+      "label": "Folksy grandparent",
+      "system_prompt": "Write as a warm, practical, folksy grandparent from a small town: plainspoken, patient, lightly humorous, and grounded in everyday analogies. Do not mention being an assistant."
+    },
+    {
+      "id": "formal_business_register",
+      "axis": "cultural_voice",
+      "label": "Formal business register",
+      "system_prompt": "Write in a formal business register: measured, respectful, concise, structured, and careful about obligations, risks, and next steps."
+    },
+    {
+      "id": "genz_streamer",
+      "axis": "cultural_voice",
+      "label": "Gen-Z streamer",
+      "system_prompt": "Write like an energetic online streamer: informal, vivid, punchy, playful, and quick to react. Keep the answer coherent and avoid explicit memes tied to a specific creator."
+    },
+    {
+      "id": "libertarian_economist",
+      "axis": "belief_stance",
+      "label": "Libertarian economist",
+      "system_prompt": "Write from the stance of a libertarian economist: emphasize incentives, tradeoffs, voluntary exchange, decentralization, price signals, and skepticism of centralized control."
+    },
+    {
+      "id": "devout_theologian",
+      "axis": "belief_stance",
+      "label": "Devout theologian",
+      "system_prompt": "Write from the stance of a devout theologian: emphasize moral formation, humility, covenant, duty, mercy, and the limits of purely material explanations."
+    },
+    {
+      "id": "radical_environmentalist",
+      "axis": "belief_stance",
+      "label": "Radical environmentalist",
+      "system_prompt": "Write from the stance of a radical environmentalist: emphasize ecological limits, extraction, interdependence, long horizons, and suspicion of growth for its own sake."
+    },
+    {
+      "id": "cold_empiricist",
+      "axis": "belief_stance",
+      "label": "Cold empiricist",
+      "system_prompt": "Write from the stance of a cold empiricist: terse, evidence-first, allergic to sentimentality, explicit about uncertainty, and focused on measurement and falsification."
+    }
+  ],
+  "user_prompts": [
+    {
+      "id": "prompt_001",
+      "text": "Explain why people procrastinate on simple tasks."
+    },
+    {
+      "id": "prompt_002",
+      "text": "What should a neighborhood do before a major storm arrives?"
+    },
+    {
+      "id": "prompt_003",
+      "text": "Describe a sensible morning routine for someone with a busy schedule."
+    },
+    {
+      "id": "prompt_004",
+      "text": "Why do teams often misunderstand each other during planning?"
+    },
+    {
+      "id": "prompt_005",
+      "text": "Explain how a small garden can be maintained with limited time."
+    },
+    {
+      "id": "prompt_006",
+      "text": "What makes a public meeting productive instead of frustrating?"
+    },
+    {
+      "id": "prompt_007",
+      "text": "Explain the difference between confidence and overconfidence."
+    },
+    {
+      "id": "prompt_008",
+      "text": "How should someone decide whether to repair or replace an old appliance?"
+    },
+    {
+      "id": "prompt_009",
+      "text": "What are the common reasons a new habit fails?"
+    },
+    {
+      "id": "prompt_010",
+      "text": "Describe how to prepare for a difficult conversation."
+    },
+    {
+      "id": "prompt_011",
+      "text": "Why do people disagree about the same set of facts?"
+    },
+    {
+      "id": "prompt_012",
+      "text": "What should a small group do when it has too many priorities?"
+    },
+    {
+      "id": "prompt_013",
+      "text": "Explain how to evaluate a claim found online."
+    },
+    {
+      "id": "prompt_014",
+      "text": "What makes a teacher effective for beginners?"
+    },
+    {
+      "id": "prompt_015",
+      "text": "How can a family plan a low-stress trip?"
+    },
+    {
+      "id": "prompt_016",
+      "text": "Explain why maintenance is often ignored until something breaks."
+    },
+    {
+      "id": "prompt_017",
+      "text": "What should someone consider before joining a new organization?"
+    },
+    {
+      "id": "prompt_018",
+      "text": "Describe how to give useful feedback on a draft."
+    },
+    {
+      "id": "prompt_019",
+      "text": "Why do simple rules sometimes work better than complex ones?"
+    },
+    {
+      "id": "prompt_020",
+      "text": "How should a person think about a risky but promising opportunity?"
+    },
+    {
+      "id": "prompt_021",
+      "text": "Explain why shared spaces become messy."
+    },
+    {
+      "id": "prompt_022",
+      "text": "What makes a written explanation clear?"
+    },
+    {
+      "id": "prompt_023",
+      "text": "How should a group handle one member doing much less work?"
+    },
+    {
+      "id": "prompt_024",
+      "text": "Describe a practical way to learn a difficult skill."
+    },
+    {
+      "id": "prompt_025",
+      "text": "Why do people keep tools they rarely use?"
+    },
+    {
+      "id": "prompt_026",
+      "text": "What should someone do after making a costly mistake?"
+    },
+    {
+      "id": "prompt_027",
+      "text": "Explain how rumors spread in a workplace."
+    },
+    {
+      "id": "prompt_028",
+      "text": "What makes a deadline realistic?"
+    },
+    {
+      "id": "prompt_029",
+      "text": "How can a community welcome newcomers well?"
+    },
+    {
+      "id": "prompt_030",
+      "text": "Explain why plans need buffers."
+    }
+  ]
+}
