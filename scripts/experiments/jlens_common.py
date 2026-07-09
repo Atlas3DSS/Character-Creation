@@ -20,7 +20,6 @@ from typing import Any, Iterable
 import numpy as np
 import torch
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import GroupKFold, StratifiedKFold
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -275,9 +274,16 @@ def cosine_similarity_matrix(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 
 
 def stable_balanced_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    if len(set(y_true.tolist())) < 2:
+    classes = np.unique(y_true)
+    if len(classes.tolist()) < 2:
         return float("nan")
-    return float(balanced_accuracy_score(y_true, y_pred))
+    recalls: list[float] = []
+    for cls in classes:
+        mask = y_true == cls
+        denom = int(mask.sum())
+        if denom:
+            recalls.append(float((y_pred[mask] == cls).sum() / denom))
+    return float(np.mean(recalls)) if recalls else float("nan")
 
 
 def cv_balanced_accuracy(
