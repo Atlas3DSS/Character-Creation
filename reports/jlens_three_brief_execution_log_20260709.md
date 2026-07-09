@@ -174,3 +174,18 @@ No substantive claims should be made from this log alone.
 - J-ReFT proceeded to random-subspace control arm `B1` evaluation.
 - Base lens status at this update: `14/32` prompts fitted.
 - 27B persona fingerprinting status at this update: `31/40` records captured.
+
+### 2026-07-09 07:10 PDT
+
+- Workstation reset recovery audit:
+  - Local RTX Pro 6000 run state: no surviving 27B capture process; `sweep_v4/jlens_persona_fingerprint_real_20260709_001511/records.jsonl` survived with `38/40` records.
+  - Missing persona-fingerprint cells: `formal_business_register/prompt_009` and `formal_business_register/prompt_010`.
+  - Added resumable real-capture support to `scripts/experiments/personality/jlens_persona_fingerprint.py` via `--resume-capture-dir`; it skips records only when the record and activation file both exist.
+  - Relaunched local 27B resume in tmux session `jlens_27b_resume_20260709_0707` with `--k-values 8,32,128,512` and `--max-new-tokens 3072`.
+  - Resume event log confirmed `existing_records=38` and `invalid_existing=0` before generating the two missing cells.
+- Dev-box recovery audit:
+  - Instruct lens A, instruct lens B, and base lens all completed and wrote `jacobian_lens.pt`.
+  - J-ReFT retry completed all arms A-F with `144` generated/eval rows, `8` arm summary rows, adapters, manifest, and report.
+  - Delta-J completed with `3` layer records, manifest, vocab summaries, and report.
+- J-ReFT gate status: not passed. Arm `A` (`j_space`) did not beat the prompt baseline and every arm, including baselines, had `doom_loop_flag=true`; no 27B main adaptation run should be launched from this pilot.
+- Delta-J status: unmodified `Qwen/Qwen3.5-9B` instruct vs unmodified `Qwen/Qwen3.5-9B-Base` was `indistinguishable_or_small_vs_noise` at layers `8`, `16`, and `24` relative to the same-model refit-noise floor.

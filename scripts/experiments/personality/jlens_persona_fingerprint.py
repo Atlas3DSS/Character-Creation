@@ -94,6 +94,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=20260708)
     parser.add_argument("--max-new-tokens", type=int, default=3072)
     parser.add_argument("--reuse-capture-dir", type=Path, default=None)
+    parser.add_argument(
+        "--resume-capture-dir",
+        type=Path,
+        default=None,
+        help="Resume an interrupted real capture in this directory, skipping records whose activation files exist.",
+    )
     parser.add_argument("--logit-top-vocab", type=int, default=4096)
     parser.add_argument("--skip-logit-control", action="store_true")
     parser.add_argument("--synthetic-hidden-dim", type=int, default=24)
@@ -260,7 +266,8 @@ def run_real_capture(
     max_new_tokens: int,
     device: str,
     logger: RunLogger,
-) -> list[dict[str, Any]]:
+    resume_existing: bool = False,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     cache_report = require_cached_model(model_path)
@@ -289,12 +296,35 @@ def run_real_capture(
     activation_dir = output_dir / "activations"
     activation_dir.mkdir(parents=True, exist_ok=True)
     records_path = output_dir / "records.jsonl"
-    if records_path.exists():
+    records: list[dict[str, Any]] = []
+    existing_keys: set[tuple[str, str]] = set()
+    invalid_existing = 0
+    if records_path.exists() and resume_existing:
+        for record in read_jsonl(records_path):
+            activation_path = output_dir / str(record.get("activation_path", ""))
+            key = (str(record.get("persona_id")), str(record.get("prompt_id")))
+            if activation_path.exists() and key not in existing_keys:
+                records.append(record)
+                existing_keys.add(key)
+            else:
+                invalid_existing += 1
+        logger.log(
+            "real_capture_resume_loaded",
+            existing_records=len(records),
+            invalid_existing=invalid_existing,
+        )
+    elif records_path.exists():
         records_path.unlink()
 
-    records: list[dict[str, Any]] = []
+    expected_total = len(personas) * len(prompts)
+    captured_new = 0
+    skipped_existing = 0
     for persona in tqdm(personas, desc="personas"):
         for prompt in prompts:
+            key = (persona.persona_id, prompt.prompt_id)
+            if key in existing_keys:
+                skipped_existing += 1
+                continue
             messages = build_messages(persona, prompt)
             chat_text = tokenizer.apply_chat_template(
                 messages,
@@ -356,10 +386,28 @@ def run_real_capture(
             }
             append_jsonl(records_path, record)
             records.append(record)
+            existing_keys.add(key)
+            captured_new += 1
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-    logger.log("real_capture_complete", records=len(records), device=str(torch_device))
-    return records
+    logger.log(
+        "real_capture_complete",
+        records=len(records),
+        expected=expected_total,
+        captured_new=captured_new,
+        skipped_existing=skipped_existing,
+        invalid_existing=invalid_existing,
+        device=str(torch_device),
+    )
+    return records, {
+        "model_cache_report": cache_report,
+        "expected_records": expected_total,
+        "records": len(records),
+        "captured_new": captured_new,
+        "skipped_existing": skipped_existing,
+        "invalid_existing": invalid_existing,
+        "resume_existing": resume_existing,
+    }
 
 
 def activation_matrix(
@@ -884,8 +932,10 @@ def main() -> None:
     args = parse_args()
     if not args.synthetic_smoke and not args.allow_real_model_run:
         raise SystemExit("Use --synthetic-smoke or explicitly pass --allow-real-model-run.")
-    output_dir = args.output_dir or args.reuse_capture_dir or timestamped_output_dir()
-    output_dir.mkdir(parents=True, exist_ok=bool(args.reuse_capture_dir))
+    if args.reuse_capture_dir and args.resume_capture_dir:
+        raise ValueError("--reuse-capture-dir and --resume-capture-dir are mutually exclusive")
+    output_dir = args.output_dir or args.reuse_capture_dir or args.resume_capture_dir or timestamped_output_dir()
+    output_dir.mkdir(parents=True, exist_ok=bool(args.reuse_capture_dir or args.resume_capture_dir))
     logger = RunLogger(output_dir)
     logger.log("start", argv=sys.argv)
 
@@ -935,6 +985,8 @@ def main() -> None:
         )
         mode = "synthetic_smoke"
     else:
+        if args.resume_capture_dir and args.synthetic_smoke:
+            raise ValueError("--resume-capture-dir is for interrupted real captures, not synthetic smoke")
         lens_path_obj = args.lens_path or resolve_lens_path(
             args.lens_repo,
             args.lens_filename,
@@ -946,7 +998,7 @@ def main() -> None:
         layers = parse_ints(args.layers) if args.layers else select_even_layers(
             available_layers, args.pilot_layers
         )
-        records = run_real_capture(
+        records, capture_meta = run_real_capture(
             output_dir=output_dir,
             personas=personas,
             prompts=prompts,
@@ -955,8 +1007,8 @@ def main() -> None:
             max_new_tokens=args.max_new_tokens,
             device=args.device,
             logger=logger,
+            resume_existing=bool(args.resume_capture_dir),
         )
-        capture_meta = {"model_cache_report": model_cache_report(args.model_path)}
         mode = "real_model_pilot"
 
     manifest = {
