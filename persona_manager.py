@@ -7,6 +7,7 @@ Inference services and GPU leases remain owned by their external supervisors.
 from __future__ import annotations
 
 import argparse
+import ast
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -67,6 +68,135 @@ def shared_runtime(endpoints: list[dict]) -> str | None:
     if len(identities) != 1:
         raise ValueError('All diagnostic endpoints must use the same runtime_identity')
     return identities.pop()
+
+
+def verify_compression_source(old: str, new: str) -> None:
+    """Allow only the reviewed level-one NPZ writer, import and single call change."""
+    before, after = ast.parse(old), ast.parse(new)
+    writer = ast.parse('''def save_activation_npz(destination, **arrays):
+    with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED,
+                         compresslevel=1, allowZip64=True) as archive:
+        for name, value in arrays.items():
+            with archive.open(name + ".npy", "w", force_zip64=True) as member:
+                np.lib.format.write_array(member, np.asanyarray(value), allow_pickle=False)
+''').body[0]
+    functions = [node for node in after.body if isinstance(node, ast.FunctionDef) and node.name == writer.name]
+    imports = [node for node in after.body if isinstance(node, ast.Import)
+               and ast.dump(node) == ast.dump(ast.parse('import zipfile').body[0])]
+    if len(functions) != 1 or len(imports) != 1:
+        raise ValueError('Expected exactly the reviewed serialization function and zipfile import')
+    function = functions[0]
+    if function.body and isinstance(function.body[0], ast.Expr) and isinstance(function.body[0].value, ast.Constant) and isinstance(function.body[0].value.value, str):
+        function.body.pop(0)  # The writer docstring has no runtime effect.
+    if ast.dump(function) != ast.dump(writer):
+        raise ValueError('Serialization function differs from the reviewed lossless writer')
+    after.body.remove(function); after.body.remove(imports[0])
+    calls = [node for node in ast.walk(after) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name) and node.func.id == writer.name]
+    if len(calls) != 1:
+        raise ValueError('Expected exactly one activation serialization call replacement')
+    calls[0].func = ast.parse('np.savez_compressed').body[0].value
+    if ast.dump(before) != ast.dump(after):
+        raise ValueError('Probe source changed outside the reviewed compression-only AST allowance')
+
+
+def verify_runtime_transition(path: Path, expected_sha256: str) -> dict:
+    """Verify operator-supplied immutable evidence; never called by the planner."""
+    raw = path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != runtime_identity(expected_sha256):
+        raise ValueError('Runtime transition proof digest differs')
+    proof = json.loads(raw)
+    keys(proof, {'schema', 'old_manifests', 'new_manifests', 'old_source', 'new_source', 'artifact_pairs'})
+    if proof['schema'] != 'character-creation.runtime-compression-transition.v1':
+        raise ValueError('Unknown runtime transition proof schema')
+    for name in ('old_source', 'new_source'):
+        keys(proof[name], {'text', 'sha256'})
+        if (not isinstance(proof[name]['text'], str)
+                or hashlib.sha256(proof[name]['text'].encode()).hexdigest() != runtime_identity(proof[name]['sha256'])):
+            raise ValueError('Probe source digest differs from proof')
+    verify_compression_source(proof['old_source']['text'], proof['new_source']['text'])
+    versions = {}
+    stable = ('model', 'model_identity', 'prepared_identity', 'runtime', 'torch', 'checkpoint_config_sha256',
+              'checkpoint_index_sha256', 'tokenizer_sha256', 'heliopause_sha256', 'source_sha256', 'helper_sha256', 'preparation')
+    excluded_prep = {'compile_workers', 'kernel_cache', 'cutlass_include', 'headroom_bytes', 'snapshot_budget_bytes'}
+    for side in ('old', 'new'):
+        manifests = proof[side + '_manifests']
+        if not isinstance(manifests, list) or len(manifests) != 6:
+            raise ValueError('Six complete worker manifests are required on each side')
+        workers = {}
+        for manifest in manifests:
+            if (manifest.get('schema') != 'character-creation.probe-worker.v1'
+                    or manifest.get('status') != 'ready'
+                    or manifest.get('calibration_equivalence', {}).get('passed') is not True
+                    or any(key not in manifest for key in (*stable, 'script_sha256', 'runtime_identity', 'shard', 'gpu_uuid'))):
+                raise ValueError('Manifest lacks a ready, calibrated, fully bound worker')
+            shard = uint(manifest['shard'], 0, 5, 'worker shard')
+            if shard in workers:
+                raise ValueError('Repeated worker shard in runtime proof')
+            binding = {key: manifest[key] for key in ('script_sha256', 'helper_sha256', 'source_sha256', 'torch', 'heliopause_sha256')}
+            binding['preparation'] = {key: value for key, value in manifest['preparation'].items() if key not in excluded_prep}
+            if (canonical_digest(binding) != runtime_identity(manifest['runtime_identity'])
+                    or manifest['script_sha256'] != proof[side + '_source']['sha256']):
+                raise ValueError('Manifest runtime identity does not match its source/preparation binding')
+            workers[shard] = manifest
+        if len({row['gpu_uuid'] for row in workers.values()}) != 6:
+            raise ValueError('Runtime proof requires six distinct workers')
+        for field in ('runtime_identity', 'model_identity', 'prepared_identity'):
+            if len({row[field] for row in workers.values()}) != 1:
+                raise ValueError('Worker manifests disagree on ' + field)
+        versions[side] = workers
+    old, new = versions['old'][0], versions['new'][0]
+    if old['runtime_identity'] == new['runtime_identity']:
+        raise ValueError('Runtime transition must change the probe source identity')
+    for shard in range(6):
+        before, after = versions['old'][shard], versions['new'][shard]
+        if any(before[key] != after[key] for key in (*stable, 'gpu_uuid')):
+            raise ValueError('Runtime transition changed model/prepared/native/helper/preparation binding')
+        for field in ('reference_sha256', 'job_id', 'source_preparation'):
+            if (field not in before['calibration_equivalence'] or field not in after['calibration_equivalence']
+                    or before['calibration_equivalence'][field] != after['calibration_equivalence'][field]):
+                raise ValueError('Calibration reference changed across runtime transition')
+    pairs = proof['artifact_pairs']
+    if not isinstance(pairs, list) or not 1 <= len(pairs) <= 32:
+        raise ValueError('One to 32 lossless artifact comparisons are required')
+    comparisons = []
+    required = {'model_identity', 'prepared_identity', 'runtime_identity', 'request_sha256', 'stage', 'operation',
+                'mlp_input_last', 'residual_last', 'pre_mlp_last', 'residual_l2', 'prompt_token_ids', 'generated_token_ids'}
+    for pair in pairs:
+        keys(pair, {'old', 'new'})
+        paths = {}
+        for side in ('old', 'new'):
+            keys(pair[side], {'path', 'sha256'})
+            paths[side] = Path(pair[side]['path'])
+            if file_hash(paths[side]) != runtime_identity(pair[side]['sha256']):
+                raise ValueError('Transition artifact digest differs')
+        with np.load(paths['old'], allow_pickle=False) as before, np.load(paths['new'], allow_pickle=False) as after:
+            if set(before.files) != set(after.files) or not required <= set(before.files):
+                raise ValueError('Transition NPZ field sets differ or lack required observations')
+            for values in (before, after):
+                if (str(values['model_identity']) != old['model_identity']
+                        or str(values['prepared_identity']) != old['prepared_identity']
+                        or str(values['stage']) != 'final_prefill'):
+                    raise ValueError('Transition NPZ model/prepared/stage binding differs')
+            if str(before['runtime_identity']) != old['runtime_identity'] or str(after['runtime_identity']) not in (old['runtime_identity'], new['runtime_identity']):
+                raise ValueError('Transition NPZ runtime identity differs')
+            for name in before.files:
+                a, b = before[name], after[name]
+                if a.dtype != b.dtype or a.shape != b.shape:
+                    raise ValueError('Transition NPZ dtype or shape differs: ' + name)
+                if name == 'runtime_identity' and str(a) != str(b):
+                    continue  # Only the new manifest's verified runtime scalar may differ.
+                if a.tobytes(order='C') != b.tobytes(order='C'):
+                    raise ValueError('Transition NPZ arrays are not bit equal: ' + name)
+            comparisons.append({'old': pair['old'], 'new': pair['new'], 'fields': sorted(before.files), 'bit_equal': True,
+                                'runtime_scalar_changed': str(before['runtime_identity']) != str(after['runtime_identity'])})
+    return {'proof_path': str(path.resolve()), 'proof_sha256': expected_sha256,
+            'old_identity': {key: old[key] for key in ('model_identity', 'prepared_identity', 'runtime_identity')},
+            'new_identity': {key: new[key] for key in ('model_identity', 'prepared_identity', 'runtime_identity')},
+            'old_source_sha256': proof['old_source']['sha256'], 'new_source_sha256': proof['new_source']['sha256'],
+            'old_manifest_sha256': [canonical_digest(versions['old'][i]) for i in range(6)],
+            'new_manifest_sha256': [canonical_digest(versions['new'][i]) for i in range(6)],
+            'comparisons': comparisons, 'scope': 'operator-only lossless NPZ compression; runtime results remain distinct'}
 
 
 def activation_values(artifact: dict) -> tuple[np.ndarray, np.ndarray]:
@@ -334,6 +464,23 @@ class Queue:
                 raise ValueError('Queue model, prepared identity or runtime identity changed; preserve this evidence')
             db.execute("INSERT OR IGNORE INTO metadata VALUES ('identity',?)", (value,))
 
+    def transition_runtime(self, proof_path: Path, proof_sha256: str) -> dict:
+        with self.path.with_suffix(self.path.suffix + '.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            evidence = verify_runtime_transition(proof_path, proof_sha256)
+            with self.connect() as db:
+                db.execute('BEGIN IMMEDIATE')
+                if (db.execute("SELECT 1 FROM jobs WHERE state='running' LIMIT 1").fetchone()
+                        or db.execute("SELECT 1 FROM attempts WHERE state='running' LIMIT 1").fetchone()):
+                    raise ValueError('Runtime transition requires no running jobs or attempts; drain the manager first')
+                old = db.execute("SELECT value FROM metadata WHERE key='identity'").fetchone()
+                if not old or json.loads(old[0]) != evidence['old_identity']:
+                    raise ValueError('Queue identity does not match the verified old runtime')
+                db.execute('INSERT INTO audit(time,event,data) VALUES (?,?,?)',
+                           (time.time(), 'operator_runtime_transition', encoded(evidence)))
+                db.execute("UPDATE metadata SET value=? WHERE key='identity'", (encoded(evidence['new_identity']),))
+            return evidence
+
     def recover(self, maximum_attempts: int = 2) -> int:
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
@@ -417,13 +564,21 @@ class Queue:
             choices = (response.get('response') or {}).get('choices') or []
             message = choices[0].get('message', {}) if choices else {}
             activity = response.get('activation_summary')
+            actual_runtime = (response.get('runtime_identity') or (response.get('response') or {}).get('runtime_identity')
+                              or (response.get('activation_artifact') or {}).get('runtime_identity')
+                              or (response.get('endpoint') or {}).get('runtime_identity'))
+            delta_unavailable = None
             if response.get('activation_artifact'):
                 with self.connect() as db:
                     row = db.execute("SELECT attempts.result FROM attempts JOIN jobs ON jobs.id=attempts.job_id WHERE jobs.state='complete' AND json_extract(jobs.body,'$.arm')='baseline' AND json_extract(jobs.body,'$.proposal_id')=? AND json_extract(jobs.body,'$.experiment_index')=? AND json_extract(jobs.body,'$.prompt.id')=? AND json_extract(jobs.body,'$.seed')=? AND attempts.state='complete' ORDER BY attempts.number DESC LIMIT 1",
                         (job['proposal_id'], job['experiment_index'], job['prompt']['id'], job['seed'])).fetchone()
                 reference = json.loads(row[0]).get('activation_artifact') if row else None
                 if reference:
-                    activity = activation_summary(response['activation_artifact'], job, reference)
+                    if any(response['activation_artifact'].get(key) != reference.get(key)
+                           for key in ('model_identity', 'prepared_identity', 'runtime_identity', 'operation')):
+                        delta_unavailable = 'Paired baseline uses a different model/prepared/runtime/operation identity'
+                    else:
+                        activity = activation_summary(response['activation_artifact'], job, reference)
             result.append({'job_id': job['id'], 'experiment': job['experiment'], 'arm': job['arm'],
                 'seed': job['seed'], 'prompt_id': job['prompt']['id'], 'corpus': job['prompt']['corpus'],
                 'source_group': job.get('source_group'), 'pair_id': job.get('pair_id', job['prompt']['id']),
@@ -434,7 +589,8 @@ class Queue:
                 'prompt': job['prompt']['prompt'][:3000], 'expected_answer': job['prompt'].get('expected_answer'),
                 'answer': (message.get('content') or '')[:14000], 'complete': response.get('complete'),
                 'error': response.get('error'), 'activation_artifact': response.get('activation_artifact'),
-                'activation_summary': activity, 'runtime': response.get('runtime'),
+                'activation_summary': activity, 'runtime': response.get('runtime'), 'runtime_identity': actual_runtime,
+                'baseline_delta_unavailable': delta_unavailable,
                 'assessment': ('prefill observation only; no final answer to grade' if job.get('measurement') == 'prefill'
                                else 'raw rollout; no validated personality label')})
         return result
@@ -607,7 +763,7 @@ class Manager:
             raise ValueError('Diagnostic graph workers require exactly one active request per card')
         uint(config.get('max_total_jobs', 100000), 1, 1000000, 'max_total_jobs')
         for name, default, maximum in (('error_budget', 50, 10000), ('planner_error_budget', 5, 100),
-                ('plan_low_water', 120, 10000), ('request_timeout_seconds', 600, 3600)):
+                ('plan_low_water', 1000, 10000), ('request_timeout_seconds', 600, 3600)):
             uint(config.get(name, default), 1, maximum, name)
         fraction = config.get('max_error_fraction', .15)
         if type(fraction) not in (int, float) or not 0 < fraction <= 1:
@@ -751,6 +907,10 @@ class Manager:
     def run(self, finish: float) -> None:
         lock = self.queue.path.with_suffix(self.queue.path.suffix + '.lock').open('a')
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        # Recheck under the singleton lock in case initialization preceded an
+        # explicit operator transition. Never run a stale in-memory binding.
+        self.queue.bind({'model_identity': self.model.identity,
+                         'prepared_identity': self.endpoints[0]['prepared_identity'], 'runtime_identity': self.runtime_identity})
         self.queue.recover()
         def stop_signal(signum, frame):
             self.stop_signal = signal.Signals(signum).name
@@ -776,7 +936,7 @@ class Manager:
                     if total >= self.config.get('max_total_jobs', 100000):
                         if not counts.get('queued', 0) and not counts.get('running', 0):
                             reason = 'job_budget_complete'; break
-                    elif counts.get('queued', 0) < self.config.get('plan_low_water', 120):
+                    elif counts.get('queued', 0) < self.config.get('plan_low_water', 1000):
                         try:
                             self.refresh_corpus()
                             proposal = self.propose(finish)
@@ -809,13 +969,15 @@ class Manager:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('configure', 'run', 'status', 'enqueue', 'export'))
+    parser.add_argument('command', choices=('configure', 'run', 'status', 'enqueue', 'export', 'transition-runtime'))
     parser.add_argument('--database', type=Path, default=Path(__file__).resolve().parent / 'results/persona_manager.sqlite')
     parser.add_argument('--config', type=Path)
     parser.add_argument('--until', help='ISO timestamp with UTC offset; default next08:00America/Los_Angeles, capped16h')
     parser.add_argument('--proposal', type=Path)
     parser.add_argument('--validation', action='store_true', help='Fixed manual heldout queue; never included in adaptive feedback')
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--proof', type=Path, help='Operator-only runtime compression transition evidence JSON')
+    parser.add_argument('--proof-sha256', help='Explicit SHA256 of the reviewed transition proof')
     parser.add_argument('--fleet', type=Path, default=Path(__file__).resolve().parent / 'persona_fleet.local.json')
     parser.add_argument('--planner-lease', help='Existing owner lease ID for the independently supervised John planner')
     parser.add_argument('--planner-url', default='http://127.0.0.1:18511')
@@ -848,7 +1010,7 @@ def main() -> None:
             'corpus_manifest': str(root / 'data/persona_manager_corpus_manifest.json'),
             'workboard': fleet['workboard'], 'endpoints': endpoints, 'per_gpu_concurrency': 1,
             'max_total_jobs': 100000, 'error_budget': 50, 'max_error_fraction': .15,
-            'request_timeout_seconds': 600, 'planner_error_budget': 5, 'plan_low_water': 120,
+            'request_timeout_seconds': 600, 'planner_error_budget': 5, 'plan_low_water': 1000,
             'planner': {'url': local_url(args.planner_url), 'model': 'persona-manager', 'context_tokens': 131072,
                 'lease_id': args.planner_lease, 'gpu_uuid': 'GPU-d739b9c5-bfbb-e95a-bbf1-7122f38c2cf1',
                 'project': 'character-creation', 'host': 'wtatum84'}}
@@ -859,6 +1021,10 @@ def main() -> None:
             stream.write(json.dumps(config, indent=2) + '\n')
         print(encoded({'config': str(args.config), 'sha256': file_hash(args.config)})); return
     queue = Queue(args.database)
+    if args.command == 'transition-runtime':
+        if args.proof is None or args.proof_sha256 is None:
+            parser.error('transition-runtime requires --proof and --proof-sha256')
+        print(encoded(queue.transition_runtime(args.proof, args.proof_sha256))); return
     if args.command == 'status':
         print(encoded({'counts': queue.counts(), 'recent_discovery': queue.planning_summary()})); return
     if args.command == 'export':

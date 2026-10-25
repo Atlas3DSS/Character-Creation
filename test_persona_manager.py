@@ -2,6 +2,9 @@
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime
+import fcntl
+import hashlib
+import inspect
 import json
 from pathlib import Path
 import sqlite3
@@ -13,7 +16,9 @@ import numpy as np
 
 from persona_manager import (ARMS, SCHEMA, Manager, Queue, activation_summary, check_admission,
     deadline, execute_job, expand_proposal, file_hash, load_corpus, local_url, native_capability,
-    response_complete, shared_runtime, validate_proposal, verify_diagnostic_artifacts)
+    response_complete, shared_runtime, validate_proposal, verify_compression_source, verify_diagnostic_artifacts,
+    verify_runtime_transition)
+from persona_probe import save_activation_npz
 from persona_vectors import ModelSpec, VectorBank, canonical_digest
 
 
@@ -39,6 +44,45 @@ class ManagerTests(unittest.TestCase):
 
     def jobs(self, split='discovery'):
         return expand_proposal(self.proposal, self.corpus, self.bank, split=split, corpus_sha256='c' * 64)
+
+    def transition_proof(self):
+        old_source = 'import numpy as np\ndef capture(destination, arrays):\n    np.savez_compressed(destination, **arrays)\n'
+        new_source = ('import numpy as np\nimport zipfile\n' + inspect.getsource(save_activation_npz)
+                      + '\ndef capture(destination, arrays):\n    save_activation_npz(destination, **arrays)\n')
+        proof = {'schema': 'character-creation.runtime-compression-transition.v1', 'artifact_pairs': []}
+        for side, source in [('old', old_source), ('new', new_source)]:
+            source_sha = hashlib.sha256(source.encode()).hexdigest()
+            proof[side + '_source'] = {'text': source, 'sha256': source_sha}
+            binding = {'script_sha256': source_sha, 'helper_sha256': {'helper.py': 'a' * 64},
+                       'source_sha256': {'native.py': 'b' * 64}, 'torch': 'test',
+                       'heliopause_sha256': 'd' * 64, 'preparation': {'context': 4096, 'row_invariant': True}}
+            proof[side + '_manifests'] = [{**binding, 'schema': 'character-creation.probe-worker.v1',
+                'status': 'ready', 'model': self.model.__dict__, 'model_identity': self.model.identity,
+                'prepared_identity': 'prepared', 'runtime': 'diagnostic', 'checkpoint_config_sha256': 'c' * 64,
+                'checkpoint_index_sha256': 'e' * 64, 'tokenizer_sha256': 'f' * 64,
+                'runtime_identity': canonical_digest(binding), 'shard': shard, 'gpu_uuid': f'GPU-{shard}',
+                'calibration_equivalence': {'passed': True, 'reference_sha256': 'g' * 64,
+                                            'job_id': 'calibration', 'source_preparation': {'context': 4096}}}
+                for shard in range(6)]
+        arrays = {'model_identity': self.model.identity, 'prepared_identity': 'prepared', 'request_sha256': 'c' * 64,
+            'stage': 'final_prefill', 'operation': 'prefill_observation', 'mlp_input_last': np.zeros((2, 5), np.float32),
+            'residual_last': np.ones((2, 4), np.float32), 'pre_mlp_last': np.ones((2, 4), np.float32),
+            'residual_l2': np.ones((2, 3), np.float32), 'prompt_token_ids': np.array([1, 2, 3]),
+            'generated_token_ids': np.array([4])}
+        pair = {}
+        for side in ('old', 'new'):
+            path = self.root / (side + '.npz')
+            with path.open('wb') as stream:
+                writer = np.savez_compressed if side == 'old' else save_activation_npz
+                writer(stream, **arrays, runtime_identity=proof[side + '_manifests'][0]['runtime_identity'])
+            pair[side] = {'path': str(path), 'sha256': file_hash(path)}
+        proof['artifact_pairs'] = [pair]
+        return proof
+
+    def write_transition_proof(self, proof):
+        path = self.root / 'transition.json'
+        path.write_text(json.dumps(proof))
+        return path, file_hash(path)
 
     def test_strict_proposals_cannot_select_shell_paths_or_unbound_coordinates(self):
         self.assertEqual(validate_proposal(self.proposal, self.model, self.corpus, self.bank), self.proposal)
@@ -215,6 +259,110 @@ class ManagerTests(unittest.TestCase):
         flare = {'prepared_identity': 'prepared', 'model_identity': self.model.identity, 'runtime_identity': 'b' * 64}
         with patch('persona_manager.fetch', return_value={'data': [{'id': 'served', 'flare': flare}]}), self.assertRaisesRegex(ValueError, 'runtime_identity changed'):
             native_capability(endpoint, self.model, {'sites': []})
+
+    def test_operator_runtime_transition_preserves_results_queue_and_immutable_audit(self):
+        proof = self.transition_proof()
+        path, digest = self.write_transition_proof(proof)
+        evidence = verify_runtime_transition(path, digest)
+        self.queue.bind(evidence['old_identity'])
+        self.queue.enqueue(self.proposal, self.jobs())
+        job, attempt = self.queue.claim('old-endpoint')
+        self.queue.finish(job, attempt, {'complete': True, 'runtime_identity': evidence['old_identity']['runtime_identity']})
+        with self.queue.connect() as db:
+            old_jobs = db.execute('SELECT * FROM jobs ORDER BY id').fetchall()
+            old_attempts = db.execute('SELECT * FROM attempts').fetchall()
+        with self.assertRaises(ValueError): self.queue.bind(evidence['new_identity'])
+        self.assertEqual(self.queue.transition_runtime(path, digest), evidence)
+        self.queue.bind(evidence['new_identity'])
+        with self.assertRaises(ValueError): self.queue.bind(evidence['old_identity'])
+        with self.queue.connect() as db:
+            self.assertEqual(db.execute('SELECT * FROM jobs ORDER BY id').fetchall(), old_jobs)
+            self.assertEqual(db.execute('SELECT * FROM attempts').fetchall(), old_attempts)
+            audit = db.execute("SELECT data FROM audit WHERE event='operator_runtime_transition'").fetchone()
+            self.assertEqual(json.loads(audit[0]), evidence)
+            with self.assertRaises(sqlite3.IntegrityError):
+                db.execute("UPDATE audit SET data='{}' WHERE event='operator_runtime_transition'")
+        self.assertEqual(self.queue.observations()[0]['runtime_identity'], evidence['old_identity']['runtime_identity'])
+
+    def test_runtime_transition_requires_manager_lock_and_no_running_attempts(self):
+        path, digest = self.write_transition_proof(self.transition_proof())
+        evidence = verify_runtime_transition(path, digest)
+        self.queue.bind(evidence['old_identity'])
+        with self.queue.path.with_suffix('.sqlite.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with self.assertRaises(BlockingIOError): self.queue.transition_runtime(path, digest)
+        self.queue.enqueue(self.proposal, self.jobs())
+        self.queue.claim('active')
+        with self.assertRaisesRegex(ValueError, 'no running'): self.queue.transition_runtime(path, digest)
+        self.queue.bind(evidence['old_identity'])
+        with self.queue.connect() as db:
+            self.assertIsNone(db.execute("SELECT 1 FROM audit WHERE event='operator_runtime_transition'").fetchone())
+
+    def test_runtime_transition_rejects_bad_hash_source_model_preparation_and_array_bits(self):
+        proof = self.transition_proof()
+        path, digest = self.write_transition_proof(proof)
+        with self.assertRaisesRegex(ValueError, 'proof digest'): verify_runtime_transition(path, '0' * 64)
+        for mutation in ('source', 'prepared', 'helper', 'preparation', 'calibration', 'duplicate_worker'):
+            changed = deepcopy(proof)
+            if mutation == 'source':
+                changed['new_source']['text'] += '\nunsafe = 1\n'
+                changed['new_source']['sha256'] = hashlib.sha256(changed['new_source']['text'].encode()).hexdigest()
+            elif mutation == 'duplicate_worker':
+                changed['new_manifests'][1] = changed['new_manifests'][0]
+            else:
+                for manifest in changed['new_manifests']:
+                    if mutation == 'prepared': manifest['prepared_identity'] = 'other'
+                    elif mutation == 'helper': manifest['helper_sha256'] = {'helper.py': '0' * 64}
+                    elif mutation == 'preparation': manifest['preparation'] = {'context': 8192, 'row_invariant': True}
+                    else: manifest['calibration_equivalence']['passed'] = False
+                    manifest['runtime_identity'] = canonical_digest({key: manifest[key] for key in
+                        ('script_sha256', 'helper_sha256', 'source_sha256', 'torch', 'heliopause_sha256', 'preparation')})
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                verify_runtime_transition(*self.write_transition_proof(changed))
+        artifact = Path(proof['artifact_pairs'][0]['new']['path'])
+        with np.load(artifact, allow_pickle=False) as values:
+            arrays = {key: values[key] for key in values.files}
+        arrays['mlp_input_last'][0, 0] = -0.0  # Equal numerically, unequal bits.
+        np.savez(artifact, **arrays)
+        proof['artifact_pairs'][0]['new']['sha256'] = file_hash(artifact)
+        with self.assertRaisesRegex(ValueError, 'not bit equal'):
+            verify_runtime_transition(*self.write_transition_proof(proof))
+
+    def test_cross_runtime_observations_keep_identity_and_skip_baseline_delta(self):
+        self.queue.enqueue(self.proposal, self.jobs())
+        while claim := self.queue.claim('endpoint'):
+            job, attempt = claim
+            identity = 'a' * 64 if job['arm'] == 'baseline' else 'b' * 64
+            self.queue.finish(job, attempt, {'complete': True, 'activation_summary': {'measured': True},
+                'response': {'runtime_identity': identity}, 'activation_artifact': {
+                    'runtime_identity': identity, 'model_identity': self.model.identity,
+                    'prepared_identity': 'prepared', 'operation': 'rollout'}})
+        with patch('persona_manager.activation_summary', return_value={'paired': True}) as summary:
+            observations = {row['arm']: row for row in self.queue.observations()}
+        self.assertEqual(summary.call_count, 1)
+        self.assertEqual(observations['positive']['runtime_identity'], 'b' * 64)
+        self.assertEqual(observations['positive']['activation_summary'], {'measured': True})
+        self.assertIn('different', observations['positive']['baseline_delta_unavailable'])
+        self.assertIsNone(observations['baseline']['baseline_delta_unavailable'])
+
+    def test_transition_allows_lossless_reencoding_but_rejects_runtime_dtype_or_writer_change(self):
+        proof = self.transition_proof()
+        artifact = Path(proof['artifact_pairs'][0]['new']['path'])
+        with np.load(Path(proof['artifact_pairs'][0]['old']['path']), allow_pickle=False) as values:
+            arrays = {key: values[key] for key in values.files}
+        with artifact.open('wb') as stream:
+            save_activation_npz(stream, **arrays)
+        proof['artifact_pairs'][0]['new']['sha256'] = file_hash(artifact)
+        checked = verify_runtime_transition(*self.write_transition_proof(proof))
+        self.assertFalse(checked['comparisons'][0]['runtime_scalar_changed'])
+        arrays['runtime_identity'] = np.asarray(proof['new_manifests'][0]['runtime_identity'], dtype='<U65')
+        with artifact.open('wb') as stream:
+            save_activation_npz(stream, **arrays)
+        proof['artifact_pairs'][0]['new']['sha256'] = file_hash(artifact)
+        with self.assertRaisesRegex(ValueError, 'dtype or shape'):
+            verify_runtime_transition(*self.write_transition_proof(proof))
+        with self.assertRaisesRegex(ValueError, 'reviewed lossless writer'):
+            verify_compression_source(proof['old_source']['text'], proof['new_source']['text'].replace('compresslevel=1', 'compresslevel=9'))
 
     def test_diagnostic_provenance_binds_runtime_request_and_restored_state(self):
         endpoint = {**self.endpoint(), 'diagnostic': True, 'runtime_identity': 'a' * 64}

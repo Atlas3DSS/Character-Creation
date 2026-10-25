@@ -1,19 +1,60 @@
 """CPU-only request, finite site, capacity and native completion invariants."""
 import copy
 import hashlib
+import io
 import json
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
+import zipfile
 
 import numpy as np
 
 from persona_probe import (ProtocolError, calibration_reference, compare_calibration_arrays,
                            completion_outcome, normalize_request, reviewed_preparation_options,
+                           save_activation_npz,
                            validate_capacity, validate_completion, validate_inactive_slots,
                            validate_program, validate_selected_graphs)
 from persona_vectors import ModelSpec, canonical_digest
+
+
+class ActivationArchiveTests(unittest.TestCase):
+    def test_level_one_preserves_every_member_and_array_bit(self):
+        bits = np.array([0, 0x80000000, 1, 0x3f800000, 0xbf800000, 0x7f7fffff], dtype=np.uint32)
+        arrays = {"mlp_input_last": bits.view(np.float32).reshape(2, 3),
+                  "residual_last": np.asfortranarray(np.arange(12, dtype=np.float32).reshape(3, 4)),
+                  "pre_mlp_last": np.arange(24, dtype=np.float32).reshape(3, 8)[:, ::2],
+                  "residual_l2": np.empty((3, 0), dtype=np.float32),
+                  "residual_l2_count": np.int64(0), "counter": np.uint64(2**63 + 11),
+                  "model_identity": "a" * 64, "stage": "final_prefill",
+                  "completion_graph_kind": np.array(["init", "prefill", "decode"])}
+        baseline, changed = io.BytesIO(), io.BytesIO()
+        np.savez_compressed(baseline, **arrays)
+        # Exercise the actual stdlib writer while proving the requested level.
+        original_zip = zipfile.ZipFile
+        with patch("persona_probe.zipfile.ZipFile", wraps=original_zip) as writer:
+            save_activation_npz(changed, **arrays)
+        self.assertEqual(writer.call_args.kwargs["compresslevel"], 1)
+        self.assertEqual(writer.call_args.kwargs["compression"], zipfile.ZIP_DEFLATED)
+        with original_zip(io.BytesIO(baseline.getvalue())) as old, original_zip(io.BytesIO(changed.getvalue())) as new:
+            self.assertEqual(old.namelist(), new.namelist())
+            # Entire uncompressed NPY headers and payloads remain identical,
+            # including signed zero, subnormal bits, shape and storage order.
+            for name in old.namelist():
+                self.assertEqual(old.read(name), new.read(name), name)
+        with np.load(io.BytesIO(changed.getvalue()), allow_pickle=False) as loaded:
+            self.assertEqual(loaded.files, list(arrays))
+            for name, source in arrays.items():
+                source = np.asanyarray(source)
+                self.assertEqual(loaded[name].dtype, source.dtype)
+                self.assertEqual(loaded[name].shape, source.shape)
+                self.assertEqual(loaded[name].tobytes(), source.tobytes())
+
+    def test_object_members_cannot_enable_pickle(self):
+        with self.assertRaises(ValueError):
+            save_activation_npz(io.BytesIO(), unsafe=np.array([object()], dtype=object))
 
 
 class ProbeProtocolTests(unittest.TestCase):

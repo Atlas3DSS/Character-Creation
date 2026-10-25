@@ -100,6 +100,8 @@ The observations are continuous, BF16-rounded SwiGLU products, not binary “neu
 
 The response links the activation artifact and request/response provenance by SHA-256, model identity, prepared identity and request hash. `persona_manager.py` verifies those artifacts and gives the planner bounded numerical summaries: the selected neuron's activation, layer activity/residual norms, and same-prompt/same-seed differences against a completed baseline. Full arrays and rollouts stay available for later analysis.
 
+Activation archives use lossless NPZ deflate level 1. A [recorded single-artifact CPU comparison](data/persona_npz_compression_proof.json) reduced serialization from 1.182 seconds at level 6 to 0.170 seconds at level 1, while archive size increased from 3.400 MB to 3.767 MB. Every reloaded array retained its exact dtype, shape and bytes; focused tests also compare complete uncompressed NPY members against NumPy's previous writer. These timings do not establish end-to-end GPU throughput. Archive hashes and the source-bound runtime identity change, so deployment requires an audited runtime transition; calibration, state-restoration and artifact validators remain enabled.
+
 Every proposed intervention expands into five arms with the same prompt, sampling settings and seed:
 
 | Arm | Intervention |
@@ -140,11 +142,22 @@ python3 persona_corpus.py watch --book-dir /path/to/local/books --interval 30
 
 Content hashes prevent duplicate ingestion. Existing prompt text, provenance and split assignments remain immutable. The manifest first marks ingestion in progress and publishes `status: complete` with the new JSONL hash afterward. The manager reloads only a complete, matching generation. Public reports should contain manifests and aggregate results, not private book passages or unreviewed rollout excerpts.
 
+`persona_coverage.py` adds a separate operator pass for exhaustive registered-row coverage, independent of the adaptive planner's group sampling. Explicit `--split all` queues one unsteered prefill observation for every registered row, including all book chunks and registered variants, SCOTUS and Big Five. Original prompts, source hashes, offsets, pair IDs and discovery/heldout labels are preserved; related variants share a deterministic seed. Layer 0 is only the existing executor's calibration-bound summary reference: no neuron or trait intervention is applied. Heldout results remain excluded from adaptive feedback by the manager's existing split filters.
+
+```bash
+python persona_coverage.py plan --config results/persona_manager_config.json --split all
+# Operator action: append the entire pass atomically to the existing manager queue.
+python persona_coverage.py enqueue --config results/persona_manager_config.json --split all
+python persona_coverage.py status --config results/persona_manager_config.json --split all
+```
+
+Plan/status output contains counts and hashes, not raw text. Repeating enqueue with the same corpus generation, split, seed and calibration is idempotent; exceeding `--max-jobs` or the manager's total-job cap rejects the whole pass without truncation. Enqueue starts no service itself. Status counts only completed prefill observations and distinguishes queued, failed and remaining rows. Each artifact covers all layers at the final prompt token plus prompt residual norms; this is not every neuron's complete token-by-token trajectory, and queued coverage is not completed coverage.
+
 ### Character evidence before broader speaker swaps
 
 `persona_characters.py` inventories character names in original book chunks through the already leased local John planner. It excludes generated mutations and defaults to discovery sources only. The model returns a name and a short, unique verbatim evidence phrase containing that name, with optional evidence-backed alias candidates. Software locates the phrase and name and computes exact Unicode offsets; the model never counts character offsets. Repeated evidence requires an explicit bounded occurrence index, otherwise it is rejected. Each balanced quote gets one software-generated unresolved speech record. Narrative speaker assignment is deferred. Character recall and entity classification remain unmeasured; exact source evidence alone does not establish either. Alias candidates are not automatically merged into identities.
 
-The private SQLite index preserves source book/document hashes, split, normalized-document offsets, raw model responses, failed attempts and coverage counts. Its corpus and planner-runtime binding prevents silently resuming against changed inputs. The pilot order samples attributed dialogue, other dialogue and narrative across books before continuing. Runs are bounded by chunk-attempt count, deadline and error budget; outputs are capped at 2,048 tokens. The revised names-only pilot accepted two chunks containing eight provisional name records and one alias candidate; another chunk failed exact-phrase validation on both attempts. Earlier rejected attempts remain audited. The four compact calls took 3.97–4.99 seconds each on the existing John service. No full-corpus run, exhaustive coverage or character accuracy is claimed.
+The private SQLite index preserves source book/document hashes, split, normalized-document offsets, raw model responses, failed attempts and coverage counts. Its corpus and planner-runtime binding prevents silently resuming against changed inputs. The October 25 run is underway across all 6,645 original chunks from eleven books, including both discovery and heldout splits. An early checkpoint recorded roughly 96 complete and 75 failed chunks under strict evidence validation; these pipeline statuses are not accuracy estimates or completed corpus coverage. The index remains provisional: source-phrase acceptance does not validate character classification, recall or aliases. All splits and index outputs remain isolated from adaptive experiment planning. The sampling order covers attributed dialogue, other dialogue and narrative across books before continuing; chunk-attempt limits, a deadline and error budgets bound the run, and outputs are capped at 2,048 tokens. Rejected attempts remain audited, and neither exhaustive completion nor character accuracy is claimed.
 
 ```bash
 # On John, using its existing planner lease and launcher readiness manifest:
@@ -200,7 +213,17 @@ python persona_manager.py run --config results/persona_manager_config.json
 # Or add --until 'YYYY-MM-DDT09:00:00-07:00' with the desired date and UTC offset.
 ```
 
-`configure` discovers the six existing Character Creation leases and verifies endpoint model/prepared/runtime identities; it does not launch services. The diagnostic runtime identity includes source hashes and preparation settings and is checked in descriptors, responses, NPZ files and request-provenance artifacts. The generated file uses local paths and should remain private. Supervise `run` as a named CPU service. One request is active per V100. Run the same command after interruption to resume `results/persona_manager.sqlite`; a singleton lock prevents two managers from claiming the same queue. A changed prepared or diagnostic runtime identity requires a distinct reviewed run rather than appending incompatible evidence.
+`configure` discovers the six existing Character Creation leases and verifies endpoint model/prepared/runtime identities; it does not launch services. The diagnostic runtime identity includes source hashes and preparation settings and is checked in descriptors, responses, NPZ files and request-provenance artifacts. The generated file uses local paths and should remain private. The default and generated `plan_low_water` are 1,000 queued jobs, keeping more work available while the local planner prepares another batch. Supervise `run` as a named CPU service. One request is active per V100. Run the same command after interruption to resume `results/persona_manager.sqlite`; a singleton lock prevents two managers from claiming the same queue. Normal binding rejects a changed prepared or diagnostic runtime identity.
+
+There is one explicit operator-only exception for the reviewed lossless NPZ compression change. Drain and stop the manager before running `transition-runtime`; it requires the singleton lock and no running jobs or attempts. The private proof binds six old/new calibrated ready manifests, both probe sources and at least one old/new NPZ pair by SHA256. Verification permits only the reviewed level-one writer, its import and its single call replacement; native/helper hashes, model, prepared identity, calibration reference and all preparation settings must match. Every decoded array must retain its dtype, shape and exact bits, except that the runtime identity scalar may identify the verified new source. The command appends an immutable transition audit and changes only the active queue binding. Existing jobs, results and their original runtime identities remain intact; observations across the transition do not receive a mixed-runtime baseline delta. The planner cannot request this operation.
+
+```bash
+python persona_manager.py transition-runtime \
+  --database results/persona_manager.sqlite \
+  --proof results/persona_runtime_transition.json --proof-sha256 REVIEWED_PROOF_SHA256
+```
+
+The proof schema is `character-creation.runtime-compression-transition.v1`, with `old_manifests` and `new_manifests` arrays containing six full ready manifests each, `old_source` and `new_source` objects containing `text` and `sha256`, and `artifact_pairs` containing `old`/`new` objects with `path` and `sha256`. A lossless re-encoding may preserve the old runtime scalar; a new worker's matching-request artifact uses its new runtime scalar. Keep this proof private. After successful verification, the operator must bind the deployment configuration to the verified new endpoint identities before resuming the existing queue.
 
 ```bash
 python persona_manager.py status

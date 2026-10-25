@@ -23,6 +23,7 @@ import sys
 import threading
 import time
 import uuid
+import zipfile
 
 import numpy as np
 
@@ -67,6 +68,20 @@ def validate_inactive_slots(observed):
 def file_hash(path):
     with Path(path).open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def save_activation_npz(destination, **arrays):
+    """Write ordinary lossless NPZ members with explicitly bounded compression.
+
+    Level one avoids default level-six deflate's measured CPU bottleneck. NPY
+    members retain their names, dtypes, shapes and exact array bits. The caller
+    owns exclusive file creation, subsequent hashing and provenance publication.
+    """
+    with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED,
+                         compresslevel=1, allowZip64=True) as archive:
+        for name, value in arrays.items():
+            with archive.open(name + ".npy", "w", force_zip64=True) as member:
+                np.lib.format.write_array(member, np.asanyarray(value), allow_pickle=False)
 
 
 def normalize_request(payload: dict, model_id: str) -> dict:
@@ -469,7 +484,7 @@ class ProbeEngine:
                 else:
                     summaries = {"residual_l2_" + name: np.zeros(self.model.layers, dtype=np.float64) for name in ("min", "max", "mean", "median")}
                 with artifact.open("xb") as destination:
-                    np.savez_compressed(destination, **prefill_capture, **summaries,
+                    save_activation_npz(destination, **prefill_capture, **summaries,
                         residual_l2=norms,
                         residual_l2_count=np.int64(norms.shape[1]), prefill_positions=np.asarray(positions_seen, dtype=np.int64),
                         prompt_token_ids=np.asarray(ids, dtype=np.int64), generated_token_ids=np.asarray(generated, dtype=np.int64),

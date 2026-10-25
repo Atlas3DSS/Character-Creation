@@ -1,0 +1,40 @@
+{
+  "schema": "character-creation.npz-compression-proof.v1",
+  "recorded_date": "2026-10-25",
+  "baseline_probe_revision": "938819d",
+  "scope": "CPU serialization of one existing diagnostic activation archive; no inference or new corpus sampling",
+  "privacy": "Only timings, byte counts and verification results are published. No corpus text, token IDs, activation values or private artifact paths are included.",
+  "method": {
+    "source": "One completed diagnostic activation NPZ, loaded once with allow_pickle=false",
+    "destination": "In-memory BytesIO; one timed serialization per compression level",
+    "format": "ZIP_DEFLATED NPZ containing standard NumPy NPY members; force_zip64=true; allow_pickle=false",
+    "clock": "time.monotonic wall time",
+    "roundtrip": "Reload each archive with np.load(allow_pickle=false); require the same key set and exact dtype, shape and tobytes() for every source array",
+    "repetitions_per_level": 1,
+    "uncompressed_array_bytes": 7096304
+  },
+  "measurements": [
+    {
+      "compression_level": 6,
+      "serialization_seconds": 1.1823831630172208,
+      "archive_bytes": 3399685,
+      "all_arrays_bit_exact": true
+    },
+    {
+      "compression_level": 1,
+      "serialization_seconds": 0.16991259099449962,
+      "archive_bytes": 3767402,
+      "all_arrays_bit_exact": true
+    }
+  ],
+  "implementation_proof": {
+    "writer": "persona_probe.save_activation_npz",
+    "test": "test_persona_probe.ActivationArchiveTests.test_level_one_preserves_every_member_and_array_bit",
+    "reference_writer": "numpy.savez_compressed",
+    "required": "Identical ZIP member names/order and identical uncompressed NPY member bytes, plus identical loaded names, dtypes, shapes and array bytes",
+    "coverage": ["FP32 signed zero and subnormal values", "Fortran-contiguous and strided arrays", "empty norm matrices", "int64 and uint64 scalars", "Unicode metadata"],
+    "result": "passed",
+    "command": "python -B -m unittest test_persona_probe.ActivationArchiveTests -v"
+  },
+  "limits": "This is a single-artifact CPU comparison, not an end-to-end GPU throughput result or a distribution across the corpus. Compressed archive hashes change; exact decoded arrays and all runtime/provenance validators remain required. The changed probe source creates a new runtime identity and requires an explicit audited transition."
+}
