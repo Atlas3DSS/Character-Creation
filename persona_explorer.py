@@ -23,6 +23,8 @@ import uuid
 
 from persona_fleet import fetch
 from persona_neighbors import CoactivityIndex
+from persona_jobs import JobStore
+from persona_sculptor import Sculptor
 from persona_vectors import ModelSpec, VectorBank, canonical_digest
 from scripts.experiments.scotus.qwen_eval_budget import enforce_complete_answer_budget, qwen_budget_metadata
 
@@ -114,6 +116,7 @@ class Explorer:
             raise ValueError("Duplicate endpoints cannot provide independent GPU slots")
         (root / "results").mkdir(exist_ok=True)
         self.database = root / "results/persona_explorer.sqlite"
+        self.jobs = JobStore(root)
         self.singleton = self.database.with_suffix('.sqlite.lock').open('a')
         fcntl.flock(self.singleton, fcntl.LOCK_EX | fcntl.LOCK_NB)
         with self.connect() as db:
@@ -144,6 +147,7 @@ class Explorer:
         self.capacity_lock = threading.Lock()
         self.capacity_cache, self.capacity_updated = None, 0.
         self.closed = False
+        self.sculptor = Sculptor(self)
 
     @contextmanager
     def connect(self):
@@ -596,7 +600,7 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     body = (app.root / "ui/atlas-logo.png").read_bytes()
                     self.send_response(200); self.send_header("Content-Type", "image/png")
                     self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
-                elif path.path in ('/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css'):
+                elif path.path in ('/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css'):
                     name = path.path[1:]
                     body = (app.root / 'ui' / name).read_bytes()
                     content_type = 'application/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8'
@@ -604,6 +608,12 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
                 elif path.path == "/api/state": self.send(app.state())
                 elif path.path == '/api/capacity': self.send(app.capacity())
+                elif path.path == '/api/sculptor': self.send(app.sculptor.catalog())
+                elif path.path == '/api/sculptor/presets': self.send(app.sculptor.presets())
+                elif path.path == '/api/sculptor/campaigns': self.send(app.sculptor.listing())
+                elif path.path == '/api/sculptor/campaign': self.send(app.sculptor.get(parse_qs(path.query).get('id', [''])[0]))
+                elif path.path == '/api/jobs': self.send(app.jobs.listing())
+                elif path.path == '/api/job': self.send(app.jobs.get(parse_qs(path.query).get('id', [''])[0]))
                 elif path.path == '/api/neighbors':
                     query = parse_qs(path.query)
                     self.send(app.neighbors.query(layer=int(query.get('layer', [''])[0]), neuron=int(query.get('neuron', [''])[0]),
@@ -632,7 +642,21 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 if not 0 < size <= 1000000: raise ValueError("Request size exceeds limit")
                 value = json.loads(self.rfile.read(size))
                 if not isinstance(value, dict): raise ValueError("Expected JSON object")
+                if self.path in ('/api/jobs', '/api/job/cancel') or self.path.startswith('/api/sculptor/'):
+                    if self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower() != 'application/json':
+                        raise ValueError('Scheduled job changes require application/json')
                 if self.path == "/api/compare": self.send({"id": app.submit(value)}, 202)
+                elif self.path == '/api/sculptor/plan': self.send(app.sculptor.plan(value))
+                elif self.path == '/api/sculptor/build': self.send(app.sculptor.build(value))
+                elif self.path == '/api/sculptor/preset': self.send(app.sculptor.preset(value))
+                elif self.path == '/api/sculptor/campaigns': self.send(app.sculptor.submit(value), 202)
+                elif self.path == '/api/sculptor/cancel': self.send(app.sculptor.cancel(value))
+                elif self.path == '/api/sculptor/review': self.send(app.sculptor.review(value))
+                elif self.path == '/api/jobs':
+                    if not app.jobs.listing()['enabled']: raise ValueError('Scheduling is not enabled by operator configuration')
+                    self.send(app.jobs.create(value), 201)
+                elif self.path == '/api/job/cancel':
+                    object_fields(value, ('id',)); self.send(app.jobs.cancel(value['id']))
                 elif self.path == '/api/saved-recipes': self.send(app.save_recipe(value))
                 elif self.path == '/api/batches': self.send({'id': app.submit_batch(value)}, 202)
                 else: self.send({"error": "Not found"}, 404)

@@ -96,6 +96,7 @@ build/
 .env.*
 persona_fleet.local.json
 persona_explorer.local.json
+persona_jobs.local.json
 *.secret
 dev_genius/
 .venv/
@@ -210,3 +211,5 @@ results/debate_arena/debate_arena/round_*/activations/*.pt
 # Private local corpus and source paths; override general data exceptions above.
 data/persona_manager_corpus.jsonl
 data/persona_manager_corpus_manifest.json
+data/persona_generated_big_five.jsonl
+data/persona_generated_big_five_manifest.json

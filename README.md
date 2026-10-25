@@ -1,31 +1,63 @@
 # Character Creation
 
-Research code and artifacts for studying whether an open-weight language model can be moved from prompt-level persona imitation toward durable changes in generated reasoning and voice.
+**Sculpt an LLM persona, turn its dials, and compare its answers against a stable baseline.**
 
-The new [Persona Explorer](PERSONA_EXPLORER.md) combines **[Lyra’s neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer)** methods with this project’s broader Big Five and layer experiments, targeting **Qwen3.8-27B** through native Flare steering. Lyra’s signed neuron sweeps, relative-dose normalization, read/write distinction, and comparison workflow are the primary methodological inspiration. The implementation here is independent; Lyra’s code is not vendored.
+Character Creation is an interactive workbench for exploring persona changes through **activation steering**. Describe the voice you want, start from a preset, adjust the controls, and test candidate recipes on a shared prompt battery. The current reference implementation runs **Qwen3.8-27B through native Flare on six V100s**, with a local 27B agent to help plan experiments and manage scheduled research.
 
-**The reusable V100 runtime lives in a separate repository: [Atlas3DSS/flare-local-inference](https://github.com/Atlas3DSS/flare-local-inference).** Its [steering guide](https://github.com/Atlas3DSS/flare-local-inference/blob/atlas/sm70-public/STEERING.md) covers build/preparation, the native API and offline activation capture. Character Creation holds the persona interface, datasets, experiment manager and analysis. V100 owners can share and use the runtime independently.
+The primary methodological inspiration is **[Lyra’s neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer)**: precise signed neuron interventions, relative-dose normalization, read/write distinctions and complete response comparisons. This project combines those ideas with Atlas’s broader Big Five and layer experiments. The implementation is independent; Lyra’s code is not vendored.
 
-The first six-V100 reference run completed **2,046/2,046** unsteered and prompt-conditioned responses, including 33 complete IPIP-50 inventories and 132 simple capability answers. These are baseline measurements, not evidence that activation steering works. Fresh checkpoint calibration and causal neuron validation are tracked separately. See [the audited baseline](reports/persona_baseline.json) and [the explorer guide](PERSONA_EXPLORER.md).
+![Persona Studio showing sixteen presets, an editable Skippy-inspired profile, and five signed trait controls](ui/persona-studio.png)
 
-The new overnight workflow couples six resident Flare diagnostic workers with a local 27B planner and a persistent SQLite experiment manager. It records **actual continuous SwiGLU activations at the final prompt token**, matched prompt mutations and complete rollouts, using baseline, explicit-zero, random, positive and negative arms. Selecting a source group includes every registered mutation/profile with matched seeds. The planner returns validated experiment JSON and has no shell access. Discovery and heldout data stay separate; book sources and extracts remain private. See [setup and evidence limits](PERSONA_EXPLORER.md#overnight-discovery-with-measured-activations).
+**[Explorer and Studio guide](PERSONA_EXPLORER.md) · [Agent porting guide](fork_agent.md) · [Reusable V100 runtime](https://github.com/Atlas3DSS/flare-local-inference) · [Feature comparison with Lyra](PERSONA_EXPLORER.md#feature-comparison-with-lyras-explorer)**
 
-**Whole-model qualification remains pending.** Steering component checks passed on all six V100s, and the separate planner has verified 128k-context readiness. Calibration compilation and planner startup do not establish causal effects, native cache correctness or MTP qualification.
+## What you can do
 
-The repository began as a fictional-character personality baking project and later expanded into a cleaner public-domain test bed using Supreme Court opinion style and legal-reasoning contrasts. The current emphasis is mechanistic: activation probes, causal patching, steering attempts, SAE feature inspection, and evaluation harnesses that distinguish decodable style from actually controllable generation behavior.
+| Workflow | What the app provides |
+| --- | --- |
+| **Create a persona** | Enter a description for the local planner, use manual controls, or load one of **16 editable presets**, including GPT-4o-inspired and Skippy-inspired starting points. |
+| **Sculpt the recipe** | Adjust five calibrated trait directions, overall strength, layers and intervention phase. See the requested profile and build up to six nearby candidate recipes. |
+| **Compare voices** | Run a shared battery with the same user text, neutral system, seed and answer budget. Studio keeps one unsteered answer per prompt beside the candidates; the persona description is kept out of evaluation prompts. |
+| **Use the available cards** | Arrange **six interventions on one prompt**, **one intervention across six prompts**, **2 × 3**, **3 × 2**, or custom slots. Larger Studio batteries run in waves. |
+| **Explore measured neurons** | Focus a layer, inspect its neurons, edit signed pushes and examine strong, weak, positive or negative co-activity relationships with sample counts and explicit insufficient-data states. |
+| **Schedule research** | Create bounded local-agent jobs for synthetic Big Five corpus expansion or adaptive neuron experiments. The reference scheduler owns John and six Quincies through verified leases and records startup, progress and cleanup. |
+| **Keep the evidence** | Save recipes and exact experiment snapshots; retain responses, errors and provenance. Discovery and heldout data remain separate, and interrupted inference is not silently replayed. |
 
-## Current Status
+Preset loading and dial editing do not generate responses. **Run shared battery** starts a comparison; **Start studio session** explicitly requests a leased fleet when needed. Cold model preparation can take tens of minutes. See [the Studio workflow and all 16 presets](PERSONA_EXPLORER.md#persona-studio).
 
-This is an active research workspace, not a packaged library.
+## Start here
 
-The strongest honest result so far is:
+The reusable inference tools live in their own repository: **[Atlas3DSS/flare-local-inference](https://github.com/Atlas3DSS/flare-local-inference)**. Its [steering guide](https://github.com/Atlas3DSS/flare-local-inference/blob/atlas/sm70-public/STEERING.md) covers the native runtime, build/preparation, API and offline activation capture. This repository contains the interface, calibration, corpus tooling, experiment orchestration and analysis.
 
-- Personality, source style, and legal-reasoning frames are often linearly decodable from model activations.
-- Many decoded directions do not survive causal generation tests.
-- Prompt-only or text-only baselines can look deceptively strong, so promoted claims need strict controls.
-- For SCOTUS/Qwen legal reasoning work, short generations are smoke tests only. Complete-answer evaluation should use at least 2048 generated tokens, preferably 3072-4096.
+1. **Prepare your runtime and model.** Follow the separate runtime guide for your supported GPU architecture and pinned checkpoint. The reference uses six **32 GiB V100s** and a separate planner with verified **128K context**.
+2. **Calibrate your exact checkpoint.** Follow [calibration and experiments](PERSONA_EXPLORER.md#calibration-and-experiments). Model revision, quantization, prepared package and runtime identities are checked; calibration from another model cannot be reused by changing its name.
+3. **Connect the interface.** Configure the ignored `persona_explorer.local.json` using the [local setup guide](PERSONA_EXPLORER.md#run-the-explorer), then run:
 
-The repo intentionally includes negative results. A central finding is that "style is decodable" and "style is a reusable steering actuator" are different claims.
+```bash
+python3 persona_explorer.py --config persona_explorer.local.json --port 8792
+```
+
+Open `http://127.0.0.1:8792` and choose **Persona studio**. The interface uses Python 3.11+ and NumPy; model execution uses Flare’s pinned environment. Checkpoints, private corpora and calibration captures stay local.
+
+**Porting to another machine or fleet? Give your agent [fork_agent.md](fork_agent.md).** The comparison interface supports one to six configured endpoints. The current scheduled fleet adapter is specific to the six-card reference deployment and needs explicit adaptation for different hosts, resource managers or card counts. Configure those bindings before enabling schedules.
+
+## Evidence and current limits
+
+The current implementation has passed these live operational checks:
+
+- **16 distinct checkpoint-bound preset recipes** saved successfully.
+- **70 complete Studio responses** across the GPT-4o-inspired and Skippy-inspired five-prompt batteries, using six candidates per preset plus baselines. All five baseline answers matched exactly across the two runs at the same seed; there were no failures or truncations.
+- **165 adaptive observations across all six V100s**, forming 33 matched five-arm sets with exact baseline/zero activation equality and no errors. Registry validation and atomic co-activity publication passed. The selected original prompts were already represented, so this check added no new matrix rows or validated connections.
+- **72 unique synthetic discovery prompts** accepted in a scheduled six-card generation check, preserving the existing corpus and heldout records.
+
+These establish working controls and reproducible comparisons. **The named presets are authored starting points whose character fidelity is unvalidated.** The displayed profiles are requested direction settings, not measured personality scores. Trait directions and observed correlations require controlled follow-up before making causal claims. The [earlier 2,046-response baseline](reports/persona_baseline.json) separately records unsteered and prompt-conditioned measurements; it is not evidence of successful activation steering.
+
+The **27B logit lens, weight-path web and live per-token activation browser remain missing**; the [Lyra feature audit](PERSONA_EXPLORER.md#feature-comparison-with-lyras-explorer) records the full gaps. Diagnostic steering checks also do not qualify production cache reuse or speculative/MTP decoding. See [the complete evidence limits](PERSONA_EXPLORER.md).
+
+## Credits and research background
+
+Please credit **[Lyra / neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer)** when building on this work. Additional inspiration comes from [RhizoNymph’s vLLM steering runtime](https://github.com/RhizoNymph/vllm/blob/feat/integration/docs/design/steering_runtime.md) and [heterodoxin’s Strata branch](https://github.com/heterodoxin/AbliteratedOutTheBox/tree/strata). Runtime implementation and upstream credits are maintained in the [separate Flare repository](https://github.com/Atlas3DSS/flare-local-inference). The [source record](PERSONA_EXPLORER.md#attribution-and-source-record) gives the reviewed references. Skippy belongs to Craig Alanson; preset source notes are included in the [catalog](data/persona_presets.json).
+
+This remains an active research workspace. Earlier fictional-character baking and public-domain SCOTUS studies are retained below, including negative results: a style that is linearly decodable is not necessarily a reusable steering control. For legal-reasoning evaluation, short generations are smoke tests; complete-answer comparisons use at least 2,048 generated tokens when context permits.
 
 ## Research Threads
 
@@ -74,6 +106,8 @@ Start with:
 | `persona_corpus.py` | Split-preserving SCOTUS/Big Five prompts and explicit private-book ingestion |
 | `persona_coverage.py` | Operator-only queueing and status for one unsteered prefill observation per registered row, preserving heldout splits |
 | `persona_characters.py` | Private original-source character/speaker candidates with exact evidence spans, uncertainty and resumable coverage |
+| `persona_sculptor.py`, `ui/persona_sculptor.js`, `ui/persona_sculptor.css` | Persona studio plans, model-bound builds, shared-battery campaigns, manual reviews and the interactive profile editor |
+| `data/persona_presets.json` | Sixteen authored starting profiles with source citations, approximation notes and unsupported qualities |
 | `PERSONA_EXPLORER.md` | Native intervention semantics, overnight setup, evidence limits and attribution |
 | `scripts/experiments/scotus/` | SCOTUS data prep, probing, patching, poking, review, and budget helpers |
 | `scripts/experiments/personality/` | Personality, meta-cognition, and symphonic-voice experiment scripts |
@@ -137,9 +171,13 @@ python3 persona_explorer.py --config persona_explorer.local.json --port 8792
 
 In the map, inspect a measured neuron or layer popout, add signed pushes, and choose **Use recipe in a six-card experiment**. Save reusable recipes or make dose variants, browse corpus prompts with their discovery/heldout labels, and arrange **recipes × prompts** as **6 × 1**, **1 × 6**, **2 × 3**, **3 × 2**, or one to six custom slots. Every cell shares the batch seed and answer budget; a baseline is an explicit slot. The [workspace guide and API](PERSONA_EXPLORER.md#build-and-compare-recipes) explain saved recipes, source provenance and per-cell results. This extends the comparison workflow inspired by **[Lyra’s neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer)**.
 
-The [neuron neighborhood](PERSONA_EXPLORER.md#inspect-a-neurons-co-activity-neighborhood) adds clickable same-direction, opposite-direction and weak co-activity relationships, with corpus/layer filters and sample counts. Its initial private source covers 5,075 original unsteered discovery prompts across 1,656 mapped candidates. Correlation strength is exploratory association, not direct wiring or temporal phase; compare within corpora because pooling can create strong relationships.
+The [neuron neighborhood](PERSONA_EXPLORER.md#inspect-a-neurons-co-activity-neighborhood) adds clickable same-direction, opposite-direction and weak co-activity relationships, with corpus/layer filters and sample counts. Its initial private source covers 5,060 distinct original unsteered discovery prompts across 1,656 mapped candidates. Correlation strength is exploratory association, not direct wiring or temporal phase; compare within corpora because pooling can create strong relationships.
 
-Results and full request/response provenance persist in local SQLite, including partial failures and interrupted work; there is no silent inference retry. Short budgets below 2,048 tokens are labeled smoke, and short SCOTUS requests require explicit opt-in. Reachable workers are identity-verified, but their shared busy/idle status is unknown; batches use the available verified subset in waves. The 2026-10-25 worker window ends around 09:00 America/Los_Angeles, so the interface does not imply always-on GPU availability. Real 6 × 1 and 1 × 6 checks completed all 12 cells across the six Quincies, and 159 persona tests passed; these are operational checks, not causal personality findings.
+Results and full request/response provenance persist in local SQLite, including partial failures and interrupted work; there is no silent inference retry. Short budgets below 2,048 tokens are labeled smoke, and short SCOTUS requests require explicit opt-in. Reachable workers are identity-verified, but their shared busy/idle status is unknown; batches use the available verified subset in waves. Worker availability is bounded by their active lease windows. Real 6 × 1 and 1 × 6 checks completed all 12 cells across the six Quincies; these are operational checks, not causal personality findings.
+
+**Jobs & schedules** now lets you schedule [John-managed six-card research](PERSONA_EXPLORER.md#schedule-john-and-the-six-quincies) directly in the app: expand synthetic Big Five discovery prompts or adaptively gather neuron evidence with complete matched controls. Schedules, raw requests, quarantined outputs and progress survive in local SQLite. Counts reflect accepted observations or unique prompt texts, and startup/admission time counts against the chosen window. A real scheduled generation check accepted 72 unique discovery prompts across all six cards and preserved the existing corpus prefix and heldout records.
+
+The [feature comparison with Lyra](PERSONA_EXPLORER.md#feature-comparison-with-lyras-explorer) records current parity and remaining work. In particular, the new measured co-activity graph is distinct from Lyra's weight-path web; the 27B logit lens, empirical steer lens and token-level activation explorer still require their own implementation and model-bound indexes.
 
 Run general eval battery:
 

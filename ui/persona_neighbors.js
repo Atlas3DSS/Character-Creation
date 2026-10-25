@@ -79,6 +79,10 @@
       value => {app.corpus = value; load();}),
     filter('Layers', [['all', 'All layers'], ['same_layer', 'Same layer'], ['cross_layer', 'Other layers']], app.scope,
       value => {app.scope = value; load();}),
+    button('Plan adaptive search', () => {
+      if (window.PersonaJobs?.fromNeuron) window.PersonaJobs.fromNeuron({...app.target});
+      else refs.announcement.textContent = 'The Jobs & schedules workspace is not loaded yet.';
+    }, 'pn-plan'),
     button('Refresh', load, 'pn-refresh'));
     refs.summary = node('div', undefined, 'pn-summary');
     refs.warning = node('p', undefined, 'pn-warning');

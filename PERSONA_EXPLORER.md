@@ -71,6 +71,38 @@ Worker availability means **reachable with a verified identity**, not idle. The 
 
 Live verification completed both **six recipes × one prompt** and **one recipe × six prompts** on all six Quincies: **12/12 cells completed**. The accompanying persona test suite passed 159 tests. Browser checks covered desktop and mobile layouts. These checks establish operation of the workspace, not a causal personality effect or native cache/MTP qualification.
 
+### Persona studio
+
+Open **Persona studio** for a profile-first workflow. The five dials range from −1 to +1 along this checkpoint's calibrated Big Five residual contrasts. The central diagram visualizes those settings, not a measured personality. Overall strength is a bounded normalized intervention budget across the chosen layers and traits; the default is 0.35 and the maximum is 0.5. This workspace builds additive recipes; it does not train, bake or replace model weights.
+
+1. Start with a description, an editable dial profile, or a preset. **Ask John to interpret** explicitly requests a tentative five-trait interpretation from the local planner. Unsupported requested qualities remain visible. Manual controls work without John and are labeled as manual heuristics; there is no automatic model fallback or inference on a slider movement.
+2. **Build candidate recipes** freezes a model-bound set around the current settings, defaulting to the configured card count, up to six. Review each candidate's dials and strength. **Use these dials** copies a candidate into a new editable draft; a rebuild makes those edits concrete. **Select only** chooses an exact existing candidate for the next comparison.
+3. Review the shared battery of one to twelve prompts. Defaults come from distinct categories of original discovery Big Five tasks. Browse registered Big Five, SCOTUS and private book prompts, or add custom prompts separated by blank lines. Discovery and heldout labels remain visible. Using heldout answers to choose or tune a persona consumes that holdout; it cannot also serve as independent validation.
+4. **Run shared battery** first generates one unsteered answer per prompt, then runs the selected candidate recipes in waves across the reachable workers. Every arm uses the same user text, empty neutral system, seed and answer budget. The persona brief is never injected into the evaluation messages. Registered profile/system conditioning is deliberately omitted from every arm and recorded in provenance. The baseline is immutable within that campaign and reused for every candidate comparison; a new campaign generates its own matched baseline.
+5. Pin a candidate beside the unsteered assistant for each prompt. Complete, incomplete and failed responses stay separate, with saved batch records and provenance available. Ratings and **Prefer** are manual judgments, not automatic scores or proof of personality. **Save recipe** adds reusable signed pushes to the recipe library. Reopen a saved campaign to restore its exact build, prompts, seed and budget, select the desired candidate subset and rerun; rebuilding creates a new immutable set.
+
+The default answer budget is 2,048 tokens with thinking off. Prompt plus answer must fit the admitted worker's context; the UI does not silently truncate. A battery of five prompts and six candidates creates 35 responses: five baselines plus 30 candidate answers. Up to six run concurrently after baseline waves; fewer reachable workers execute smaller waves. Reachable means identity-verified, not idle, and other experiments share the worker pool. **Stop future waves** prevents further campaign waves; an in-flight request may finish and remains in the record.
+
+When no workers are reachable, **Start studio session** explicitly schedules a `studio_session` job for John and the six owned Quincies. Choose a duration, defaulting to two hours. Cold model preparation can take tens of minutes on this six-card fleet because the validated shared-cache publication stage is serialized; session time includes startup. Existing workboard admission, GPU ownership, thermal checks and the absolute deadline still apply. The UI reuses a current studio session or reachable fleet instead of automatically launching another. **Jobs & schedules** shows durable startup/status events; **Stop this studio session** requests cooperative cleanup of that session's own resources. Opening the tab, browsing presets and moving dials do not start GPUs.
+
+The 16 presets are:
+
+| Inspired starting points | Basic archetypes | Basic archetypes | Basic archetypes |
+| --- | --- | --- | --- |
+| GPT-4o-inspired | Calm Mentor | Warm Companion | Skeptical Investigator |
+| Skippy-inspired | Curious Scientist | Playful Storyteller | Bold Explorer |
+| — | Pragmatic Engineer | Decisive Captain | Meticulous Archivist |
+| — | Stoic Analyst | Gentle Diplomat | Creative Muse |
+| — | Competitive Strategist | Quiet Philosopher | — |
+
+Preset previews show the brief, five dials, citations and approximation notes. **Load preset & build candidates** uses the fixed authored catalog without consulting John, preserves its catalog hash and notes in the plan/build, and saves its center recipe. Repeated loading updates that preset's model-bound saved recipe rather than creating duplicate library entries. The remaining variants stay in the immutable build until individually saved.
+
+The [catalog](data/persona_presets.json) cites the [GPT-4o model reference](https://developers.openai.com/api/docs/models/gpt-4o), [OpenAI personalization guidance](https://learn.chatgpt.com/docs/personalize), and Craig Alanson's [Skippy-voiced page](https://www.craigalanson.com/flightjacket). These sources provide identity or style context; they do not establish the numeric dials or a transferable recipe. GPT-4o-inspired is not recovered OpenAI parameters or a particular ChatGPT snapshot. Skippy-inspired is an interpretive homage, not a recipe fitted to book dialogue or a validated reproduction of the character. All 16 profiles are authored heuristics whose behavioral effects and polarity require matched comparisons. No book passages are included in the public presets.
+
+Operational validation on 2026-10-25 saved all 16 distinct checkpoint-bound center recipes and ran both named presets through the five-prompt discovery battery with six candidates each. All 70 responses completed with a 2,048-token budget and thinking off; the five unsteered answers matched exactly across the two campaigns at seed 7035. John also returned a valid structured brief interpretation. These checks establish functioning interventions and reproducible comparisons, not GPT-4o or Skippy fidelity. The 252-test persona suite passed; the subsequently revised scheduler passed its 19 tests, including strict post-generation text and facet bounds.
+
+Studio records live in the existing private explorer SQLite database. Its local routes are `GET /api/sculptor`, `GET /api/sculptor/presets`, `POST /api/sculptor/preset`, `POST /api/sculptor/plan`, `POST /api/sculptor/build`, `GET/POST /api/sculptor/campaigns`, `GET /api/sculptor/campaign?id=…`, and `POST /api/sculptor/review` or `/api/sculptor/cancel`. A campaign references an immutable build ID and an optional exact candidate-ID subset. Interpretation, building, scheduling and inference remain distinct actions. The studio adds profile authoring and controlled comparisons; it does not fill the logit-lens, weight-path-web, per-token activation or streaming multi-turn gaps listed below.
+
 ### Local workspace API
 
 All routes belong to the loopback explorer service. Corpus access reads only the completed, hash-bound `data/persona_manager_corpus.jsonl` publication and its manifest; source files remain private and unchanged.
@@ -111,7 +143,7 @@ Each cell accepts exactly one of `prompt_id` or a custom `prompt` string, and ex
 
 Select a measured neuron, then open its neighborhood breakout to compare candidates whose activations rise together, move oppositely, or vary weakly together. Neighbor controls return to that measured neuron on the map. Filter by corpus and by the same layer, other layers, or both. The graph is undirected: a positive or negative Pearson correlation is an association across prompts, not a direct wire, causal influence, or measured temporal phase. These are continuous signed SwiGLU values, not binary firing events.
 
-The first local source contains **5,075 original unsteered discovery prompts**: **5,050 book passages, 13 SCOTUS prompts and 12 Big Five tasks**, measured at the final prompt token across **1,656 mapped candidates**. It excludes heldout prompts, source mutations, personality prompt profiles and intervention arms, and retains one row per original source group. It is a candidate neighborhood, not an exhaustive million-neuron connectome. Each result shows its actual sample count. The small SCOTUS and Big Five cohorts are exploratory; no significance or multiple-comparison claim is made. Pooled correlations can reflect differences between corpora, so compare within each corpus before interpreting a strong relationship.
+The first local source contains **5,060 distinct original unsteered discovery prompts**: **5,035 book passages, 13 SCOTUS prompts and 12 Big Five tasks**, measured at the final prompt token across **1,656 mapped candidates**. It excludes heldout prompts, source mutations, personality prompt profiles and intervention arms, and retains one row per original source group. An audited transition removed 15 duplicate-text observations from statistical weighting: twelve had identical measured vectors, while three whitespace variants had different activations. Those differences are recorded and all raw captures are preserved. It is a candidate neighborhood, not an exhaustive million-neuron connectome. Each result shows its actual sample count. The small SCOTUS and Big Five cohorts are exploratory; no significance or multiple-comparison claim is made. Pooled correlations can reflect differences between corpora, so compare within each corpus before interpreting a strong relationship.
 
 Display conventions are `|r| >= 0.6` for strong, `|r| <= 0.2` for weak, and moderate between them. Same-direction and opposite-direction lists rank their non-weak coefficients; the weak list shows coefficients nearest zero. Constant neurons, missing observations and filters with fewer than eight unique prompts have no fabricated correlations.
 
@@ -121,7 +153,75 @@ Display conventions are `|r| >= 0.6` for strong, `|r| <= 0.2` for weak, and mode
 python3 persona_coactivity_extract.py --root "$PWD"
 ```
 
-The default output is `results/persona_coactivity.npz`, created exclusively without overwriting existing evidence. `--stream` emits the numeric archive to stdout for direct transfer to the explorer host; progress goes to stderr. The archive contains only candidate activations, coordinates, corpus labels and source hashes, with no passage text. Keep it private with the other results. `persona_neighbors.py` validates that publication against the current model/map and caches corpus statistics for interactive queries; it never scans raw captures during a click or starts GPU work. The source and viewer extend the independently implemented exploration workflow inspired by [Lyra's neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer).
+The default output is `results/persona_coactivity.npz`, created exclusively. Explicit `--replace` requires preservation of prior rows except audited duplicate exclusions. `--stream` emits the numeric archive to stdout for direct transfer to the explorer host; progress goes to stderr. The archive contains only candidate activations, coordinates, corpus labels and source hashes, with no passage text. Keep it private with the other results. `persona_neighbors.py` validates that publication against the current model/map and caches corpus statistics for interactive queries; it never scans raw captures during a click or starts GPU work. The source and viewer extend the independently implemented exploration workflow inspired by [Lyra's neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer).
+
+### Schedule John and the six Quincies
+
+Open **Jobs & schedules** to create a timed **Big Five discovery expansion** or **Adaptive neighborhood search**. Choose a local date, IANA time zone, duration, target, hard cap and seed. The default proposes the next 2 AM in America/Los_Angeles; nothing runs until you save a schedule. The server resolves the date and rejects ambiguous or nonexistent daylight-saving times. Job details show the actual start/deadline, scheduler heartbeat, progress, recorded errors and cooperative cancellation.
+
+The fixed fleet adapter launches John with a 128K context and six distinct, UUID-bound Quincy workers through gpu-workboard. Waiting for existing work, admission and model startup consumes the scheduled window. Existing workloads are preserved. A job can therefore finish below its requested target; the UI reports actual counts. Services have a bounded lifetime, and cleanup verifies the job's own launch identity. The scheduler persists schedules, requests, raw responses, invalid outputs and accepted samples in `results/persona_jobs.sqlite`. Restart recovery keeps completed evidence and does not blindly replay model requests.
+
+**Big Five expansion** produces short, original scenario prompts across the five traits, thirty facet design categories and varied situations. John assigns six batches, then the Quincies generate them in parallel. The harness validates complete responses and removes normalized text duplicates before counting accepted prompts. Invalid or truncated responses are quarantined. The resulting rows are **synthetic discovery material**, not a validated psychometric inventory or measured personality labels. Their local publication appends to `data/persona_manager_corpus.jsonl`, preserving all previous records and heldout splits; `data/persona_generated_big_five.jsonl` and its manifest identify the generated subset. These private data files are not published to GitHub.
+
+**Adaptive neighborhood search** starts with explicit neuron coordinates and selected discovery corpora. Use **Plan adaptive search** from a neuron's neighborhood, or enter any model-valid coordinate at a calibrated layer. John chooses bounded prompt families and doses from a fixed catalog. Each admitted experiment includes baseline, zero, random, positive and negative controls, matched source variants and seeds. A hard cap never truncates a control set. The objective rewards new source coverage and within-family variation, rather than a large pooled correlation. Repeating a seed does not create a new independent prompt. Complete-rollout followups require prior matched prefill evidence and an answer budget of at least 2,048 tokens.
+
+After owned GPU cleanup, the scheduler ingests the job's verified original-baseline registry, preserves prior compact observations, and atomically refreshes the viewer's co-activity source. This bounded CPU publication step can finish after the GPU deadline; it creates no new GPU lease. Cancellation or failed verification leaves the last valid source intact and records the outcome. New observations update the existing measured-candidate index; testing an unmapped coordinate retains its raw evidence without silently declaring a new curated map node.
+
+Constant neurons remain excluded from correlation. Missing or insufficient observations remain visible as such while further sweeps gather evidence. Matched intervention effects are descriptive candidates until separately validated; a correlation or repeated sign is not an anatomical connection, temporal phase, or established personality mechanism. John receives structured data and emits a strictly validated plan; it cannot supply shell commands, executable paths or arbitrary tool calls.
+
+The host operator configures `persona_jobs.local.json` beside the explorer:
+
+```json
+{
+  "enabled": true,
+  "root": "/absolute/path/to/Character Creation",
+  "fleet_config": "/absolute/path/to/Character Creation/persona_fleet.local.json",
+  "expected_prepared_identity": "EXACT_PREPARED_PACKAGE_SHA256",
+  "expected_runtime_identity": "EXACT_RUNTIME_SHA256",
+  "lease_wrapper_sha256": "VERIFIED_INSTALLED_WB_HOLD_SHA256",
+  "timezone": "America/Los_Angeles"
+}
+```
+
+Run `python3 persona_jobs.py validate-config --config persona_jobs.local.json`, then supervise `python3 persona_jobs.py daemon --config persona_jobs.local.json` as a persistent user service on the configured resource owner. `--once` scans for one due job; it creates no resources if nothing is due. The reference deployment uses `character-persona-jobs.service` with automatic restart and a 600-second cooperative stop allowance. The fixed adapter is currently configured for the owner's Devbox/John and six-card V100 host; other installations must explicitly configure and review their own fleet bindings. `persona_lease.py` wraps the hash-verified installed workboard supervisor to register exact worker ownership without bypassing its admission, thermal or memory guards.
+
+| API | Purpose |
+| --- | --- |
+| `GET /api/jobs` | Schedules, progress, time zone and scheduler heartbeat. |
+| `POST /api/jobs` | Save a validated `big_five_expand`, `neighborhood_hillclimb` or `studio_session` schedule. |
+| `GET /api/job?id=...` | Job state and recent durable events. |
+| `POST /api/job/cancel` | Cancel a queued job or request cooperative stopping of its owned work. |
+
+Schedule mutations require same-origin JSON requests and an enabled operator configuration. Specify `local_start` plus `timezone`, or `start_at` with an explicit matching UTC offset. Required fields are `kind`, `name`, `duration_minutes`, `target_entries`, `max_entries` and `seed`; neighborhood jobs also require nonempty `targets` (`layer`, `neuron`) and `corpora`. Studio sessions use target and cap 1, omit corpus/target coordinates, and hold ready workers without automatic experiments. The UI uses the same API and distinguishes synthetic prompts, observations and ready sessions.
+
+A bounded operator validation under an existing owned Studio session completed 165 observations across all six cards: 33 complete five-arm sets with exact baseline/zero activation equality and no errors. Its registry and atomic coactivity publication passed. The three eligible original prompts were already represented, so the source remained at 5,060 rows; no new links or independently replicated effects were established. This validates one planning/control/publication cycle, not a completed multi-round hillclimb. The overnight generator's corrected compact JSON grammar also returned a valid six-assignment plan; text bounds and trait/facet compatibility remain enforced in Python before dispatch.
+
+### Feature comparison with Lyra's explorer
+
+Source review: **2026-10-25**, upstream `main` at **`f79b2196e29aacbad89684938baac8d97b172fd1`**. This is a feature inventory, not a claim of full parity. The references are Lyra's [interface](https://github.com/lyramakesmusic/neuron-explorer/blob/f79b2196e29aacbad89684938baac8d97b172fd1/explorer/static/index.html), [interactive behavior](https://github.com/lyramakesmusic/neuron-explorer/blob/f79b2196e29aacbad89684938baac8d97b172fd1/explorer/static/app.js), [server](https://github.com/lyramakesmusic/neuron-explorer/blob/f79b2196e29aacbad89684938baac8d97b172fd1/explorer/server.py) and [model runtime](https://github.com/lyramakesmusic/neuron-explorer/blob/f79b2196e29aacbad89684938baac8d97b172fd1/explorer/runtime.py). All listed gaps concern the new Qwen3.8-27B Persona Explorer; older experiment scripts elsewhere in this repository do not establish UI support.
+
+| Lyra feature | Character Creation status |
+| --- | --- |
+| Perspective model map, layer selection and face-on layer focus | **Present**, with bounded viewport, animated focus and measured-candidate navigation. Full all-neuron density and attention-head inspection are not present. |
+| Index layout and output-column-similarity `writes` layout | **Partial**: coordinate/candidate layout; no learned output-similarity layout. |
+| Positive/negative neuron logit lens | **Missing**: no final-normalization/unembedding token projection for the 27B checkpoint. The displayed trait alignments are not a logit lens. |
+| Empirical steer lens: next-token changes and KL under signed pushes | **Missing** as an indexed lens and UI. Saved intervention outputs do not substitute for it. |
+| Search neurons by tokens in either lens | **Missing**; requires a model-bound lens index. |
+| Weight-derived upstream/downstream links and multi-hop `web` cones | **Missing**. The new co-activity breakout is an undirected measured association view, not Lyra's weight-path web. |
+| Token summaries pooled over a cone | **Missing**; depends on the weight web and lens indexes. |
+| Neuron readout over pasted text, token hover/pinning and activation paths | **Partial backend evidence**: final-prefill snapshots exist; no arbitrary-text per-token heatmap, activation search or token-path interface. |
+| Distinctive-word/cluster ranking against random directions | **Missing** in this viewer. Current candidates use explicitly provisional trait contrasts and output alignment. |
+| Saved examples grouped by neuron, prompt and dose | **Partial**: persistent experiment cells and full provenance exist; no unified per-neuron archive browser across all sweeps. |
+| Three-column signed, streaming, multi-turn chat | **Partial**: signed single-turn comparison and flexible six-card batches exist; no independently continued streaming chat histories. |
+| Additive and multiplicative neuron controls | **Partial**: additive pre-down, output-column and broader residual controls; no multiplicative neuron/MLP controls. |
+| Attention-head/whole-layer scaling and ablation | **Missing** from the new native steering interface. |
+| Rollout embedding scatterplot with neuron/prompt/dose/kind coloring | **Missing**. |
+| Editable neuron names and persistent shared links to a selection | **Missing**. Saved recipe names are a different feature. |
+| Interactive model assistant, MCP tools, map highlights, attachments and chat rewind | **Different scope**: John manages constrained scheduled experiments and tentative Studio brief interpretation; no equivalent interactive explorer assistant or general file/shell tools. |
+| Next-token probability inspection and baseline/intervention distribution comparison | **Missing** from the explorer UI/API. |
+| Full signed rollouts, random controls and cross-runtime equivalence checks | **Partial**: native matched-control experiments and quantized zero/neutral checks exist; no claim of exhaustive neuron coverage or HF/vLLM equivalence for this checkpoint. |
+
+The highest-priority parity work is the **27B logit lens**, a separately labeled **weight-path web**, and then **live token activations plus empirical steer-lens search**. Each requires evidence computed for this exact checkpoint; Lyra's 4B indexes and neuron meanings cannot be copied across models. Rollout embeddings, archive navigation and multi-turn comparison follow. These remain explicit gaps rather than controls backed by invented or incompatible data. Lyra's methodology and implementation remain the primary reference.
 
 ## Calibration and experiments
 

@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -69,9 +70,45 @@ def readiness() -> dict | None:
     return {'context_tokens': context, 'model_alias': properties['model_alias'], 'health': health['status']}
 
 
+def stop_child(child):
+    if child is None or child.poll() is not None: return
+    try: os.killpg(child.pid, signal.SIGTERM)
+    except ProcessLookupError: pass  # It exited after poll(); still reap and release its lease.
+    try: child.wait(timeout=20)
+    except subprocess.TimeoutExpired:
+        try: os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError: pass
+        child.wait(timeout=10)  # Failure here deliberately prevents releasing a live GPU owner.
+
+
+def release_lease(job, receipt, acquired, outcome):
+    """An acquire may commit even when its reply is lost; reconcile the exact ID."""
+    try:
+        jobs = wb('status', json_result=True)['jobs']
+        current = next((row for row in jobs if row['id'] == job), None)
+    except Exception:
+        if not acquired: raise RuntimeError('Uncertain planner acquire cannot be reconciled; exact lease retained: ' + job)
+        # A successful admission receipt is sufficient to finish this exact ID
+        # after the child is confirmed gone, even during a telemetry outage.
+        current = {**receipt, 'status': 'leased', 'assigned_uuid': GPU}
+    if current is None: return  # Status omits terminal jobs.
+    for key in ('id', 'project', 'label', 'target_host', 'gpu_selector'):
+        if key not in receipt or current.get(key) != receipt[key]:
+            raise RuntimeError('Planner lease receipt identity changed; no lease mutation: ' + job)
+    if current['status'] == 'queued': wb('cancel', job); return
+    if current['status'] not in ('leased', 'running', 'stale') or current.get('assigned_uuid') != GPU:
+        raise RuntimeError('Unexpected planner lease state/assignment; exact lease retained: ' + job)
+    board_outcome = ('completed' if outcome == 'completed' else 'released'
+        if outcome in ('checkpointed', 'interrupted') else 'failed')
+    wb('finish', job, '--outcome', board_outcome,
+       '--detail', outcome + ': stateless planner stopped; durable experiment queue belongs to persona_manager.py')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--minutes', type=int, default=600)
+    parser.add_argument('--admission-wait-seconds', type=int, default=300)
+    parser.add_argument('--deadline', type=float, help='Absolute epoch deadline; startup and admission consume this window')
     parser.add_argument('--manifest', type=Path, default=Path(__file__).resolve().parent / 'results/persona_planner.jsonl')
     parser.add_argument('--print-command', action='store_true')
     args = parser.parse_args()
@@ -80,6 +117,11 @@ def main() -> None:
                           'gpu_uuid': GPU, 'unit': UNIT, 'maximum_minutes': args.minutes})); return
     if socket.gethostname() != 'wtatum84' or not 1 <= args.minutes <= 960:
         raise ValueError('Planner must run on John for at most sixteen hours')
+    if not 1 <= args.admission_wait_seconds <= args.minutes * 60:
+        raise ValueError('Planner admission wait must fit its declared window')
+    if args.deadline is not None and not math.isfinite(args.deadline): raise ValueError('Planner deadline must be finite')
+    window_end = min(args.deadline if args.deadline is not None else float('inf'), time.time() + args.minutes * 60)
+    if window_end <= time.time(): raise RuntimeError('Planner window has already ended')
     if not args.manifest.parent.is_dir() or not RUNTIME.is_file() or not MODEL.is_file():
         raise ValueError('Existing model, runtime and manifest parent are required')
     cgroup = Path('/proc/self/cgroup').read_text()
@@ -101,13 +143,15 @@ def main() -> None:
         with args.manifest.open('a') as stream:
             stream.write(json.dumps({'time': time.time(), 'event': event, **value}, sort_keys=True) + '\n')
             stream.flush(); os.fsync(stream.fileno())
-    job, acquired, child, outcome, peak_mib = None, False, None, 'failed', 0
+    job, receipt, acquired, child, outcome, peak_mib = None, None, False, None, 'failed', 0
     try:
-        job = wb('submit', '--project', 'character-creation', '--label', 'persona-planner-john',
+        if stop['signal'] or time.time() >= window_end: return
+        receipt = wb('submit', '--project', 'character-creation', '--label', 'persona-planner-john',
             '--vram-gib', '40', '--duration-min', str(args.minutes), '--host', 'wtatum84', '--gpu', GPU,
-            '--lane', 'batch', '--checkpoint-signal', 'SIGUSR1', '--checkpoint-grace-s', '30', json_result=True)['id']
+            '--lane', 'batch', '--checkpoint-signal', 'SIGUSR1', '--checkpoint-grace-s', '30', json_result=True)
+        job = receipt['id']
         record('submitted', lease_id=job, model_sha256=MODEL_SHA, command=command(), gpu_uuid=GPU)
-        acquire_deadline = time.monotonic() + 300
+        acquire_deadline = time.monotonic() + min(args.admission_wait_seconds, max(0, window_end - time.time()))
         while not stop['signal'] and time.monotonic() < acquire_deadline:
             reply = wb('acquire', job, json_result=True)
             acquired = reply.get('acquired') is True
@@ -115,13 +159,14 @@ def main() -> None:
                 break
             time.sleep(2)
         if not acquired:
-            raise RuntimeError('No planner admission within300s; existing leases remain untouched')
+            raise RuntimeError('No planner admission within the configured wait; existing leases remain untouched')
         board = wb('status', json_result=True)
         owned = next(row for row in board['jobs'] if row['id'] == job)
         if owned['assigned_uuid'] != GPU:
             raise ValueError('Workboard assigned an unexpected GPU')
         wb('start', job, '--pid', str(os.getpid()), '--unit', UNIT, '--observed-mib', '0')
-        if stop['signal']:
+        if stop['signal'] or time.time() >= window_end:
+            outcome = 'checkpointed' if stop['signal'] == signal.SIGUSR1 else 'interrupted'
             return
         environment = {**os.environ, 'CUDA_VISIBLE_DEVICES': GPU,
                        'LD_LIBRARY_PATH': str(RUNTIME.parent) + ':' + os.environ.get('LD_LIBRARY_PATH', '')}
@@ -129,7 +174,7 @@ def main() -> None:
         record('started', lease_id=job, child_pid=child.pid, runtime_sha256=hashlib.sha256(RUNTIME.read_bytes()).hexdigest(),
                requested_context_tokens=131072, maximum_process_mib=40 * 1024, unit=UNIT)
         started, last_heartbeat, last_probe, ready = time.monotonic(), 0.0, 0.0, False
-        end = started + args.minutes * 60
+        end = started + max(0, window_end - time.time())
         while child.poll() is None and not stop['signal'] and time.monotonic() < end:
             now = time.monotonic()
             temperatures = subprocess.check_output(['nvidia-smi', '-i', GPU, '--query-gpu=temperature.gpu',
@@ -168,19 +213,9 @@ def main() -> None:
         elif outcome == 'failed' and (child.poll() == 0 or time.monotonic() >= end):
             outcome = 'completed'
     finally:
-        if child is not None and child.poll() is None:
-            os.killpg(child.pid, signal.SIGTERM)
-            try:
-                child.wait(timeout=20)
-            except subprocess.TimeoutExpired:
-                os.killpg(child.pid, signal.SIGKILL); child.wait(timeout=10)
+        stop_child(child)
         if job is not None:
-            if acquired:
-                board_outcome = ('completed' if outcome == 'completed' else 'released'
-                    if outcome in ('checkpointed', 'interrupted') else 'failed')
-                wb('finish', job, '--outcome', board_outcome, '--detail', outcome + ': stateless planner stopped; durable experiment queue belongs to persona_manager.py')
-            else:
-                wb('cancel', job)
+            release_lease(job, receipt, acquired, outcome)
             record('finished', lease_id=job, outcome=outcome, signal=stop['signal'], observed_process_peak_mib=peak_mib)
     if outcome not in ('completed', 'checkpointed', 'interrupted'):
         raise RuntimeError(outcome)
