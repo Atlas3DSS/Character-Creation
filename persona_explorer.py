@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, urlparse
 import uuid
 
 from persona_fleet import fetch
+from persona_neighbors import CoactivityIndex
 from persona_vectors import ModelSpec, VectorBank, canonical_digest
 from scripts.experiments.scotus.qwen_eval_budget import enforce_complete_answer_budget, qwen_budget_metadata
 
@@ -94,6 +95,7 @@ class Explorer:
     def __init__(self, root: Path, config: dict):
         self.root, self.config = root, config
         self.model = ModelSpec.load(root / "data/persona_model.json")
+        self.neighbors = CoactivityIndex(root, self.model)
         self.bank = VectorBank(root / "results", self.model,
             **({"checkpoint": Path(config["checkpoint"])} if config.get("checkpoint") else {}))
         self.bank_lock = threading.RLock()
@@ -594,7 +596,7 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     body = (app.root / "ui/atlas-logo.png").read_bytes()
                     self.send_response(200); self.send_header("Content-Type", "image/png")
                     self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
-                elif path.path in ('/persona_lab.js', '/persona_lab.css'):
+                elif path.path in ('/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css'):
                     name = path.path[1:]
                     body = (app.root / 'ui' / name).read_bytes()
                     content_type = 'application/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8'
@@ -602,6 +604,10 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
                 elif path.path == "/api/state": self.send(app.state())
                 elif path.path == '/api/capacity': self.send(app.capacity())
+                elif path.path == '/api/neighbors':
+                    query = parse_qs(path.query)
+                    self.send(app.neighbors.query(layer=int(query.get('layer', [''])[0]), neuron=int(query.get('neuron', [''])[0]),
+                        corpus=query.get('corpus', ['all'])[0], scope=query.get('scope', ['all'])[0], limit=int(query.get('limit', ['12'])[0])))
                 elif path.path == "/api/recipes":
                     self.send(json.loads((app.root / "data/lyra_recipes.json").read_text()))
                 elif path.path == "/api/comparison":

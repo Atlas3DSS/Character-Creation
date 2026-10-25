@@ -85,6 +85,7 @@ All routes belong to the loopback explorer service. Corpus access reads only the
 | `GET /api/batches` | Recent batch states and completed/total cell counts. |
 | `GET /api/batch?id=...` | Persisted input, cell states, snapshots, endpoint labels, compact outputs and errors. |
 | `GET /api/capacity` | Configured/reachable worker counts, per-card availability, thinking support and context limit; idle status remains unknown. |
+| `GET /api/neighbors?layer=15&neuron=242&corpus=all&scope=all&limit=12` | Signed co-activity among observed candidates; filter corpus and `all`, `same_layer` or `cross_layer` scope. |
 
 For example, submit an explicit baseline and one saved recipe against the same registered prompt. Obtain `model_identity` from `/api/state` and the prompt/recipe IDs from their respective lists:
 
@@ -105,6 +106,22 @@ For example, submit an explicit baseline and one saved recipe against the same r
 ```
 
 Each cell accepts exactly one of `prompt_id` or a custom `prompt` string, and exactly one of `recipe_id` or an inline `{name?, pushes, phase}` recipe. The shared budget must be 256–4,096 tokens, subject to advertised context limits. `thinking` and `smoke` are explicit booleans. Recipe phases are `all`, `prefill` and `decode`. The existing `/api/compare` and `/api/comparison` routes remain available for the original signed comparison.
+
+### Inspect a neuron's co-activity neighborhood
+
+Select a measured neuron, then open its neighborhood breakout to compare candidates whose activations rise together, move oppositely, or vary weakly together. Neighbor controls return to that measured neuron on the map. Filter by corpus and by the same layer, other layers, or both. The graph is undirected: a positive or negative Pearson correlation is an association across prompts, not a direct wire, causal influence, or measured temporal phase. These are continuous signed SwiGLU values, not binary firing events.
+
+The first local source contains **5,075 original unsteered discovery prompts**: **5,050 book passages, 13 SCOTUS prompts and 12 Big Five tasks**, measured at the final prompt token across **1,656 mapped candidates**. It excludes heldout prompts, source mutations, personality prompt profiles and intervention arms, and retains one row per original source group. It is a candidate neighborhood, not an exhaustive million-neuron connectome. Each result shows its actual sample count. The small SCOTUS and Big Five cohorts are exploratory; no significance or multiple-comparison claim is made. Pooled correlations can reflect differences between corpora, so compare within each corpus before interpreting a strong relationship.
+
+Display conventions are `|r| >= 0.6` for strong, `|r| <= 0.2` for weak, and moderate between them. Same-direction and opposite-direction lists rank their non-weak coefficients; the weak list shows coefficients nearest zero. Constant neurons, missing observations and filters with fewer than eight unique prompts have no fabricated correlations.
+
+`persona_coactivity_extract.py` derives the private compact source from the existing manager database and captured arrays. It verifies job identity, original-prompt selection, unsteered request contents, runtime/model identity, response completion, provenance-file hashes, activation-file hashes and the measured-map hash. Run it on the host holding the raw captures:
+
+```bash
+python3 persona_coactivity_extract.py --root "$PWD"
+```
+
+The default output is `results/persona_coactivity.npz`, created exclusively without overwriting existing evidence. `--stream` emits the numeric archive to stdout for direct transfer to the explorer host; progress goes to stderr. The archive contains only candidate activations, coordinates, corpus labels and source hashes, with no passage text. Keep it private with the other results. `persona_neighbors.py` validates that publication against the current model/map and caches corpus statistics for interactive queries; it never scans raw captures during a click or starts GPU work. The source and viewer extend the independently implemented exploration workflow inspired by [Lyra's neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer).
 
 ## Calibration and experiments
 
