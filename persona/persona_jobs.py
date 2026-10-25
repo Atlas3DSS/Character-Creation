@@ -295,8 +295,10 @@ class JobStore:
 
     def seed_existing(self):
         path = self.root / 'data/persona_manager_corpus.jsonl'
-        manifest = json.loads((self.root / 'data/persona_manager_corpus_manifest.json').read_text())
-        raw = path.read_bytes()
+        with path.open('rb') as stream:
+            fcntl.flock(stream, fcntl.LOCK_SH)
+            manifest = json.loads((self.root / 'data/persona_manager_corpus_manifest.json').read_text())
+            raw = stream.read()
         if manifest.get('status') != 'complete' or hashlib.sha256(raw).hexdigest() != manifest.get('output_sha256'):
             raise ValueError('Published corpus is not a complete hash-bound snapshot')
         rows = [json.loads(line) for line in raw.splitlines() if line.strip()]
@@ -637,6 +639,34 @@ def daemon(root, config_path, *, once=False):
             stop.wait(2)
 
 
+def contribute(root, config_path, identity):
+    """Fill batch barriers using the same verified owner; never acquire or stop GPUs."""
+    from persona_job_fleet import verified_session
+    store=JobStore(root);job=store.get(identity)
+    if job['kind']!='big_five_expand' or job['state']!='running':raise ValueError('Only an active Big Five owner can receive a contribution')
+    with store.connect() as db:
+        starts=db.execute("SELECT data FROM events WHERE job_id=? AND event='service_started' ORDER BY sequence",(identity,)).fetchall()
+    owned={item['unit']:item['invocation_id'] for item in (json.loads(row[0]) for row in starts)}
+    config=json.loads(Path(config_path).read_text());session=verified_session(job,config,owned=owned)
+    stop=threading.Event();done=threading.Event()
+    for sig in (signal.SIGTERM,signal.SIGINT):signal.signal(sig,lambda *_:stop.set())
+    def monitor():
+        while not done.wait(1):
+            current=store.get(identity,events=False)
+            if current['state']!='running' or current['cancel_requested'] or time.time()>=job['deadline']:
+                stop.set();return
+    threading.Thread(target=monitor,daemon=True).start()
+    child={**job,'seed':int(canonical_digest([job['seed'],'gap-filling-stream-1'])[:8],16)}
+    store.event(identity,'contributor_started',{'seed':child['seed'],'owner_invocations':owned,'resources_created':False,'resources_stopped':False})
+    try:
+        while not stop.is_set() and time.time()<job['deadline']:
+            current=store.get(identity,events=False)
+            if current['counts']['accepted_unique']>=job['max_entries']:break
+            session=verified_session(job,config,owned=owned)
+            run_big_five(child,session,store,stop,max_rounds=1,publish=True)
+    finally:
+        done.set();store.event(identity,'contributor_finished',{'resources_stopped':False})
+
 def reload_when_idle(root, identity, expected, deadline):
     """Upgrade an exact scheduler invocation after its current job finishes."""
     if not identity or not expected or deadline is None: raise ValueError('Reload requires job, invocation and deadline')
@@ -656,7 +686,7 @@ def reload_when_idle(root, identity, expected, deadline):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('daemon', 'status', 'validate-config', 'reload-when-idle'))
+    parser.add_argument('command', choices=('daemon', 'status', 'validate-config', 'reload-when-idle', 'contribute'))
     parser.add_argument('--root', type=Path, default=PROJECT_ROOT)
     parser.add_argument('--config', type=Path)
     parser.add_argument('--once', action='store_true', help='One due-job scan; no resources are created when no job is due')
@@ -665,6 +695,8 @@ def main():
     if args.command=='reload-when-idle':
         reload_when_idle(args.root,args.job_id,args.expected_invocation,args.deadline);return
     config_path = args.config or args.root / 'persona_jobs.local.json'
+    if args.command=='contribute':
+        contribute(args.root,config_path,args.job_id);return
     if args.command == 'status': print(encoded(JobStore(args.root).listing(config_path))); return
     if args.command == 'validate-config':
         config = json.loads(config_path.read_text())

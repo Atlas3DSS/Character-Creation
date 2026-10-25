@@ -110,7 +110,7 @@ def main():
   def standardized(value,mask):
    t=torch.tensor(value[mask],device='cuda');t-=t.mean(0);norm=torch.linalg.vector_norm(t,dim=0);valid=torch.isfinite(norm)&(norm>1e-7)
    return t/torch.where(valid,norm,torch.ones_like(norm)),valid
-  candidates=[]
+  candidates=[];link_paths=[]
   for layer in range(a.shard,32,6):
    check();raw=layer_values(layer);x,valid=standardized(raw,discover)
    for target_layer in (layer,layer+1):
@@ -131,7 +131,8 @@ def main():
     for column in range(24):
      safe=np.maximum(ids[:,column],0);r=(hx*hy[:,torch.tensor(safe,device='cuda')]).sum(0).cpu().numpy()
      supported=(ids[:,column]>=0)&hvalid.cpu().numpy()&hyvalid.cpu().numpy()[safe];held_values[supported,column]=r[supported]
-    np.savez_compressed(Path(str(prefix)+f'_links_L{layer}_L{target_layer}.npz'),ids=ids,r=vals,heldout_r=held_values,
+    link_path=Path(str(prefix)+f'_links_L{layer}_L{target_layer}.npz');link_paths.append(link_path)
+    np.savez_compressed(link_path,ids=ids,r=vals,heldout_r=held_values,
       discovery_n=int(discover.sum()),heldout_n=int(replicate.sum()),source_layer=layer,target_layer=target_layer,
       source_valid=valid.cpu().numpy(),target_valid=target_valid.cpu().numpy())
     if target_layer==layer+1:
@@ -165,7 +166,11 @@ def main():
        'kl_baseline_to_ablated':float((base_logp.exp()*(base_logp-logp)).sum()),'position':meta}
       stream.write(json.dumps(record,allow_nan=False)+'\n');checks+=1
      stream.flush();update(causal_checks=checks)
-  update(phase='complete')
+  artifact_paths=[array_path,ids_path,Path(str(prefix)+f'_qualification_{a.shard}.json'),Path(str(prefix)+f'_planner_{a.shard}.json'),Path(str(prefix)+f'_causal_{a.shard}.jsonl'),*link_paths]
+  artifact_manifest=Path(str(prefix)+f'_artifacts_{a.shard}.json')
+  atomic(artifact_manifest,{'job_id':job,'model_identity':IDENTITY,'worker_sha256':spec['worker_sha256'],'corpus_sha256':spec['corpus_sha256'],
+   'activation_shape':[len(selected),32,9216],'activation_dtype':'float16','files':[{'name':p.name,'sha256':digest(p),'bytes':p.stat().st_size} for p in artifact_paths]})
+  update(phase='complete',artifact_manifest=artifact_manifest.name,artifact_manifest_sha256=digest(artifact_manifest))
  except Exception as error:update(phase='failed',error=repr(error))
  finally:
   # Keep this exact leased service inspectable until its owning controller cleans it up.
