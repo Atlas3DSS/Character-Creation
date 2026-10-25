@@ -46,6 +46,14 @@ Open `http://127.0.0.1:8792` and choose **Persona studio**. The interface uses P
 
 **Porting to another machine or fleet? Give your agent [fork_agent.md](fork_agent.md).** The comparison interface supports one to six configured endpoints. The current scheduled fleet adapter is specific to the six-card reference deployment and needs explicit adaptation for different hosts, resource managers or card counts. Configure those bindings before enabling schedules.
 
+## Shareable baseline capture
+
+The 40,000 accepted synthetic prompts are inputs, not 40,000 completed inference records. The new capture runner pairs each prompt with an unsteered assistant response and full final-prefill MLP-input, residual and pre-MLP matrices across all 64 layers. It does not record every neuron's activation at every generated token. Responses use a fixed seed, greedy decoding, thinking disabled and a 2,048-token answer ceiling; truncated answers are retained but do not qualify as complete pairs.
+
+`persona/persona_baseline_capture.py` pins the corpus, checkpoint, prepared runtime and request provenance, validates raw arrays and hashes, and requires all 40,000 complete pairs before declaring completion. Failed or uncertain captures require review; they are not silently replayed. The reference `persona/persona_baseline_schedule.py` reserves 20:00–08:00 America/Los_Angeles for this work and can use idle admitted GPU capacity outside its dedicated window. Higher-priority research and Atlas demand take precedence over that spare-time work; Atlas operations and a responsive Linux system take precedence throughout. The reference fleet and workboard bindings must be configured before enabling this scheduler on another system.
+
+This artifact is intended as a contribution back to [Lyra's neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer). Completion and publication must be verified from the retained manifest; the existence of the runner or prompt dataset does not establish either.
+
 ## Evidence and current limits
 
 The current implementation has passed these live operational checks:
