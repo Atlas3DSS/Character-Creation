@@ -44,7 +44,7 @@ function layerProjection(x,y,layer,w,h,mix){
 }
 function drawFlatMap(c,w,h,groups){
  if(!showFlatMap)return;
- const layer=+$('layer').value,top=h*.67,bottom=h*.91,left=w*.1,right=w*.9;
+ const layer=+$('layer').value,size=Math.min(w*.8,h*.26),top=h*.66,bottom=top+size,left=(w-size)/2,right=(w+size)/2;
  const neurons=[...(groups.get(layer)||[])];
  if(selectedUnit?.layer===layer&&!neurons.some(n=>n.neuron===selectedUnit.neuron))neurons.push(selectedUnit);
  c.save();c.fillStyle='#1c2925';c.strokeStyle='#b3dc7a';c.lineWidth=1;
@@ -53,7 +53,7 @@ function drawFlatMap(c,w,h,groups){
  c.beginPath();c.rect(left,top,right-left,bottom-top);c.clip();
  for(const n of neurons){
   const coords=($('map-layout').value==='output'?n.output_layout:null)||n.layout||[2*(n.neuron%136)/135-1,2*Math.floor(n.neuron/136)/127-1];
-  const x=(left+right)/2+coords[0]*(right-left)*.46,y=(top+bottom)/2+coords[1]*(bottom-top)*.43;
+  const x=(left+right)/2+coords[0]*(right-left)*.46,y=(top+bottom)/2+coords[1]*(bottom-top)*.46;
   const chosen=selectedUnit?.layer===layer&&selectedUnit?.neuron===n.neuron,radius=chosen?6:3.5;
   c.fillStyle=chosen?'#efc77c':'#b6ea70';c.beginPath();c.arc(x,y,radius,0,Math.PI*2);c.fill();
   if(chosen){c.strokeStyle='#efc77c';c.beginPath();c.arc(x,y,9,0,Math.PI*2);c.stroke();c.fillText(`L${layer}N${n.neuron}${n.atlasOnly?' [index]':''}`,Math.max(left+4,Math.min(x+12,right-130)),y>bottom-20?y-12:y+17);}
