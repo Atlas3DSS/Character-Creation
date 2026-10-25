@@ -129,6 +129,16 @@ Book-derived source material and large training outputs should remain local unle
 
 ## Common Workflows
 
+Open the persona recipe workspace against explicitly configured local worker forwards:
+
+```bash
+python3 persona_explorer.py --config persona_explorer.local.json --port 8792
+```
+
+In the map, inspect a measured neuron or layer popout, add signed pushes, and choose **Use recipe in a six-card experiment**. Save reusable recipes or make dose variants, browse corpus prompts with their discovery/heldout labels, and arrange **recipes × prompts** as **6 × 1**, **1 × 6**, **2 × 3**, **3 × 2**, or one to six custom slots. Every cell shares the batch seed and answer budget; a baseline is an explicit slot. The [workspace guide and API](PERSONA_EXPLORER.md#build-and-compare-recipes) explain saved recipes, source provenance and per-cell results. This extends the comparison workflow inspired by **[Lyra’s neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer)**.
+
+Results and full request/response provenance persist in local SQLite, including partial failures and interrupted work; there is no silent inference retry. Short budgets below 2,048 tokens are labeled smoke, and short SCOTUS requests require explicit opt-in. Reachable workers are identity-verified, but their shared busy/idle status is unknown; batches use the available verified subset in waves. The 2026-10-25 worker window ends around 09:00 America/Los_Angeles, so the interface does not imply always-on GPU availability. Real 6 × 1 and 1 × 6 checks completed all 12 cells across the six Quincies, and 159 persona tests passed; these are operational checks, not causal personality findings.
+
 Run general eval battery:
 
 ```bash

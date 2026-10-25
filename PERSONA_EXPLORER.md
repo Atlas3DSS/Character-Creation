@@ -36,7 +36,7 @@ The local web service requires Python 3.11+ and NumPy; it has no web-framework d
 python3 persona_explorer.py --port 8792
 ```
 
-Open `http://127.0.0.1:8792`. The map shows coverage, neuron controls, trait sliders, layer ranges with an optional explicit sign reversal, signed recipes and saved negative/baseline/positive comparisons. The Studies tab shows the measured prompt-only reference. Lyra’s original 4B recipes are available in a separately labeled references tab; they are not applied to 27B by coordinate transfer.
+Open `http://127.0.0.1:8792`. The map shows coverage, neuron controls, trait sliders, layer ranges with an optional explicit sign reversal, and the original negative/baseline/positive comparison. Focus a layer to inspect its measured candidates in a layer popout. The Experiment workspace adds reusable recipes, corpus browsing and independently arranged batches of one to six jobs. The Studies tab shows the measured prompt-only reference. Lyra’s original 4B recipes are available in a separately labeled references tab; they are not applied to 27B by coordinate transfer.
 
 Create ignored `persona_explorer.local.json` to connect verified local forwards:
 
@@ -54,7 +54,57 @@ Create ignored `persona_explorer.local.json` to connect verified local forwards:
 
 Start with `python3 persona_explorer.py --config persona_explorer.local.json --port 8792` to load that configuration.
 
+Configure up to six distinct forwarded endpoints. Diagnostic endpoints also require their exact `runtime_identity` from `/v1/models`; an optional `label` gives each worker a readable name. Native model/prepared checks and diagnostic runtime checks remain mandatory for every job.
+
 The service reads the native `/v1/models` capability catalog and checks the prepared identity, protocol, site names, vector widths and request site limit before sending steering. Older packages cannot silently accept steering as a no-op. Complete requests, responses, program hashes and vector provenance are retained in `results/persona_explorer.sqlite`.
+
+### Build and compare recipes
+
+1. Select a measured neuron on the map or in the layer popout, inspect its activation observations and output-direction alignment, and add an explicit positive or negative push. Choose the intervention site and phase, then use **Use recipe in a six-card experiment** to open the workspace with those pushes.
+2. Name the recipe and edit its targets, doses or phase. **Save as new** creates a reusable model-bound recipe; **Update saved** edits that recipe. Quick dose multipliers create selected variants without overwriting the saved original. Variants remain drafts until saved. A zero multiplier preserves the explicit zero doses in the recipe; the separate **Baseline** recipe has no pushes.
+3. Browse registered SCOTUS, Big Five and private book prompts by corpus, discovery/heldout split, or search. Labels identify book passages and mutations, legal prompt IDs, and Big Five items/profiles. Inspect the prompt and any profile system instruction before selection. Custom prompts are also supported; they do not alter the registered corpus or its split assignments.
+4. Arrange **recipes × prompts** as **6 × 1**, **1 × 6**, **2 × 3**, **3 × 2**, selected combinations, or one to six individually edited slots. A baseline occupies a slot. **Paired baseline** explicitly creates a baseline and intervention for one prompt; the workspace never adds hidden control runs.
+5. Set one seed and answer-token budget for the whole batch. The UI defaults to 2,048 tokens. Budgets below 2,048 are labeled preview/smoke and are not eligible for promotion or full-answer evaluation; SCOTUS API requests require explicit `smoke: true` to use them. Prefer 3,072–4,096 for legal evaluation when prompt plus answer fits the worker context. The current 4,096-token workers require an answer budget below 4,096, and the worker checks the exact combined token count without truncation. Thinking can be selected only when supported by the admitted workers.
+6. Run the batch and inspect each cell as it finishes. Answers, completion status, errors, prompt/recipe snapshots and provenance persist locally. Editing a saved recipe or adding corpus records afterward does not rewrite a submitted job. Full requests, responses and dense steering vectors remain in private SQLite; the UI receives compact results and provenance. Partial successes survive other cells' failures. Restarted queued/running cells are marked interrupted, and inference is never silently retried.
+
+Worker availability means **reachable with a verified identity**, not idle. The cards are shared with overnight sweeps. A common endpoint pool limits legacy comparisons and workspace batches to one UI inference request per configured worker; fewer reachable workers execute the admitted jobs in waves. A reachable model, prepared-package or runtime mismatch rejects admission. Transport loss after admission is recorded as a cell failure. The capacity display refreshes about every ten seconds and reports context and thinking support when known. These are leased services, not an always-on fleet: the 2026-10-25 overnight window ends around **09:00 America/Los_Angeles**, and later use requires newly available verified workers.
+
+Live verification completed both **six recipes × one prompt** and **one recipe × six prompts** on all six Quincies: **12/12 cells completed**. The accompanying persona test suite passed 159 tests. Browser checks covered desktop and mobile layouts. These checks establish operation of the workspace, not a causal personality effect or native cache/MTP qualification.
+
+### Local workspace API
+
+All routes belong to the loopback explorer service. Corpus access reads only the completed, hash-bound `data/persona_manager_corpus.jsonl` publication and its manifest; source files remain private and unchanged.
+
+| Method and route | Purpose |
+| --- | --- |
+| `GET /api/corpora` | Corpus names and discovery/heldout row counts. |
+| `GET /api/prompts?corpus=&split=discovery&q=&offset=0&limit=12` | Searchable prompt page with IDs, labels, text, system instructions and suggested budgets; `split` also accepts `heldout` or `all`. |
+| `GET /api/saved-recipes` | Saved names, model identities, pushes, phases and creation/update times. |
+| `POST /api/saved-recipes` | Validate and save `{name, model_identity, pushes, phase}`; include an existing `id` to update it. |
+| `POST /api/batches` | Validate every cell before enqueueing a one-to-six-cell batch; returns `{id}`. |
+| `GET /api/batches` | Recent batch states and completed/total cell counts. |
+| `GET /api/batch?id=...` | Persisted input, cell states, snapshots, endpoint labels, compact outputs and errors. |
+| `GET /api/capacity` | Configured/reachable worker counts, per-card availability, thinking support and context limit; idle status remains unknown. |
+
+For example, submit an explicit baseline and one saved recipe against the same registered prompt. Obtain `model_identity` from `/api/state` and the prompt/recipe IDs from their respective lists:
+
+```json
+{
+  "model_identity": "EXACT_MODEL_IDENTITY",
+  "seed": 7035,
+  "max_tokens": 2048,
+  "thinking": false,
+  "smoke": false,
+  "cells": [
+    {"label": "Baseline", "prompt_id": "REGISTERED_PROMPT_ID",
+     "recipe": {"name": "Baseline", "pushes": [], "phase": "all"}},
+    {"label": "Intervention", "prompt_id": "REGISTERED_PROMPT_ID",
+     "recipe_id": "SAVED_RECIPE_ID"}
+  ]
+}
+```
+
+Each cell accepts exactly one of `prompt_id` or a custom `prompt` string, and exactly one of `recipe_id` or an inline `{name?, pushes, phase}` recipe. The shared budget must be 256–4,096 tokens, subject to advertised context limits. `thinking` and `smoke` are explicit booleans. Recipe phases are `all`, `prefill` and `decode`. The existing `/api/compare` and `/api/comparison` routes remain available for the original signed comparison.
 
 ## Calibration and experiments
 
