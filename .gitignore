@@ -213,3 +213,24 @@ data/persona_manager_corpus.jsonl
 data/persona_manager_corpus_manifest.json
 data/persona_generated_big_five.jsonl
 data/persona_generated_big_five_manifest.json
+
+# Private operating and commercial plan; never publish.
+/operationalize.md
+
+# Proprietary local research: never commit prompts, recipes, sources or sweeps.
+/data/persona_chemistry_prompt_seeds.json
+/data/persona_hhd_battery.json
+/data/persona_lab_battery.json
+/data/persona_lab_corpus_design.json
+/persona/persona_lab_corpus.py
+/tests/test_persona_lab_corpus.py
+/reports/persona_chemistry_sources.md
+data/persona_private_*.json
+**/*chemistry*
+**/*surgical*
+**/*hhd*
+**/*rahn*
+**/*lab_corpus*
+/chem-operator/
+
+/data/persona_public_release.local.json

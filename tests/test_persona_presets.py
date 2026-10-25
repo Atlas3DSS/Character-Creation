@@ -20,15 +20,15 @@ class PublishedPersonaPresetTests(unittest.TestCase):
         fixtures.PersonaSculptorTests.setUp(self)
         (self.root / 'data/persona_presets.json').write_bytes(CATALOG.read_bytes())
 
-    def test_real_catalog_has_twenty_two_distinct_bounded_annotated_profiles(self):
+    def test_real_catalog_has_sixteen_distinct_bounded_annotated_profiles(self):
         catalog = self.app.sculptor.presets()
         self.assertEqual(catalog['schema'], 'character-creation.persona-presets.v1')
         self.assertEqual(catalog['catalog_sha256'], hashlib.sha256(CATALOG.read_bytes()).hexdigest())
         presets = catalog['presets']
-        self.assertEqual(len(presets), 22)
-        self.assertEqual(len({row['id'] for row in presets}), 22)
-        self.assertEqual(len({row['name'] for row in presets}), 22)
-        self.assertEqual(len({tuple(row['dials'][trait] for trait in TRAITS) for row in presets}), 22)
+        self.assertEqual(len(presets), 16)
+        self.assertEqual(len({row['id'] for row in presets}), 16)
+        self.assertEqual(len({row['name'] for row in presets}), 16)
+        self.assertEqual(len({tuple(row['dials'][trait] for trait in TRAITS) for row in presets}), 16)
         for row in presets:
             with self.subTest(preset=row['id']):
                 self.assertEqual(set(row['dials']), set(TRAITS))
@@ -64,7 +64,7 @@ class PublishedPersonaPresetTests(unittest.TestCase):
              patch('persona_sculptor.fetch', side_effect=AssertionError('Preset must not generate responses')):
             results = [self.app.sculptor.preset({'id': row['id'], 'count': 1, 'seed': 7035}) for row in presets]
             repeat = self.app.sculptor.preset({'id': presets[0]['id'], 'count': 1, 'seed': 7035})
-        self.assertEqual(len({row['saved_recipe']['id'] for row in results}), 22)
+        self.assertEqual(len({row['saved_recipe']['id'] for row in results}), 16)
         self.assertEqual(repeat['saved_recipe']['id'], results[0]['saved_recipe']['id'])
         for preset, result in zip(presets, results):
             with self.subTest(preset=preset['id']):
@@ -77,6 +77,20 @@ class PublishedPersonaPresetTests(unittest.TestCase):
                 self.assertEqual(result['build']['preset']['notes'], preset['notes'])
                 self.assertEqual(result['build']['preset']['catalog_sha256'], hashlib.sha256(CATALOG.read_bytes()).hexdigest())
                 self.assertLessEqual(result['build']['candidates'][0]['aggregate_relative_norm'], .5 + 1e-9)
+
+    def test_private_overlay_stays_local_and_validates_duplicates(self):
+        import json
+        public = self.app.sculptor.presets()
+        extra = dict(public['presets'][0], id='local-example', name='Local example')
+        path = self.root / 'data/persona_private_presets.json'
+        path.write_text(json.dumps({'schema': public['schema'], 'presets': [extra]}))
+        combined = self.app.sculptor.presets()
+        self.assertEqual(len(combined['presets']), 17)
+        self.assertNotEqual(combined['catalog_sha256'], public['catalog_sha256'])
+        extra['id'] = public['presets'][0]['id']
+        path.write_text(json.dumps({'schema': public['schema'], 'presets': [extra]}))
+        with self.assertRaisesRegex(ValueError, 'unique'):
+            self.app.sculptor.presets()
 
 
 if __name__ == '__main__':

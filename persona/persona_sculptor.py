@@ -254,6 +254,14 @@ class Sculptor:
         path = self.app.root / 'data/persona_presets.json'
         if not path.is_file(): return {'presets': [], 'status': 'unavailable'}
         raw = path.read_bytes(); catalog = json.loads(raw)
+        private_path = self.app.root / 'data/persona_private_presets.json'
+        if private_path.is_file():
+            private_raw = private_path.read_bytes(); private = json.loads(private_raw)
+            keys(private, {'schema', 'presets'})
+            if private.get('schema') != catalog.get('schema') or not isinstance(private.get('presets'), list):
+                raise ValueError('Invalid private preset catalog')
+            catalog['presets'].extend(private['presets'])
+            raw += b'\x00private-presets\x00' + private_raw
         keys(catalog, {'schema', 'presets'})
         if catalog['schema'] != 'character-creation.persona-presets.v1' or not isinstance(catalog['presets'], list) or not 1 <= len(catalog['presets']) <= 64:
             raise ValueError('Invalid fixed persona preset catalog')

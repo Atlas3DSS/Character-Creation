@@ -477,7 +477,6 @@ Selecting a map neuron now draws measured links directly between the desk-like s
 
 [Atlas3D/character-creation-big-five](https://huggingface.co/datasets/Atlas3D/character-creation-big-five) contains only generated Big Five discovery scenarios. `persona/persona_hub.py` checks the publication hash and synthetic-only provenance before exporting a field allowlist into `dataset/` and uploading one atomic Hub commit. Its bounded job watcher publishes at most every thirty minutes and on completion. Book text, local source paths, credentials, and other corpus collections are excluded. Trait/facet labels describe prompt design, not psychometric truth.
 
-
 ## Bounded gift campaign for Lyra
 
 The `lyra_gift` job uses pinned `Qwen/Qwen3.5-4B` revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a` on all six workboard-leased V100s, with John ranking a bounded list of candidate experiments. The source is a frozen, synthetic-only Big Five snapshot. Domain/facet families are assigned to discovery, replication, and held-out splits. Workers retain all 294,912 MLP values at the final observed prompt position, compute same-layer and adjacent-layer top correlations, and test selected adjacent links through genuine neuron ablations with separate random same-layer controls. Those controls are not amplitude matched.

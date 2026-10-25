@@ -20,6 +20,12 @@ def export(root=ROOT):
         manifest=json.loads((root/'data/persona_generated_big_five_manifest.json').read_text())
     if manifest.get('status')!='complete' or hashlib.sha256(raw).hexdigest()!=manifest.get('output_sha256'):
         raise ValueError('Generated source snapshot hash mismatch')
+    approval_path = root/'data/persona_public_release.local.json'
+    if not approval_path.is_file():
+        raise ValueError('Explicit public snapshot approval required')
+    approval = json.loads(approval_path.read_text())
+    if approval.get('classification') != 'public' or approval.get('source_sha256') != manifest['output_sha256']:
+        raise ValueError('Snapshot is not approved for public release')
     rows=[];seen=set()
     for line in raw.splitlines():
         if not line.strip():continue
