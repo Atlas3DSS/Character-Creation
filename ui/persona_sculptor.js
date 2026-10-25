@@ -142,6 +142,7 @@
       hint('One unsteered baseline per prompt, followed by your selected candidates. All use the same neutral system, user text and seed. Registered persona system instructions are excluded and recorded.'));
     const batteryLayout = node('div', undefined, 'ps-battery-layout'), selectedPanel = node('div'), sourcePanel = node('div');
     refs.batteryList = node('div', undefined, 'ps-battery-list'); refs.batteryCount = node('strong', '0 / 12 prompts');
+    selectedPanel.append(button('Load research & lab-tech battery',()=>{const battery=app.meta?.lab_battery;if(!battery?.prompts?.length){notice('Research battery unavailable.');return;}app.battery=clone(battery.prompts);renderBattery();updateControls();notice('Loaded 12 authored research scenarios. Review rigor, calibration, initiative, reversibility, permissions and truthful reporting; this is not a validated assessment.');},'ps-link-button'));
     selectedPanel.append(row(refs.batteryCount, button('Restore default battery', restoreBattery, 'ps-link-button')), refs.batteryList);
     const custom = node('details', undefined, 'ps-custom'); custom.append(node('summary', 'Add your own prompts'));
     refs.custom = node('textarea'); refs.custom.rows = 4; refs.custom.placeholder = 'One prompt…\n\nA second prompt…'; refs.custom.setAttribute('aria-label', 'Custom prompts separated by blank lines');

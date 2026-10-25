@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const ZONE = 'America/Los_Angeles';
-  const names = {big_five_expand: 'Big Five corpus expansion', neighborhood_hillclimb: 'Neighborhood hillclimb', studio_session: 'Interactive persona studio'};
+  const names = {big_five_expand: 'Big Five corpus expansion', neighborhood_hillclimb: 'Neighborhood hillclimb', studio_session: 'Interactive persona studio', lyra_gift: 'Lyra · Qwen3.5-4B research gift'};
   const terminal = new Set(['complete', 'partial', 'failed', 'cancelled', 'expired']);
   const app = {ready: false, enabled: false, loadError: '', jobs: [], selected: null, detail: null,
     submitting: false, cancelling: false, listSerial: 0, detailSerial: 0};
@@ -26,7 +26,7 @@
   function hint(text) {return node('p', text, 'pj-hint');}
   function number(value) {return Number.isFinite(value) ? value.toLocaleString() : '—';}
   function readable(value) {return String(value || 'unknown').replaceAll('_', ' ');}
-  function units(job) {return job.kind === 'studio_session' ? 'ready sessions' : job.counts_unit === 'observations' || job.kind === 'neighborhood_hillclimb' ? 'observations' : 'synthetic entries';}
+  function units(job) {return job.kind === 'studio_session' ? 'ready sessions' : job.counts_unit === 'observations' || ['neighborhood_hillclimb','lyra_gift'].includes(job.kind) ? 'observations' : 'synthetic entries';}
   function localClock(zone, when = new Date()) {
     const parts = new Intl.DateTimeFormat('en-CA', {timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).formatToParts(when);
@@ -133,7 +133,7 @@
     refs.targets.required = neighborhood;
     refs.targetField.firstElementChild.textContent = neighborhood ? 'Valid observation target' : 'Accepted entry target';
     refs.maxField.firstElementChild.textContent = neighborhood ? 'Hard observation cap' : 'Hard entry cap';
-    refs.kindNote.textContent = studio ? 'Start John and the six Quincies for interactive persona experiments. No automatic battery runs; models stay available until the session ends or you stop it.' : neighborhood ?
+    refs.kindNote.textContent = refs.kind.value==='lyra_gift' ? 'Pinned Qwen3.5-4B on six Quincies: synthetic-corpus activation map, replication links and bounded ablation checks ranked by John. Stops at the absolute deadline; incomplete evidence stays partial.' : studio ? 'Start John and the six Quincies for interactive persona experiments. No automatic battery runs; models stay available until the session ends or you stop it.' : neighborhood ?
       'Adapt discovery experiments around the selected neurons. Count valid observations; newly observed co-activity still needs separate validation.' :
       'Generate and deduplicate new Big Five themed discovery prompts. These are synthetic task entries, not validated psychometric items or personality scores.';
     if (['Big Five discovery expansion', 'Neighborhood discovery search', 'Interactive persona studio'].includes(refs.name.value)) {

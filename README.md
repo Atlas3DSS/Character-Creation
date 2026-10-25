@@ -14,6 +14,9 @@ The primary methodological inspiration is **[Lyra’s neuron-explorer](https://g
 
 | Workflow | What the app provides |
 | --- | --- |
+| **Inspect the model in 3D** | Orbit measured co-activity and signed weight paths, explore upstream/downstream cones, and switch the main map to output-direction similarity. |
+| **Read the neuron lens** | Positive/negative static token projections for all 1,114,112 MLP neurons, token search and pooled cone summaries. |
+| **Watch and compare tokens** | Selected-neuron heatmaps, live polling, saved playback and baseline/intervention next-token KL and probability changes. |
 | **Create a persona** | Enter a description for the local planner, use manual controls, or load one of **16 editable presets**, including GPT-4o-inspired and Skippy-inspired starting points. |
 | **Sculpt the recipe** | Adjust five calibrated trait directions, overall strength, layers and intervention phase. See the requested profile and build up to six nearby candidate recipes. |
 | **Compare voices** | Run a shared battery with the same user text, neutral system, seed and answer budget. Studio keeps one unsteered answer per prompt beside the candidates; the persona description is kept out of evaluation prompts. |
@@ -22,9 +25,12 @@ The primary methodological inspiration is **[Lyra’s neuron-explorer](https://g
 | **Schedule research** | Create bounded local-agent jobs for synthetic Big Five corpus expansion or adaptive neuron experiments. The reference scheduler owns John and six Quincies through verified leases and records startup, progress and cleanup. |
 | **Keep the evidence** | Save recipes and exact experiment snapshots; retain responses, errors and provenance. Discovery and heldout data remain separate, and interrupted inference is not silently replayed. |
 
+
 Preset loading and dial editing do not generate responses. **Run shared battery** starts a comparison; **Start studio session** explicitly requests a leased fleet when needed. Cold model preparation can take tens of minutes. See [the Studio workflow and all 16 presets](PERSONA_EXPLORER.md#persona-studio).
 
 ## Start here
+
+The growing [synthetic Big Five discovery dataset](https://huggingface.co/datasets/Atlas3D/character-creation-big-five) is published separately with provenance and explicit unvalidated-label limits.
 
 The reusable inference tools live in their own repository: **[Atlas3DSS/flare-local-inference](https://github.com/Atlas3DSS/flare-local-inference)**. Its [steering guide](https://github.com/Atlas3DSS/flare-local-inference/blob/atlas/sm70-public/STEERING.md) covers the native runtime, build/preparation, API and offline activation capture. This repository contains the interface, calibration, corpus tooling, experiment orchestration and analysis.
 
@@ -51,7 +57,7 @@ The current implementation has passed these live operational checks:
 
 These establish working controls and reproducible comparisons. **The named presets are authored starting points whose character fidelity is unvalidated.** The displayed profiles are requested direction settings, not measured personality scores. Trait directions and observed correlations require controlled follow-up before making causal claims. The [earlier 2,046-response baseline](reports/persona_baseline.json) separately records unsteered and prompt-conditioned measurements; it is not evidence of successful activation steering.
 
-The **27B logit lens, weight-path web and live per-token activation browser remain missing**; the [Lyra feature audit](PERSONA_EXPLORER.md#feature-comparison-with-lyras-explorer) records the full gaps. Diagnostic steering checks also do not qualify production cache reuse or speculative/MTP decoding. See [the complete evidence limits](PERSONA_EXPLORER.md).
+The **27B static logit lens and 3D weight-path web now cover every MLP neuron**. The Live tokens & lens workspace adds selected-neuron playback and empirical next-token comparisons; its runtime qualification is documented in the guide. The [Lyra feature audit](PERSONA_EXPLORER.md#feature-comparison-with-lyras-explorer) records the remaining gaps. Diagnostic steering checks also do not qualify production cache reuse or speculative/MTP decoding. See [the complete evidence limits](PERSONA_EXPLORER.md).
 
 ## Credits and research background
 
@@ -97,16 +103,49 @@ Start with:
 - `data/scotus/README.md`
 - `scripts/experiments/scotus/README.md`
 
+## Persona source and checks
+
+The application source lives in `persona/`, its CPU tests in `tests/`, and its
+browser assets in `ui/`. `persona_explorer.py` is the single root compatibility
+launcher for the existing service. Configuration, `data/`, `results/`, and
+`reports/` remain relative to the project root.
+
+Run commands from the project root in your existing Python environment:
+
+```bash
+python persona_explorer.py --help
+python persona/persona_jobs.py --help
+python -m unittest discover -s tests -p 'test_persona*.py'
+```
+
+For Python integrations, `import persona` enables the existing `persona_*`
+module names; then use, for example, `from persona_vectors import ModelSpec`.
+Tests use the same bootstrap. The flat module names are also used on workers.
+Other script CLIs retain their original basename under `persona/`.
+
+The deployed GPU helper sources retain their exact bytes and original flat
+remote filenames. When invoking them locally, pass explicit data locations:
+`persona/persona_capture.py plan --root .`,
+`persona/persona_fleet.py plan --root .`, and
+`persona/persona_probe.py --model data/persona_model.json` (with the remaining
+required arguments). Source hashes always cover the implementation file,
+never the root launcher. Local source checks resolve `persona/<filename>`;
+existing workers continue resolving `<remote_root>/<filename>`. This source
+reorganization does not deploy files or restart running services. Changed
+orchestration sources must pass the existing deployment hash checks before use;
+previous receipts and research artifacts retain their original hashes.
+
 ## Repository Map
 
 | Path | Contents |
 |---|---|
-| `persona_manager.py`, `persona_planner.py` | Durable proposal/attempt queue and the Atlas-specific local 27B planner supervisor |
-| `persona_probe.py`, `persona_capture.py`, `persona_map.py` | Retained Flare graph observations, calibration and provisional neuron maps |
-| `persona_corpus.py` | Split-preserving SCOTUS/Big Five prompts and explicit private-book ingestion |
-| `persona_coverage.py` | Operator-only queueing and status for one unsteered prefill observation per registered row, preserving heldout splits |
-| `persona_characters.py` | Private original-source character/speaker candidates with exact evidence spans, uncertainty and resumable coverage |
-| `persona_sculptor.py`, `ui/persona_sculptor.js`, `ui/persona_sculptor.css` | Persona studio plans, model-bound builds, shared-battery campaigns, manual reviews and the interactive profile editor |
+| `persona/`, `tests/` | Persona Explorer implementation and CPU regression suite |
+| `persona/persona_manager.py`, `persona/persona_planner.py` | Durable proposal/attempt queue and the Atlas-specific local 27B planner supervisor |
+| `persona/persona_probe.py`, `persona/persona_capture.py`, `persona/persona_map.py` | Retained Flare graph observations, calibration and provisional neuron maps |
+| `persona/persona_corpus.py` | Split-preserving SCOTUS/Big Five prompts and explicit private-book ingestion |
+| `persona/persona_coverage.py` | Operator-only queueing and status for one unsteered prefill observation per registered row, preserving heldout splits |
+| `persona/persona_characters.py` | Private original-source character/speaker candidates with exact evidence spans, uncertainty and resumable coverage |
+| `persona/persona_sculptor.py`, `ui/persona_sculptor.js`, `ui/persona_sculptor.css` | Persona studio plans, model-bound builds, shared-battery campaigns, manual reviews and the interactive profile editor |
 | `data/persona_presets.json` | Sixteen authored starting profiles with source citations, approximation notes and unsupported qualities |
 | `PERSONA_EXPLORER.md` | Native intervention semantics, overnight setup, evidence limits and attribution |
 | `scripts/experiments/scotus/` | SCOTUS data prep, probing, patching, poking, review, and budget helpers |
@@ -203,11 +242,11 @@ bash scripts/infra/overnight_local.sh
 For the new six-V100 persona workflow, use the [Persona Explorer setup](PERSONA_EXPLORER.md#start-the-workers-and-manager) instead of the legacy orchestration script. After calibrated probe workers and the local planner are leased and ready:
 
 ```bash
-python persona_manager.py configure --fleet persona_fleet.local.json \
+python persona/persona_manager.py configure --fleet persona_fleet.local.json \
   --config results/persona_manager_config.json \
   --planner-lease GPU_WORKBOARD_PLANNER_JOB_ID --base-port 8930
-python persona_manager.py run --config results/persona_manager_config.json
-python persona_manager.py status
+python persona/persona_manager.py run --config results/persona_manager_config.json
+python persona/persona_manager.py status
 ```
 
 The manager resumes the same SQLite queue after interruption and defaults to a bounded run until the next morning. It verifies measured activation artifacts and preserves incomplete/error attempts. It does not launch GPU services or replace their leases.

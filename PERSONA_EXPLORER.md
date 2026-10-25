@@ -1,5 +1,7 @@
 # Persona Explorer
 
+Source and CLI layout: see [Persona source and checks](README.md#persona-source-and-checks). Local scripts live in `persona/`; the root `persona_explorer.py` remains the service launcher. The existing remote deployment keeps its flat filenames.
+
 This update joins [Lyra’s neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer) with Character Creation’s broader trait and layer experiments. Lyra’s work is the main reference for precise neuron sweeps, signed relative doses, the distinction between what a neuron responds to and what its output causes, and comparing complete rollouts. The local UI, experiment tools, and Flare adapter are independently implemented. No upstream source is vendored; no endorsement is implied.
 
 The target is `nvidia/Qwen3.8-27B-NVFP4`, revision `482ca0f3832238542f8f5295dde86b5f22711d80`: 64 layers, hidden width 5,120, MLP width 17,408, or 1,114,112 MLP units. Model identity includes checkpoint, revision, quantization and dimensions. Calibration from another model is rejected.
@@ -85,7 +87,7 @@ The default answer budget is 2,048 tokens with thinking off. Prompt plus answer 
 
 When no workers are reachable, **Start studio session** explicitly schedules a `studio_session` job for John and the six owned Quincies. Choose a duration, defaulting to two hours. Cold model preparation can take tens of minutes on this six-card fleet because the validated shared-cache publication stage is serialized; session time includes startup. Existing workboard admission, GPU ownership, thermal checks and the absolute deadline still apply. The UI reuses a current studio session or reachable fleet instead of automatically launching another. **Jobs & schedules** shows durable startup/status events; **Stop this studio session** requests cooperative cleanup of that session's own resources. Opening the tab, browsing presets and moving dials do not start GPUs.
 
-The 16 presets are:
+The original 16 presets are:
 
 | Inspired starting points | Basic archetypes | Basic archetypes | Basic archetypes |
 | --- | --- | --- | --- |
@@ -95,9 +97,10 @@ The 16 presets are:
 | — | Stoic Analyst | Gentle Diplomat | Creative Muse |
 | — | Competitive Strategist | Quiet Philosopher | — |
 
+
 Preset previews show the brief, five dials, citations and approximation notes. **Load preset & build candidates** uses the fixed authored catalog without consulting John, preserves its catalog hash and notes in the plan/build, and saves its center recipe. Repeated loading updates that preset's model-bound saved recipe rather than creating duplicate library entries. The remaining variants stay in the immutable build until individually saved.
 
-The [catalog](data/persona_presets.json) cites the [GPT-4o model reference](https://developers.openai.com/api/docs/models/gpt-4o), [OpenAI personalization guidance](https://learn.chatgpt.com/docs/personalize), and Craig Alanson's [Skippy-voiced page](https://www.craigalanson.com/flightjacket). These sources provide identity or style context; they do not establish the numeric dials or a transferable recipe. GPT-4o-inspired is not recovered OpenAI parameters or a particular ChatGPT snapshot. Skippy-inspired is an interpretive homage, not a recipe fitted to book dialogue or a validated reproduction of the character. All 16 profiles are authored heuristics whose behavioral effects and polarity require matched comparisons. No book passages are included in the public presets.
+The [catalog](data/persona_presets.json) cites the [GPT-4o model reference](https://developers.openai.com/api/docs/models/gpt-4o), [OpenAI personalization guidance](https://learn.chatgpt.com/docs/personalize), and Craig Alanson's [Skippy-voiced page](https://www.craigalanson.com/flightjacket). These sources provide identity or style context; they do not establish the numeric dials or a transferable recipe. GPT-4o-inspired is not recovered OpenAI parameters or a particular ChatGPT snapshot. Skippy-inspired is an interpretive homage, not a recipe fitted to book dialogue or a validated reproduction of the character. All profiles are authored heuristics whose behavioral effects and polarity require matched comparisons. No book passages are included in the public presets.
 
 Operational validation on 2026-10-25 saved all 16 distinct checkpoint-bound center recipes and ran both named presets through the five-prompt discovery battery with six candidates each. All 70 responses completed with a 2,048-token budget and thinking off; the five unsteered answers matched exactly across the two campaigns at seed 7035. John also returned a valid structured brief interpretation. These checks establish functioning interventions and reproducible comparisons, not GPT-4o or Skippy fidelity. The 252-test persona suite passed; the subsequently revised scheduler passed its 19 tests, including strict post-generation text and facet bounds.
 
@@ -147,13 +150,13 @@ The first local source contains **5,060 distinct original unsteered discovery pr
 
 Display conventions are `|r| >= 0.6` for strong, `|r| <= 0.2` for weak, and moderate between them. Same-direction and opposite-direction lists rank their non-weak coefficients; the weak list shows coefficients nearest zero. Constant neurons, missing observations and filters with fewer than eight unique prompts have no fabricated correlations.
 
-`persona_coactivity_extract.py` derives the private compact source from the existing manager database and captured arrays. It verifies job identity, original-prompt selection, unsteered request contents, runtime/model identity, response completion, provenance-file hashes, activation-file hashes and the measured-map hash. Run it on the host holding the raw captures:
+`persona/persona_coactivity_extract.py` derives the private compact source from the existing manager database and captured arrays. It verifies job identity, original-prompt selection, unsteered request contents, runtime/model identity, response completion, provenance-file hashes, activation-file hashes and the measured-map hash. Run it on the host holding the raw captures:
 
 ```bash
-python3 persona_coactivity_extract.py --root "$PWD"
+python3 persona/persona_coactivity_extract.py --root "$PWD"
 ```
 
-The default output is `results/persona_coactivity.npz`, created exclusively. Explicit `--replace` requires preservation of prior rows except audited duplicate exclusions. `--stream` emits the numeric archive to stdout for direct transfer to the explorer host; progress goes to stderr. The archive contains only candidate activations, coordinates, corpus labels and source hashes, with no passage text. Keep it private with the other results. `persona_neighbors.py` validates that publication against the current model/map and caches corpus statistics for interactive queries; it never scans raw captures during a click or starts GPU work. The source and viewer extend the independently implemented exploration workflow inspired by [Lyra's neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer).
+The default output is `results/persona_coactivity.npz`, created exclusively. Explicit `--replace` requires preservation of prior rows except audited duplicate exclusions. `--stream` emits the numeric archive to stdout for direct transfer to the explorer host; progress goes to stderr. The archive contains only candidate activations, coordinates, corpus labels and source hashes, with no passage text. Keep it private with the other results. `persona/persona_neighbors.py` validates that publication against the current model/map and caches corpus statistics for interactive queries; it never scans raw captures during a click or starts GPU work. The source and viewer extend the independently implemented exploration workflow inspired by [Lyra's neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer).
 
 ### Schedule John and the six Quincies
 
@@ -183,7 +186,7 @@ The host operator configures `persona_jobs.local.json` beside the explorer:
 }
 ```
 
-Run `python3 persona_jobs.py validate-config --config persona_jobs.local.json`, then supervise `python3 persona_jobs.py daemon --config persona_jobs.local.json` as a persistent user service on the configured resource owner. `--once` scans for one due job; it creates no resources if nothing is due. The reference deployment uses `character-persona-jobs.service` with automatic restart and a 600-second cooperative stop allowance. The fixed adapter is currently configured for the owner's Devbox/John and six-card V100 host; other installations must explicitly configure and review their own fleet bindings. `persona_lease.py` wraps the hash-verified installed workboard supervisor to register exact worker ownership without bypassing its admission, thermal or memory guards.
+Run `python3 persona/persona_jobs.py validate-config --config persona_jobs.local.json`, then supervise `python3 persona/persona_jobs.py daemon --config persona_jobs.local.json` as a persistent user service on the configured resource owner. `--once` scans for one due job; it creates no resources if nothing is due. The reference deployment uses `character-persona-jobs.service` with automatic restart and a 600-second cooperative stop allowance. The fixed adapter is currently configured for the owner's Devbox/John and six-card V100 host; other installations must explicitly configure and review their own fleet bindings. `persona/persona_lease.py` wraps the hash-verified installed workboard supervisor to register exact worker ownership without bypassing its admission, thermal or memory guards.
 
 | API | Purpose |
 | --- | --- |
@@ -203,13 +206,13 @@ Source review: **2026-10-25**, upstream `main` at **`f79b2196e29aacbad89684938ba
 | Lyra feature | Character Creation status |
 | --- | --- |
 | Perspective model map, layer selection and face-on layer focus | **Present**, with bounded viewport, animated focus and measured-candidate navigation. Full all-neuron density and attention-head inspection are not present. |
-| Index layout and output-column-similarity `writes` layout | **Partial**: coordinate/candidate layout; no learned output-similarity layout. |
-| Positive/negative neuron logit lens | **Missing**: no final-normalization/unembedding token projection for the 27B checkpoint. The displayed trait alignments are not a logit lens. |
-| Empirical steer lens: next-token changes and KL under signed pushes | **Missing** as an indexed lens and UI. Saved intervention outputs do not substitute for it. |
-| Search neurons by tokens in either lens | **Missing**; requires a model-bound lens index. |
-| Weight-derived upstream/downstream links and multi-hop `web` cones | **Missing**. The new co-activity breakout is an undirected measured association view, not Lyra's weight-path web. |
-| Token summaries pooled over a cone | **Missing**; depends on the weight web and lens indexes. |
-| Neuron readout over pasted text, token hover/pinning and activation paths | **Partial backend evidence**: final-prefill snapshots exist; no arbitrary-text per-token heatmap, activation search or token-path interface. |
+| Index layout and output-column-similarity `writes` layout | **Present for mapped candidates**: switch between the index grid and per-layer PCA of normalized decoded output columns. |
+| Positive/negative neuron logit lens | **Present**: all 1,114,112 MLP neurons, decoded NVFP4 weights, zero-centered final RMSNorm and FP32 output projection. Top 24 tokens per sign are stored. |
+| Empirical steer lens: next-token changes and KL under signed pushes | **Implemented in Live tokens & lens**: matched final-prompt next-token distributions, full-vocabulary KL, Δlog p, probabilities and saved comparisons. Runtime qualification is recorded separately. |
+| Search neurons by tokens in either lens | **Present with bounded scope**: static top-token search across the full atlas; empirical search across retained top effects in the latest 50 completed trace campaigns. Neither is exhaustive. |
+| Weight-derived upstream/downstream links and multi-hop `web` cones | **Present**: strongest 16 adjacent-layer down→gate/up affinities in each direction; interactive 3D cones with 1–3 hops and bounded fanout, separate from measured co-activity. |
+| Token summaries pooled over a cone | **Present**: unweighted counts of stored top-token projections among displayed neurons, explicitly not predicted multi-hop effects. |
+| Neuron readout over pasted text, token hover/pinning and activation paths | **Selected-neuron tracing implemented**: prompt/decode heatmaps, hover, scrubbing, playback and live polling. Up to 64 selected neurons, at most 32 per layer. Full-model activation search and token-conditioned causal paths remain absent. |
 | Distinctive-word/cluster ranking against random directions | **Missing** in this viewer. Current candidates use explicitly provisional trait contrasts and output alignment. |
 | Saved examples grouped by neuron, prompt and dose | **Partial**: persistent experiment cells and full provenance exist; no unified per-neuron archive browser across all sweeps. |
 | Three-column signed, streaming, multi-turn chat | **Partial**: signed single-turn comparison and flexible six-card batches exist; no independently continued streaming chat histories. |
@@ -218,21 +221,47 @@ Source review: **2026-10-25**, upstream `main` at **`f79b2196e29aacbad89684938ba
 | Rollout embedding scatterplot with neuron/prompt/dose/kind coloring | **Missing**. |
 | Editable neuron names and persistent shared links to a selection | **Missing**. Saved recipe names are a different feature. |
 | Interactive model assistant, MCP tools, map highlights, attachments and chat rewind | **Different scope**: John manages constrained scheduled experiments and tentative Studio brief interpretation; no equivalent interactive explorer assistant or general file/shell tools. |
-| Next-token probability inspection and baseline/intervention distribution comparison | **Missing** from the explorer UI/API. |
+| Next-token probability inspection and baseline/intervention distribution comparison | **Implemented** in the empirical lens: raw model distributions before sampler filtering, paired at the shared final prompt token. |
 | Full signed rollouts, random controls and cross-runtime equivalence checks | **Partial**: native matched-control experiments and quantized zero/neutral checks exist; no claim of exhaustive neuron coverage or HF/vLLM equivalence for this checkpoint. |
 
-The highest-priority parity work is the **27B logit lens**, a separately labeled **weight-path web**, and then **live token activations plus empirical steer-lens search**. Each requires evidence computed for this exact checkpoint; Lyra's 4B indexes and neuron meanings cannot be copied across models. Rollout embeddings, archive navigation and multi-turn comparison follow. These remain explicit gaps rather than controls backed by invented or incompatible data. Lyra's methodology and implementation remain the primary reference.
+The static lens and weight web are now computed for the exact 27B checkpoint. Co-activity and weight connections both use orbitable **3D** views, with depth cues, signed edge styling, zoom, focus and keyboard selection. Co-activity geometry uses three principal coordinates of measured normalized profiles; the weight web offers a volumetric spectral embedding of retained affinities and a layer-depth view using output-direction coordinates. These are labeled embeddings of high-dimensional relationships, not literal physical coordinates or proof of wiring. Constant/unobserved co-activity sources still produce no unsupported edges.
+
+Remaining parity gaps include attention-head controls, multiplicative edits, full-model token-activation search, distinctive-word ranking against random directions, rollout embeddings, a unified archive browser, persistent neuron naming/links, multi-turn streaming chat and Lyra's interactive model-assistant integration. Production cache and MTP qualification also remain separate.
+
+### Checkpoint atlas and token tracing
+
+The atlas builder independently implements the signed output-direction lens inspired by Lyra. It decodes the checkpoint's NVFP4 lm_head and MLP projections, uses the checkpoint's final zero-centered RMSNorm (1 + weight, epsilon from config), and projects in FP32. This is a static reference calculation, not native quantized activation arithmetic. The web ranks signed cosine between each down column and the next layer's gate/up rows, retaining the channel with larger absolute cosine. Attention, normalization and input-dependent gating are omitted.
+
+Build six deterministic shards under your existing GPU admission/lease wrapper:
+
+```bash
+python persona/persona_atlas.py --root . --checkpoint /path/to/pinned/checkpoint --config persona_fleet.local.json --shard 0
+# Run shard 0..5 on the corresponding leased cards.
+python persona/persona_atlas.py --root . --publish
+python persona/persona_atlas.py --root . --geometry
+```
+
+The builder requires the explicit fleet host/UUID and its own running workboard parent lease. It checks calibration/config/tokenizer bindings, hashes every checkpoint shard, validates decoded columns against the CPU decoder and records its source/lease identity. It writes results/persona_atlas_L*.npz; publication validates all layers and writes a hash-bound manifest. The reader refuses mixed model/source identities, changed artifact hashes and missing data. These generated files stay local. Existing layer outputs are not overwritten by the builder.
+
+**Live tokens & lens** offers one prompt × six signed recipe strengths (baseline, zero, +½, +1, −½, −1), or three prompts × baseline/recipe. It uses shared endpoint slots and the current recipe, with explicit observed-neuron coordinates. The 1–512-token budget is diagnostic; a length-limited continuation is not a complete scored personality response.
+
+Native trace buffers hold 32 selectable neuron columns per layer and are shared by prefill and ordinary B1 decode graphs. A request selects at most 64 neurons overall. Observations are indexed by **consumed input position**: a sampled token has activations only after the next replay consumes it; an unconsumed final/EOS token is never assigned fabricated activations. The UI polls completed chunks during execution and saves exact NPZ observations plus durable local playback/audit records. The trace is optional and the normal response/capture interface remains available.
+
+The empirical lens compares full-vocabulary raw next-token distributions at the same final-prompt prefix, before sampling filters or penalties. Later freely generated continuations can diverge and are not treated as aligned KL measurements. The UI reports both KL directions, Δlog probabilities, baseline/intervention probabilities and highest-probability next tokens. Zero-dose output and trace equality are explicit controls. A decode-only intervention should have zero final-prompt KL.
+
+On-demand weight access lets a ready, identity-verified worker supply any atlas neuron's decoded output column for calibrated steering. The local vector bank verifies model/runtime and checkpoint/calibration bindings before caching it. Without a ready worker or local checkpoint, an unextracted column remains unavailable rather than receiving a guessed vector.
+
 
 ## Calibration and experiments
 
-`persona_fleet.py` runs deterministic six-way generation shards. It checks host, GPU UUID, workboard parent lease and pinned executable/package identity, records complete sampling requests, monitors resources, and terminates only its owned server. Startup attempts and failures remain in the same artifacts. The HDD used in the reference run needed about 500 seconds for six direct-I/O weight loads; those runs completed after extending startup readiness to 900 seconds.
+`persona/persona_fleet.py` runs deterministic six-way generation shards. It checks host, GPU UUID, workboard parent lease and pinned executable/package identity, records complete sampling requests, monitors resources, and terminates only its owned server. Startup attempts and failures remain in the same artifacts. The HDD used in the reference run needed about 500 seconds for six direct-I/O weight loads; those runs completed after extending startup readiness to 900 seconds.
 
-`persona_capture.py` generates 132 discovery examples: twelve user prompts under eleven matched conditions. Its six disjoint shards replay actual retained Flare init/prefill graphs, retain normal admission/completion validation, and save prompt-token residual norms plus final-token residuals, normalized pre-MLP inputs and the actual rounded SwiGLU activations. It checks token positions and restores initial state. No heldout prompts fit the directions. Each launch must be wrapped in its own workboard lease; the script rejects direct unleased execution. Failed artifact-free attempts can resume in place with their prior reports retained.
+`persona/persona_capture.py` generates 132 discovery examples: twelve user prompts under eleven matched conditions. Its six disjoint shards replay actual retained Flare init/prefill graphs, retain normal admission/completion validation, and save prompt-token residual norms plus final-token residuals, normalized pre-MLP inputs and the actual rounded SwiGLU activations. It checks token positions and restores initial state. No heldout prompts fit the directions. Each launch must be wrapped in its own workboard lease; the script rejects direct unleased execution. Failed artifact-free attempts can resume in place with their prior reports retained.
 
 ```bash
-python3 persona_capture.py plan --output results/persona_capture_plan.json
+python3 persona/persona_capture.py plan --root . --output results/persona_capture_plan.json
 # On each leased V100, with explicit checkpoint, Flare source and rebuilt extension:
-python3 persona_capture.py run --config persona_fleet.local.json \
+python3 persona/persona_capture.py run --config persona_fleet.local.json \
   --plan results/persona_capture_plan.json --shard 0 --compile-workers 14 \
   --flare /path/to/flare --checkpoint /path/to/pinned-checkpoint \
   --heliopause /path/to/flare_heliopause.so --output results
@@ -244,20 +273,20 @@ After all six captures validate:
 
 ```bash
 # Run shards 0–5 with the same checkpoint and capture plan.
-python3 persona_map.py layers --plan results/persona_capture_plan.json \
+python3 persona/persona_map.py layers --plan results/persona_capture_plan.json \
   --results results --checkpoint /path/to/pinned-checkpoint --shard 0
-python3 persona_map.py assemble --results results
+python3 persona/persona_map.py assemble --results results
 ```
 
 These produce model-bound `layer_00.npz` through `layer_63.npz` and a candidate `persona_map.json`. The builder checks shard completeness, hashes, model identity and paired conditions before fitting. Existing evidence is preserved rather than overwritten.
 
-`persona_experiments.py` defines calibration, coarse, refinement and heldout validation plans, including signed doses, zero, prompt-only, shuffled and matched-norm random controls. Its broader operation vocabulary is planning metadata: `mlp_scale` and per-thinking/answer-phase control are not implemented by this native additive protocol. Never submit an unsupported plan as if it were executed. Keep measured self-report scores, behavioral review, capability retention and incomplete responses separate.
+`persona/persona_experiments.py` defines calibration, coarse, refinement and heldout validation plans, including signed doses, zero, prompt-only, shuffled and matched-norm random controls. Its broader operation vocabulary is planning metadata: `mlp_scale` and per-thinking/answer-phase control are not implemented by this native additive protocol. Never submit an unsupported plan as if it were executed. Keep measured self-report scores, behavioral review, capability retention and incomplete responses separate.
 
 ## Overnight discovery with measured activations
 
 The overnight workflow uses one resident diagnostic worker on each of the six V100s, a local 27B planning model, and a CPU queue manager. The planning model proposes experiments; the manager validates and dispatches them. The target checkpoint remains the pinned NVFP4 27B model described above. The planning model is a separate cached Q4_K_M GGUF, served by llama.cpp with a verified 128k context. Its judgments are hypotheses, not an independent evaluator or evidence that a trait changed.
 
-`persona_probe.py` exposes loopback `/v1/models` and `/v1/chat/completions` endpoints while retaining the actual Flare init, prefill, ordinary decode and sampling graphs. One request runs per card at a time. Each request starts from restored state and saves observations at the final valid prompt token before generation continues. This diagnostic mode uses **MTP-capable preparation and B1 ordinary-only execution**, with no native prefix-cache reuse or speculative execution. Preparation matches the passed calibration: four request slots, `mtp=True`, widths `(1,2,3,4,5)` and inherited row-invariant target arithmetic. SM70 prefill requires that layout's seven convolution-history columns. Only ordinary one-request graphs execute; every replay checks that the other three slots remain inactive.
+`persona/persona_probe.py` exposes loopback `/v1/models` and `/v1/chat/completions` endpoints while retaining the actual Flare init, prefill, ordinary decode and sampling graphs. One request runs per card at a time. Each request starts from restored state and saves observations at the final valid prompt token before generation continues. This diagnostic mode uses **MTP-capable preparation and B1 ordinary-only execution**, with no native prefix-cache reuse or speculative execution. Preparation matches the passed calibration: four request slots, `mtp=True`, widths `(1,2,3,4,5)` and inherited row-invariant target arithmetic. SM70 prefill requires that layout's seven convolution-history columns. Only ordinary one-request graphs execute; every replay checks that the other three slots remain inactive.
 
 The default context is 4,096 tokens backed by 32 physical pages, matching calibration. The recorded real-tokenizer preflight found all 13,895 current corpus rows fit with their full rollout budgets; the largest prompt-plus-budget was 3,155 tokens. Every new request is independently rejected if prompt plus budget exceeds physical or logical capacity; no truncation is used. Startup must reproduce one original calibration prompt's encoded tokens, all three final-prefill observation planes and every non-sink residual norm bit-for-bit before the endpoint becomes ready. This remains a separate qualification path from the exported production server.
 
@@ -265,7 +294,7 @@ An explicit `observation_only=true` request requires `max_tokens=1`: it runs the
 
 The observations are continuous, BF16-rounded SwiGLU products, not binary “neuron firing” labels. Per-request NPZ files contain `mlp_input_last[layers, intermediate]`, `residual_last[layers, hidden]`, `pre_mlp_last[layers, hidden]`, prompt/generated token IDs and prompt residual-norm summaries excluding position zero. The MLP observer records the value after an optional neuron push and before `down_proj`. It does not record every neuron's complete token-by-token trajectory. Comparing matched prompt mutations and interventions tests which units respond and which changes affect subsequent behavior; it does not by itself establish a synaptic connectome.
 
-The response links the activation artifact and request/response provenance by SHA-256, model identity, prepared identity and request hash. `persona_manager.py` verifies those artifacts and gives the planner bounded numerical summaries: the selected neuron's activation, layer activity/residual norms, and same-prompt/same-seed differences against a completed baseline. Full arrays and rollouts stay available for later analysis.
+The response links the activation artifact and request/response provenance by SHA-256, model identity, prepared identity and request hash. `persona/persona_manager.py` verifies those artifacts and gives the planner bounded numerical summaries: the selected neuron's activation, layer activity/residual norms, and same-prompt/same-seed differences against a completed baseline. Full arrays and rollouts stay available for later analysis.
 
 Activation archives use lossless NPZ deflate level 1. A [recorded single-artifact CPU comparison](data/persona_npz_compression_proof.json) reduced serialization from 1.182 seconds at level 6 to 0.170 seconds at level 1, while archive size increased from 3.400 MB to 3.767 MB. Every reloaded array retained its exact dtype, shape and bytes; focused tests also compare complete uncompressed NPY members against NumPy's previous writer. These timings do not establish end-to-end GPU throughput. Archive hashes and the source-bound runtime identity change, so deployment requires an audited runtime transition; calibration, state-restoration and artifact validators remain enabled.
 
@@ -294,44 +323,44 @@ SQLite stores proposals, immutable prompt records, jobs, attempts and an append-
 Prepare the initial SCOTUS and Big Five corpus from the repository root:
 
 ```bash
-python3 persona_corpus.py prepare
+python3 persona/persona_corpus.py prepare
 ```
 
-The initial SCOTUS/Big Five manifest contains 374 records: 60 SCOTUS and 314 Big Five prompts, with discovery and heldout splits kept separate. The October 25 local corpus contains 13,895 records after ingestion of eleven owner-provided EPUBs, including 231 explicitly labelled counterfactual speaker-attribution variants. Those variants exchange named Skippy/Joe attributions where the original speech tag is explicit; dialogue words and narrative mentions remain unchanged. Unresolved speakers remain unlabeled. The book texts and local manifest are not public artifacts. SCOTUS requests reserve 3,072 generated tokens. IPIP-50 items retain their original item IDs and reverse keys and stay in the heldout inventory-measurement split. The adaptive planner receives discovery observations only. A fixed heldout proposal can be queued with `persona_manager.py enqueue --validation`; heldout responses never enter adaptive feedback.
+The initial SCOTUS/Big Five manifest contains 374 records: 60 SCOTUS and 314 Big Five prompts, with discovery and heldout splits kept separate. The October 25 local corpus contains 13,895 records after ingestion of eleven owner-provided EPUBs, including 231 explicitly labelled counterfactual speaker-attribution variants. Those variants exchange named Skippy/Joe attributions where the original speech tag is explicit; dialogue words and narrative mentions remain unchanged. Unresolved speakers remain unlabeled. The book texts and local manifest are not public artifacts. SCOTUS requests reserve 3,072 generated tokens. IPIP-50 items retain their original item IDs and reverse keys and stay in the heldout inventory-measurement split. The adaptive planner receives discovery observations only. A fixed heldout proposal can be queued with `persona/persona_manager.py enqueue --validation`; heldout responses never enter adaptive feedback.
 
 Raw books and extracts remain private and ignored by Git. The corpus starts without Skippy material if the books are absent; it does not relabel other prompts as book evidence. When explicitly selected local EPUB/TXT files arrive, ingest them without copying the source books:
 
 ```bash
-python3 persona_corpus.py ingest --book-dir /path/to/local/books
+python3 persona/persona_corpus.py ingest --book-dir /path/to/local/books
 # Optional long-running ingestion watcher, supervised independently:
-python3 persona_corpus.py watch --book-dir /path/to/local/books --interval 30
+python3 persona/persona_corpus.py watch --book-dir /path/to/local/books --interval 30
 ```
 
 Content hashes prevent duplicate ingestion. Existing prompt text, provenance and split assignments remain immutable. The manifest first marks ingestion in progress and publishes `status: complete` with the new JSONL hash afterward. The manager reloads only a complete, matching generation. Public reports should contain manifests and aggregate results, not private book passages or unreviewed rollout excerpts.
 
-`persona_coverage.py` adds a separate operator pass for exhaustive registered-row coverage, independent of the adaptive planner's group sampling. Explicit `--split all` queues one unsteered prefill observation for every registered row, including all book chunks and registered variants, SCOTUS and Big Five. Original prompts, source hashes, offsets, pair IDs and discovery/heldout labels are preserved; related variants share a deterministic seed. Layer 0 is only the existing executor's calibration-bound summary reference: no neuron or trait intervention is applied. Heldout results remain excluded from adaptive feedback by the manager's existing split filters.
+`persona/persona_coverage.py` adds a separate operator pass for exhaustive registered-row coverage, independent of the adaptive planner's group sampling. Explicit `--split all` queues one unsteered prefill observation for every registered row, including all book chunks and registered variants, SCOTUS and Big Five. Original prompts, source hashes, offsets, pair IDs and discovery/heldout labels are preserved; related variants share a deterministic seed. Layer 0 is only the existing executor's calibration-bound summary reference: no neuron or trait intervention is applied. Heldout results remain excluded from adaptive feedback by the manager's existing split filters.
 
 ```bash
-python persona_coverage.py plan --config results/persona_manager_config.json --split all
+python persona/persona_coverage.py plan --config results/persona_manager_config.json --split all
 # Operator action: append the entire pass atomically to the existing manager queue.
-python persona_coverage.py enqueue --config results/persona_manager_config.json --split all
-python persona_coverage.py status --config results/persona_manager_config.json --split all
+python persona/persona_coverage.py enqueue --config results/persona_manager_config.json --split all
+python persona/persona_coverage.py status --config results/persona_manager_config.json --split all
 ```
 
 Plan/status output contains counts and hashes, not raw text. Repeating enqueue with the same corpus generation, split, seed and calibration is idempotent; exceeding `--max-jobs` or the manager's total-job cap rejects the whole pass without truncation. Enqueue starts no service itself. Status counts only completed prefill observations and distinguishes queued, failed and remaining rows. Each artifact covers all layers at the final prompt token plus prompt residual norms; this is not every neuron's complete token-by-token trajectory, and queued coverage is not completed coverage.
 
 ### Character evidence before broader speaker swaps
 
-`persona_characters.py` inventories character names in original book chunks through the already leased local John planner. It excludes generated mutations and defaults to discovery sources only. The model returns a name and a short, unique verbatim evidence phrase containing that name, with optional evidence-backed alias candidates. Software locates the phrase and name and computes exact Unicode offsets; the model never counts character offsets. Repeated evidence requires an explicit bounded occurrence index, otherwise it is rejected. Each balanced quote gets one software-generated unresolved speech record. Narrative speaker assignment is deferred. Character recall and entity classification remain unmeasured; exact source evidence alone does not establish either. Alias candidates are not automatically merged into identities.
+`persona/persona_characters.py` inventories character names in original book chunks through the already leased local John planner. It excludes generated mutations and defaults to discovery sources only. The model returns a name and a short, unique verbatim evidence phrase containing that name, with optional evidence-backed alias candidates. Software locates the phrase and name and computes exact Unicode offsets; the model never counts character offsets. Repeated evidence requires an explicit bounded occurrence index, otherwise it is rejected. Each balanced quote gets one software-generated unresolved speech record. Narrative speaker assignment is deferred. Character recall and entity classification remain unmeasured; exact source evidence alone does not establish either. Alias candidates are not automatically merged into identities.
 
 The private SQLite index preserves source book/document hashes, split, normalized-document offsets, raw model responses, failed attempts and coverage counts. Its corpus and planner-runtime binding prevents silently resuming against changed inputs. The October 25 run is underway across all 6,645 original chunks from eleven books, including both discovery and heldout splits. An early checkpoint recorded roughly 96 complete and 75 failed chunks under strict evidence validation; these pipeline statuses are not accuracy estimates or completed corpus coverage. The index remains provisional: source-phrase acceptance does not validate character classification, recall or aliases. All splits and index outputs remain isolated from adaptive experiment planning. The sampling order covers attributed dialogue, other dialogue and narrative across books before continuing; chunk-attempt limits, a deadline and error budgets bound the run, and outputs are capped at 2,048 tokens. Rejected attempts remain audited, and neither exhaustive completion nor character accuracy is claimed.
 
 ```bash
 # On John, using its existing planner lease and launcher readiness manifest:
-python persona_characters.py run --lease GPU_WORKBOARD_PLANNER_JOB_ID \
+python persona/persona_characters.py run --lease GPU_WORKBOARD_PLANNER_JOB_ID \
   --limit 8 --batch-size 1 --minutes 5
-python persona_characters.py status
-python persona_characters.py export --output results/persona_characters.jsonl
+python persona/persona_characters.py status
+python persona/persona_characters.py export --output results/persona_characters.jsonl
 ```
 
 The indexer checks `/slots` and waits for a configurable idle interval before each request. This is cooperative yielding, not atomic priority: stop indexing when experiment planning needs predictable access to the single planner slot. Repeating `run` resumes the same private index and retains failures. Explicit `--split all` can expand a discovery-only index in place when the corpus hash and planner binding are unchanged. It appends heldout chunks with their split labels, preserves prior rows and attempts, and audits the scope change; narrowing the index afterward is rejected. This is annotation only: neither raw responses nor index labels feed the adaptive experiment planner, and heldout material must not feed adaptive discovery. Source passages, raw responses and exports stay private.
@@ -345,9 +374,9 @@ Use Flare's pinned environment from the separate [V100 runtime setup](https://gi
 After calibration artifacts validate, review the six service commands and launch the probe fleet with the existing configuration:
 
 ```bash
-python3 persona_launch.py --config persona_fleet.local.json \
+python3 persona/persona_launch.py --config persona_fleet.local.json \
   --mode probe --minutes 420 --base-port 8930 --dry-run
-python3 persona_launch.py --config persona_fleet.local.json \
+python3 persona/persona_launch.py --config persona_fleet.local.json \
   --mode probe --minutes 420 --base-port 8930
 ```
 
@@ -356,7 +385,7 @@ The launcher creates `character-persona-probe-0` through `character-persona-prob
 For a custom supervisor, the command below is the **worker command inside an already registered parent lease**, with `CUDA_VISIBLE_DEVICES` bound to its assigned UUID and a disjoint CPU affinity; direct unleased execution is rejected. Use shards 0–5 and ports 8930–8935:
 
 ```bash
-python persona_probe.py run --config persona_fleet.local.json \
+python persona/persona_probe.py run --config persona_fleet.local.json \
   --flare /path/to/flare-local-inference --checkpoint /path/to/pinned-checkpoint \
   --heliopause /path/to/flare_heliopause.so --output results \
   --shard 0 --port 8930 --compile-workers 14 \
@@ -366,17 +395,17 @@ python persona_probe.py run --config persona_fleet.local.json \
 
 Verify each worker's ready manifest and capability response before dispatch. The logical context is not a guarantee that the physical KV-page allocation can hold an arbitrary prompt plus response; the worker checks actual capacity. Model weights load once per resident worker, and requests reuse the retained graphs.
 
-`persona_planner.py` is the **Atlas John-specific** launcher, with fixed cached-model, runtime and GPU paths. Inspect `python3 persona_planner.py --print-command` before using it. It requires the named `persona-planner-john.service`, acquires its own 40 GiB workboard lease, verifies the model digest, exact 131,072-token context and model alias, and monitors observed process VRAM and the shared John thermal/RAM policy. Its JSONL manifest distinguishes sampled process-memory peak from an unavailable allocator-internal peak. It never silently lowers context or stops another owner's service. Other fleets must configure their own local planner service and adapt the owner/lease configuration rather than copy Atlas host paths.
+`persona/persona_planner.py` is the **Atlas John-specific** launcher, with fixed cached-model, runtime and GPU paths. Inspect `python3 persona/persona_planner.py --print-command` before using it. It requires the named `persona-planner-john.service`, acquires its own 40 GiB workboard lease, verifies the model digest, exact 131,072-token context and model alias, and monitors observed process VRAM and the shared John thermal/RAM policy. Its JSONL manifest distinguishes sampled process-memory peak from an unavailable allocator-internal peak. It never silently lowers context or stops another owner's service. Other fleets must configure their own local planner service and adapt the owner/lease configuration rather than copy Atlas host paths.
 
 Keep the planner loopback-only. If it runs on another host, use an owned SSH forward so the manager can reach it at `http://127.0.0.1:18511`. Run the CPU manager on the V100 host, beside the checkpoint, calibration files and probe artifacts. With the six diagnostic services and the planner already leased and ready:
 
 ```bash
-python persona_manager.py configure \
+python persona/persona_manager.py configure \
   --fleet persona_fleet.local.json --config results/persona_manager_config.json \
   --planner-lease GPU_WORKBOARD_PLANNER_JOB_ID \
   --planner-url http://127.0.0.1:18511 --base-port 8930
 
-python persona_manager.py run --config results/persona_manager_config.json
+python persona/persona_manager.py run --config results/persona_manager_config.json
 # Or add --until 'YYYY-MM-DDT09:00:00-07:00' with the desired date and UTC offset.
 ```
 
@@ -385,7 +414,7 @@ python persona_manager.py run --config results/persona_manager_config.json
 There is one explicit operator-only exception for the reviewed lossless NPZ compression change. Drain and stop the manager before running `transition-runtime`; it requires the singleton lock and no running jobs or attempts. The private proof binds six old/new calibrated ready manifests, both probe sources and at least one old/new NPZ pair by SHA256. Verification permits only the reviewed level-one writer, its import and its single call replacement; native/helper hashes, model, prepared identity, calibration reference and all preparation settings must match. Every decoded array must retain its dtype, shape and exact bits, except that the runtime identity scalar may identify the verified new source. The command appends an immutable transition audit and changes only the active queue binding. Existing jobs, results and their original runtime identities remain intact; observations across the transition do not receive a mixed-runtime baseline delta. The planner cannot request this operation.
 
 ```bash
-python persona_manager.py transition-runtime \
+python persona/persona_manager.py transition-runtime \
   --database results/persona_manager.sqlite \
   --proof results/persona_runtime_transition.json --proof-sha256 REVIEWED_PROOF_SHA256
 ```
@@ -393,9 +422,9 @@ python persona_manager.py transition-runtime \
 The proof schema is `character-creation.runtime-compression-transition.v1`, with `old_manifests` and `new_manifests` arrays containing six full ready manifests each, `old_source` and `new_source` objects containing `text` and `sha256`, and `artifact_pairs` containing `old`/`new` objects with `path` and `sha256`. A lossless re-encoding may preserve the old runtime scalar; a new worker's matching-request artifact uses its new runtime scalar. Keep this proof private. After successful verification, the operator must bind the deployment configuration to the verified new endpoint identities before resuming the existing queue.
 
 ```bash
-python persona_manager.py status
-python persona_manager.py export --output results/persona_manager_attempts.jsonl
-python persona_manager.py enqueue --config results/persona_manager_config.json \
+python persona/persona_manager.py status
+python persona/persona_manager.py export --output results/persona_manager_attempts.jsonl
+python persona/persona_manager.py enqueue --config results/persona_manager_config.json \
   --proposal /path/to/fixed-proposal.json --validation
 ```
 
@@ -422,9 +451,9 @@ The example is a zero-vector no-op; the adapter fills selected neuron coordinate
 
 Programs are immutable per request, keyed into cache conditioning, and copied into persistent physical request-slot buffers. Disabled coordinates preserve original bits. Target-model MTP verification is steered; the draft is unchanged. Qualification must cover zero/off equality, signed changes, slot reuse, interleaved requests, phase boundaries and cache separation before deployment claims.
 
-`persona_qualify.py` checks repeated-off and all-site-zero equality on the retained whole model, exact signed residual additions, output-column effects, and exact pre-down one-hot arithmetic when observation buffers are available. It restores startup and diagnostic state after every arm. These offline checks do not alone qualify native cache reuse, speculative decoding, or behavioral transfer; those require native-server comparisons.
+`persona/persona_qualify.py` checks repeated-off and all-site-zero equality on the retained whole model, exact signed residual additions, output-column effects, and exact pre-down one-hot arithmetic when observation buffers are available. It restores startup and diagnostic state after every arm. These offline checks do not alone qualify native cache reuse, speculative decoding, or behavioral transfer; those require native-server comparisons.
 
-The production serving package is prepared separately, with diagnostic capture disabled. `persona_prepare.py plan` produces a reviewable preparation manifest from the existing validated baseline report; `run` keeps its export/reference gates and checks neutral logits and measured output sequences against that baseline. Supply explicit `--config`, `--flare`, `--heliopause`, `--checkpoint`, `--baseline-report`, `--staging`, `--payload-cache`, `--kernel-cache`, `--signing-dir`, `--sysroot` and `--compile-workers` paths/options; use `--output results --steering-max-sites 64`. Preparation runs inside its own lease. Export one qualified package for sharing across the six servers; six redundant exports add no evidence. A successful diagnostic rollout is not a substitute for this production gate, and no production/MTP qualification is claimed while that gate remains pending.
+The production serving package is prepared separately, with diagnostic capture disabled. `persona/persona_prepare.py plan` produces a reviewable preparation manifest from the existing validated baseline report; `run` keeps its export/reference gates and checks neutral logits and measured output sequences against that baseline. Supply explicit `--config`, `--flare`, `--heliopause`, `--checkpoint`, `--baseline-report`, `--staging`, `--payload-cache`, `--kernel-cache`, `--signing-dir`, `--sysroot` and `--compile-workers` paths/options; use `--output results --steering-max-sites 64`. Preparation runs inside its own lease. Export one qualified package for sharing across the six servers; six redundant exports add no evidence. A successful diagnostic rollout is not a substitute for this production gate, and no production/MTP qualification is claimed while that gate remains pending.
 
 ## Attribution and source record
 
@@ -433,3 +462,26 @@ The production serving package is prepared separately, with diagnostic capture d
 - **RhizoNymph/vLLM:** [steering runtime design](https://github.com/RhizoNymph/vllm/blob/feat/integration/docs/design/steering_runtime.md), inspiration for request ownership, graph-safe staging and cache identity.
 - **Strata:** [AbliteratedOutTheBox](https://github.com/heterodoxin/AbliteratedOutTheBox/tree/strata), inspiration for native residual interventions; its experimental results are not treated as validation of this implementation.
 - **Character Creation:** original broad trait, layer and sign-reversal studies, retained with negative results and fresh-model controls.
+
+## October 25 atlas and token-trace qualification
+
+The static atlas covers all 1,114,112 MLP neurons in 64 layers, with signed token projections and retained adjacent-layer down-to-gate/up affinities. An independent FP64 CPU spot check at four coordinates agreed within 2.16e-5. Static affinities are not causal paths; this adjacent-layer metric differs from Lyra’s all-layer gate/up product.
+
+All six V100 diagnostic workers passed exact comparison against one original calibration prompt each. Token traces were checked across two prefill chunks and ordinary decode: capture-on/off and zero interventions preserved complete captured planes and generated IDs exactly. A decode-only intervention preserved prefill and first-next-token logits while changing decode observations. A real three-prompt paired campaign completed on six distinct cards; eight live partial snapshots confirmed updates before completion. A separate six-arm dose campaign verified exact zero control across cards. These short diagnostic continuations do not qualify complete persona answers, native cache reuse, or MTP execution.
+
+The integrated source layout, public-dataset export checks, wildcard planner and public preset catalog passed 282 CPU tests. The subsequent gift scheduler passed its targeted checks, including fixed-model identity and failure propagation. Browser checks covered layer-stack connections, canvas containment, 3D orbiting, selected-link isolation, and token playback.
+
+Selecting a map neuron now draws measured links directly between the desk-like selected sheet and the raised layer stack. Choose observed coactivity or weight paths; unavailable observations remain explicit. Coactivity starts with the selected neuron’s links, with an optional neighbor-to-neighbor toggle. Visual spacing is an explicitly distorted display aid; the exact-value table retains original measurements.
+
+## Public synthetic corpus
+
+[Atlas3D/character-creation-big-five](https://huggingface.co/datasets/Atlas3D/character-creation-big-five) contains only generated Big Five discovery scenarios. `persona/persona_hub.py` checks the publication hash and synthetic-only provenance before exporting a field allowlist into `dataset/` and uploading one atomic Hub commit. Its bounded job watcher publishes at most every thirty minutes and on completion. Book text, local source paths, credentials, and other corpus collections are excluded. Trait/facet labels describe prompt design, not psychometric truth.
+
+
+## Bounded gift campaign for Lyra
+
+The `lyra_gift` job uses pinned `Qwen/Qwen3.5-4B` revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a` on all six workboard-leased V100s, with John ranking a bounded list of candidate experiments. The source is a frozen, synthetic-only Big Five snapshot. Domain/facet families are assigned to discovery, replication, and held-out splits. Workers retain all 294,912 MLP values at the final observed prompt position, compute same-layer and adjacent-layer top correlations, and test selected adjacent links through genuine neuron ablations with separate random same-layer controls. Those controls are not amplitude matched.
+
+This is an independent float16 HF path with eager attention and reference recurrent kernels, not a claim of BF16/vLLM equivalence to Lyra. Every worker checks finite values and exact neutral-gain equivalence on its actual GPU before collection. Prompts are capped at 512 tokens and truncation is recorded. Zero-variation or unavailable correlation entries remain missing. Raw arrays, prompt alignment, hashes, selection audits, and failed cases remain local for review and packaging; this job does not message anyone or publish private source material.
+
+Startup consumes the scheduled window. The absolute deadline stops owned services; partial results are not labeled a complete map. A completed capture stage alone does not qualify all downstream phases. The queued October 26 run is 02:00–08:00 America/Los_Angeles. The current 35k run must finish before an identity-checked idle scheduler reload activates this new job handler.

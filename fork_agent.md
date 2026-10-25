@@ -46,16 +46,16 @@ Do not blindly rename. For each item, record: what it protects, what your system
 
 | Source | Owner-specific binding to inventory |
 |---|---|
-| `persona_job_fleet.py` | Hostname equality checks, `ssh_host` options, six fixed `character-persona-probe-N.service` units, planner/tunnel units, ports `8930-8935` and `18511`, `systemd-run --user` argv, SHA-256 comparison of deployed worker sources (`persona_probe.py`, `persona_capture.py`, `persona_vectors.py`, `persona_fleet.py`, `persona_qualify.py`, `persona_lease.py`), the `gpu-workboard` CLI (`status --json`), 960-minute cap, SSH `-L`/`-R` forwarding. |
-| `persona_service_control.py` | Fixed `UNITS` allowlist, per-unit expected hostname, Linux `pidfd` (`os.pidfd_open`), `systemctl --user show` parsing, launch-token and job-ID environment names. |
-| `persona_lease.py` | Regex for six probe units, `/proc/self/cgroup` unit check, hash-verified installed `wb_hold` supervisor, `PERSONA_*` environment variables, absolute-deadline watcher. |
-| `persona_launch.py` | `taskset` CPU affinity, six-entry config lists, lease-wrapper argv order (`run <project> <label> <VRAM_GiB> <minutes> <gpu-label> --`), the hardcoded 31 GiB reservation, `WB_HOLD_WAIT`, CUDA/sysroot/cache environment. |
-| `persona_planner.py` | Hardcoded planner GPU UUID, workboard path, llama.cpp binary, GGUF path and SHA, host check, port, alias and `131072` context. |
-| `persona_sculptor.py` (`trusted_planner`) and `persona_jobs.py` | Planner host binding, `DEFAULT_ZONE`, job kinds, corpus names, `data/persona_model.json`. |
-| `persona_probe.py`, `persona_prepare.py` | Prepared-package and runtime identities, retained four-slot/depth-four-capable preparation state (`mtp=True`), context 4096 / 32 pages and export gates. Diagnostic execution is still one active request and ordinary decode; preparation settings do not establish MTP execution. |
-| `persona_coactivity_refresh.py` | Fixed SSH/path transport, source-file list, corpus-sync schema. |
+| `persona/persona_job_fleet.py` | Hostname equality checks, `ssh_host` options, six fixed `character-persona-probe-N.service` units, planner/tunnel units, ports `8930-8935` and `18511`, `systemd-run --user` argv, SHA-256 comparison of deployed worker sources (`persona/persona_probe.py`, `persona/persona_capture.py`, `persona/persona_vectors.py`, `persona/persona_fleet.py`, `persona/persona_qualify.py`, `persona/persona_lease.py`), the `gpu-workboard` CLI (`status --json`), 960-minute cap, SSH `-L`/`-R` forwarding. |
+| `persona/persona_service_control.py` | Fixed `UNITS` allowlist, per-unit expected hostname, Linux `pidfd` (`os.pidfd_open`), `systemctl --user show` parsing, launch-token and job-ID environment names. |
+| `persona/persona_lease.py` | Regex for six probe units, `/proc/self/cgroup` unit check, hash-verified installed `wb_hold` supervisor, `PERSONA_*` environment variables, absolute-deadline watcher. |
+| `persona/persona_launch.py` | `taskset` CPU affinity, six-entry config lists, lease-wrapper argv order (`run <project> <label> <VRAM_GiB> <minutes> <gpu-label> --`), the hardcoded 31 GiB reservation, `WB_HOLD_WAIT`, CUDA/sysroot/cache environment. |
+| `persona/persona_planner.py` | Hardcoded planner GPU UUID, workboard path, llama.cpp binary, GGUF path and SHA, host check, port, alias and `131072` context. |
+| `persona/persona_sculptor.py` (`trusted_planner`) and `persona/persona_jobs.py` | Planner host binding, `DEFAULT_ZONE`, job kinds, corpus names, `data/persona_model.json`. |
+| `persona/persona_probe.py`, `persona/persona_prepare.py` | Prepared-package and runtime identities, retained four-slot/depth-four-capable preparation state (`mtp=True`), context 4096 / 32 pages and export gates. Diagnostic execution is still one active request and ordinary decode; preparation settings do not establish MTP execution. |
+| `persona/persona_coactivity_refresh.py` | Fixed SSH/path transport, source-file list, corpus-sync schema. |
 
-The interface supports **1 to 6** configured endpoints for comparisons. The **scheduled adapter and the Big Five generator intentionally require exactly six** workers and fixed owner-host/service bindings. A different fleet size or a non-Linux/non-systemd OS needs explicit code **and test** changes (`test_persona_job_fleet.py` encodes the six-card assumption). Offer your user that choice before doing it.
+The interface supports **1 to 6** configured endpoints for comparisons. The **scheduled adapter and the Big Five generator intentionally require exactly six** workers and fixed owner-host/service bindings. A different fleet size or a non-Linux/non-systemd OS needs explicit code **and test** changes (`tests/test_persona_job_fleet.py` encodes the six-card assumption). Offer your user that choice before doing it.
 
 **Gate 1:** a written inventory with no unclassified hardcoded value. Searching for hostnames, `GPU-` UUIDs, `/home/`, `.service`, ports, `wtatum`/`v100` literals and `gpu-workboard` is a good way to find them.
 
@@ -65,8 +65,8 @@ Clone the chosen fork into the user's approved destination, or reuse their exist
 
 ```bash
 # In the repository root, with the approved environment activated:
-python3 -m py_compile persona_*.py
-python3 -m unittest discover -p 'test_persona_*.py'
+python3 -m py_compile persona/*.py tests/test_persona*.py
+python3 -m unittest discover -s tests -p 'test_persona*.py'
 ```
 
 Use bounded file reads and searches. Do not recursively traverse a home directory, mounted archive, or external symlink tree to discover assets.
@@ -80,7 +80,7 @@ The CPU tests normally mock host bindings and do not require the reference fleet
 1. Clone `Atlas3DSS/flare-local-inference` at the `atlas/sm70-public` default branch. Record the commit.
 2. Follow its docs for the build, the Heliopause extension, kernels and package preparation (`tools/prepare_replay.py --steering-max-sites 64`). Read what it says about SM70 and your GPU architecture. If your GPUs are not supported there, **stop**. Do not substitute another runtime silently.
 3. Cold startup and compile can take **tens of minutes** (storage throughput and serialized shared-cache publication affect it). **Never bypass compile or cache locks.** Wait, or kill nothing you do not own.
-4. Diagnostic workers (activation capture, `persona_probe.py`) and the production steering server are different evidence paths. A diagnostic success does **not** qualify native cache reuse or MTP/speculative execution. Production needs its own prepared package passing every export gate (`persona_prepare.py plan`, then `run`).
+4. Diagnostic workers (activation capture, `persona/persona_probe.py`) and the production steering server are different evidence paths. A diagnostic success does **not** qualify native cache reuse or MTP/speculative execution. Production needs its own prepared package passing every export gate (`persona/persona_prepare.py plan`, then `run`).
 
 **Gate 3:** the runtime builds at a recorded commit and its own documented checks pass.
 
@@ -88,11 +88,11 @@ The CPU tests normally mock host bindings and do not require the reference fleet
 
 ### Track A: same checkpoint, same fleet shape
 - The checkpoint is `nvidia/Qwen3.8-27B-NVFP4` at revision `482ca0f3832238542f8f5295dde86b5f22711d80` (`data/persona_model.json`). Ask your user for the existing local copy. **Do not silently download it, and do not duplicate it.**
-- Calibration artifacts (`results/layer_00.npz` to `results/layer_63.npz`, `results/persona_map.json`) are private. Obtain them from the owner **or regenerate** with `persona_capture.py` and `persona_map.py` (see `PERSONA_EXPLORER.md#calibration-and-experiments`). Their hashes must match model identity.
+- Calibration artifacts (`results/layer_00.npz` to `results/layer_63.npz`, `results/persona_map.json`) are private. Obtain them from the owner **or regenerate** with `persona/persona_capture.py` and `persona/persona_map.py` (see `PERSONA_EXPLORER.md#calibration-and-experiments`). Their hashes must match model identity.
 
 ### Track B: new model, architecture or fleet size
 - If only the fleet changes, keep the checkpoint identity truthful and port the resource adapter; do not invent a new model identity. Runtime changes still require their own validation.
-- When the model changes, edit `data/persona_model.json`. **Model identity includes the model ID, immutable revision, quantization and layer/hidden/MLP dimensions** (`persona_vectors.py:ModelSpec.identity`). Prepared-package and runtime identities are separate bindings. Sites, widths and the 64-layer/17,408-unit assumptions in the UI, planner prompts and tests must be audited.
+- When the model changes, edit `data/persona_model.json`. **Model identity includes the model ID, immutable revision, quantization and layer/hidden/MLP dimensions** (`persona/persona_vectors.py:ModelSpec.identity`). Prepared-package and runtime identities are separate bindings. Sites, widths and the 64-layer/17,408-unit assumptions in the UI, planner prompts and tests must be audited.
 - **Never reuse another checkpoint's calibration, maps, saved recipes or co-activity data.** The code rejects mismatches, so do not bypass that. Regenerate everything: capture, layer banks, map, qualification.
 - Lyra's Qwen3.5-4B coordinates (`data/lyra_recipes.json`) are labeled cross-model hypotheses only.
 
@@ -100,9 +100,9 @@ The CPU tests normally mock host bindings and do not require the reference fleet
 
 ## Phase 5: Workers, endpoints and the explorer (smallest correct deployment first)
 
-1. Create `persona_fleet.local.json` (ignored by git; never commit it) from the fields consumed by `persona_launch.py` and `persona_probe.py`: host, SSH alias, GPU UUIDs, GPU labels, **disjoint** `cpu_sets`, `compile_workers`, runtime and cache paths, checkpoint, model identity, RAM guard. Fill every value from the target system. Leave `TODO_` markers for anything you cannot verify.
-2. If calibration must be regenerated, create the documented capture plan, run authorized capture workers, then assemble the layer banks and map using the [calibration instructions](PERSONA_EXPLORER.md#calibration-and-experiments). Verify the resulting identities before starting persona comparisons. For probe workers, dry-run first: `python3 persona_launch.py --config persona_fleet.local.json --mode probe --minutes <N> --base-port 8930 --dry-run`. Review each command.
-3. Launch within the user's existing authorization and admission system; ask only if that authorization is missing. Keep the **exact InvocationIDs, launch tokens and absolute deadlines** the launcher and `persona_job_fleet.py` record; cleanup of resources you own depends on them. Never stop a service by name alone.
+1. Create `persona_fleet.local.json` (ignored by git; never commit it) from the fields consumed by `persona/persona_launch.py` and `persona/persona_probe.py`: host, SSH alias, GPU UUIDs, GPU labels, **disjoint** `cpu_sets`, `compile_workers`, runtime and cache paths, checkpoint, model identity, RAM guard. Fill every value from the target system. Leave `TODO_` markers for anything you cannot verify.
+2. If calibration must be regenerated, create the documented capture plan, run authorized capture workers, then assemble the layer banks and map using the [calibration instructions](PERSONA_EXPLORER.md#calibration-and-experiments). Verify the resulting identities before starting persona comparisons. For probe workers, dry-run first: `python3 persona/persona_launch.py --config persona_fleet.local.json --mode probe --minutes <N> --base-port 8930 --dry-run`. Review each command.
+3. Launch within the user's existing authorization and admission system; ask only if that authorization is missing. Keep the **exact InvocationIDs, launch tokens and absolute deadlines** the launcher and `persona/persona_job_fleet.py` record; cleanup of resources you own depends on them. Never stop a service by name alone.
 4. Bind services to **loopback** (`127.0.0.1`), or to a reviewed, authenticated network path. Do not expose a worker, planner or explorer on `0.0.0.0` without that review.
 5. Before any inference, check `/v1/models` on each worker: model identity, prepared identity, runtime identity, protocol, site names, vector widths, request-site limit, observation-only capability. Admission is rejected on any mismatch.
 6. Create `persona_explorer.local.json` (1 to 6 endpoints, schema in `PERSONA_EXPLORER.md#run-the-explorer`) and run `python3 persona_explorer.py --config persona_explorer.local.json --port 8792`. Open `http://127.0.0.1:8792`.
@@ -112,10 +112,10 @@ The CPU tests normally mock host bindings and do not require the reference fleet
 
 ## Phase 6: Planner and scheduled jobs (optional; requires explicit code port)
 
-1. Planner: serve a local llama.cpp model on loopback (reference: port `18511`, alias `persona-manager`, 131,072 context). Replace the owner constants in `persona_planner.py` through a reviewed change, not a rename. Keep: model digest verification, exact-context verification, no silent context reduction, no stopping of other owners' services.
-2. JSON transport: planner calls **must** use `response_format={"type":"json_schema","json_schema":{"name":...,"strict":true,"schema":...}}` for this llama.cpp build. The Big Five sampler grammar (`PLAN_JSON_SCHEMA` in `persona_jobs.py`) deliberately **omits max string lengths**, because finite repetitions exceeded the compiler guard. Python (`validate_plan` and friends) enforces every length and facet bound **before dispatch**. Do not remove those checks.
-3. Port `persona_job_fleet.py`, `persona_service_control.py`, `persona_lease.py` and the matching tests together for your host names, unit names, ports, workboard/admission CLI and fleet size. Keep: launch-intent receipts written **before** the uncertain call, pidfd + token + cgroup cleanup, absolute-deadline propagation, reverse-order cleanup, "never stop another owner's process".
-4. Create `persona_jobs.local.json` (schema in `PERSONA_EXPLORER.md#schedule-john-and-the-six-quincies`): `enabled`, `root`, `fleet_config`, `expected_prepared_identity`, `expected_runtime_identity`, `lease_wrapper_sha256`, `timezone`. Then `python3 persona_jobs.py validate-config --config persona_jobs.local.json`; run `daemon` under a persistent user service, with a stop allowance long enough for cooperative cleanup.
+1. Planner: serve a local llama.cpp model on loopback (reference: port `18511`, alias `persona-manager`, 131,072 context). Replace the owner constants in `persona/persona_planner.py` through a reviewed change, not a rename. Keep: model digest verification, exact-context verification, no silent context reduction, no stopping of other owners' services.
+2. JSON transport: planner calls **must** use `response_format={"type":"json_schema","json_schema":{"name":...,"strict":true,"schema":...}}` for this llama.cpp build. The Big Five sampler grammar (`PLAN_JSON_SCHEMA` in `persona/persona_jobs.py`) deliberately **omits max string lengths**, because finite repetitions exceeded the compiler guard. Python (`validate_plan` and friends) enforces every length and facet bound **before dispatch**. Do not remove those checks.
+3. Port `persona/persona_job_fleet.py`, `persona/persona_service_control.py`, `persona/persona_lease.py` and the matching tests together for your host names, unit names, ports, workboard/admission CLI and fleet size. Keep: launch-intent receipts written **before** the uncertain call, pidfd + token + cgroup cleanup, absolute-deadline propagation, reverse-order cleanup, "never stop another owner's process".
+4. Create `persona_jobs.local.json` (schema in `PERSONA_EXPLORER.md#schedule-john-and-the-six-quincies`): `enabled`, `root`, `fleet_config`, `expected_prepared_identity`, `expected_runtime_identity`, `lease_wrapper_sha256`, `timezone`. Then `python3 persona/persona_jobs.py validate-config --config persona_jobs.local.json`; run `daemon` under a persistent user service, with a stop allowance long enough for cooperative cleanup.
 5. Time handling: scheduler must reject nonexistent/ambiguous DST local times (`scheduled_time`). Test with your IANA zone.
 
 **Gate 6:** the ported tests pass and still contain the original ownership, deadline and DST cases (not deleted or loosened).
@@ -123,8 +123,8 @@ The CPU tests normally mock host bindings and do not require the reference fleet
 ## Phase 7: Data, corpora and co-activity
 
 - Keep **discovery and heldout separate**. Heldout answers never feed adaptive planning; using them to tune a persona consumes that holdout.
-- Prepare the public corpus: `python3 persona_corpus.py prepare`. Private books: only files your user explicitly authorizes, ingested with `persona_corpus.py ingest --book-dir <PATH>`, and they stay **local and git-ignored**. Never publish passages, raw responses or activation archives.
-- Co-activity: `persona_coactivity_extract.py` verifies hashes and creates its archive exclusively; `--replace` must preserve prior rows (audited duplicate exclusion only). Refreshes are append-only and deduplicated. Constant neurons and insufficient samples (fewer than 8 unique prompts) get **no** edges. The sourced records and links must come from the user's data, never copied from the reference deployment.
+- Prepare the public corpus: `python3 persona/persona_corpus.py prepare`. Private books: only files your user explicitly authorizes, ingested with `persona/persona_corpus.py ingest --book-dir <PATH>`, and they stay **local and git-ignored**. Never publish passages, raw responses or activation archives.
+- Co-activity: `persona/persona_coactivity_extract.py` verifies hashes and creates its archive exclusively; `--replace` must preserve prior rows (audited duplicate exclusion only). Refreshes are append-only and deduplicated. Constant neurons and insufficient samples (fewer than 8 unique prompts) get **no** edges. The sourced records and links must come from the user's data, never copied from the reference deployment.
 - Correlation is not wiring or temporal phase, and co-activity is not Lyra's weight-path web.
 
 **Gate 7:** corpus manifest says `status: complete` with a matching hash; extract + refresh tests pass; no private text or generated archives are staged for publication. Review the actual staged diff; approved public manifests and authored preset metadata may legitimately live in `data/`.
@@ -133,7 +133,7 @@ The CPU tests normally mock host bindings and do not require the reference fleet
 
 Run each item, and record outputs for the handoff.
 
-1. `python3 -m unittest discover -p 'test_persona_*.py'` on CPU (no GPU).
+1. `python3 -m unittest discover -s tests -p 'test_persona*.py'` on CPU (no GPU).
 2. Compile/syntax check of all changed files.
 3. **Exact zero-baseline controls:** baseline and explicit-zero arms must match bit-for-bit.
 4. **Complete 2,048-token-budget** comparison for anything you will report. A smaller explicit smoke run is allowed for correctness checking only, labeled smoke, **never promoted**.
@@ -158,7 +158,7 @@ Start small only to verify correctness, within your user's compute policy. Usefu
 - [ ] No private weights, calibration, corpora, results DBs or `*.local.json` committed
 - [ ] Lyra credit and Flare runtime link retained in the fork's README
 - [ ] Evidence statement says: presets are approximations; no personality fidelity, causal-effect or native-cache/MTP qualification is claimed unless separately earned
-- [ ] Unresolved risks listed (unsupported GPU/OS, fleet size, missing logit lens / weight web / per-token activations)
+- [ ] Unresolved risks listed (unsupported GPU/OS, fleet size, unbuilt checkpoint atlas, unqualified token traces, production cache/MTP limits)
 
 ## Copyable kickoff instruction
 
@@ -171,3 +171,14 @@ compute authorization; ask only for missing scope, not for work already approved
 (Atlas3DSS/flare-local-inference, branch atlas/sm70-public). Report each gate's actual
 output, including failures, and finish with the handoff checklist.
 ```
+
+
+### Porting the checkpoint atlas and token traces
+
+The current static atlas and runtime are specific to the pinned Qwen3.5-architecture checkpoint sold as Qwen3.8-27B. Inspect the actual architecture, final-norm convention, quantization groups, head storage and dimensions before adapting it. persona/persona_atlas.py explicitly decodes NVFP4 and uses zero-centered RMSNorm; do not transfer those assumptions or stored token rankings to another model. Rebuild all six atlas shards under the destination's admission wrapper, publish the hash manifest, and regenerate map geometry from that destination's calibrated columns. Atlas search covers retained top-token lists, not every token ranking.
+
+Keep persona/persona_probe.py, persona/persona_trace.py, persona/persona_map.py and persona/persona_vectors.py synchronized with the worker. The runtime extension adds fixed token_indices, token_enabled and token_values buffers; prefill and ordinary B1 decode must share the same storage. Select at most 32 neurons per layer and 64 per request. Stage indices between requests, never patch captured graph addresses or inject Python callbacks into the native serving loop.
+
+Before enabling live tracing, repeat exact original calibration equivalence, baseline/zero output and activation equality, consumed-token alignment across a prefill chunk boundary, at least one decode step, both intervention signs and decode-only neutral next-token KL. Verify model/prepared/runtime identities on all endpoints and update the ignored local bindings only after qualification. Keep raw corpora, generated continuations, full logits and trace artifacts private. Search/playback must report missing evidence honestly.
+
+The co-activity and weight-web canvases are 3D projections. Preserve the stated coordinate meanings, edge signs and evidence distinctions when porting the renderer. Scope canvas positioning to its own panel and retain clipping; the main map's absolute-position canvas style must not leak into dialogs or token heatmaps.

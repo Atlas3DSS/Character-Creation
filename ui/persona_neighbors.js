@@ -7,7 +7,7 @@
     {key: 'negative', title: 'Move oppositely', short: 'Negative', detail: 'Negative correlation · r < −0.20'},
     {key: 'weak', title: 'Weak co-activity', short: 'Weak', detail: 'Closest to zero · |r| ≤ 0.20'}
   ];
-  const app = {target: null, corpus: 'all', scope: 'all', data: null, loading: false, error: '', serial: 0};
+  const app = {target: null, corpus: 'all', scope: 'all', data: null, loading: false, error: '', serial: 0, limit: 12, threshold: .2, layout: 'similarity', bundle: 0};
   const refs = {};
   let controller, returnFocus;
   const coordinate = value => `L${value.layer} · N${value.neuron}`;
@@ -83,6 +83,10 @@
       if (window.PersonaJobs?.fromNeuron) window.PersonaJobs.fromNeuron({...app.target});
       else refs.announcement.textContent = 'The Jobs & schedules workspace is not loaded yet.';
     }, 'pn-plan'),
+    filter('Neighbors per category', [['6','6'],['12','12'],['20','20']], String(app.limit), value=>{app.limit=Number(value);load();}),
+    filter('Edge strength |r| ≥', [['0','0 (all measured)'],['0.2','0.20'],['0.4','0.40'],['0.6','0.60'],['0.8','0.80'],['0.95','0.95']], String(app.threshold), value=>{app.threshold=Number(value);render();}),
+    filter('Geometry', [['similarity','Activation similarity · 3D'],['layers','Layer depth · 3D']], app.layout, value=>{app.layout=value;render();}),
+    filter('Curve bundling', [['0','Straight'],['0.2','Light'],['0.6','Bundled']], String(app.bundle), value=>{app.bundle=Number(value);render();}),
     button('Refresh', load, 'pn-refresh'));
     refs.summary = node('div', undefined, 'pn-summary');
     refs.warning = node('p', undefined, 'pn-warning');
@@ -130,6 +134,18 @@
       if (!Number.isInteger(value.source?.n_samples) || value.source.n_samples < 8 || value.source.split !== 'discovery') {
         throw Error('The neighborhood source lacks the required discovery samples.');
       }
+      const graph=value.graph;
+      if (!graph || !Array.isArray(graph.nodes) || !graph.nodes.length || graph.nodes.length>64 ||
+          !Array.isArray(graph.edges) || graph.edges.length>2016 || graph.directed!==false) throw Error('Invalid induced graph.');
+      const ids=new Set();
+      for(const node of graph.nodes){
+        if(!Number.isInteger(node.layer)||!Number.isInteger(node.neuron)||node.layer<0||node.neuron<0||
+           node.id!==`L${node.layer}N${node.neuron}`||ids.has(node.id)||!Array.isArray(node.position)||
+           node.position.length!==2||!node.position.every(Number.isFinite)||!Array.isArray(node.position3d)||node.position3d.length!==3||!node.position3d.every(Number.isFinite)) throw Error('Invalid graph coordinates.');
+        ids.add(node.id);
+      }
+      for(const edge of graph.edges) if(!ids.has(edge.source)||!ids.has(edge.target)||edge.source===edge.target||
+          !Number.isFinite(edge.r)||Math.abs(edge.r)>1||edge.n!==value.source.n_samples) throw Error('Unsupported graph edge.');
       for (const {key} of definitions) {
         if (!Array.isArray(value.groups?.[key])) throw Error('The neighborhood response has an invalid group.');
         for (const item of value.groups[key]) {
@@ -147,7 +163,7 @@
     const serial = ++app.serial, target = {...app.target};
     controller?.abort(); controller = new AbortController();
     app.data = null; app.error = ''; app.loading = true; render();
-    const query = new URLSearchParams({layer: target.layer, neuron: target.neuron, corpus: app.corpus, scope: app.scope, limit: 12});
+    const query = new URLSearchParams({layer: target.layer, neuron: target.neuron, corpus: app.corpus, scope: app.scope, limit: app.limit});
     try {
       const response = await fetch(`/api/neighbors?${query}`, {signal: controller.signal});
       const value = await response.json();
@@ -208,7 +224,7 @@
         `${app.corpus === 'all' ? 'All corpora' : app.corpus === 'big_five' ? 'Big Five' : app.corpus === 'scotus' ? 'SCOTUS' : 'Skippy books'} · ${app.scope === 'all' ? 'all layers' : app.scope === 'same_layer' ? 'same layer' : 'other layers'}`, 'pn-small'));
       const figure = node('figure', undefined, 'pn-network'), scroll = node('div', undefined, 'pn-network-scroll');
       scroll.append(network(data, false)); figure.append(scroll, node('figcaption',
-        'A few ranked candidates per group. Lines show signed correlations to the selected neuron; their placement is illustrative. This is a measured candidate set, not the full model connectome.'));
+        `${data.graph?.nodes?.length||0} observed nodes, with measured neighbor-to-neighbor links available using the graph toggle. Width = |r|; dashed pink = negative; cyan = positive. Layout preserves approximately ${Math.round(100*(data.graph?.explained_fraction_3d||0))}% of selected-profile variance in three dimensions. Drag to orbit; scroll to zoom. Three dimensions are a projection, not physical pathways.`));
       refs.content.append(figure);
       const lists = node('div', undefined, 'pn-lists');
       for (const definition of definitions) lists.append(rankedList(data.groups[definition.key], definition));
@@ -238,57 +254,8 @@
     section.append(list); return section;
   }
   function network(data, compact) {
-    const width = compact ? 320 : 900, height = compact ? 106 : 354;
-    const svg = svgNode('svg', {viewBox: `0 0 ${width} ${height}`, class: compact ? 'pn-spark-svg' : 'pn-network-svg',
-      role: compact ? 'img' : 'group', 'aria-label': compact ? 'Signed co-activity preview. Open the neighborhood for the ranked measurements.' : 'Signed co-activity of selected candidates. The same measurements are available in the ranked lists below.'});
-    if (compact) svg.setAttribute('aria-hidden', 'true');
-    const cx = width / 2, cy = compact ? 46 : 145, links = svgNode('g', {class: 'pn-links'}), vertices = svgNode('g');
-    svg.append(links, vertices);
-    const perGroup = compact ? 2 : 4;
-    for (const [groupIndex, definition] of definitions.entries()) {
-      const items = data.groups[definition.key].slice(0, perGroup);
-      if (!compact) {
-        const labelX = groupIndex === 0 ? 122 : groupIndex === 1 ? 778 : 450;
-        vertices.append(svgNode('text', {x: labelX, y: groupIndex === 2 ? 253 : 24, class: `pn-network-heading pn-${definition.key}`, 'text-anchor': 'middle'}, definition.title));
-      }
-      items.forEach((item, index) => {
-        let x, y;
-        if (compact) {
-          x = groupIndex === 0 ? 38 + index * 37 : groupIndex === 1 ? width - 38 - index * 37 : 132 + index * 56;
-          y = groupIndex === 2 ? 91 : 22 + index * 35;
-        } else if (groupIndex === 2) {
-          x = 162 + (index + (4 - items.length) / 2) * 192; y = 291;
-        } else {
-          x = groupIndex === 0 ? 77 + (index % 2) * 132 : 823 - (index % 2) * 132;
-          y = 69 + Math.floor(index / 2) * 111;
-        }
-        links.append(svgNode('line', {x1: cx, y1: cy, x2: x, y2: y, class: `pn-link pn-${definition.key}`,
-          'stroke-width': compact ? 1 + Math.abs(item.r) * 1.6 : 1 + Math.abs(item.r) * 3,
-          opacity: .28 + Math.abs(item.r) * .55}));
-        const group = svgNode('g', {class: `pn-vertex pn-${definition.key}`});
-        group.append(svgNode('circle', {cx: x, cy: y, r: compact ? 4.5 + Math.abs(item.r) * 3 : 7 + Math.abs(item.r) * 4}));
-        if (!compact) {
-          group.append(svgNode('circle', {cx: x, cy: y, r: 27, class: 'pn-hit-area'}),
-            svgNode('text', {x, y: y + 27, 'text-anchor': 'middle', class: 'pn-coordinate'}, `L${item.layer} N${item.neuron}`),
-            svgNode('text', {x, y: y + 43, 'text-anchor': 'middle', class: 'pn-value'}, `r ${signed(item.r)}`),
-            svgNode('title', {}, `${coordinate(item)} · r ${signed(item.r)} · ${item.n} prompts`));
-          if (mapped(item)) {
-            group.setAttribute('role', 'button'); group.setAttribute('tabindex', '0');
-            group.setAttribute('aria-label', `Select ${coordinate(item)}, r ${signed(item.r)}`);
-            group.addEventListener('click', () => navigate(item));
-            group.addEventListener('keydown', event => {if (event.key === 'Enter' || event.key === ' ') {event.preventDefault(); navigate(item);}});
-          }
-        }
-        vertices.append(group);
-      });
-    }
-    const hub = svgNode('g', {class: 'pn-hub'});
-    hub.append(svgNode('circle', {cx, cy, r: compact ? 16 : 40, class: 'pn-hub-halo'}), svgNode('circle', {cx, cy, r: compact ? 8 : 25}));
-    if (compact) hub.append(svgNode('text', {x: cx, y: cy + 30, 'text-anchor': 'middle'}, `L${app.target.layer} N${app.target.neuron}`));
-    else hub.append(svgNode('text', {x: cx, y: cy - 2, 'text-anchor': 'middle'}, `L${app.target.layer}`),
-      svgNode('text', {x: cx, y: cy + 14, 'text-anchor': 'middle'}, `N${app.target.neuron}`),
-      svgNode('text', {x: cx, y: cy + 62, 'text-anchor': 'middle', class: 'pn-selected-label'}, 'SELECTED NEURON'));
-    vertices.append(hub); return svg;
+    return window.PersonaGraph.render(data.graph, {compact, threshold: app.threshold,
+      layout: app.layout, bundle: app.bundle, onSelect: navigate});
   }
   function renderProvenance(source) {
     const facts = node('dl');
