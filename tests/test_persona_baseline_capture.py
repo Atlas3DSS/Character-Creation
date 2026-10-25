@@ -37,11 +37,11 @@ class BaselineTests(unittest.TestCase):
     def test_opportunistic_boundaries_and_priority(self):
         now = datetime.fromisoformat('2026-10-25T12:00:00-07:00')
         self.assertIsNone(schedule.session_end(now))
-        self.assertEqual(schedule.session_end(now, True).hour, 14)
+        self.assertEqual(schedule.session_end(now, True).hour, 20)
         self.assertFalse(capture.request_window(now.timestamp(), 60, now.timestamp()+7200))
         self.assertTrue(capture.request_window(now.timestamp(), 60, now.timestamp()+7200, True))
         self.assertFalse(capture.request_window(now.timestamp(), 60, now.timestamp()+60, True))
-        for stamp, hour, day in [('2026-10-25T08:00:00-07:00',10,25),
+        for stamp, hour, day in [('2026-10-25T08:00:00-07:00',20,25),
                                  ('2026-10-25T19:50:00-07:00',20,25),
                                  ('2026-10-25T20:00:00-07:00',8,26),
                                  ('2026-10-31T20:00:00-07:00',8,1)]:
@@ -76,6 +76,123 @@ class BaselineTests(unittest.TestCase):
         self.assertTrue(schedule.required_fleet_idle(snapshot,fleet))
         cards.pop()
         self.assertFalse(schedule.required_fleet_idle(snapshot,fleet))
+
+    def test_priority_yield_matches_required_resources(self):
+        fleet={'gpus':[str(i) for i in range(6)]}
+        snapshot={'fleet':{'cards':[dict(uuid=schedule.JOHN,host='wtatum84',label='john')]+[
+            dict(uuid=str(i),host='v100',label='v100-'+str(i)) for i in range(6)]}}
+        mike=dict(status='queued',project='atlas-orientation',lane='interactive',
+                  target_host='MonkeyPC',gpu_selector='GPU-ca123220-3e85-d601-2e49-edbb6e6b22a9')
+        self.assertIsNone(schedule.priority_waiting([mike],fleet,snapshot))
+        self.assertIsNone(schedule.priority_waiting([{**mike,'gpu_selector':'any'}],fleet,snapshot))
+        for job in [dict(status='queued',lane='interactive'),
+                    dict(status='queued',lane='interactive',target_host='any',gpu_selector='any'),
+                    dict(status='queued',lane='interactive',gpu_selector=schedule.JOHN)]:
+            self.assertEqual(schedule.priority_waiting([job],fleet,snapshot),'interactive')
+        self.assertEqual(schedule.priority_waiting([dict(status='queued',project='dsv41',
+                         gpu_selector=schedule.JOHN)],fleet,snapshot),'chemistry')
+        manifest={'can_continue_unattempted':True,'unattempted':10,'errors':[],
+                  'states':{'failed':3,'incomplete':3},'needs_review':True,
+                  'reviewed_recovery':{'schema':'character-creation.baseline-reviewed-recovery.v1',
+                  'quarantines':[{'sample_id':str(i)} for i in range(6)]}}
+        self.assertTrue(schedule.reviewed_continuation(manifest))
+        self.assertFalse(schedule.reviewed_continuation({**manifest,'unattempted':0}))
+        self.assertFalse(schedule.reviewed_continuation({**manifest,'reviewed_recovery':None}))
+        self.assertFalse(schedule.reviewed_continuation({**manifest,'states':{'failed':4,'incomplete':3}}))
+
+    def test_reviewed_migration_retains_quarantines_and_only_dispatches_unattempted(self):
+        with tempfile.TemporaryDirectory() as temp, contextlib.ExitStack() as stack:
+            root=Path(temp);corpus=root/'corpus.jsonl';raw=root/'raw.npz';raw.write_bytes(b'fixture')
+            rows=[{'sample_id':str(i),'prompt':{'corpus':'big_five','synthetic':True,
+                'generator':{'job_id':capture.JOB},'system':'','prompt':str(i),'split':'discovery'}} for i in range(18)]
+            corpus.write_text(''.join(capture.encoded(r)+'\n' for r in rows))
+            manifest={'job_id':capture.JOB,'corpus_sha256':capture.file_hash(corpus)}
+            corpus.with_suffix('.manifest.json').write_text(capture.encoded(manifest))
+            endpoints=[dict(gpu_uuid=str(i),model_identity='m',prepared_identity='p',runtime_identity='a'*64,url='http://unused') for i in range(6)]
+            config=root/'config.json';config.write_text(capture.encoded({'model':'unused','endpoints':endpoints,'workboard':'unused'}))
+            args=SimpleNamespace(config=config,corpus=corpus,ledger=root/'ledger.sqlite',index=root/'index.jsonl',
+                until='2099-01-01T00:00:00+00:00',timeout=600,artifact_dir=None,max_tokens=2048,max_new=3,
+                opportunistic=True,command='prepare-recovery',recovery_record=root/'review.json',
+                recovery_reason='Reviewed Atlas interruption; retain failures and truncations, continue only untouched rows',quarantine_report=[])
+            original=capture.capture_binding(manifest,endpoints,2048);original['code_sha256']='old-runner'
+            retained=[]
+            with sqlite3.connect(args.ledger) as c:
+                c.execute('CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL)')
+                c.execute('CREATE TABLE captures(sample_id TEXT PRIMARY KEY,ordinal INTEGER UNIQUE,state TEXT NOT NULL,payload TEXT NOT NULL,response TEXT,error TEXT,started REAL,finished REAL)')
+                c.execute('INSERT INTO metadata VALUES(?,?)',('binding',capture.encoded(original)))
+                for i in range(6):
+                    payload={'model':'checkpoint','messages':[{'role':'user','content':str(i)}],
+                        'seed':7035,'max_tokens':2048,'temperature':0,'stream':False,
+                        'chat_template_kwargs':{'enable_thinking':False},'metadata':{'job_id':'baseline40k-'+str(i),
+                        'sample_id':str(i),'source_job_id':capture.JOB,'arm':'baseline','split':'discovery'}}
+                    response={'activation_artifact':{'path':str(raw),'sha256':capture.file_hash(raw)},
+                              'choices':[{'finish_reason':'length'}]} if i>=3 else None
+                    report=root/('probe-'+str(i)+'.jsonl');args.quarantine_report.append(report)
+                    identities={k:endpoints[i][k] for k in ('model_identity','prepared_identity','runtime_identity')}
+                    report.write_text(capture.encoded({'request_sha256':capture.canonical_digest(payload),
+                        'request':payload,'operation':'rollout',**identities,
+                        'worker_manifest':{**identities,'gpu_uuid':str(i)},
+                        'status':'complete' if response else 'failed','state_restored':True,'response':response,
+                        'activation_artifact':response['activation_artifact'] if response else None,
+                        'error':None if response else 'ProtocolError: Worker interrupted before graph replay'}))
+                    if response:
+                        response['provenance_artifact']={**identities,'operation':'rollout',
+                            'request_sha256':capture.canonical_digest(payload),'path':str(report),
+                            'sha256':capture.file_hash(report),'self_reference':'Saved response excludes this post-write provenance pointer'}
+                    row=(str(i),i,'incomplete' if response else 'failed',capture.encoded(payload),
+                         capture.encoded(response) if response else None,'retained-error',100.,None)
+                    c.execute('INSERT INTO captures VALUES(?,?,?,?,?,?,?,?)',row);retained.append(row)
+            # Missing/wrong report identities and mismatched response/artifact fail before approval.
+            for index,change in [(0,lambda r:r.pop('model_identity')),
+                                 (0,lambda r:r.update(prepared_identity='wrong')),
+                                 (0,lambda r:r['worker_manifest'].update(runtime_identity='wrong')),
+                                 (3,lambda r:r['response']['choices'][0].update(finish_reason='stop')),
+                                 (3,lambda r:r.update(activation_artifact={'path':'wrong'}))]:
+                path=args.quarantine_report[index];saved=path.read_text();report=json.loads(saved);change(report)
+                path.write_text(capture.encoded(report))
+                with self.assertRaises(ValueError):capture.reviewed_recovery(args)
+                path.write_text(saved)
+                self.assertFalse(args.recovery_record.exists())
+            with contextlib.redirect_stdout(io.StringIO()):capture.reviewed_recovery(args)
+            record=json.loads(args.recovery_record.read_text());prior_hash=capture.file_hash(args.recovery_record)
+            self.assertEqual(record['original_binding'],original);self.assertEqual(len(record['quarantines']),6)
+            args.replace_draft=True
+            with contextlib.redirect_stdout(io.StringIO()):capture.reviewed_recovery(args)
+            replacement=json.loads(args.recovery_record.read_text())
+            self.assertEqual(replacement['superseded_draft'],{'sha256':prior_hash,'record':record})
+            args.command='approve-recovery';args.max_tokens=3072
+            with self.assertRaisesRegex(ValueError,'scientific binding'):capture.reviewed_recovery(args)
+            args.max_tokens=2048
+            with contextlib.redirect_stdout(io.StringIO()):capture.reviewed_recovery(args)
+            args.command='prepare-recovery'
+            with self.assertRaisesRegex(ValueError,'already approved'):capture.reviewed_recovery(args)
+            calls=[]
+            def fetch(url,payload,timeout):
+                calls.append(payload['metadata']['sample_id'])
+                return {'activation_artifact':{'path':str(raw)}}
+            for name,value in [('COUNT',18),('ModelSpec',SimpleNamespace(load=lambda p:None)),
+                ('Admission',lambda p:SimpleNamespace(allowed=lambda e:(True,''))),
+                ('native_capability',lambda *a,**kw:'checkpoint'),('fetch',fetch),('validate',lambda *a:{'complete':True})]:
+                stack.enter_context(patch.object(capture,name,value))
+            # Offline publication does not contact endpoints or claim complete validation.
+            args.until='2020-01-01T00:00:00+00:00'
+            with patch.object(capture,'native_capability',side_effect=AssertionError('offline network call')):
+                with contextlib.redirect_stdout(io.StringIO()):capture.run(args)
+            first=json.loads(args.index.with_suffix('.manifest.json').read_text())
+            self.assertTrue(first['can_continue_unattempted']);self.assertTrue(first['needs_review'])
+            args.until='2099-01-01T00:00:00+00:00'
+            with contextlib.redirect_stdout(io.StringIO()):capture.run(args)
+            first=json.loads(args.index.with_suffix('.manifest.json').read_text())
+            self.assertTrue(first['can_continue_unattempted']);self.assertFalse(first['complete'])
+            args.max_new=0
+            with contextlib.redirect_stdout(io.StringIO()):capture.run(args)
+            final=json.loads(args.index.with_suffix('.manifest.json').read_text())
+            self.assertFalse(final['can_continue_unattempted']);self.assertTrue(final['needs_review']);self.assertFalse(final['complete'])
+            self.assertEqual(set(calls),{str(i) for i in range(6,18)});self.assertEqual(len(calls),12)
+            with sqlite3.connect(args.ledger) as c:
+                self.assertEqual(c.execute('SELECT * FROM captures WHERE ordinal<6 ORDER BY ordinal').fetchall(),retained)
+            args.quarantine_report[0].write_text('{}')
+            with self.assertRaisesRegex(ValueError,'report changed'):capture.run(args)
 
     def test_signal_drains_and_resume_never_redispatches(self):
         with tempfile.TemporaryDirectory() as temp, contextlib.ExitStack() as stack:

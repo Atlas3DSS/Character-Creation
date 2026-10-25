@@ -34,9 +34,29 @@ def command(argv, timeout=90):
 def board(fleet):
     return json.loads(command([fleet['workboard'], 'status', '--json']))
 
-def priority_waiting(jobs):
+def competes_for_resources(job, fleet, snapshot):
+    required = set(fleet['gpus']) | {JOHN}
+    if job.get('alternatives_json') or job.get('route_json'):
+        return True  # Multi-route declarations are conservatively treated as competing.
+    selector = job.get('assigned_uuid') or job.get('gpu_selector')
+    cards = snapshot.get('fleet', {}).get('cards', [])
+    if selector in required:
+        return True
+    if selector and str(selector).startswith('GPU-'):
+        return False
+    matches = [c for c in cards if selector and selector in (c.get('label'), c.get('uuid'))]
+    if matches:
+        return any(c['uuid'] in required for c in matches)
+    host = job.get('target_host')
+    required_hosts = {c.get('host') for c in cards if c.get('uuid') in required}
+    # Unknown selectors/hosts remain conservative, rather than guessing idle capacity.
+    return not host or host in ('any', '*') or not required_hosts or host in required_hosts
+
+
+def priority_waiting(jobs, fleet=None, snapshot=None):
     """Owner preference at the client; never changes board priority or other jobs."""
-    waiting = [j for j in jobs if j.get('status') in ('queued', 'pending', 'waiting')]
+    waiting = [j for j in jobs if j.get('status') in ('queued', 'pending', 'waiting')
+               and (fleet is None or competes_for_resources(j, fleet, snapshot or {}))]
     for job in waiting:
         if job.get('lane') == 'interactive' or 'atlas' in str(job.get('project', '')).lower():
             return 'interactive'
@@ -50,7 +70,8 @@ def priority_waiting(jobs):
 
 
 def interactive_waiting(fleet):
-    return priority_waiting(board(fleet)['jobs'])
+    snapshot=board(fleet)
+    return priority_waiting(snapshot['jobs'],fleet,snapshot)
 
 
 def required_fleet_idle(snapshot, fleet):
@@ -75,14 +96,26 @@ def required_fleet_idle(snapshot, fleet):
     return True
 
 
+def reviewed_continuation(manifest):
+    recovery = manifest.get('reviewed_recovery') or {}
+    quarantines = recovery.get('quarantines') or []
+    states = manifest.get('states') or {}
+    return bool(manifest.get('can_continue_unattempted') is True
+                and manifest.get('unattempted', 0) > 0 and not manifest.get('errors')
+                and recovery.get('schema') == 'character-creation.baseline-reviewed-recovery.v1'
+                and quarantines and len({q['sample_id'] for q in quarantines}) == len(quarantines)
+                and len(quarantines) == sum(states.get(k, 0) for k in ('failed','incomplete'))
+                and not states.get('inflight'))
+
+
 def session_end(now, opportunistic=False):
-    """Dedicated window, or bounded daytime backfill until the next window."""
+    """Dedicated window, or daytime backfill until the next window."""
     now = now.astimezone(ZONE)
     if now.hour >= 20 or now.hour < 8:
         end = now.replace(hour=8, minute=0, second=0, microsecond=0)
         return end + timedelta(days=1) if now.hour >= 20 else end
     if opportunistic:
-        return min(now + timedelta(hours=2), now.replace(hour=20, minute=0, second=0, microsecond=0))
+        return now.replace(hour=20, minute=0, second=0, microsecond=0)
     return None
 
 def main():
@@ -118,6 +151,7 @@ def main():
             stream.write(payload);stream.flush();os.fsync(stream.fileno());temporary=stream.name
         os.replace(temporary,state_path)
     for sig in (signal.SIGTERM,signal.SIGINT):signal.signal(sig,lambda *_:STOP.set())
+    prior_blocked=False
     try:
         if state_path.is_file():
             previous_owner=json.loads(state_path.read_text())
@@ -138,18 +172,18 @@ def main():
                         if api('/api/job?id='+prior_id)['state'] not in ('queued','running','stopping'):break
                         STOP.wait(2)
                     else:raise RuntimeError('Prior owned session cleanup still pending')
-            if previous_owner.get('state') in ('failed','capture_failed','needs_review'):
-                print('Prior failure requires review; no automatic new GPU session.',flush=True);return
+            prior_blocked=previous_owner.get('state') in ('failed','capture_failed','needs_review')
         job_id=None;capture_token=None;capture_invocation=None
         manifest=remote_run(['/usr/bin/python3','-c',
             'import pathlib; p=pathlib.Path('+repr(str(remote/'results/baseline40k-index.manifest.json'))+'); print(p.read_text() if p.exists() else "{}")'])
         previous=json.loads(manifest)
         if previous.get('complete'):
             save(state='complete');return
-        if previous.get('needs_review') or previous.get('errors') or (previous.get('unattempted')==0 and previous.get('states',{}).get('incomplete',0)):
+        if (prior_blocked or previous.get('needs_review') or previous.get('errors')
+                or (previous.get('unattempted')==0 and previous.get('states',{}).get('incomplete',0))) and not reviewed_continuation(previous):
             save(state='needs_review',reason='Retained failed/incomplete captures need explicit resolution.');return
         snapshot=board(fleet)
-        if priority_waiting(snapshot['jobs']):
+        if priority_waiting(snapshot['jobs'],fleet,snapshot):
             save(state='waiting_for_priority_work');return
         if not required_fleet_idle(snapshot,fleet):
             save(state='waiting_for_idle_fleet');return
