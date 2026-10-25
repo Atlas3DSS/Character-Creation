@@ -1,0 +1,3480 @@
+{
+  "schema": "character-creation.baseline-audit.v1",
+  "model": {
+    "model": "nvidia/Qwen3.8-27B-NVFP4",
+    "revision": "482ca0f3832238542f8f5295dde86b5f22711d80",
+    "quantization": "checkpoint mixed NVFP4/FP8; Flare SM70 BF16-value arithmetic",
+    "layers": 64,
+    "hidden": 5120,
+    "intermediate": 17408,
+    "architecture": "Qwen3_5ForConditionalGeneration",
+    "layer_pattern": "three linear-attention layers followed by one full-attention layer",
+    "map_status": "awaiting calibrated interventions",
+    "upstream": {
+      "name": "Lyra \u2014 neuron-explorer",
+      "url": "https://github.com/lyramakesmusic/neuron-explorer",
+      "revision": "f79b2196e29aacbad89684938baac8d97b172fd1",
+      "reference_model": "Qwen/Qwen3.5-4B",
+      "credit": "Neuron-by-neuron causal sweeps, signed relative doses, read/write comparison, and saved rollout exploration are inspired by Lyra's work. This integration is independently implemented; upstream code is not vendored."
+    }
+  },
+  "plan_sha256": "613e6169a3c775477519888babf2d19ac2cef7bb41c94cb6734ed409707285e1",
+  "status": "complete_audited",
+  "expected_rows": 2046,
+  "observed_unique_rows": 2046,
+  "missing_rows": 0,
+  "missing_job_ids": [],
+  "counts": {
+    "rows": 2046,
+    "request_errors": 0,
+    "truncated": 0,
+    "complete_final_answers": 2046,
+    "thinking_output": 0,
+    "rows_with_identity_or_protocol_issues": 0,
+    "ipip_rows": 1650,
+    "ipip_invalid_format": 0,
+    "ipip_usable": 1650
+  },
+  "finish_reasons": {
+    "stop": 2046
+  },
+  "expected_served_model": "checkpoint",
+  "response_models": {
+    "checkpoint": 2046
+  },
+  "issues": [],
+  "row_problems": [],
+  "read_errors": [],
+  "profiles": {
+    "agreeableness_high": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 41,
+          "sample_sd": 2.6457513110645907,
+          "standard_error": 1.5275252316519468,
+          "observed_range": [
+            38,
+            43
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 48,
+          "sample_sd": 2.6457513110645907,
+          "standard_error": 1.5275252316519468,
+          "observed_range": [
+            45,
+            50
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 21,
+          "sample_sd": 1.0,
+          "standard_error": 0.5773502691896258,
+          "observed_range": [
+            20,
+            22
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 49.666666666666664,
+          "sample_sd": 0.5773502691896257,
+          "standard_error": 0.3333333333333333,
+          "observed_range": [
+            49,
+            50
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 19,
+          "sample_sd": 5.196152422706632,
+          "standard_error": 3.0000000000000004,
+          "observed_range": [
+            13,
+            22
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "agreeableness_low": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 34,
+          "sample_sd": 1.0,
+          "standard_error": 0.5773502691896258,
+          "observed_range": [
+            33,
+            35
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 46,
+          "sample_sd": 0.0,
+          "standard_error": 0.0,
+          "observed_range": [
+            46,
+            46
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 29.666666666666668,
+          "sample_sd": 3.0550504633038935,
+          "standard_error": 1.763834207376394,
+          "observed_range": [
+            27,
+            33
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 20.333333333333332,
+          "sample_sd": 4.932882862316247,
+          "standard_error": 2.8480012484391772,
+          "observed_range": [
+            17,
+            26
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 27.666666666666668,
+          "sample_sd": 9.29157324317757,
+          "standard_error": 5.364492313143694,
+          "observed_range": [
+            17,
+            34
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "baseline": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 40.666666666666664,
+          "sample_sd": 0.5773502691896257,
+          "standard_error": 0.3333333333333333,
+          "observed_range": [
+            40,
+            41
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 44.666666666666664,
+          "sample_sd": 4.618802153517006,
+          "standard_error": 2.6666666666666665,
+          "observed_range": [
+            42,
+            50
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 23,
+          "sample_sd": 1.7320508075688772,
+          "standard_error": 1.0,
+          "observed_range": [
+            22,
+            25
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 42,
+          "sample_sd": 1.7320508075688772,
+          "standard_error": 1.0,
+          "observed_range": [
+            41,
+            44
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 12.666666666666666,
+          "sample_sd": 1.5275252316519468,
+          "standard_error": 0.881917103688197,
+          "observed_range": [
+            11,
+            14
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "conscientiousness_high": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 33,
+          "sample_sd": 2.0,
+          "standard_error": 1.1547005383792517,
+          "observed_range": [
+            31,
+            35
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 47,
+          "sample_sd": 1.7320508075688772,
+          "standard_error": 1.0,
+          "observed_range": [
+            46,
+            49
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 19.333333333333332,
+          "sample_sd": 4.163331998932265,
+          "standard_error": 2.4037008503093262,
+          "observed_range": [
+            16,
+            24
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 43,
+          "sample_sd": 2.0,
+          "standard_error": 1.1547005383792517,
+          "observed_range": [
+            41,
+            45
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 19,
+          "sample_sd": 6.928203230275509,
+          "standard_error": 4.0,
+          "observed_range": [
+            11,
+            23
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "conscientiousness_low": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 35.666666666666664,
+          "sample_sd": 4.618802153517006,
+          "standard_error": 2.6666666666666665,
+          "observed_range": [
+            33,
+            41
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 28.666666666666668,
+          "sample_sd": 0.5773502691896257,
+          "standard_error": 0.3333333333333333,
+          "observed_range": [
+            28,
+            29
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 33.333333333333336,
+          "sample_sd": 2.309401076758503,
+          "standard_error": 1.3333333333333333,
+          "observed_range": [
+            32,
+            36
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 48.666666666666664,
+          "sample_sd": 1.5275252316519468,
+          "standard_error": 0.881917103688197,
+          "observed_range": [
+            47,
+            50
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 20,
+          "sample_sd": 6.082762530298219,
+          "standard_error": 3.511884584284246,
+          "observed_range": [
+            13,
+            24
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "extraversion_high": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 38.333333333333336,
+          "sample_sd": 3.2145502536643185,
+          "standard_error": 1.8559214542766742,
+          "observed_range": [
+            36,
+            42
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 44.333333333333336,
+          "sample_sd": 2.0816659994661326,
+          "standard_error": 1.2018504251546631,
+          "observed_range": [
+            42,
+            46
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 50,
+          "sample_sd": 0.0,
+          "standard_error": 0.0,
+          "observed_range": [
+            50,
+            50
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 49.333333333333336,
+          "sample_sd": 1.1547005383792515,
+          "standard_error": 0.6666666666666666,
+          "observed_range": [
+            48,
+            50
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 15.666666666666666,
+          "sample_sd": 2.0816659994661326,
+          "standard_error": 1.2018504251546631,
+          "observed_range": [
+            14,
+            18
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "extraversion_low": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 31.333333333333332,
+          "sample_sd": 0.5773502691896257,
+          "standard_error": 0.3333333333333333,
+          "observed_range": [
+            31,
+            32
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 44.333333333333336,
+          "sample_sd": 2.309401076758503,
+          "standard_error": 1.3333333333333333,
+          "observed_range": [
+            43,
+            47
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 12.333333333333334,
+          "sample_sd": 0.5773502691896257,
+          "standard_error": 0.3333333333333333,
+          "observed_range": [
+            12,
+            13
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 32.666666666666664,
+          "sample_sd": 1.1547005383792515,
+          "standard_error": 0.6666666666666666,
+          "observed_range": [
+            32,
+            34
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 19.666666666666668,
+          "sample_sd": 3.2145502536643185,
+          "standard_error": 1.8559214542766742,
+          "observed_range": [
+            16,
+            22
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "neuroticism_high": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 36,
+          "sample_sd": 3.4641016151377544,
+          "standard_error": 2.0,
+          "observed_range": [
+            34,
+            40
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 32.333333333333336,
+          "sample_sd": 2.516611478423583,
+          "standard_error": 1.4529663145135578,
+          "observed_range": [
+            30,
+            35
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 16.666666666666668,
+          "sample_sd": 5.507570547286102,
+          "standard_error": 3.1797973380564857,
+          "observed_range": [
+            13,
+            23
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 45.333333333333336,
+          "sample_sd": 2.0816659994661326,
+          "standard_error": 1.2018504251546631,
+          "observed_range": [
+            43,
+            47
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 46.666666666666664,
+          "sample_sd": 1.1547005383792515,
+          "standard_error": 0.6666666666666666,
+          "observed_range": [
+            46,
+            48
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "neuroticism_low": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 35.333333333333336,
+          "sample_sd": 3.2145502536643185,
+          "standard_error": 1.8559214542766742,
+          "observed_range": [
+            33,
+            39
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 48.333333333333336,
+          "sample_sd": 2.8867513459481287,
+          "standard_error": 1.6666666666666667,
+          "observed_range": [
+            45,
+            50
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 17.666666666666668,
+          "sample_sd": 2.0816659994661326,
+          "standard_error": 1.2018504251546631,
+          "observed_range": [
+            16,
+            20
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 47.666666666666664,
+          "sample_sd": 2.309401076758503,
+          "standard_error": 1.3333333333333333,
+          "observed_range": [
+            45,
+            49
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 14,
+          "sample_sd": 3.605551275463989,
+          "standard_error": 2.0816659994661326,
+          "observed_range": [
+            10,
+            17
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "openness_high": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 44,
+          "sample_sd": 1.7320508075688772,
+          "standard_error": 1.0,
+          "observed_range": [
+            43,
+            46
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 38.333333333333336,
+          "sample_sd": 1.5275252316519468,
+          "standard_error": 0.881917103688197,
+          "observed_range": [
+            37,
+            40
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 27,
+          "sample_sd": 4.58257569495584,
+          "standard_error": 2.6457513110645907,
+          "observed_range": [
+            23,
+            32
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 47.333333333333336,
+          "sample_sd": 2.8867513459481287,
+          "standard_error": 1.6666666666666667,
+          "observed_range": [
+            44,
+            49
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 19,
+          "sample_sd": 4.358898943540674,
+          "standard_error": 2.5166114784235836,
+          "observed_range": [
+            14,
+            22
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    },
+    "openness_low": {
+      "ipip": {
+        "Openness": {
+          "n_complete_seeds": 3,
+          "mean": 30,
+          "sample_sd": 1.7320508075688772,
+          "standard_error": 1.0,
+          "observed_range": [
+            28,
+            31
+          ]
+        },
+        "Conscientiousness": {
+          "n_complete_seeds": 3,
+          "mean": 48.333333333333336,
+          "sample_sd": 1.5275252316519468,
+          "standard_error": 0.881917103688197,
+          "observed_range": [
+            47,
+            50
+          ]
+        },
+        "Extraversion": {
+          "n_complete_seeds": 3,
+          "mean": 22,
+          "sample_sd": 2.0,
+          "standard_error": 1.1547005383792517,
+          "observed_range": [
+            20,
+            24
+          ]
+        },
+        "Agreeableness": {
+          "n_complete_seeds": 3,
+          "mean": 41.333333333333336,
+          "sample_sd": 1.1547005383792515,
+          "standard_error": 0.6666666666666666,
+          "observed_range": [
+            40,
+            42
+          ]
+        },
+        "Neuroticism": {
+          "n_complete_seeds": 3,
+          "mean": 16.666666666666668,
+          "sample_sd": 4.041451884327381,
+          "standard_error": 2.3333333333333335,
+          "observed_range": [
+            12,
+            19
+          ]
+        }
+      },
+      "generation_counts": {
+        "rows": 186,
+        "request_errors": 0,
+        "truncated": 0,
+        "complete_final_answers": 186,
+        "ipip_invalid_format": 0,
+        "capability_rows": 12,
+        "capability_usable": 12,
+        "capability_correct": 12,
+        "capability_parse_failures": 0
+      }
+    }
+  },
+  "ipip_inventories": [
+    {
+      "condition": "agreeableness_high",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 42,
+          "mean_1_to_5": 4.2
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 49,
+          "mean_1_to_5": 4.9
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 20,
+          "mean_1_to_5": 2.0
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 22,
+          "mean_1_to_5": 2.2
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "agreeableness_high",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 43,
+          "mean_1_to_5": 4.3
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 45,
+          "mean_1_to_5": 4.5
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 22,
+          "mean_1_to_5": 2.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 49,
+          "mean_1_to_5": 4.9
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 13,
+          "mean_1_to_5": 1.3
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "agreeableness_high",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 38,
+          "mean_1_to_5": 3.8
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 21,
+          "mean_1_to_5": 2.1
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 22,
+          "mean_1_to_5": 2.2
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "agreeableness_low",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 33,
+          "mean_1_to_5": 3.3
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 33,
+          "mean_1_to_5": 3.3
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 18,
+          "mean_1_to_5": 1.8
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 32,
+          "mean_1_to_5": 3.2
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "agreeableness_low",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 35,
+          "mean_1_to_5": 3.5
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 29,
+          "mean_1_to_5": 2.9
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 26,
+          "mean_1_to_5": 2.6
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 17,
+          "mean_1_to_5": 1.7
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "agreeableness_low",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 34,
+          "mean_1_to_5": 3.4
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 27,
+          "mean_1_to_5": 2.7
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 17,
+          "mean_1_to_5": 1.7
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 34,
+          "mean_1_to_5": 3.4
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "baseline",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 40,
+          "mean_1_to_5": 4.0
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 42,
+          "mean_1_to_5": 4.2
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 22,
+          "mean_1_to_5": 2.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 41,
+          "mean_1_to_5": 4.1
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 13,
+          "mean_1_to_5": 1.3
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "baseline",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 41,
+          "mean_1_to_5": 4.1
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 25,
+          "mean_1_to_5": 2.5
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 44,
+          "mean_1_to_5": 4.4
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 11,
+          "mean_1_to_5": 1.1
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "baseline",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 41,
+          "mean_1_to_5": 4.1
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 42,
+          "mean_1_to_5": 4.2
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 22,
+          "mean_1_to_5": 2.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 41,
+          "mean_1_to_5": 4.1
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 14,
+          "mean_1_to_5": 1.4
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "conscientiousness_high",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 33,
+          "mean_1_to_5": 3.3
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 16,
+          "mean_1_to_5": 1.6
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 43,
+          "mean_1_to_5": 4.3
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 23,
+          "mean_1_to_5": 2.3
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "conscientiousness_high",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 31,
+          "mean_1_to_5": 3.1
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 49,
+          "mean_1_to_5": 4.9
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 24,
+          "mean_1_to_5": 2.4
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 45,
+          "mean_1_to_5": 4.5
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 11,
+          "mean_1_to_5": 1.1
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "conscientiousness_high",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 35,
+          "mean_1_to_5": 3.5
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 18,
+          "mean_1_to_5": 1.8
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 41,
+          "mean_1_to_5": 4.1
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 23,
+          "mean_1_to_5": 2.3
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "conscientiousness_low",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 33,
+          "mean_1_to_5": 3.3
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 28,
+          "mean_1_to_5": 2.8
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 32,
+          "mean_1_to_5": 3.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 49,
+          "mean_1_to_5": 4.9
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 23,
+          "mean_1_to_5": 2.3
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "conscientiousness_low",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 41,
+          "mean_1_to_5": 4.1
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 29,
+          "mean_1_to_5": 2.9
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 36,
+          "mean_1_to_5": 3.6
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 47,
+          "mean_1_to_5": 4.7
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 13,
+          "mean_1_to_5": 1.3
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "conscientiousness_low",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 33,
+          "mean_1_to_5": 3.3
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 29,
+          "mean_1_to_5": 2.9
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 32,
+          "mean_1_to_5": 3.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 24,
+          "mean_1_to_5": 2.4
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "extraversion_high",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 36,
+          "mean_1_to_5": 3.6
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 45,
+          "mean_1_to_5": 4.5
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 15,
+          "mean_1_to_5": 1.5
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "extraversion_high",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 42,
+          "mean_1_to_5": 4.2
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 42,
+          "mean_1_to_5": 4.2
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 48,
+          "mean_1_to_5": 4.8
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 18,
+          "mean_1_to_5": 1.8
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "extraversion_high",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 37,
+          "mean_1_to_5": 3.7
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 14,
+          "mean_1_to_5": 1.4
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "extraversion_low",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 31,
+          "mean_1_to_5": 3.1
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 43,
+          "mean_1_to_5": 4.3
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 12,
+          "mean_1_to_5": 1.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 32,
+          "mean_1_to_5": 3.2
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 21,
+          "mean_1_to_5": 2.1
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "extraversion_low",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 32,
+          "mean_1_to_5": 3.2
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 47,
+          "mean_1_to_5": 4.7
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 13,
+          "mean_1_to_5": 1.3
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 34,
+          "mean_1_to_5": 3.4
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 16,
+          "mean_1_to_5": 1.6
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "extraversion_low",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 31,
+          "mean_1_to_5": 3.1
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 43,
+          "mean_1_to_5": 4.3
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 12,
+          "mean_1_to_5": 1.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 32,
+          "mean_1_to_5": 3.2
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 22,
+          "mean_1_to_5": 2.2
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "neuroticism_high",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 34,
+          "mean_1_to_5": 3.4
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 32,
+          "mean_1_to_5": 3.2
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 13,
+          "mean_1_to_5": 1.3
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 47,
+          "mean_1_to_5": 4.7
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "neuroticism_high",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 40,
+          "mean_1_to_5": 4.0
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 35,
+          "mean_1_to_5": 3.5
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 23,
+          "mean_1_to_5": 2.3
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 48,
+          "mean_1_to_5": 4.8
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "neuroticism_high",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 34,
+          "mean_1_to_5": 3.4
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 30,
+          "mean_1_to_5": 3.0
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 14,
+          "mean_1_to_5": 1.4
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 43,
+          "mean_1_to_5": 4.3
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "neuroticism_low",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 33,
+          "mean_1_to_5": 3.3
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 16,
+          "mean_1_to_5": 1.6
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 49,
+          "mean_1_to_5": 4.9
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 15,
+          "mean_1_to_5": 1.5
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "neuroticism_low",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 39,
+          "mean_1_to_5": 3.9
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 45,
+          "mean_1_to_5": 4.5
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 20,
+          "mean_1_to_5": 2.0
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 45,
+          "mean_1_to_5": 4.5
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 10,
+          "mean_1_to_5": 1.0
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "neuroticism_low",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 34,
+          "mean_1_to_5": 3.4
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 17,
+          "mean_1_to_5": 1.7
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 49,
+          "mean_1_to_5": 4.9
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 17,
+          "mean_1_to_5": 1.7
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "openness_high",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 43,
+          "mean_1_to_5": 4.3
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 40,
+          "mean_1_to_5": 4.0
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 26,
+          "mean_1_to_5": 2.6
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 49,
+          "mean_1_to_5": 4.9
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 21,
+          "mean_1_to_5": 2.1
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "openness_high",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 46,
+          "mean_1_to_5": 4.6
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 37,
+          "mean_1_to_5": 3.7
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 32,
+          "mean_1_to_5": 3.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 44,
+          "mean_1_to_5": 4.4
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 14,
+          "mean_1_to_5": 1.4
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "openness_high",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 43,
+          "mean_1_to_5": 4.3
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 38,
+          "mean_1_to_5": 3.8
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 23,
+          "mean_1_to_5": 2.3
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 49,
+          "mean_1_to_5": 4.9
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 22,
+          "mean_1_to_5": 2.2
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "openness_low",
+      "seed": 7035,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 31,
+          "mean_1_to_5": 3.1
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 50,
+          "mean_1_to_5": 5.0
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 20,
+          "mean_1_to_5": 2.0
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 42,
+          "mean_1_to_5": 4.2
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 19,
+          "mean_1_to_5": 1.9
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "openness_low",
+      "seed": 7036,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 28,
+          "mean_1_to_5": 2.8
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 48,
+          "mean_1_to_5": 4.8
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 24,
+          "mean_1_to_5": 2.4
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 42,
+          "mean_1_to_5": 4.2
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 12,
+          "mean_1_to_5": 1.2
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    },
+    {
+      "condition": "openness_low",
+      "seed": 7037,
+      "inventory_sha256": "6af6cd3313d64ea3c4c5a04bbf5c54f7f077d8ccef5669f642c8ee0b2a8b7547",
+      "complete": true,
+      "missing_items": [],
+      "scores": {
+        "Openness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 31,
+          "mean_1_to_5": 3.1
+        },
+        "Conscientiousness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 47,
+          "mean_1_to_5": 4.7
+        },
+        "Extraversion": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 22,
+          "mean_1_to_5": 2.2
+        },
+        "Agreeableness": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 40,
+          "mean_1_to_5": 4.0
+        },
+        "Neuroticism": {
+          "answered": 10,
+          "complete": true,
+          "sum_10_to_50": 19,
+          "mean_1_to_5": 1.9
+        }
+      },
+      "interpretation": "model_self_report_measurement_not_a_human_personality_diagnosis"
+    }
+  ],
+  "capability_answers": [
+    {
+      "id": "114db378ecac1d8cc8e4c8827ea0159736dbfdbc5b8ffedc38714e9474b2bb4c",
+      "condition": "openness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "9c76c3edf481dbebb5912aa23cfcf7b5e223f8bb908ff7678b54b286dc797bb2",
+      "condition": "openness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "57bc535f6c04fe0552352e6ac0b4c1ed829d98d795667219d8f145228df44eee",
+      "condition": "openness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "d756bf4d4d55ef514fd550a74a760a12181a382017683a8f6a7eca73c238dc9e",
+      "condition": "openness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "2917f8675d7e56b3894ec4e83d7dd9140929dfde85c435661ba148ada2e7c85c",
+      "condition": "openness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "95e1e0b31341a99b08a746fe7033599d20ab69fd221224e74b4b97b51f4c6476",
+      "condition": "conscientiousness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "ac64b0058502f68077e438756ca4d6c2a917336f5019e6222a6848805598bcb2",
+      "condition": "conscientiousness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "0e0813c36d39219050e42010095b324d0aa650436b8659aa76af66834e5562a8",
+      "condition": "conscientiousness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "edf90c8e1730edabd20dd0864a1f7050b8e13cf89694a0a73fd778f8a6816b5a",
+      "condition": "extraversion_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "49bc5289d4ce7167fca387dbd2ebf053964b7369ccef2c94f621a3730634c78a",
+      "condition": "agreeableness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "133135ea03e0d8140d16b8a370aef604426a2bda4d7f20aabb42750b9f6c2162",
+      "condition": "agreeableness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "3fedb0e41895e0135350a73b6190210a9f3074a50d5b3b12344158cc413a2b6e",
+      "condition": "agreeableness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "3ba1c95bd87ad5bbe9675d332e3337e7374d1ba2e2fb6fa8132fd7b13cc3b3fa",
+      "condition": "neuroticism_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "b45cfefcdb5ddd137d9a86b5700bb925d0210fe6d909da24c9ef40044380011e",
+      "condition": "neuroticism_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "c71947fe123cc6dd8db0848149dc9dd23e010b673de7461ebdc553d5a33e9b9c",
+      "condition": "neuroticism_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "36e93d46005f76c54df94cdc047223f232de81c4f3c062cf6368d39d14e6c6b0",
+      "condition": "neuroticism_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "99a7ef58755d1583a05f35272ecc1afa96b54580a1564a347081f3fc0368f605",
+      "condition": "baseline",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "16e758fe2fc1228ef4230debfa7ae696f5ea5d62d2fc4f0bf9c4f7902c6ad70d",
+      "condition": "baseline",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "c1edcc49ff28b318a132835b1aecfa1521dbc9426fec44e9350f7422ce79e78d",
+      "condition": "baseline",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "13241c2230ad8ea5e6e6f21dec3a2d96e1bbb48211165952c9ee3e0fd459b717",
+      "condition": "openness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "d2542e31f8f5e4dfa743619481669782aa72c1647d255644c6a688e8f94d1933",
+      "condition": "openness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60"
+    },
+    {
+      "id": "e2942a81b01f96892adee5459b09d6495aad7da16204b865bdfbbd9010555c61",
+      "condition": "openness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "21e6b3d45e4b7b98e4a965523fc550a058d90314f462d1b2443308063e385bff",
+      "condition": "conscientiousness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "6206fcf2c13fd6afc9c3cd91dfba30f366a59b393c2f62ac480ecb4cbd548aed",
+      "condition": "extraversion_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "a2271c8fda0fb66e1205f280305684e53a6fc647fe3ab5dc617a1afe10142b09",
+      "condition": "extraversion_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "064cf02c69432c68d07ca449d01821a8a56ead914bcfc1312c9707828692e353",
+      "condition": "extraversion_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "555254641ff0dd81e09a32ebd6b0dc9344d7b3aa06a6e1a09941817cdaa86897",
+      "condition": "extraversion_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "fbcf40ae09686bf94406d8ecf07b9b439e409c468561726d6b3dda52d21358b9",
+      "condition": "extraversion_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "7f998a366fba624eea08d408eec24bed4ae0b540439da6198bc02a9a4da52a11",
+      "condition": "extraversion_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "ab439d517902deea2cb22de5b58687b57f4f7f9d3866ff023d880d144b8d776f",
+      "condition": "agreeableness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "c484a6fd242928cd07e2fd40b51e860d0d7fb5919e0ebfd3bb0f397f189d4265",
+      "condition": "agreeableness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60"
+    },
+    {
+      "id": "08db64e3786241efc3f0b0cfdef48ca0a8069f349fbf8a8b89abed3fcb982e6f",
+      "condition": "agreeableness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "13ae578f485f09a5a6baea3dcb4d208fb9ef4b9d71bf8d97bddfaca0d6732c23",
+      "condition": "agreeableness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "41fbff7000d19dc40797d98c1e492b8d11619db40f854a55dc97a494168091c1",
+      "condition": "neuroticism_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60"
+    },
+    {
+      "id": "51a48a870018f24c3115f93d7038827f05f106bbb7e55486d3c1324ae1e7c5f1",
+      "condition": "neuroticism_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "25185413b836014e47332cba26a6742f15cef5e368bc9af18960353b8944a0d7",
+      "condition": "neuroticism_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "8c920fa199e637e5798aca7bc176eaf1d5e62f816edc41a0419efddafd92c509",
+      "condition": "neuroticism_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "b8b919d97a5be43ce8a967858ae5c4e5670698baf1f7d1c5a9dca62e9c2b0e16",
+      "condition": "baseline",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "c405304788f31ae8b24d288bdb9c1b3b2f186a3aed851d6f1fc2cedc566f9cac",
+      "condition": "openness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "5b913cba18fba4d963e6e6560db24f54a00e61fe1cef4aac7eb384771d8b6d6e",
+      "condition": "openness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "09f7f4cd88977f445aca27fa6225a368b4ed304ea5b8dfe38d6fad700339de6c",
+      "condition": "openness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "87d2e17e44b65f1eb15049caf4cb7f26b782aca21a7ac267ad2d90f97a452f58",
+      "condition": "openness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "ead1482fad62b772436737515e95bd35671acfc1e5f003266a7e8932e947ab00",
+      "condition": "openness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "3936e111c04dc048e86c54d8a04ea8af814cce4262da930ae0983a2cbda51ace",
+      "condition": "openness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "561d0e2b6b8f678659d40c9f18ee12b52f11c90934ccf95146c0d745d876e034",
+      "condition": "openness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "4e21191f9da67716d9ec25101aa256042cbfbfc3834ad4730ea39798425c3e2e",
+      "condition": "conscientiousness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "f1bfad0455a320be509428eb37933c102a042747f5d9c01efbc2e41e3588dd32",
+      "condition": "conscientiousness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "286d51064c221c348092c92d746317a2dfeac846274bbf8f435fa0b51b2a2fe4",
+      "condition": "conscientiousness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "54021d84976e7861dbee6a52902596a8a173446922742587581cf39037405452",
+      "condition": "conscientiousness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "d6db68a350fe3cdfbb97721c1a03cc7f8445ee81e19c2173217858d025d39d76",
+      "condition": "conscientiousness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60"
+    },
+    {
+      "id": "06ed44c4ef4d57a2058ef3a84d8aad6dbcfb7ffbfaeb51da3246ceb06e970e06",
+      "condition": "conscientiousness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "b8696a3e3e7542c926e788cbddcbcd1a175d674a2974ba876d99a8ff21937a26",
+      "condition": "extraversion_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "824f6b0fe8626123142dbdfb48c8d42e80a69ab94a75758238c8091f36db69b6",
+      "condition": "extraversion_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60"
+    },
+    {
+      "id": "7748d7c2a68c057700543b6f3f15d88b8a577935fa7144f7f02bbedd40070ae4",
+      "condition": "extraversion_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "391efa6db90e9bc8125cb24876e134fd02a88899a6bc18cdaf8791a9d484dfde",
+      "condition": "agreeableness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "a69a5ff11ae2a0f7d5a181f03a74cac18e6d09921721371a004d54e6e9cb16f6",
+      "condition": "agreeableness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "f494ef9a0810192bc507a177a4f2e8c8a7324c75cfe7590941352aba1f04f3c4",
+      "condition": "agreeableness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "68feed808760ced1a248c7b96b1d6016d597fa1a24bd919f5b65eadeaac9e260",
+      "condition": "agreeableness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "9cca7c25c78ea266d81f3992add27fefce5869ea9f696784cfcc722c781f0fc6",
+      "condition": "agreeableness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "5ecc7b0673eaf79badb0fc40e8666d44f78723c74cb65f70277e16eab1db8a28",
+      "condition": "agreeableness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "44b93e3a9c4aa8786ce967c0423135684e791c8aea6e3e19d251b2cbc430f27a",
+      "condition": "agreeableness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60"
+    },
+    {
+      "id": "96781314ac0f4ed002d869ee56f59f02408c0d9a9fd1388f3a02c04e99409b16",
+      "condition": "neuroticism_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "d2f3668861a6170915fa37d88db088c666946fd43ba86010355b91fd522e2280",
+      "condition": "neuroticism_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "6fe95ccb69f3117e775faaf264305844b5eeb94f79e049e937f6a5bf13442e66",
+      "condition": "neuroticism_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "19ea34a9536336eb37caf892efce892f9b1f43a3cb5cc680597a65e2f633f024",
+      "condition": "neuroticism_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "c68bad87360fa4d72a8f3d7d5646136a756a717935cb33348cc43acd5b8d0181",
+      "condition": "baseline",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "ab6d3cd80af5006fcbdbd843b0d34eb69cdffa2f78b3a5b90749cff23cab5bb9",
+      "condition": "baseline",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "d7f72c63fdec08e02176491e285d7ad97e63afae6599fdc08efcde4d5681e7f3",
+      "condition": "baseline",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "5fd212f43e460606f781f4566fd685da20def1f6f6f507be7b597bc69f119713",
+      "condition": "openness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "fa94b5564a705c66844741c9e13d56eaaaef94cfc2050a53b90912662db55ad3",
+      "condition": "openness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "9fc598110dc2a8e45ff5d814be5211acf321471b39b1e00f91cfca6257036c6b",
+      "condition": "openness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "451de0e5e6e935edcb662d3d2b21e66f05d19729744b6812286c8b50f399a279",
+      "condition": "conscientiousness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "4a517b4c89f2391b55b91b2cfedc0715e64a28a4c010cb3b8cb8399a5fe330f3",
+      "condition": "conscientiousness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "f771095a3f51ce47b157a91124b09a44e6c3b952f8e4866f97b58f68d170ad5b",
+      "condition": "conscientiousness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "baca0b03daef7b94984db3fe23ea2a2320e5ccc3b7c0a613c530f556e9d84c83",
+      "condition": "extraversion_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "d477078a6b8f01df846f3fd4c4b0c244e0decfde7dfa7745fc9ecbb676d90bbf",
+      "condition": "extraversion_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60"
+    },
+    {
+      "id": "eb35aaac1d73ea4e4e40675fd9f525af132d977398363242a01e5607d388a16f",
+      "condition": "extraversion_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "78d9b974c08334e1cab4504c2d09a9e5356a25cacce4e4560afe1b46d926b21f",
+      "condition": "extraversion_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "c992b1661bb52756c6ddbfeac67d2e4df20b1f6a102055351e3c77a9b9ab7bad",
+      "condition": "extraversion_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "c2dc8f7ccf1850bdd05d40e0dafbdc630b9a5042ea198f5db521f6ce0b36dcd1",
+      "condition": "agreeableness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "cd28b1162eb69679e5102467557ca6303ce7ad739b1ff8ecedb047e1870429ff",
+      "condition": "agreeableness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "fc36d8e2855c13882e12539d3d385af1119413decdfcd13cd625195ed54616c9",
+      "condition": "agreeableness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "e26d7dc1bd6fe81d734568e624a08553ec50f8fd1f0a299040304c0ce40f8427",
+      "condition": "agreeableness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "6429b60e3ec0bfa6f17925329328626923097de3a405fac251428c801d15e319",
+      "condition": "neuroticism_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "eef4c88c71da4136b5ab80db378b4b4fe726e263de4301a42e17007ae4befcb3",
+      "condition": "neuroticism_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "5ec92310d73209517b0b770e3669eaadb01a93734fe202edf3d137212c7fade7",
+      "condition": "neuroticism_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "046fdf25f7148f77b3941fe1cd86d7df6c6f95d98209f4b4f16289dcb4a69547",
+      "condition": "neuroticism_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "a67371225019d42857a11ec48f6dc32c6992f7dc6cca3b4f49003b882af7d760",
+      "condition": "baseline",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "583ba901f97aaa553b3e6d7b43967d0777e8db3aa4bcf54d6e03805411b337d2",
+      "condition": "baseline",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "9f5d5ec518e40dc6e6f4d92ee2d66753b5d607d558e59ab68a048fb3953c02ba",
+      "condition": "baseline",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "d1b93f1d60bb9b7ab9ee56aea064b9348126454b6e963eb8d5508be1da7c02be",
+      "condition": "openness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "b702756981e2fdc3cace4c288ede2940acd5aaab3f643feb0b2a86089f0b2c48",
+      "condition": "openness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "cd891fb611d1f73c496e422ef2a963f468b04ded45f71430f88eb9f94e4726d8",
+      "condition": "openness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "0e312b533acc62a21e119bdbbd38101ba97a47b1a106eed077ebe067af36e9fc",
+      "condition": "conscientiousness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "74e62f2f38b1966f140645fdfc82b32b95f5611373d10c36fbfd8af1b9b01b66",
+      "condition": "conscientiousness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "d33a770616ab5c50e38b88d1fcf31780a118e4deb4ab11269a1269816f2d7fb8",
+      "condition": "conscientiousness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "e903b257d4cf97dff19dec88c51f1c94566c477a889b91f7c3ca4dce97628446",
+      "condition": "conscientiousness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60"
+    },
+    {
+      "id": "f823ab2e027c221e467a18e8fdccc706ac34d1982c9f1bb42be1693878e3a878",
+      "condition": "conscientiousness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "c65a595ab613f326413d69a1c12938aaeaea1c10e474e57c700ec4dc431f38c0",
+      "condition": "conscientiousness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "f583cd5ceba2ce887563e2a7be15a5f20a58afec6e30e52192521fb761b82ce2",
+      "condition": "extraversion_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "fc3e461136fc604370391e9faef15b74bc00699b83ec1d1415dc3c355d93c464",
+      "condition": "extraversion_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "a39bddaeb72291c8b6d6a915086e5fd0090cdcfb4eb31eef800038df0e4f4e5c",
+      "condition": "agreeableness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "699e7bfda9a4175a27e3ae8d5c3e5bb88a5e27dcb442a4f22bf73d65df8e9bc6",
+      "condition": "agreeableness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "008797d2a024fa5d9d824e9d41f7472f254d1860b6b227d7ae1e36eb67b80a84",
+      "condition": "neuroticism_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "44406a978bc8a002faa1473967658284882f61a00532669489acfc8cd0f350ce",
+      "condition": "neuroticism_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "1d21efd4b68e39a8446d0631819e4f04ffaf9ac67c86e91d60dc662d6c2a5152",
+      "condition": "neuroticism_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "32f1b886319e2fe45a32d0f43af36bdd1c4a25c9b136f2276a20f4506daab70e",
+      "condition": "neuroticism_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "7946ef170968cf28a7de7cbb700e77bf23e5003bd750459ce812482f32ebdc5f",
+      "condition": "baseline",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "3024db856eb6f717acc43f03bb5fcec79d55fa372859729d5c1e4582398ecfeb",
+      "condition": "baseline",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "f108f505d208d92c4eeff5a0afd2a7f8ab3092163649ff64763363c778903855",
+      "condition": "openness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "de6dd9ea5333aef8010e9e2e3a2fa16908ae3057b62dd5db8ec859e9eed4db25",
+      "condition": "openness_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "364a7c58f63c02219466012068460a49bcb3831329e08efae87685d32734bb61",
+      "condition": "openness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "fe42286dc672653cfac5923eb34578114e466b90f7680f1fc18651e170a31227",
+      "condition": "conscientiousness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "8ec4f65dca6d2cbab53f1105bf2e99a99617786a36fcf05084cda774fcc825f1",
+      "condition": "conscientiousness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "3fbc54797e14eb96b702e313f91078d53d0c597b3be67b8926376a25a5aaf505",
+      "condition": "conscientiousness_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "827595d44b7a580e5fdd1a5bba1472278f2eb3c2fcf5fb4d11f30837dad20581",
+      "condition": "conscientiousness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "8f635d0fe7ffe12d9876aac568705e96af80eb8b6a2322f0292ea9c1512228a5",
+      "condition": "conscientiousness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "8d8a261bc52a2677255a474b775150d689827b133efbea15841296f3020ca395",
+      "condition": "extraversion_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "7df9c19ea0c4260082b7c05167306cfcf8221b28b7dafe6be8cb708ed80973e3",
+      "condition": "extraversion_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "ec5290272dbaec463a8bad61d83beb6839d6067199a66d98c06194d2a0e67add",
+      "condition": "extraversion_high",
+      "seed": 7036,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "9cc39666fa55e8d894f4e48cc2b647ae752b728ee25fcfb73db1317fd09c4561",
+      "condition": "extraversion_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "3c0396e1df0446cccc37fa6f931f68822e580c08c1306d9d31d5d5d213091bad",
+      "condition": "extraversion_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "6f43fe8f595f713b4b3cdbad64ed08bb61f3af12bc2e393508168d75a65f7ffb",
+      "condition": "extraversion_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "120",
+      "parseable": true,
+      "correct": true,
+      "answer": "120"
+    },
+    {
+      "id": "fb2a9f557c1a329059f669c23f90a9d1ea4b43084b17abaec6b1a6b984a15ca7",
+      "condition": "extraversion_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "33be5cddb11199669053af8423fe7ccc6eb683b7452bcebac39222fdea7be8c9",
+      "condition": "agreeableness_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "c3e819ee86264da894df3e75d9f65e64874d5c8a8611d1c246d0fdc85ddbe345",
+      "condition": "agreeableness_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "10452565107a9349f83656f1c515239b0f44310c4556339ef62c29b684ed6207",
+      "condition": "agreeableness_low",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "44268f1931cca917f11215e119038ef50b5d246543f15460afe7ee27f6598f8b",
+      "condition": "agreeableness_low",
+      "seed": 7037,
+      "usable": true,
+      "expected": "7/22",
+      "parseable": true,
+      "correct": true,
+      "answer": "7/22"
+    },
+    {
+      "id": "4296a68e9a04b099b0ceed5f6cb35b256e2dae2469d8da27a3364e7ff21ef9fb",
+      "condition": "neuroticism_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "82ea273d3c51028160c78b868a5a583a721a7d2e73f3c52c559e4b01053f33cf",
+      "condition": "neuroticism_high",
+      "seed": 7035,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    },
+    {
+      "id": "db5b68d082d423ff5007d9be49cd61e876884e66c4c72cbd60b49f68ce902f41",
+      "condition": "neuroticism_high",
+      "seed": 7037,
+      "usable": true,
+      "expected": "64",
+      "parseable": true,
+      "correct": true,
+      "answer": "64"
+    },
+    {
+      "id": "df11bec7bd3633ac4e5cb11609fff055f5978a7ab1958a7ef0ed1ce3344b1c4f",
+      "condition": "neuroticism_low",
+      "seed": 7036,
+      "usable": true,
+      "expected": "60",
+      "parseable": true,
+      "correct": true,
+      "answer": "60 km/h"
+    }
+  ],
+  "shard_states": [
+    {
+      "shard": 0,
+      "state": "finished",
+      "started_at": 1792910631.0692928,
+      "finished_at": 1792911517.1816337,
+      "lease": "gpu-20261025T064349Z-32717726",
+      "attempt_starts_recorded": 1,
+      "prior_outcome_ignored": false,
+      "state_source": "artifact_events_not_live_process_inspection"
+    },
+    {
+      "shard": 1,
+      "state": "finished",
+      "started_at": 1792910631.5787904,
+      "finished_at": 1792911504.9022467,
+      "lease": "gpu-20261025T064350Z-09b89413",
+      "attempt_starts_recorded": 1,
+      "prior_outcome_ignored": false,
+      "state_source": "artifact_events_not_live_process_inspection"
+    },
+    {
+      "shard": 2,
+      "state": "finished",
+      "started_at": 1792910632.0234265,
+      "finished_at": 1792911538.8664582,
+      "lease": "gpu-20261025T064350Z-3d353758",
+      "attempt_starts_recorded": 1,
+      "prior_outcome_ignored": false,
+      "state_source": "artifact_events_not_live_process_inspection"
+    },
+    {
+      "shard": 3,
+      "state": "finished",
+      "started_at": 1792910632.3889596,
+      "finished_at": 1792911488.8468125,
+      "lease": "gpu-20261025T064351Z-19b1d8dc",
+      "attempt_starts_recorded": 1,
+      "prior_outcome_ignored": false,
+      "state_source": "artifact_events_not_live_process_inspection"
+    },
+    {
+      "shard": 4,
+      "state": "finished",
+      "started_at": 1792910632.761827,
+      "finished_at": 1792911512.7421582,
+      "lease": "gpu-20261025T064351Z-a4b2d0e9",
+      "attempt_starts_recorded": 1,
+      "prior_outcome_ignored": false,
+      "state_source": "artifact_events_not_live_process_inspection"
+    },
+    {
+      "shard": 5,
+      "state": "finished",
+      "started_at": 1792910633.1755662,
+      "finished_at": 1792911466.4261339,
+      "lease": "gpu-20261025T064351Z-2ed432bd",
+      "attempt_starts_recorded": 1,
+      "prior_outcome_ignored": false,
+      "state_source": "artifact_events_not_live_process_inspection"
+    }
+  ],
+  "interpretation": {
+    "causal_steering_test": false,
+    "human_personality_claim": false,
+    "ipip": "Prompt-conditioned model self-report; all 50 valid complete items required per seed.",
+    "uncertainty": "Across-seed sample SD, standard error and observed range are descriptive; three seeds do not establish population reliability.",
+    "capability": "Exact explicit final numeric answer only; explanations are not independently graded.",
+    "heldout": "Behavior prompts are held out from IPIP scoring; prompt-only results do not validate activation interventions.",
+    "package": "Manifest hash consistency is checked; on-disk package authenticity remains the launcher's responsibility."
+  }
+}

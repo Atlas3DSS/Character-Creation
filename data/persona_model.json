@@ -1,0 +1,18 @@
+{
+  "model": "nvidia/Qwen3.8-27B-NVFP4",
+  "revision": "482ca0f3832238542f8f5295dde86b5f22711d80",
+  "quantization": "checkpoint mixed NVFP4/FP8; Flare SM70 BF16-value arithmetic",
+  "layers": 64,
+  "hidden": 5120,
+  "intermediate": 17408,
+  "architecture": "Qwen3_5ForConditionalGeneration",
+  "layer_pattern": "three linear-attention layers followed by one full-attention layer",
+  "map_status": "awaiting calibrated interventions",
+  "upstream": {
+    "name": "Lyra — neuron-explorer",
+    "url": "https://github.com/lyramakesmusic/neuron-explorer",
+    "revision": "f79b2196e29aacbad89684938baac8d97b172fd1",
+    "reference_model": "Qwen/Qwen3.5-4B",
+    "credit": "Neuron-by-neuron causal sweeps, signed relative doses, read/write comparison, and saved rollout exploration are inspired by Lyra's work. This integration is independently implemented; upstream code is not vendored."
+  }
+}

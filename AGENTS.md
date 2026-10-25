@@ -42,14 +42,19 @@ Before calling `from_pretrained()`, check `model_cached()`. Print cache status. 
 
 ## Inference Architecture
 
-Two engines, two purposes:
+For the Qwen3.8-27B Persona Explorer update, use the pinned NVFP4 checkpoint and the native Flare integration described in `PERSONA_EXPLORER.md`. GPU work must use the owner’s gpu-workboard leases. This explicit six-V100 configuration supersedes the historical single-GPU/no-quantization convention above for this study.
+
+Current and historical paths:
 
 | Phase | Engine | Why |
 |---|---|---|
 | Extraction & tuning | HuggingFace | Needs forward hooks for activation capture |
+| Qwen3.8 persona calibration | Flare retained diagnostic graphs | Captures model-bound residual measurements offline |
+| Qwen3.8 overnight diagnostic sweeps | Retained Flare graphs and local 27B planner | Serial ordinary decode per card, actual prefill neuron observations and paired controls; separate from native MTP/cache qualification |
+| Qwen3.8 persona comparisons | Patched native Flare | Request-owned prepared additive vectors, cache isolation, no Python serving hooks |
 | Serving & review loop | vLLM | Fast inference, PagedAttention, no hooks needed |
 
-**vLLM cannot do inference-time steering** (no hook support). Workflow:
+The earlier stock-vLLM workflow baked changes into weights. Specialized vLLM branches and the new Flare path support runtime interventions; do not apply the old blanket “cannot steer” claim to them. Historical workflow:
 1. Extract vectors → tune alphas → experiment (HuggingFace)
 2. Ablate final vectors into weights permanently
 3. Save ablated model to disk

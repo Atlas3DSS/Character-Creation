@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "title": "Lyra's reported Qwen3.5-4B neuron recipes",
+  "source": {
+    "kind": "user_provided_social_reply_transcript",
+    "author": "@_lyraaaa_",
+    "date": "2026-10-23",
+    "tweet_url": null,
+    "project_url": "https://github.com/lyramakesmusic/neuron-explorer",
+    "project_revision": "f79b2196e29aacbad89684938baac8d97b172fd1"
+  },
+  "model_id": "Qwen/Qwen3.5-4B",
+  "checkpoint_revision": null,
+  "quantization": "not specified in supplied transcript",
+  "evidence_status": "author_report_relayed_by_user_not_reproduced_here",
+  "transfer_policy": "Historical coordinates are model-specific. Never apply these IDs as discovered Qwen3.8-27B features. Rediscover effects and calibrate doses on the exact target checkpoint.",
+  "licensing": {
+    "upstream_license_observed": null,
+    "implementation": "Independently authored method specifications; no upstream code vendored.",
+    "attribution": "Recipes and dose method attributed to Lyra and the cited project. Attribution alone is not a code reuse license."
+  },
+  "semantics": {
+    "indexing": "zero_based",
+    "site": "mlp.down_proj.input",
+    "phase": "every_input",
+    "operation": "additive_neuron_activation",
+    "formula": "a[...,n] += dose * median(norm(resid_leaving_layer_L, tokens[1:])) / norm(W_down[:,n])",
+    "normalization": "L2 norms; residual reference excludes sink position 0",
+    "composition": "Apply every listed push simultaneously; signs are additive polarity, not multiplicative gain.",
+    "baseline": "No pushes; preserve the same model, prompt and decoding settings."
+  },
+  "recipes": [
+    {
+      "id": "initial_pair",
+      "reported_label": "initial pair",
+      "effect_status": "reported_not_validated",
+      "pushes": [{"layer": 14, "neuron": 8949, "dose": 1.0}, {"layer": 13, "neuron": 7956, "dose": -1.0}]
+    },
+    {
+      "id": "sarcastiqwen",
+      "reported_label": "sarcastiqwen",
+      "effect_status": "reported_not_validated",
+      "relation_to_initial_pair": "transcript says add; retain pair as context, do not assume standalone equivalence",
+      "pushes": [{"layer": 15, "neuron": 3920, "dose": 1.0}]
+    },
+    {
+      "id": "sycophancy_option_a",
+      "reported_label": "sycophancy adjustment option A",
+      "effect_status": "tentative_report_not_validated",
+      "relation_to_initial_pair": "transcript says add; alternatives were not asserted equivalent",
+      "pushes": [{"layer": 12, "neuron": 2920, "dose": -1.0}]
+    },
+    {
+      "id": "sycophancy_option_b",
+      "reported_label": "sycophancy adjustment option B",
+      "effect_status": "tentative_report_not_validated",
+      "uncertainty": "Author wording relayed as 'or maybe'; do not promote to a validated effect.",
+      "pushes": [{"layer": 16, "neuron": 8168, "dose": -1.0}]
+    },
+    {
+      "id": "condolences_on_good_things",
+      "reported_label": "condolences on good things",
+      "effect_status": "reported_not_validated",
+      "pushes": [{"layer": 10, "neuron": 6295, "dose": 1.0}]
+    },
+    {
+      "id": "chill_friend",
+      "reported_label": "chill friend",
+      "effect_status": "reported_not_validated",
+      "pushes": [{"layer": 11, "neuron": 6261, "dose": 0.4}, {"layer": 17, "neuron": 7870, "dose": -0.4}]
+    },
+    {
+      "id": "five_neuron_combo",
+      "reported_label": "combined recipe",
+      "effect_status": "reported_not_validated",
+      "pushes": [
+        {"layer": 18, "neuron": 5796, "dose": 0.6},
+        {"layer": 15, "neuron": 3920, "dose": 0.6},
+        {"layer": 12, "neuron": 2920, "dose": -0.5},
+        {"layer": 10, "neuron": 6295, "dose": 0.4},
+        {"layer": 16, "neuron": 8168, "dose": -0.3}
+      ]
+    }
+  ]
+}

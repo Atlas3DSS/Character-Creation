@@ -6,11 +6,23 @@ This project uses a multi-AI collaboration workflow where different AI systems c
 
 **Atlas3DSS (orwel)** — Project architect, experiment designer, hardware operator, decision maker
 
-## AI Collaborators
+## Referenced Research
+
+**Lyra (@_lyraaaa_, [lyramakesmusic/neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer))** — Primary inspiration for the Persona Explorer update: fine-grained neuron interventions, signed residual-relative doses, neuron read/write comparisons, and saved rollout exploration. Reviewed source revision: `f79b2196e29aacbad89684938baac8d97b172fd1`. Her Qwen3.5-4B recipes are preserved with attribution in `data/lyra_recipes.json`; their coordinates and effects are not asserted to transfer to Qwen3.8-27B. This records attribution, not collaboration or endorsement.
+
+Native runtime design also references [RhizoNymph/vLLM’s steering branch](https://github.com/RhizoNymph/vllm/tree/feat/integration) and [AbliteratedOutTheBox’s Strata branch](https://github.com/heterodoxin/AbliteratedOutTheBox/tree/strata). The Character Creation adapter and explorer are independently implemented.
+
+**NVIDIA and the Flare community** — Original inference runtime and preparation architecture. Atlas’s V100 integration and steering extensions are published separately in [flare-local-inference](https://github.com/Atlas3DSS/flare-local-inference), preserving its Apache-2.0 license and upstream notices.
+
+## October 2026 implementation
+
+**Codex (OpenAI)** contributed the Qwen3.8 Persona Explorer integration, calibration and experiment tools, local planning/queue workflow, and the native Flare steering extension under Atlas3DSS's direction. Component and experiment validation are recorded separately; implementation credit does not imply that a proposed persona effect has been established.
+
+## Earlier AI collaboration notes
 
 ### Claude Opus 4.6 (Anthropic)
 **Role**: Primary implementation, analysis, experiment execution
-- Writes all production code (steering scripts, mapping pipelines, arena infrastructure)
+- Wrote production code for the earlier steering scripts, mapping pipelines and arena infrastructure
 - Performs real-time data analysis (activation probes, connectome mapping, debate arena analysis)
 - Manages GPU workloads, deployment, and infrastructure
 - Co-Author tag: `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`

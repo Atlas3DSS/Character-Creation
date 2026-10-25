@@ -2,6 +2,16 @@
 
 Research code and artifacts for studying whether an open-weight language model can be moved from prompt-level persona imitation toward durable changes in generated reasoning and voice.
 
+The new [Persona Explorer](PERSONA_EXPLORER.md) combines **[Lyra’s neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer)** methods with this project’s broader Big Five and layer experiments, targeting **Qwen3.8-27B** through native Flare steering. Lyra’s signed neuron sweeps, relative-dose normalization, read/write distinction, and comparison workflow are the primary methodological inspiration. The implementation here is independent; Lyra’s code is not vendored.
+
+**The reusable V100 runtime lives in a separate repository: [Atlas3DSS/flare-local-inference](https://github.com/Atlas3DSS/flare-local-inference).** Its [steering guide](https://github.com/Atlas3DSS/flare-local-inference/blob/atlas/sm70-public/STEERING.md) covers build/preparation, the native API and offline activation capture. Character Creation holds the persona interface, datasets, experiment manager and analysis. V100 owners can share and use the runtime independently.
+
+The first six-V100 reference run completed **2,046/2,046** unsteered and prompt-conditioned responses, including 33 complete IPIP-50 inventories and 132 simple capability answers. These are baseline measurements, not evidence that activation steering works. Fresh checkpoint calibration and causal neuron validation are tracked separately. See [the audited baseline](reports/persona_baseline.json) and [the explorer guide](PERSONA_EXPLORER.md).
+
+The new overnight workflow couples six resident Flare diagnostic workers with a local 27B planner and a persistent SQLite experiment manager. It records **actual continuous SwiGLU activations at the final prompt token**, matched prompt mutations and complete rollouts, using baseline, explicit-zero, random, positive and negative arms. Selecting a source group includes every registered mutation/profile with matched seeds. The planner returns validated experiment JSON and has no shell access. Discovery and heldout data stay separate; book sources and extracts remain private. See [setup and evidence limits](PERSONA_EXPLORER.md#overnight-discovery-with-measured-activations).
+
+**Whole-model qualification remains pending.** Steering component checks passed on all six V100s, and the separate planner has verified 128k-context readiness. Calibration compilation and planner startup do not establish causal effects, native cache correctness or MTP qualification.
+
 The repository began as a fictional-character personality baking project and later expanded into a cleaner public-domain test bed using Supreme Court opinion style and legal-reasoning contrasts. The current emphasis is mechanistic: activation probes, causal patching, steering attempts, SAE feature inspection, and evaluation harnesses that distinguish decodable style from actually controllable generation behavior.
 
 ## Current Status
@@ -59,6 +69,10 @@ Start with:
 
 | Path | Contents |
 |---|---|
+| `persona_manager.py`, `persona_planner.py` | Durable proposal/attempt queue and the Atlas-specific local 27B planner supervisor |
+| `persona_probe.py`, `persona_capture.py`, `persona_map.py` | Retained Flare graph observations, calibration and provisional neuron maps |
+| `persona_corpus.py` | Split-preserving SCOTUS/Big Five prompts and explicit private-book ingestion |
+| `PERSONA_EXPLORER.md` | Native intervention semantics, overnight setup, evidence limits and attribution |
 | `scripts/experiments/scotus/` | SCOTUS data prep, probing, patching, poking, review, and budget helpers |
 | `scripts/experiments/personality/` | Personality, meta-cognition, and symphonic-voice experiment scripts |
 | `scripts/eval/` | Evaluation harnesses and steering/eval utilities |
@@ -134,6 +148,18 @@ source dev_genius/bin/activate
 bash scripts/infra/overnight_local.sh
 ```
 
+For the new six-V100 persona workflow, use the [Persona Explorer setup](PERSONA_EXPLORER.md#start-the-workers-and-manager) instead of the legacy orchestration script. After calibrated probe workers and the local planner are leased and ready:
+
+```bash
+python persona_manager.py configure --fleet persona_fleet.local.json \
+  --config results/persona_manager_config.json \
+  --planner-lease GPU_WORKBOARD_PLANNER_JOB_ID --base-port 8930
+python persona_manager.py run --config results/persona_manager_config.json
+python persona_manager.py status
+```
+
+The manager resumes the same SQLite queue after interruption and defaults to a bounded run until the next morning. It verifies measured activation artifacts and preserves incomplete/error attempts. It does not launch GPU services or replace their leases.
+
 Launch GPU monitor:
 
 ```bash
@@ -162,14 +188,16 @@ Reports and manifests should record:
 
 ## Serving And Steering Architecture
 
-The project separates hook-heavy experimentation from fast serving:
+The current 27B workflow uses native Flare graph inputs for steering and fixed observation buffers for diagnostics. Earlier Transformers/vLLM experiments remain available for comparison:
 
 | Phase | Engine | Reason |
 |---|---|---|
-| Extraction, activation capture, steering, and tuning | Hugging Face Transformers | Needs hooks, hidden states, and custom interventions |
-| Review loops and post-ablation serving | vLLM | Fast inference when hooks are not needed |
+| Current 27B calibration and measured neuron sweeps | Retained Flare diagnostic graphs | Actual rounded SwiGLU/residual observations and ordinary sampled decode, one active request per V100 |
+| Current 27B production steering | Separately prepared native Flare server | Persistent request-local inputs and cache conditioning; independent production/MTP qualification required |
+| Earlier extraction, steering and tuning experiments | Hugging Face Transformers | Python hooks, hidden states and custom interventions |
+| Earlier review loops and post-ablation serving | vLLM | Serving ablated or merged models |
 
-vLLM is useful for serving ablated or merged models, but it is not the right tool for inference-time activation steering that depends on PyTorch hooks.
+The diagnostic worker and production server are distinct evidence paths. A diagnostic success does not qualify native cache reuse or speculative decoding. The new Flare path does not depend on Python forward hooks; its reusable implementation is maintained in [Atlas3DSS/flare-local-inference](https://github.com/Atlas3DSS/flare-local-inference), with prominent attribution to [Lyra's neuron-explorer methodology](https://github.com/lyramakesmusic/neuron-explorer).
 
 Example vLLM server:
 

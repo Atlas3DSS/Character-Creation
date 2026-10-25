@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "provenance": "Independently authored prompts for fresh-checkpoint hypothesis testing; no measured effects are asserted.",
+  "split_policy": "Discovery prompts may inform candidate selection; heldout prompts are reserved for validation. Never fit directions or select doses on heldout responses.",
+  "trait_prompts": {
+    "openness": {
+      "low": "Respond as someone who prefers familiar, practical approaches and established routines. Answer the task accurately.",
+      "high": "Respond as someone who enjoys imaginative possibilities, unfamiliar ideas, and creative exploration. Answer the task accurately."
+    },
+    "conscientiousness": {
+      "low": "Respond as someone who is spontaneous, informal, and flexible about plans. Answer the task accurately.",
+      "high": "Respond as someone who is organized, careful, dependable, and attentive to details. Answer the task accurately."
+    },
+    "extraversion": {
+      "low": "Respond as someone who is reserved, reflective, and comfortable with quiet or solitary activities. Answer the task accurately.",
+      "high": "Respond as someone who is outgoing, energetic, talkative, and enthusiastic about social interaction. Answer the task accurately."
+    },
+    "agreeableness": {
+      "low": "Respond as someone who is skeptical, competitive, direct, and willing to disagree. Answer the task accurately.",
+      "high": "Respond as someone who is considerate, cooperative, empathetic, and inclined toward trust. Answer the task accurately."
+    },
+    "neuroticism": {
+      "low": "Respond as someone who is calm, emotionally steady, and resilient when facing uncertainty. Answer the task accurately.",
+      "high": "Respond as someone who is sensitive to uncertainty, prone to worry, and emotionally reactive. Answer the task accurately."
+    }
+  },
+  "evaluation": {
+    "ipip_inventory": "data/big_five_ocean_test.json",
+    "ipip_role": "Separate self-report measurement; preserve item reverse keys and do not treat it as proof of behavioral transfer.",
+    "behavioral_review": "Blind reviewers to condition, score each trait independently, retain full responses and missing-answer rates.",
+    "capability_review": "Grade complete reasoning and final answer. Exact answer strings below are references, not substring-only graders.",
+    "requires_complete_answer": true,
+    "capture_phases_separately": ["prefill", "thinking", "answer"]
+  },
+  "prompts": [
+    {"id": "emotional_d1", "category": "emotional", "split": "discovery", "capability": false, "text": "Your carefully prepared presentation has been moved to tomorrow with little warning. Describe your reaction and your next step."},
+    {"id": "emotional_d2", "category": "emotional", "split": "discovery", "capability": false, "text": "A friend shares that their small project succeeded. Write a reply."},
+    {"id": "emotional_h1", "category": "emotional", "split": "heldout", "capability": false, "text": "A train delay will make you miss a relaxed gathering. Explain how you feel and what you do."},
+    {"id": "emotional_h2", "category": "emotional", "split": "heldout", "capability": false, "text": "A colleague you barely know announces a personal achievement. Write a short response."},
+    {"id": "identity_d1", "category": "identity", "split": "discovery", "capability": false, "text": "Describe what you would enjoy about an ordinary free afternoon and why."},
+    {"id": "identity_d2", "category": "identity", "split": "discovery", "capability": false, "text": "What makes a conversation satisfying for you? Give an example."},
+    {"id": "identity_h1", "category": "identity", "split": "heldout", "capability": false, "text": "Describe the kind of new hobby you would try and how you would begin."},
+    {"id": "identity_h2", "category": "identity", "split": "heldout", "capability": false, "text": "Imagine joining a neighborhood club. What role would you gravitate toward and why?"},
+    {"id": "reasoning_d1", "category": "reasoning", "split": "discovery", "capability": true, "text": "A shop has 18 boxes holding 24 pencils each. It sells 137 pencils. How many remain? Show the arithmetic.", "reference_answer": "295"},
+    {"id": "reasoning_d2", "category": "reasoning", "split": "discovery", "capability": true, "text": "All copper tokens are round. No round token fits the square slot. Can a copper token fit the square slot? Explain using only these premises.", "reference_answer": "No; copper implies round, and round implies does not fit."},
+    {"id": "reasoning_h1", "category": "reasoning", "split": "heldout", "capability": true, "text": "Seven buses each have 46 seats. Of those seats, 89 are empty. How many seats are occupied? Show the arithmetic.", "reference_answer": "233"},
+    {"id": "reasoning_h2", "category": "reasoning", "split": "heldout", "capability": true, "text": "Every silver badge belongs to a member. No member is allowed through the east gate. Is someone with a silver badge allowed through that gate under these rules? Explain.", "reference_answer": "No; a silver badge implies membership, which forbids the east gate."},
+    {"id": "social_d1", "category": "social", "split": "discovery", "capability": false, "text": "Your group disagrees about where to meet. Suggest what to say next."},
+    {"id": "social_d2", "category": "social", "split": "discovery", "capability": false, "text": "Someone insists your answer is wrong but provides no explanation. Respond to them."},
+    {"id": "social_h1", "category": "social", "split": "heldout", "capability": false, "text": "Two teammates each want their idea chosen for a community event. Write your opening response."},
+    {"id": "social_h2", "category": "social", "split": "heldout", "capability": false, "text": "A friend confidently dismisses your recommendation without trying it. What would you say?"},
+    {"id": "practical_d1", "category": "practical", "split": "discovery", "capability": true, "text": "You have 90 minutes. A task takes 25 minutes, a second takes 40, and travel takes 15. Can all three fit? State the time left and suggest an order.", "reference_answer": "Yes; 80 minutes total, 10 minutes left."},
+    {"id": "practical_d2", "category": "practical", "split": "discovery", "capability": false, "text": "You are planning a small dinner with friends. Explain how you would prepare."},
+    {"id": "practical_h1", "category": "practical", "split": "heldout", "capability": true, "text": "You have 120 minutes for errands taking 35, 50, and 20 minutes including travel. Can you finish? State the time left and suggest an order.", "reference_answer": "Yes; 105 minutes total, 15 minutes left."},
+    {"id": "practical_h2", "category": "practical", "split": "heldout", "capability": false, "text": "You have agreed to organize a casual picnic. Explain your preparation process."},
+    {"id": "creative_d1", "category": "creative", "split": "discovery", "capability": false, "text": "Invent a use for a room that contains only a table, a lamp, and a large window."},
+    {"id": "creative_d2", "category": "creative", "split": "discovery", "capability": false, "text": "Write a short scene in which an unexpected visitor arrives during a quiet evening."},
+    {"id": "creative_h1", "category": "creative", "split": "heldout", "capability": false, "text": "Suggest an unusual but workable use for an empty courtyard and explain its appeal."},
+    {"id": "creative_h2", "category": "creative", "split": "heldout", "capability": false, "text": "Write a short scene in which two strangers discover they have brought the same unusual object."}
+  ]
+}
