@@ -60,6 +60,7 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual(len({job['id'] for job in jobs}), 5)
         self.assertEqual(len({job['seed'] for job in jobs}), 1)
         arms = {job['arm']: job for job in jobs}
+        self.assertTrue(all(job['measurement'] == 'rollout' and job['kind'] == 'rollout' for job in jobs))
         self.assertEqual(arms['baseline']['pushes'], [])
         self.assertNotEqual(arms['random']['pushes'][0]['neuron'], 1)
         self.assertEqual(arms['positive']['pushes'][0]['dose'], -arms['negative']['pushes'][0]['dose'])
@@ -220,12 +221,14 @@ class ManagerTests(unittest.TestCase):
         payload = {'model': 'served', 'messages': [{'role': 'user', 'content': 'Original prompt'}]}
         digest = canonical_digest(payload)
         binding = {key: endpoint[key] for key in ('model_identity', 'prepared_identity', 'runtime_identity')}
+        binding['operation'] = 'rollout'
         report = {**binding, 'status': 'complete', 'state_restored': True, 'request': payload,
                   'request_sha256': digest, 'worker_manifest': {'runtime_identity': 'a' * 64}}
         path = self.root / 'provenance.jsonl'
         path.write_text(json.dumps(report))
         response = {**binding, 'activation_artifact': {**binding, 'request_sha256': digest},
-            'provenance_artifact': {'path': str(path), 'sha256': file_hash(path), 'runtime_identity': 'a' * 64, 'request_sha256': digest}}
+            'provenance_artifact': {'path': str(path), 'sha256': file_hash(path), 'runtime_identity': 'a' * 64,
+                                    'request_sha256': digest, 'operation': 'rollout'}}
         verify_diagnostic_artifacts(response, endpoint, payload)
         for target, key, bad in [('response', 'runtime_identity', 'b' * 64),
                                  ('activation_artifact', 'runtime_identity', 'b' * 64),
@@ -251,6 +254,53 @@ class ManagerTests(unittest.TestCase):
         response['diagnostics'] = {'complete_final_answer': True, 'unexpected_thinking': False}
         response['choices'][0]['finish_reason'] = 'length'
         self.assertFalse(response_complete(response, diagnostic=True))
+
+    def test_prefill_measurement_retains_controls_and_never_scores_a_final_answer(self):
+        proposal = deepcopy(self.proposal)
+        proposal['experiments'][0]['measurement'] = 'prefill'
+        validate_proposal(proposal, self.model, self.corpus, self.bank)
+        jobs = expand_proposal(proposal, self.corpus, self.bank)
+        self.assertEqual({job['arm'] for job in jobs}, set(ARMS))
+        self.assertTrue(all(job['measurement'] == 'prefill' and job['kind'] == 'prefill_observation' for job in jobs))
+        self.assertEqual(len({job['seed'] for job in jobs}), 1)
+        response = {'runtime': 'diagnostic', 'operation': 'prefill_observation',
+            'choices': [{'message': {'content': ''}, 'finish_reason': 'length'}],
+            'diagnostics': {'prefill_observation_complete': True, 'complete_final_answer': False},
+            'activation_artifact': {'path': 'private.npz', 'sha256': 'a' * 64,
+                                    'model_identity': self.model.identity, 'stage': 'final_prefill'}}
+        endpoint = {**self.endpoint(), 'diagnostic': True, 'runtime_identity': 'a' * 64}
+        with patch('persona_manager.native_capability', return_value='served') as capability, \
+                patch('persona_manager.fetch', return_value=response) as api, \
+                patch('persona_manager.verify_diagnostic_artifacts'), \
+                patch('persona_manager.activation_summary', return_value={'measured': True}):
+            result = execute_job(jobs[0], endpoint, self.bank, 30)
+        self.assertEqual(capability.call_args.kwargs['measurement'], 'prefill')
+        payload = api.call_args.args[1]
+        self.assertIs(payload['observation_only'], True)
+        self.assertEqual(payload['max_tokens'], 1)
+        self.assertTrue(result['complete'])
+        self.assertTrue(result['complete_observation'])
+        self.assertFalse(result['complete_answer'])
+        self.assertFalse(response_complete(response, diagnostic=True, measurement='rollout'))
+        self.assertFalse(response_complete(response, diagnostic=False, measurement='prefill'))
+        response['diagnostics']['complete_final_answer'] = True
+        self.assertFalse(response_complete(response, diagnostic=True, measurement='prefill'))
+        proposal['experiments'][0]['measurement'] = 'invented'
+        with self.assertRaises(ValueError): validate_proposal(proposal, self.model, self.corpus, self.bank)
+
+    def test_prefill_measurement_requires_explicit_endpoint_capability(self):
+        endpoint = {**self.endpoint(), 'diagnostic': True, 'runtime_identity': 'a' * 64}
+        flare = {'prepared_identity': 'prepared', 'model_identity': self.model.identity, 'runtime_identity': 'a' * 64,
+                 'steering': {'protocol': 'additive-bf16-sites-v1', 'max_sites': 6, 'sites': []}}
+        with patch('persona_manager.fetch', return_value={'data': [{'id': 'served', 'flare': flare}]}):
+            with self.assertRaisesRegex(ValueError, 'prefill observation contract'):
+                native_capability(endpoint, self.model, {'sites': []}, measurement='prefill')
+            flare['observation_only'] = {'supported': True, 'required_max_tokens': 1,
+                                         'operation': 'prefill_observation', 'answer_scoring': False}
+            self.assertEqual(native_capability(endpoint, self.model, {'sites': []}, measurement='prefill'), 'served')
+            flare['observation_only']['answer_scoring'] = True
+            with self.assertRaises(ValueError):
+                native_capability(endpoint, self.model, {'sites': []}, measurement='prefill')
 
     def test_activation_summary_is_measured_and_digest_bound(self):
         artifacts = []

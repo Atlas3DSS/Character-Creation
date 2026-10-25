@@ -72,6 +72,7 @@ Start with:
 | `persona_manager.py`, `persona_planner.py` | Durable proposal/attempt queue and the Atlas-specific local 27B planner supervisor |
 | `persona_probe.py`, `persona_capture.py`, `persona_map.py` | Retained Flare graph observations, calibration and provisional neuron maps |
 | `persona_corpus.py` | Split-preserving SCOTUS/Big Five prompts and explicit private-book ingestion |
+| `persona_characters.py` | Private original-source character/speaker candidates with exact evidence spans, uncertainty and resumable coverage |
 | `PERSONA_EXPLORER.md` | Native intervention semantics, overnight setup, evidence limits and attribution |
 | `scripts/experiments/scotus/` | SCOTUS data prep, probing, patching, poking, review, and budget helpers |
 | `scripts/experiments/personality/` | Personality, meta-cognition, and symphonic-voice experiment scripts |

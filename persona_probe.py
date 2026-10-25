@@ -1,7 +1,9 @@
 """Persistent, serialized diagnostic inference on retained production CUDA graphs.
 
 This is an OpenAI-compatible subset for local experiments, not a native Flare
-server: B1 ordinary decode, actual PreparedSampling, no native cache or MTP.
+server: B1 ordinary decode, actual PreparedSampling, no native cache or MTP
+execution. Preparation retains the reviewed four-slot, depth-four-capable
+catalog because SM70 prefill requires its seven-column convolution history.
 Every accepted generation saves actual final-prefill layer observations and full
 private request/response provenance. Startup requires its own workboard lease.
 """
@@ -27,12 +29,39 @@ import numpy as np
 from persona_vectors import ModelSpec, canonical_digest
 
 
-RUNTIME = "retained diagnostic graphs; B1 ordinary decode; actual PreparedSampling; no native cache/MTP"
+RUNTIME = "retained diagnostic graphs; B1 ordinary decode; actual PreparedSampling; MTP-capable preparation; no native cache or MTP execution"
 PHASE_MASKS = {"prefill": 1, "decode": 2, "all": 3}
+REQUEST_STATE_FIELDS = ("generation", "consumed_tokens", "generated_tokens", "pending_token", "status", "error_code", "rng_counter")
 
 
 class ProtocolError(RuntimeError):
     """A replay/state invariant failed; the owning worker must stop."""
+
+
+def reviewed_preparation_options():
+    # The existing Sol-15 kernel admits exactly 3 + 4 history columns. Merely
+    # increasing request capacity with mtp=False leaves three columns and fails.
+    # Keep the passed capture layout/catalog, but select only ordinary B1 graphs.
+    return dict(max_active=4, prefill_chunk_size=128, mtp=True,
+                speculative_widths=(1, 2, 3, 4, 5), row_invariant=None,
+                retain_graphs=True, capture_activations=True, steering_max_sites=64)
+
+
+def validate_selected_graphs(signatures, names, request_capacity):
+    if request_capacity != 4:
+        raise ProtocolError("Diagnostic preparation must retain the reviewed four-slot state layout")
+    required = {"init", "prefill", "decode", "snapshot", "restore", "resume"}
+    if set(names) != required:
+        raise ProtocolError("Missing exact ordinary graph selection")
+    for kind, name in names.items():
+        signature = signatures[name]
+        if signature.kind != kind or signature.batch_capacity != 1 or signature.speculation_enabled is not False:
+            raise ProtocolError("Only one-request ordinary graphs may execute in the diagnostic worker")
+
+
+def validate_inactive_slots(observed):
+    if any(list(row) != [0, 0, 0, -1, 0, 0, 0] for row in observed):
+        raise ProtocolError("An inactive padded request slot changed during one-request replay")
 
 
 def file_hash(path):
@@ -44,7 +73,7 @@ def normalize_request(payload: dict, model_id: str) -> dict:
     """Validate the supported API subset without importing CUDA libraries."""
     supported = {"model", "messages", "seed", "max_tokens", "temperature", "top_p", "top_k", "min_p",
                  "repetition_penalty", "presence_penalty", "frequency_penalty", "stream", "n",
-                 "chat_template_kwargs", "steering", "metadata"}
+                 "chat_template_kwargs", "steering", "metadata", "observation_only"}
     if not isinstance(payload, dict) or set(payload) - supported:
         raise ValueError("Unsupported chat-completion fields")
     if payload.get("model") != model_id or payload.get("stream", False) is not False or payload.get("n", 1) != 1:
@@ -59,6 +88,9 @@ def normalize_request(payload: dict, model_id: str) -> dict:
     seed, budget = payload.get("seed", 0), payload.get("max_tokens", 2048)
     if type(seed) is not int or not 0 <= seed < 2**64 or type(budget) is not int or not 1 <= budget < 2**31:
         raise ValueError("Seed must be uint64 and max_tokens a positive int32")
+    observation_only = payload.get("observation_only", False)
+    if type(observation_only) is not bool or (observation_only and budget != 1):
+        raise ValueError("observation_only must be bool and requires explicit max_tokens=1")
     sampling = {"temperature": payload.get("temperature", .7), "top_p": payload.get("top_p", .95),
                 "top_k": payload.get("top_k", 20), "min_p": payload.get("min_p", 0.),
                 "repetition_penalty": payload.get("repetition_penalty", 1.),
@@ -83,7 +115,25 @@ def normalize_request(payload: dict, model_id: str) -> dict:
     canonical_digest(payload)  # Reject NaN/Infinity anywhere, including metadata.
     return {"messages": messages, "seed": seed, "max_tokens": budget,
             "sampling": sampling, "requested_sampling": requested, "metadata": metadata,
-            "steering": payload.get("steering"), "thinking": False}
+            "steering": payload.get("steering"), "thinking": False, "observation_only": observation_only}
+
+
+def completion_outcome(spec, *, positions, prompt_tokens, generated, graph_kinds, result, answer):
+    """Distinguish a completed neural observation from a completed text answer."""
+    if (not generated or len(generated) > spec["max_tokens"] or positions != list(range(prompt_tokens))
+            or result.get("finished") is not True or result.get("finish_reason") not in {"stop", "length"}):
+        raise ProtocolError("Generation termination, budget or exact prompt coverage invariant failed")
+    observation = spec["observation_only"]
+    if observation and (spec["max_tokens"] != 1 or len(generated) != 1 or "decode" in graph_kinds
+                        or not graph_kinds or graph_kinds[-1] != "prefill"):
+        raise ProtocolError("Prefill observation must sample exactly once without any decode replay")
+    unexpected_thinking = "<think>" in answer or "</think>" in answer
+    return {"operation": "prefill_observation" if observation else "rollout",
+            "content": "" if observation else answer,
+            "diagnostics": {"prefill_observation_complete": observation,
+                            "unexpected_thinking": unexpected_thinking,
+                            "complete_final_answer": not observation and result["finish_reason"] == "stop"
+                                                     and bool(answer.strip()) and not unexpected_thinking}}
 
 
 def validate_program(program, catalog: list[dict], maximum: int) -> dict:
@@ -223,9 +273,8 @@ class ProbeEngine:
         decode = catalogs[0][self.names["decode"]]
         if (self.batch.rows != 1 or decode.batch.rows != 1
                 or not isinstance(self.generation.completion, PreparedSampling)
-                or not isinstance(decode.completion, PreparedSampling)
-                or any(signature.speculation_enabled for signature in prepared.signatures.values())):
-            raise ProtocolError("Worker requires ordinary B1 graphs with actual PreparedSampling and no speculative catalog")
+                or not isinstance(decode.completion, PreparedSampling)):
+            raise ProtocolError("Worker requires ordinary B1 graphs with actual PreparedSampling")
         self.capture = self.decoder.activation_capture
         if self.capture is None or not hasattr(self.capture, "mlp_input_last"):
             raise ProtocolError("Worker requires actual pre-down neuron capture")
@@ -233,6 +282,7 @@ class ProbeEngine:
                 or tuple(self.capture.residual_last.shape) != (model.layers, model.hidden)):
             raise ProtocolError("Capture dimensions disagree with bound model")
         self.requests, self.inputs, self.pool = self.batch.requests, self.batch.inputs, self.decoder.pool
+        validate_selected_graphs(prepared.signatures, self.names, self.requests.capacity)
         if bool((self.requests.status != 0).any()):
             raise ProtocolError("Prepared diagnostic requests must start inactive")
         self.maintenance = self.maintenances["init"]
@@ -270,7 +320,10 @@ class ProbeEngine:
                     "steering": {"protocol": "additive-bf16-sites-v1", **self.steering},
                     "logical_context_tokens": self.prepared.server_config["max_sequence_tokens"],
                     "physical_context_tokens": min(self.capacity[1], self.inputs.page_tables.shape[1]) * self.page_tokens,
-                    "batch_capacity": 1, "native_cache": False, "mtp": False,
+                    "batch_capacity": 1, "prepared_request_capacity": self.requests.capacity,
+                    "native_cache": False, "mtp": False, "mtp_prepared": True,
+                    "observation_only": {"supported": True, "required_max_tokens": 1,
+                                         "operation": "prefill_observation", "answer_scoring": False},
                     "activation_capture": "final_prefill", "thinking_enabled_supported": False}}
 
     def complete(self, payload):
@@ -301,6 +354,7 @@ class ProbeEngine:
             provenance = self.output / f"probe-{identity}.jsonl"
             started = time.time()
             report = {"schema": "character-creation.probe-request.v1", "status": "running", "id": identity,
+                      "operation": "prefill_observation" if spec["observation_only"] else "rollout",
                       "runtime": RUNTIME, "model_identity": self.model.identity,
                       "runtime_identity": self.manifest["runtime_identity"],
                       "prepared_identity": self.prepared.server_config["identity"], "worker_manifest": self.manifest,
@@ -322,8 +376,9 @@ class ProbeEngine:
                 self.prepared.graphs[self.names[kind]].replay()
                 torch.cuda.synchronize(self.prepared.device)
                 completion = self.buffers["completion_records"][frame, 0].cpu().tolist()
-                observed = [int(getattr(self.requests, name)[0].item()) for name in
-                    ("generation", "consumed_tokens", "generated_tokens", "pending_token", "status", "error_code", "rng_counter")]
+                request_rows = list(zip(*(getattr(self.requests, name).cpu().tolist() for name in REQUEST_STATE_FIELDS)))
+                observed = [int(value) for value in request_rows[0]]
+                validate_inactive_slots(request_rows[1:])
                 result = validate_completion(completion, observed, epoch=epoch, sequence=self.sequence,
                     consumed=consumed, generated=count, sampled=sampled, budget=spec["max_tokens"], eos=self.eos, vocabulary=self.vocabulary)
                 if kind == "init" and (bool(self.commands.errors.any()) or bool(self.maintenance.state.admission_errors.any())):
@@ -397,17 +452,16 @@ class ProbeEngine:
                         generated.append(result["token"])
                 inputs.query_lengths[0] = 1
                 inputs.sample_enabled[0] = 1
-                while not result["finished"]:
+                while not spec["observation_only"] and not result["finished"]:
                     # The decoder reads the device-owned pending token. Never
                     # sample on CPU or replace it with a teacher-forced token.
                     result = replay("decode", len(ids) + len(generated), len(generated) + 1, True)
                     generated.append(result["token"])
-                if len(generated) > spec["max_tokens"] or positions_seen != list(range(len(ids))):
-                    raise ProtocolError("Generation budget or prompt coverage invariant failed")
                 finish_reason = result["finish_reason"]
                 visible_ids = generated[:-1] if generated[-1] in self.eos else generated
                 answer = self.tokenizer.decode(visible_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
-                unexpected_thinking = "<think>" in answer or "</think>" in answer
+                outcome = completion_outcome(spec, positions=positions_seen, prompt_tokens=len(ids),
+                    generated=generated, graph_kinds=graph_kinds, result=result, answer=answer)
                 norms = np.concatenate(norm_chunks, axis=1)
                 if norms.shape[1]:
                     summaries = {"residual_l2_min": norms.min(axis=1), "residual_l2_max": norms.max(axis=1),
@@ -423,22 +477,24 @@ class ProbeEngine:
                         completion_trace_columns=np.asarray(["epoch", "sequence", "consumed", "generated", "token", "status", "error", "rng_counter"]),
                         model_identity=self.model.identity, prepared_identity=self.prepared.server_config["identity"],
                         runtime_identity=self.manifest["runtime_identity"],
-                        request_sha256=request_hash, stage="final_prefill", runtime=RUNTIME)
+                        request_sha256=request_hash, stage="final_prefill", runtime=RUNTIME, operation=outcome["operation"])
                 activation = {"path": str(artifact.resolve()), "sha256": file_hash(artifact), "model_identity": self.model.identity,
                               "runtime_identity": self.manifest["runtime_identity"],
+                              "operation": outcome["operation"],
                               "prepared_identity": self.prepared.server_config["identity"], "request_sha256": request_hash,
                               "stage": "final_prefill", "fields": ["mlp_input_last", "residual_last", "pre_mlp_last"],
                               "semantics": "continuous SwiGLU product after optional pre-down steering; post-residual output; normalized MLP input; no firing threshold"}
                 response = {"id": "chatcmpl-" + identity, "object": "chat.completion", "created": int(started), "model": self.model_id,
-                    "choices": [{"index": 0, "message": {"role": "assistant", "content": answer}, "finish_reason": finish_reason}],
+                    "operation": outcome["operation"],
+                    "choices": [{"index": 0, "message": {"role": "assistant", "content": outcome["content"]}, "finish_reason": finish_reason}],
                     "usage": {"prompt_tokens": len(ids), "completion_tokens": len(generated), "total_tokens": len(ids) + len(generated)},
                     "runtime": RUNTIME, "model_identity": self.model.identity, "prepared_identity": self.prepared.server_config["identity"],
                     "runtime_identity": self.manifest["runtime_identity"],
-                    "activation_artifact": activation, "diagnostics": {"unexpected_thinking": unexpected_thinking,
-                        "complete_final_answer": finish_reason == "stop" and bool(answer.strip()) and not unexpected_thinking,
+                    "activation_artifact": activation, "diagnostics": {**outcome["diagnostics"],
                         "sampling": spec["sampling"], "requested_sampling": spec["requested_sampling"],
                         "native_cache_qualified": False, "mtp_qualified": False}}
                 report.update(status="complete", response=response, generated_tokens=len(generated),
+                    sampled_text=answer,
                     elapsed_seconds=time.time() - started, activation_artifact=activation,
                     final_completion=trace[-1], completion_count=len(trace))
             except Exception as error:
@@ -456,6 +512,7 @@ class ProbeEngine:
                     with provenance.open("x", encoding="utf-8") as stream:
                         stream.write(json.dumps(report, separators=(",", ":"), allow_nan=False) + "\n")
             response["provenance_artifact"] = {"path": str(provenance.resolve()), "sha256": file_hash(provenance),
+                "operation": response["operation"],
                 "runtime_identity": self.manifest["runtime_identity"], "model_identity": self.model.identity,
                 "prepared_identity": self.prepared.server_config["identity"],
                 "request_sha256": request_hash, "self_reference": "Saved response excludes this post-write provenance pointer"}
@@ -563,10 +620,9 @@ def run(args):
     _OPTIONS["compile_threads"] = args.compile_workers
     compile_pool._DISCRETE_WORKER_DEVICE_BYTES = 400 << 20
     headroom = max(0, torch.cuda.get_device_properties(0).total_memory - (31 << 30)) + (256 << 20)
-    prep = PreparationConfig(context=args.context, max_active=1, prefill_chunk_size=128,
+    prep = PreparationConfig(context=args.context, **reviewed_preparation_options(),
         compile_workers=args.compile_workers, snapshot_budget_bytes=172 << 20, headroom_bytes=headroom,
-        preparation_pages=args.physical_pages, retain_graphs=True, capture_activations=True,
-        steering_max_sites=64, mtp=False, row_invariant=True,
+        preparation_pages=args.physical_pages,
         kernel_cache=args.kernel_cache, cutlass_include=args.cutlass_include)
     sources = ["ignition/recipes/qwen38_dense/bootstrap.py", "ignition/recipes/qwen38_dense/decoder.py",
                "ignition/components/activation_capture.py", "ignition/components/steering.py", "ignition/components/sampling.py",
@@ -638,6 +694,7 @@ def run(args):
             messages = ([{"role": "system", "content": job["system"]}] if job["system"] else [])
             messages.append({"role": "user", "content": job["prompt"]})
             probe = engine.complete({"model": args.model_id, "messages": messages, "seed": 0, "max_tokens": 1,
+                "observation_only": True,
                 "temperature": 1., "top_k": 1, "top_p": 1., "stream": False,
                 "chat_template_kwargs": {"enable_thinking": False},
                 "metadata": {"job_id": job["id"], "arm": "calibration_equivalence", "split": "discovery"}})
@@ -688,8 +745,8 @@ def main():
     parser.add_argument("--output", type=Path, default=Path("results"))
     parser.add_argument("--shard", type=int, choices=range(6), required=True)
     parser.add_argument("--compile-workers", type=int, required=True)
-    parser.add_argument("--context", type=int, default=32768)
-    parser.add_argument("--physical-pages", type=int, default=86)
+    parser.add_argument("--context", type=int, default=4096)
+    parser.add_argument("--physical-pages", type=int, default=32)
     parser.add_argument("--kernel-cache", type=Path)
     parser.add_argument("--cutlass-include", type=Path)
     parser.add_argument("--host", choices=("127.0.0.1",), default="127.0.0.1")

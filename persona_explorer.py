@@ -20,6 +20,18 @@ from persona_fleet import fetch
 from persona_vectors import ModelSpec, VectorBank
 
 
+def verify_endpoint(descriptor: dict, endpoint: dict) -> dict:
+    flare = descriptor.get("flare", {})
+    if flare.get("prepared_identity") != endpoint["prepared_identity"]:
+        raise ValueError("Server prepared identity differs from the verified package")
+    if flare.get("model_identity") not in (None, endpoint["model_identity"]):
+        raise ValueError("Diagnostic server belongs to another model")
+    runtime = flare.get("runtime_identity")
+    if (runtime or endpoint.get("runtime_identity")) and runtime != endpoint.get("runtime_identity"):
+        raise ValueError("Diagnostic runtime identity differs from the verified worker")
+    return flare
+
+
 class Explorer:
     def __init__(self, root: Path, config: dict):
         self.root, self.config = root, config
@@ -102,9 +114,7 @@ class Explorer:
             with self.endpoint_lock:
                 endpoint = self.endpoints[self.endpoint_cursor % len(self.endpoints)]; self.endpoint_cursor += 1
             descriptor = fetch(endpoint["url"] + "/v1/models", timeout=5)["data"][0]
-            flare = descriptor.get("flare", {})
-            if flare.get("prepared_identity") != endpoint["prepared_identity"]:
-                raise ValueError("Native server prepared identity differs from the verified package")
+            flare = verify_endpoint(descriptor, endpoint)
             if program["sites"]:
                 capability = flare.get("steering") or {}
                 sites = {site["name"]: site["width"] for site in capability.get("sites", [])}
@@ -121,9 +131,14 @@ class Explorer:
                        "chat_template_kwargs": {"enable_thinking": value["thinking"]}}
             if program["sites"]: request["steering"] = program
             response = fetch(endpoint["url"] + "/v1/chat/completions", request)
+            if endpoint.get("runtime_identity") and response.get("runtime_identity") != endpoint["runtime_identity"]:
+                raise ValueError("Response runtime identity differs from the verified worker")
             choice = response["choices"][0]
+            diagnostics = response.get("diagnostics", {})
             return {"sign": sign, "request": request, "endpoint": endpoint, "response": response, "provenance": provenance,
-                    "complete": choice.get("finish_reason") == "stop" and bool(choice["message"].get("content"))}
+                    "complete": choice.get("finish_reason") == "stop" and bool(choice["message"].get("content"))
+                        and diagnostics.get("complete_final_answer", True) is True
+                        and diagnostics.get("unexpected_thinking", False) is False}
         def protected_run(sign: int) -> dict:
             try:
                 return run(sign)

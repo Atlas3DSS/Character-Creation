@@ -4,12 +4,15 @@ import hashlib
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 import numpy as np
 
 from persona_probe import (ProtocolError, calibration_reference, compare_calibration_arrays,
-                           normalize_request, validate_capacity, validate_completion, validate_program)
+                           completion_outcome, normalize_request, reviewed_preparation_options,
+                           validate_capacity, validate_completion, validate_inactive_slots,
+                           validate_program, validate_selected_graphs)
 from persona_vectors import ModelSpec, canonical_digest
 
 
@@ -22,7 +25,37 @@ class ProbeProtocolTests(unittest.TestCase):
         self.assertEqual(spec["max_tokens"], 2048)
         self.assertEqual(spec["seed"], 7035)
         self.assertFalse(spec["thinking"])
+        self.assertFalse(spec["observation_only"])
         self.assertEqual(spec["sampling"]["temperature"], .7)
+
+    def test_reviewed_state_layout_does_not_execute_speculative_catalog(self):
+        prep = reviewed_preparation_options()
+        self.assertEqual(prep["max_active"], 4)
+        self.assertEqual(3 + (max(prep["speculative_widths"]) - 1 if prep["mtp"] else 0), 7)
+        # None inherits the MTP preparation's row-invariant target arithmetic,
+        # exactly as in the passed calibration manifests.
+        self.assertIsNone(prep["row_invariant"])
+        names = {kind: kind + "1" for kind in ("init", "prefill", "decode", "snapshot", "restore", "resume")}
+        signatures = {name: SimpleNamespace(kind=kind, batch_capacity=1, speculation_enabled=False)
+                      for kind, name in names.items()}
+        signatures["speculative5"] = SimpleNamespace(kind="decode", batch_capacity=4, speculation_enabled=True)
+        validate_selected_graphs(signatures, names, 4)
+        for bad_names, capacity in (({**names, "decode": "speculative5"}, 4), (names, 1)):
+            with self.assertRaises(ProtocolError):
+                validate_selected_graphs(signatures, bad_names, capacity)
+        signatures[names["decode"]].speculation_enabled = None
+        with self.assertRaises(ProtocolError):
+            validate_selected_graphs(signatures, names, 4)
+
+    def test_inactive_padded_slots_must_remain_at_startup_state(self):
+        inactive = [[0, 0, 0, -1, 0, 0, 0] for _ in range(3)]
+        validate_inactive_slots(inactive)
+        for row in range(3):
+            for column in range(7):
+                changed = copy.deepcopy(inactive)
+                changed[row][column] += 1
+                with self.subTest(slot=row + 1, field=column), self.assertRaises(ProtocolError):
+                    validate_inactive_slots(changed)
 
     def test_greedy_is_explicit_top_one_native_sampling(self):
         request = {**self.request(), "temperature": 0, "top_k": 20, "top_p": .95}
@@ -31,6 +64,33 @@ class ProbeProtocolTests(unittest.TestCase):
         self.assertEqual(spec["sampling"]["temperature"], 1.)
         self.assertEqual(spec["sampling"]["top_k"], 1)
         self.assertEqual(spec["sampling"]["top_p"], 1.)
+
+    def test_observation_is_explicit_boolean_with_exact_single_sample_budget(self):
+        for updates in ({"observation_only": True}, {"observation_only": True, "max_tokens": 2048},
+                        {"observation_only": 1, "max_tokens": 1}, {"observation_only": "true", "max_tokens": 1}):
+            with self.subTest(updates=updates), self.assertRaises(ValueError):
+                normalize_request({**self.request(), **updates}, "checkpoint")
+        spec = normalize_request({**self.request(), "observation_only": True, "max_tokens": 1}, "checkpoint")
+        self.assertTrue(spec["observation_only"])
+        self.assertEqual(spec["max_tokens"], 1)
+
+    def test_observation_completion_never_promotes_sample_to_answer(self):
+        options = dict(positions=[0, 1, 2], prompt_tokens=3, generated=[4],
+                       graph_kinds=["init", "prefill"], result={"finished": True, "finish_reason": "stop"}, answer="A")
+        observed = completion_outcome({"max_tokens": 1, "observation_only": True}, **options)
+        self.assertEqual(observed["operation"], "prefill_observation")
+        self.assertEqual(observed["content"], "")
+        self.assertTrue(observed["diagnostics"]["prefill_observation_complete"])
+        self.assertFalse(observed["diagnostics"]["complete_final_answer"])
+        rollout = completion_outcome({"max_tokens": 2048, "observation_only": False}, **options)
+        self.assertEqual(rollout["content"], "A")
+        self.assertTrue(rollout["diagnostics"]["complete_final_answer"])
+        self.assertFalse(rollout["diagnostics"]["prefill_observation_complete"])
+        for changed in ({"positions": [0, 2]}, {"generated": [4, 5]},
+                        {"graph_kinds": ["init", "prefill", "decode"]},
+                        {"result": {"finished": False, "finish_reason": None}}):
+            with self.subTest(changed=changed), self.assertRaises(ProtocolError):
+                completion_outcome({"max_tokens": 1, "observation_only": True}, **{**options, **changed})
 
     def test_unsupported_semantics_and_nonfinite_values_rejected(self):
         for updates in [{"stream": True}, {"n": 2}, {"model": "wrong"}, {"stop": ["x"]},
