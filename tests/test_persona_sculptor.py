@@ -169,6 +169,31 @@ class PersonaSculptorTests(unittest.TestCase):
         self.assertTrue(result['prompts'][1]['read_only_evaluation']); self.assertFalse(result['prompts'][1]['adaptive_feedback_allowed'])
         self.assertTrue(all(cell['output']['provenance']['persona_campaign']['brief_injected'] is False for cell in result['cells']))
 
+    def test_hhd_discovery_battery_preserves_provenance_without_injecting_rubric(self):
+        authored = {'schema': 'character-creation.lab-battery.v1', 'status': 'authored-discovery-battery-not-validated',
+            'prompts': [{'label': 'HHD fixture', 'prompt': 'Assess a fictional measurement anomaly.'}],
+            'review_dimensions': ['Raw evidence'], 'review_scale': 'Discovery only'}
+        path = self.root / 'data/persona_hhd_battery.json'
+        path.write_text(json.dumps(authored))
+        value = self.campaign_input(self.build())
+        digest = self.app.sculptor.catalog()['hhd_battery']['canonical_sha256']
+        value['prompts'] = [{'prompt': authored['prompts'][0]['prompt'], 'authored_battery_sha256': digest}]
+        changed = dict(authored, review_scale='Changed rubric')
+        path.write_text(json.dumps(changed))
+        with self.assertRaisesRegex(ValueError, 'battery changed'):
+            self.app.sculptor.submit(value)
+        path.write_text(json.dumps(authored))
+        with patch('persona_sculptor.fetch', self.api), patch('persona_explorer.fetch', self.api):
+            campaign = self.app.sculptor.submit(value); result = self.wait(campaign['id'])
+        path.write_text('{}')
+        prompt = self.app.sculptor.get(campaign['id'])['prompts'][0]
+        self.assertEqual(prompt['split'], 'discovery')
+        self.assertEqual(prompt['source_binding']['snapshot'], authored)
+        self.assertEqual(len(prompt['source_binding']['canonical_sha256']), 64)
+        self.assertEqual(prompt['authored_battery_sha256'], digest)
+        self.assertFalse(prompt['adaptive_feedback_allowed'])
+        self.assertTrue(all(r['messages'] == [{'role': 'user', 'content': authored['prompts'][0]['prompt']}] for r in self.requests))
+
     def test_partial_generation_is_visible_not_retried_and_manual_reviews_are_durable(self):
         build = self.build(); failed = []
         def api(url, payload=None, timeout=None):

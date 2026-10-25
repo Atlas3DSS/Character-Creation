@@ -121,10 +121,13 @@ class Sculptor:
                 categories.add(row['category']); groups.add(group); texts.add(text)
                 if len(prompts) == 5: break
         except (OSError, ValueError): pass
+        hhd_path = self.app.root / 'data/persona_hhd_battery.json'
+        hhd = json.loads(hhd_path.read_text()) if hhd_path.is_file() else None
         return {'model_identity': self.app.model.identity, 'traits': list(TRAITS), 'dial_bounds': [-1, 1],
             'dose_budget_bounds': [0, .5], 'layers': layers, 'defaults': {'count': max(1, len(self.app.endpoints)),
                 'layers': defaults, 'dose_budget': .35, 'phase': 'all', 'seed': 7035, 'max_tokens': 2048},
             'lab_battery': json.loads((self.app.root / 'data/persona_lab_battery.json').read_text()) if (self.app.root / 'data/persona_lab_battery.json').is_file() else None,
+            'hhd_battery': dict(hhd, canonical_sha256=canonical_digest(hhd)) if hhd else None,
             'default_prompts': prompts, 'capacity': self.app.capacity(), 'evidence': EVIDENCE, 'presets': self.presets()['presets'],
             'planner': {'url': 'http://127.0.0.1:18511', 'model': 'persona-manager', 'requires_owner_lease': True,
                         'context_tokens': 131072, 'fallback': 'Explicit manual heuristic controls; never automatic'}}
@@ -336,8 +339,14 @@ class Sculptor:
         battery = value['prompts']
         if not isinstance(battery, list) or not 1 <= len(battery) <= 12: raise ValueError('Use one to twelve registered or custom prompts')
         prompts, corpus = [], None
+        authored_path = self.app.root / 'data/persona_hhd_battery.json'
+        authored = json.loads(authored_path.read_text()) if authored_path.is_file() else None
         for item in battery:
-            keys(item, set(), {'prompt_id', 'prompt'})
+            keys(item, set(), {'prompt_id', 'prompt', 'authored_battery_sha256'})
+            if 'authored_battery_sha256' in item:
+                if ('prompt' not in item or not authored or item['authored_battery_sha256'] != canonical_digest(authored)
+                        or not any(row['prompt'] == item['prompt'] for row in authored['prompts'])):
+                    raise ValueError('Authored battery changed or prompt mismatched; reload the battery before running')
             if ('prompt_id' in item) == ('prompt' in item): raise ValueError('Each battery entry requires exactly one prompt reference or custom text')
             if 'prompt_id' in item:
                 identifier(item['prompt_id'], 'Prompt ID')
@@ -353,6 +362,16 @@ class Sculptor:
                 if not isinstance(text, str) or not text.strip() or len(text) > 20000: raise ValueError('Custom prompts must contain 1–20,000 characters')
                 prompts.append({'text': text, 'label': 'Custom prompt ' + str(len(prompts) + 1), 'split': 'custom',
                     'evaluation_system': '', 'read_only_evaluation': True, 'adaptive_feedback_allowed': False})
+        if authored:
+            for prompt in prompts:
+                if prompt['split'] != 'custom': continue
+                source = next((row for row in authored['prompts'] if row['prompt'] == prompt['text']), None)
+                if source is not None:
+                    prompt.update(label=source['label'], split='discovery', corpus='hhd_rahn_authored',
+                        authored_battery_sha256=canonical_digest(authored),
+                        source_record=deepcopy(source), source_binding={'battery_id': 'hhd_rahn',
+                            'canonical_sha256': canonical_digest(authored), 'snapshot': deepcopy(authored)},
+                        source_family_id='hhd_rahn_authored_discovery', task_family_id='hhd_rahn_authored_discovery')
         if len({canonical_digest(prompt['text']) for prompt in prompts}) != len(prompts): raise ValueError('Battery prompt texts must be unique')
         programs = []
         for candidate in candidates:

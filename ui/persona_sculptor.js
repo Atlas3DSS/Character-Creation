@@ -143,6 +143,7 @@
     const batteryLayout = node('div', undefined, 'ps-battery-layout'), selectedPanel = node('div'), sourcePanel = node('div');
     refs.batteryList = node('div', undefined, 'ps-battery-list'); refs.batteryCount = node('strong', '0 / 12 prompts');
     selectedPanel.append(button('Load research & lab-tech battery',()=>{const battery=app.meta?.lab_battery;if(!battery?.prompts?.length){notice('Research battery unavailable.');return;}app.battery=clone(battery.prompts);renderBattery();updateControls();notice('Loaded 12 authored research scenarios. Review rigor, calibration, initiative, reversibility, permissions and truthful reporting; this is not a validated assessment.');},'ps-link-button'));
+    selectedPanel.append(button('Load private research battery',()=>{const battery=app.meta?.hhd_battery;if(!battery?.prompts?.length){notice('Private research battery unavailable.');return;}app.battery=clone(battery.prompts).map(p=>({...p,corpus:'hhd_rahn_authored',split:'discovery',authored_battery_sha256:battery.canonical_sha256}));renderBattery();updateControls();notice(`Loaded ${app.battery.length} private discovery scenarios. Compare against the same neutral baseline; these are not validated results or held-out tests.`);},'ps-link-button'));
     selectedPanel.append(row(refs.batteryCount, button('Restore default battery', restoreBattery, 'ps-link-button')), refs.batteryList);
     const custom = node('details', undefined, 'ps-custom'); custom.append(node('summary', 'Add your own prompts'));
     refs.custom = node('textarea'); refs.custom.rows = 4; refs.custom.placeholder = 'One prompt…\n\nA second prompt…'; refs.custom.setAttribute('aria-label', 'Custom prompts separated by blank lines');
@@ -416,7 +417,7 @@
     const candidates = app.build.candidates.filter(candidate => app.selected.has(candidate.id));
     if (!candidates.length || !app.battery.length) throw Error('Select at least one candidate and one prompt.');
     const result = await request('/api/sculptor/campaigns', {build_id: app.build.id, candidate_ids: candidates.map(candidate => candidate.id),
-      prompts: app.battery.map(prompt => prompt.id ? {prompt_id: prompt.id} : {prompt: promptText(prompt)}), seed, max_tokens: Number(refs.budget.value), smoke: false});
+      prompts: app.battery.map(prompt => prompt.id ? {prompt_id: prompt.id} : {prompt: promptText(prompt),...(prompt.authored_battery_sha256?{authored_battery_sha256:prompt.authored_battery_sha256}:{})}), seed, max_tokens: Number(refs.budget.value), smoke: false});
     if (!result.id) throw Error('No saved campaign ID was returned.');
     app.pinned = candidates[0].id; app.promptIndex = 0; app.campaign = result;
     await loadCampaign(result.id); await loadHistory(); renderGallery(); renderResults(); scroll(refs.resultsSection); schedulePoll();
