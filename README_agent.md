@@ -187,6 +187,58 @@ confirmation; a heldout failure must not tune a replacement on that same holdout
 operates between full responses, not a proven live-token controller. Interaction tests are
 exploratory until independently confirmed.
 
+## Next integration: literary KV interventions (not implemented)
+
+Owner requested Phantom-KV after the current sweep/viewer integration, for contrastive
+horror/romance prose and persona experiments, with coherence recovery as a separate
+hypothesis. Current workers do not accept grafts. Do not describe this plan as a running
+job, trained artifact, available UI control or demonstrated recovery result.
+
+Reviewed upstream commit
+[`e0025c69b2fa36f05d4640600f2c83e03ed00ce0`](https://github.com/lordx64/phantom-kv/tree/e0025c69b2fa36f05d4640600f2c83e03ed00ce0).
+Its documented grafts target Qwen3-4B-Instruct-2507. Its HF DynamicCache serving and
+dense per-layer K/V training are not adapters for this runtime. Our checkpoint has
+48 recurrent Gated DeltaNet layers and 16 full-attention layers (3, 7, ..., 63), with
+four KV heads of width 256. SM70 attention cache storage contains BF16 bit patterns
+in uint16 buffers; recurrent state and convolution history are separate.
+
+Implementation and qualification sequence:
+
+1. Preserve the frozen capture runtime and ledger. Add a separately bound interactive
+   adapter with exact model, tokenizer, runtime, cache-layout, rotary-position and
+   artifact hashes. Reject mismatches before inference. GPU qualification uses fleet
+   admission; John remains reserved for chemistry.
+2. Establish cached benign literary context equivalence using the complete hybrid
+   state. This is a cached-text control, not a learned Phantom-KV result. A learned
+   attention-only graft must be labelled as such and independently qualified; it has
+   no implicit prefix state in the recurrent layers. No matching trained 27B artifact
+   was found in the reviewed upstream release.
+3. Validate baseline off/on/off by rebuilding the entire request state. Removing a
+   graft cannot erase influence already propagated into generated context or recurrent
+   state. Keep prompt framing, tokenization, seeds and budgets matched, including a
+   neutral-prefix control where prefix positions differ.
+4. Add a cell-level graft reference separate from neuron recipes in
+   `persona/persona_explorer.py`. Compare baseline, neuron-only, KV-only and combined
+   arms. Preserve `persona_literature_harness.py` book/workgroup, scene, split and source
+   hashes in immutable batch snapshots. Keep variants and duplicate editions together;
+   select on discovery and confirm on untouched book families.
+5. Add refusal/answer/nonanswer/uncertain annotation with evidence spans and manual
+   review. Quoted dialogue, character refusal, missing metadata and truncation must
+   not silently become model refusal labels. Score required scene facts, omissions,
+   contradictions, repetition and completion independently. Existing
+   `persona_coherence_eval.py` cannot certify free-prose semantics; fictional novelty
+   is not itself an invented-fact error.
+6. Extend the finite discovery/backoff logic in `persona/persona_coherence.py` with
+   artifact identity. First reduce damaging neuron pressure; test a recovery graft
+   only as another candidate intervention. Freeze choices before heldout confirmation
+   and retain failures. A refusal flag alone must not escalate intervention strength.
+
+Upstream dose controls primarily select trained artifacts or repeat prefix slots.
+Continuous K/V scaling and monotone effects are unqualified; zero-valued cache slots
+are not a true off state. Report actual cache slots, artifact choice and measured
+effects rather than presenting an uncalibrated alpha as a validated control. Private
+book passages and derived cache artifacts remain outside existing public HF exports.
+
 ## Operating a fork
 
 - CPU dependencies: `python -m pip install -r requirements-persona.txt` (includes optional
