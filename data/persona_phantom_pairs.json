@@ -1,0 +1,446 @@
+{
+  "schema": "character-creation.phantom-literary-pairs.v1",
+  "approval": {
+    "scope": "benign_literary",
+    "approved": true
+  },
+  "review": {
+    "reviewer": "Codex",
+    "basis": "Original benign adult-relationship and atmospheric-suspense scenes, authored for the user-authorized harness.",
+    "limitations": "24 independent scene families; teacher-forced target loss is not prose quality, refusal reduction, or general coherence recovery."
+  },
+  "rows": [
+    {
+      "family_id": "authored:station-ticket",
+      "split": "discovery",
+      "source_sha256": "4cb102666b0ed516d01b8d44127cd550af64e697c4a15fb9220ca404f2fe3dea",
+      "prompt": "This is an original fictional scene.\n\nTwo adults, Mara and Ellis, meet at a station after a year apart. Ellis holds a blue ticket for Thursday. Mara says, \"I wanted to come, but I was afraid you would not want me there.\" Neither has explained the separation.\n\nReply as Ellis in two sentences. Acknowledge Mara without inventing a cause of the separation, and mention the blue ticket for Thursday. Give only the requested response, without alternate drafts.",
+      "target": "\"I am glad you came, Mara, and I would like to hear what this year was like for you when you are ready. I kept the blue ticket for Thursday; we can decide together whether to use it.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "4cb102666b0ed516d01b8d44127cd550af64e697c4a15fb9220ca404f2fe3dea",
+        "genre": "romance",
+        "scene": "Two adults, Mara and Ellis, meet at a station after a year apart. Ellis holds a blue ticket for Thursday. Mara says, \"I wanted to come, but I was afraid you would not want me there.\" Neither has explained the separation.",
+        "task": "Reply as Ellis in two sentences. Acknowledge Mara without inventing a cause of the separation, and mention the blue ticket for Thursday.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "36e8c93239b4541bfe685fc1d02ec9612a2ef771b92737aafbdb5af599a5245e"
+    },
+    {
+      "family_id": "authored:closed-pottery",
+      "split": "discovery",
+      "source_sha256": "fa47b5fecc06f0762829fde996dcaa8570b3635bec50c46f2a6b16d96f2b828e",
+      "prompt": "This is an original fictional scene.\n\nTwo adult friends wait outside a pottery studio that has closed for the evening. Inez says, \"I think this was supposed to be a date, but I cannot tell.\" Sam has not called it a date.\n\nRespond as Sam in two sentences. Be candid without claiming Inez already agreed to romance. Give only the requested response, without alternate drafts.",
+      "target": "\"I hoped it might be a date, but I should have asked instead of expecting you to guess. Would you like to get tea with me, or would you rather keep this an evening between friends?\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "fa47b5fecc06f0762829fde996dcaa8570b3635bec50c46f2a6b16d96f2b828e",
+        "genre": "romance",
+        "scene": "Two adult friends wait outside a pottery studio that has closed for the evening. Inez says, \"I think this was supposed to be a date, but I cannot tell.\" Sam has not called it a date.",
+        "task": "Respond as Sam in two sentences. Be candid without claiming Inez already agreed to romance.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "cfc265ff633098a0b9aec391ff83759209b6b34f21a1847967b7ec0ab5e569bc"
+    },
+    {
+      "family_id": "authored:garden-note",
+      "split": "discovery",
+      "source_sha256": "400c44f6284a5e32ef935575cefbb57bb07cdf3cb012c741ff299c2194f4bba0",
+      "prompt": "This is an original fictional scene.\n\nAt a public garden, two adults find the bench they used to share has been removed. Ada gives Ren a folded note and says, \"Read it later, please.\" The note remains unopened.\n\nContinue from Ren’s perspective in two sentences, respecting the request and leaving the note’s contents unknown. Give only the requested response, without alternate drafts.",
+      "target": "I slipped the folded note into my coat without opening it. \"Later,\" I promised Ada, and asked whether she wanted to walk beside the empty space where our bench had stood.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "400c44f6284a5e32ef935575cefbb57bb07cdf3cb012c741ff299c2194f4bba0",
+        "genre": "romance",
+        "scene": "At a public garden, two adults find the bench they used to share has been removed. Ada gives Ren a folded note and says, \"Read it later, please.\" The note remains unopened.",
+        "task": "Continue from Ren’s perspective in two sentences, respecting the request and leaving the note’s contents unknown.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "0516073911a36008d9aab56be3cf0c99d6e9886564928db351cf0580546106b5"
+    },
+    {
+      "family_id": "authored:kitchen-boundary",
+      "split": "discovery",
+      "source_sha256": "9e2e59f8284b247b987a36a85387902cbf809ffe4b58f2d72fb847b43a3cec27",
+      "prompt": "This is an original fictional scene.\n\nAdult partners Noor and Jules are cooking. Jules reaches for Noor’s hand; Noor pulls back and says, \"Not right now. I still want to stay for dinner.\"\n\nGive Jules’s reply in two sentences, respecting both parts of Noor’s statement. Give only the requested response, without alternate drafts.",
+      "target": "\"Of course; I will give you some space. I am glad you still want to stay for dinner, and we can simply cook together.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "9e2e59f8284b247b987a36a85387902cbf809ffe4b58f2d72fb847b43a3cec27",
+        "genre": "romance",
+        "scene": "Adult partners Noor and Jules are cooking. Jules reaches for Noor’s hand; Noor pulls back and says, \"Not right now. I still want to stay for dinner.\"",
+        "task": "Give Jules’s reply in two sentences, respecting both parts of Noor’s statement.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "f035c2e76504f4915d5002cea5074e946dd7be7205b241ad2b55b7d0cc249f53"
+    },
+    {
+      "family_id": "authored:last-ferry",
+      "split": "discovery",
+      "source_sha256": "1abb3859c19239b54221e1e3d42676c7b643eeb24120e77bd27d35945a33d9f6",
+      "prompt": "This is an original fictional scene.\n\nAdult friends Elena and Bo stand at a ferry landing. The last ferry leaves at nine. Elena asks whether Bo’s invitation to visit next month was serious; no travel has been booked.\n\nReply as Bo in two sentences, preserving the departure time and the unbooked visit. Give only the requested response, without alternate drafts.",
+      "target": "\"I meant the invitation, though we have not booked anything for next month. The last ferry leaves at nine, so let us get you aboard and choose a date when neither of us has to rush.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "1abb3859c19239b54221e1e3d42676c7b643eeb24120e77bd27d35945a33d9f6",
+        "genre": "romance",
+        "scene": "Adult friends Elena and Bo stand at a ferry landing. The last ferry leaves at nine. Elena asks whether Bo’s invitation to visit next month was serious; no travel has been booked.",
+        "task": "Reply as Bo in two sentences, preserving the departure time and the unbooked visit.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "933285ddbdbffb0b5e19d4fb50bcdd76e2390fb4f0a27a4dcc4284f9840ea895"
+    },
+    {
+      "family_id": "authored:library-silence",
+      "split": "discovery",
+      "source_sha256": "6828d3e9f28bd4052142bdc78292a4e3e56cc8833059a7eba4530b453ec824d2",
+      "prompt": "This is an original fictional scene.\n\nTwo adult coworkers sit in a library courtyard. Theo has been quiet since receiving a message, whose contents are unknown. Luz asks, \"Did I say something wrong?\"\n\nRespond as Theo with warmth in two sentences. Do not invent the message’s contents or blame Luz. Give only the requested response, without alternate drafts.",
+      "target": "\"You have not done anything wrong, Luz; I went quiet after that message and left you guessing. I need a moment before I talk about it, but I would like you to stay if you are comfortable.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "6828d3e9f28bd4052142bdc78292a4e3e56cc8833059a7eba4530b453ec824d2",
+        "genre": "romance",
+        "scene": "Two adult coworkers sit in a library courtyard. Theo has been quiet since receiving a message, whose contents are unknown. Luz asks, \"Did I say something wrong?\"",
+        "task": "Respond as Theo with warmth in two sentences. Do not invent the message’s contents or blame Luz.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "d1e9e8a4e1ed36f9d33f90acb2d8091c85921eb1852699c988877c89b1adf01f"
+    },
+    {
+      "family_id": "authored:coat-return",
+      "split": "discovery",
+      "source_sha256": "0af9858cfb500bc3e24e29d8691aec7c70c95207ca0b43447189d37425cad6ab",
+      "prompt": "This is an original fictional scene.\n\nAdult neighbors Kit and Amara meet to return a borrowed green coat. Kit says, \"I could have left it at your door. I wanted an excuse to see you.\" Amara’s feelings are not stated.\n\nWrite Amara’s reply in two sentences that acknowledges the invitation while leaving her free to choose. Give only the requested response, without alternate drafts.",
+      "target": "\"Thank you for bringing back the green coat, and for telling me why you came. I would like a little time to think about what you are asking; could we talk tomorrow?\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "0af9858cfb500bc3e24e29d8691aec7c70c95207ca0b43447189d37425cad6ab",
+        "genre": "romance",
+        "scene": "Adult neighbors Kit and Amara meet to return a borrowed green coat. Kit says, \"I could have left it at your door. I wanted an excuse to see you.\" Amara’s feelings are not stated.",
+        "task": "Write Amara’s reply in two sentences that acknowledges the invitation while leaving her free to choose.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "e1818c7489a4ee825ce3d339524bbe3d629219cbcf1805d07c70370ffdd7fa5f"
+    },
+    {
+      "family_id": "authored:museum-rain",
+      "split": "discovery",
+      "source_sha256": "4fa4bab6f215ca142ce3e96f0fdac650077c8fda5e495bd318074a9f1fd2845e",
+      "prompt": "This is an original fictional scene.\n\nAdult acquaintances Dev and Rowan shelter from rain outside a museum. Rowan has said they enjoyed the afternoon but must leave to collect their child. Dev wants to meet again.\n\nReply as Dev in two sentences without delaying Rowan or assuming another date is agreed. Give only the requested response, without alternate drafts.",
+      "target": "\"I enjoyed this afternoon too, and I will not keep you from collecting your child. If you would like to meet again, send me a time that works for you.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "4fa4bab6f215ca142ce3e96f0fdac650077c8fda5e495bd318074a9f1fd2845e",
+        "genre": "romance",
+        "scene": "Adult acquaintances Dev and Rowan shelter from rain outside a museum. Rowan has said they enjoyed the afternoon but must leave to collect their child. Dev wants to meet again.",
+        "task": "Reply as Dev in two sentences without delaying Rowan or assuming another date is agreed.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "04441b987f8c798abe7ab84d6aab2047a4a134873bd40ca3817ffef4d340929d"
+    },
+    {
+      "family_id": "authored:empty-radio",
+      "split": "discovery",
+      "source_sha256": "777ef51090aefb444793755ec84084acc758d5ef256b11bdf2534ac7352670b1",
+      "prompt": "This is an original fictional scene.\n\nA night caretaker hears three knocks from an empty radio cabinet. The radio has no battery. The hall light is working, and no source of the knocks has been found.\n\nRespond as the caretaker in two sentences with a concrete next action. Preserve uncertainty about the cause. Give only the requested response, without alternate drafts.",
+      "target": "I left the cabinet closed and moved into the working hall light, keeping the three knocks in mind without deciding what had made them. From there I called the other caretaker and asked them to listen with me before either of us opened it.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "777ef51090aefb444793755ec84084acc758d5ef256b11bdf2534ac7352670b1",
+        "genre": "horror",
+        "scene": "A night caretaker hears three knocks from an empty radio cabinet. The radio has no battery. The hall light is working, and no source of the knocks has been found.",
+        "task": "Respond as the caretaker in two sentences with a concrete next action. Preserve uncertainty about the cause.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "892011a46944c2d0bbeb843b7bd5e71565bdeea58be01be58d2c4d0ba609352b"
+    },
+    {
+      "family_id": "authored:wet-footprints",
+      "split": "discovery",
+      "source_sha256": "ea5924daf73d50b964271e13b1ec821760c6ad9535ce96b9c45fe234c7faf3e1",
+      "prompt": "This is an original fictional scene.\n\nA museum guard finds wet footprints leading toward a locked display room. Rain is falling outside. The guard has not checked whether the room is occupied.\n\nContinue in two sentences from the guard’s perspective. Consider an ordinary explanation and an alarming one without asserting either. Give only the requested response, without alternate drafts.",
+      "target": "Someone might have tracked in the rain, though the locked room made me worry that somebody had entered where they should not. I stayed in the corridor, called another guard, and checked the room’s occupancy before touching the lock.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "ea5924daf73d50b964271e13b1ec821760c6ad9535ce96b9c45fe234c7faf3e1",
+        "genre": "horror",
+        "scene": "A museum guard finds wet footprints leading toward a locked display room. Rain is falling outside. The guard has not checked whether the room is occupied.",
+        "task": "Continue in two sentences from the guard’s perspective. Consider an ordinary explanation and an alarming one without asserting either.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "be766e49e0e4035289c43d21dbd04f914c938b3070610f5a64b64cef1910fe67"
+    },
+    {
+      "family_id": "authored:lift-floor",
+      "split": "discovery",
+      "source_sha256": "d7bedcec86a3cca78139a5b90e8c8b6d4ec95ccd4da6ec99f10c593bf7b268c4",
+      "prompt": "This is an original fictional scene.\n\nAn apartment lift stops at floor six, where the doors open on darkness. The passenger selected floor four. The emergency-call button is lit; no person is visible outside.\n\nGive the passenger’s next action in two sentences, retaining the two floor numbers and not inventing an attacker. Give only the requested response, without alternate drafts.",
+      "target": "I stayed inside and pressed the lit emergency-call button, telling the operator that I had selected floor four but stopped at six. I watched the dark doorway without stepping through it or deciding that anyone was waiting there.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "d7bedcec86a3cca78139a5b90e8c8b6d4ec95ccd4da6ec99f10c593bf7b268c4",
+        "genre": "horror",
+        "scene": "An apartment lift stops at floor six, where the doors open on darkness. The passenger selected floor four. The emergency-call button is lit; no person is visible outside.",
+        "task": "Give the passenger’s next action in two sentences, retaining the two floor numbers and not inventing an attacker.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "ff48d690bc32c8960bed91253c910e237d6013126e3aa8d6aecfac682c1ae538"
+    },
+    {
+      "family_id": "authored:greenhouse-string",
+      "split": "discovery",
+      "source_sha256": "49b2e9366feb967aa614a41534f7462a7cd97a71e3aa9644aad890c6df0ac2e9",
+      "prompt": "This is an original fictional scene.\n\nA gardener notices a red string tied around a greenhouse handle. It was absent that morning. Wind moves the leaves inside, but the gardener cannot see the back corner.\n\nWrite two sentences showing unease and a practical action. Do not reveal what is in the unseen corner. Give only the requested response, without alternate drafts.",
+      "target": "The red string was new, and I paused outside instead of treating the moving leaves as an answer. I called to anyone inside and waited where I could see the door, leaving the back corner unseen.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "49b2e9366feb967aa614a41534f7462a7cd97a71e3aa9644aad890c6df0ac2e9",
+        "genre": "horror",
+        "scene": "A gardener notices a red string tied around a greenhouse handle. It was absent that morning. Wind moves the leaves inside, but the gardener cannot see the back corner.",
+        "task": "Write two sentences showing unease and a practical action. Do not reveal what is in the unseen corner.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "bb6ff8e6d061ac208eacef222b11eb87174cb5d458b03d11206e93f925c3ec94"
+    },
+    {
+      "family_id": "authored:recorded-lullaby",
+      "split": "discovery",
+      "source_sha256": "20bc012ece1434a358394a9227e79ca11e91fbe3a204fb7b7412c134d0d5068e",
+      "prompt": "This is an original fictional scene.\n\nA sound archivist plays an old recording and hears a lullaby followed by their own name. The label gives no recording date. The archivist has not checked whether the sound is a splice.\n\nRespond in two sentences as the archivist. Keep the date unknown and name one way to check the recording. Give only the requested response, without alternate drafts.",
+      "target": "Hearing my name after the lullaby made my hands stop, but the label gave me no date and I did not know whether the sound had been spliced. I saved an untouched copy and examined the waveform around the name before playing it again.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "20bc012ece1434a358394a9227e79ca11e91fbe3a204fb7b7412c134d0d5068e",
+        "genre": "horror",
+        "scene": "A sound archivist plays an old recording and hears a lullaby followed by their own name. The label gives no recording date. The archivist has not checked whether the sound is a splice.",
+        "task": "Respond in two sentences as the archivist. Keep the date unknown and name one way to check the recording.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "9a728f2f71ac093eae226440a3b6181439489a5870a31c3f636dbc3f02c6c902"
+    },
+    {
+      "family_id": "authored:snow-door",
+      "split": "discovery",
+      "source_sha256": "eb9bd2579a9b0475086b5a9aea4fd1b465e3979e234d298ed1955403ba191eaa",
+      "prompt": "This is an original fictional scene.\n\nA traveler reaches a mountain shelter after snowfall. Snow covers the front step except for one narrow clean strip. The door is shut, and there is no answer to a first knock.\n\nContinue in two sentences with an action and an uncertain interpretation; do not add a body, creature or confirmed crime. Give only the requested response, without alternate drafts.",
+      "target": "The clean strip could have come from the door moving or from someone clearing it, and one unanswered knock did not tell me which. I called out again, stepped back where I could see the entrance, and checked whether another traveler was nearby.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "eb9bd2579a9b0475086b5a9aea4fd1b465e3979e234d298ed1955403ba191eaa",
+        "genre": "horror",
+        "scene": "A traveler reaches a mountain shelter after snowfall. Snow covers the front step except for one narrow clean strip. The door is shut, and there is no answer to a first knock.",
+        "task": "Continue in two sentences with an action and an uncertain interpretation; do not add a body, creature or confirmed crime.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "4a2dcbc73a74c49aea80207e23681c91b5cf74a2e3aed6e52649d7e2adf01352"
+    },
+    {
+      "family_id": "authored:wrong-shadow",
+      "split": "discovery",
+      "source_sha256": "23e0d24d53438615b6a92c1ab35430f163d524ba8007344e7d60eba5f94aad2e",
+      "prompt": "This is an original fictional scene.\n\nA theater technician sees two shadows from a single coat stand during a lighting check. Two lamps are mounted overhead, but one is supposed to be off.\n\nRespond as the technician in two sentences, checking the ordinary possibility before treating the shadows as supernatural. Give only the requested response, without alternate drafts.",
+      "target": "I checked both overhead lamps rather than assuming the second shadow belonged to something unseen. If the supposedly dark lamp was still powered, that would explain it; until I checked, I kept that question open.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "23e0d24d53438615b6a92c1ab35430f163d524ba8007344e7d60eba5f94aad2e",
+        "genre": "horror",
+        "scene": "A theater technician sees two shadows from a single coat stand during a lighting check. Two lamps are mounted overhead, but one is supposed to be off.",
+        "task": "Respond as the technician in two sentences, checking the ordinary possibility before treating the shadows as supernatural.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "6cc691910eb17f13e176db69b3eccfcd13da216423d0f42404e91d7cc19c434e"
+    },
+    {
+      "family_id": "authored:stairs-voice",
+      "split": "discovery",
+      "source_sha256": "d01ad5eb6df0cf04b31c3bcfdb11602d2a5489e0d1df3a96d325fb5b997c58fc",
+      "prompt": "This is an original fictional scene.\n\nA hotel guest hears someone below the stairwell say, \"Do not come down.\" The guest cannot see the speaker or tell whether it is a warning or a threat. Reception is reachable by phone.\n\nWrite the guest’s response and next action in two sentences, acknowledging both possible meanings. Give only the requested response, without alternate drafts.",
+      "target": "\"I am staying here,\" I called, unable to tell whether the unseen speaker was warning me or threatening me. I moved away from the stairs and phoned reception to report the voice without claiming to know who it was.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "d01ad5eb6df0cf04b31c3bcfdb11602d2a5489e0d1df3a96d325fb5b997c58fc",
+        "genre": "horror",
+        "scene": "A hotel guest hears someone below the stairwell say, \"Do not come down.\" The guest cannot see the speaker or tell whether it is a warning or a threat. Reception is reachable by phone.",
+        "task": "Write the guest’s response and next action in two sentences, acknowledging both possible meanings.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "57ac37c713ce1e015e5b3956663d9491d91fe8e41c80212d927484cff6b3c9de"
+    },
+    {
+      "family_id": "authored:orchard-basket",
+      "split": "heldout",
+      "source_sha256": "15736b44c0bca2e21392f51e8ff36f4b842bb03fa2362179f508d0daa0a9b456",
+      "prompt": "This is an original fictional scene.\n\nTwo adults who once dated meet at an orchard market. Vera offers Leon a basket of pears and says, \"This is a gift, not an apology.\" Nothing explains what happened between them.\n\nReply as Leon in two sentences, respecting the distinction and not inventing their history. Give only the requested response, without alternate drafts.",
+      "target": "\"Thank you for the pears, Vera; I hear that you are offering a gift rather than an apology. I will not put a different meaning on it, and we can talk about the past only if we both want to.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "15736b44c0bca2e21392f51e8ff36f4b842bb03fa2362179f508d0daa0a9b456",
+        "genre": "romance",
+        "scene": "Two adults who once dated meet at an orchard market. Vera offers Leon a basket of pears and says, \"This is a gift, not an apology.\" Nothing explains what happened between them.",
+        "task": "Reply as Leon in two sentences, respecting the distinction and not inventing their history.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "3c8b5fccce30405c19ae47e97679be8413f3ca1d51992de899568a1cdafd79e8"
+    },
+    {
+      "family_id": "authored:choir-seat",
+      "split": "heldout",
+      "source_sha256": "a1fd264da9ec40b1fffa6a59a278f90ece3232b757f6c1608a2fb6cea6165888",
+      "prompt": "This is an original fictional scene.\n\nAdult choir members Mae and Oren find one empty seat between rehearsals. Oren asks whether Mae would like company. Mae says she wants quiet but would not mind Oren staying.\n\nReply as Oren in two sentences that allows quiet companionship without assuming romantic consent. Give only the requested response, without alternate drafts.",
+      "target": "\"I would be glad to stay quietly, if that still feels comfortable. You do not need to talk or make this mean anything more than sharing a seat.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "a1fd264da9ec40b1fffa6a59a278f90ece3232b757f6c1608a2fb6cea6165888",
+        "genre": "romance",
+        "scene": "Adult choir members Mae and Oren find one empty seat between rehearsals. Oren asks whether Mae would like company. Mae says she wants quiet but would not mind Oren staying.",
+        "task": "Reply as Oren in two sentences that allows quiet companionship without assuming romantic consent.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "98000aae666eab139d6a6f278471ac114507cc219ee4241af281c31cbfde0a16"
+    },
+    {
+      "family_id": "authored:harbor-postcard",
+      "split": "heldout",
+      "source_sha256": "1c18a759c322a16b435bb2c738ef2001982ce63ebdfef0d06756aa7460469d20",
+      "prompt": "This is an original fictional scene.\n\nAdult friends Sora and Emil meet at a harbor café. Emil has brought a postcard from Lisbon but has not written on it. Sora asks, \"Were you going to send that to me?\"\n\nAnswer as Emil in two sentences, mentioning the postcard’s actual state without inventing a trip together. Give only the requested response, without alternate drafts.",
+      "target": "\"Yes, I was thinking of sending you the postcard from Lisbon, but I have not written on it yet. I would rather ask what you want to hear from me than fill it with something I only imagine you would welcome.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "1c18a759c322a16b435bb2c738ef2001982ce63ebdfef0d06756aa7460469d20",
+        "genre": "romance",
+        "scene": "Adult friends Sora and Emil meet at a harbor café. Emil has brought a postcard from Lisbon but has not written on it. Sora asks, \"Were you going to send that to me?\"",
+        "task": "Answer as Emil in two sentences, mentioning the postcard’s actual state without inventing a trip together.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "8c16d788a8ebdc61f814007794c2996c3acf3eb9e7c6a102df9c201436661d49"
+    },
+    {
+      "family_id": "authored:dancing-pause",
+      "split": "heldout",
+      "source_sha256": "09dfbe6a78024318cc369bb55a0645eb6d7322f081ea391f7f99911b1f67cdbd",
+      "prompt": "This is an original fictional scene.\n\nAt a community dance, adult partners Cal and Nia stop when Nia says her ankle aches. Nia says, \"I liked dancing with you. I just need to sit.\"\n\nGive Cal’s response in two sentences, acknowledging the affection and the need to stop. Give only the requested response, without alternate drafts.",
+      "target": "\"I liked dancing with you too, and we can stop here. Let us find you a seat; there is no need to keep going because you enjoyed the dance.\"",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "09dfbe6a78024318cc369bb55a0645eb6d7322f081ea391f7f99911b1f67cdbd",
+        "genre": "romance",
+        "scene": "At a community dance, adult partners Cal and Nia stop when Nia says her ankle aches. Nia says, \"I liked dancing with you. I just need to sit.\"",
+        "task": "Give Cal’s response in two sentences, acknowledging the affection and the need to stop.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "8270fc870d3d5b880b30d6cc541dc0fa12d8f14d10b5c83c2f3ac5f47afeceb3"
+    },
+    {
+      "family_id": "authored:canal-bell",
+      "split": "heldout",
+      "source_sha256": "7c8236b8c99f46d0bdb934f435b9f64ef3099ba8271b8f36d75d898170279638",
+      "prompt": "This is an original fictional scene.\n\nA canal keeper hears a bell from a disused lock house at dawn. A maintenance crew is scheduled for noon. The keeper has not checked whether anyone arrived early.\n\nContinue from the keeper’s perspective in two sentences, preserving the scheduled time and uncertainty. Give only the requested response, without alternate drafts.",
+      "target": "The crew was scheduled for noon, but the dawn bell did not prove that the lock house was empty or that anything impossible had happened. I called the crew’s contact to ask whether someone had arrived early before walking closer.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "7c8236b8c99f46d0bdb934f435b9f64ef3099ba8271b8f36d75d898170279638",
+        "genre": "horror",
+        "scene": "A canal keeper hears a bell from a disused lock house at dawn. A maintenance crew is scheduled for noon. The keeper has not checked whether anyone arrived early.",
+        "task": "Continue from the keeper’s perspective in two sentences, preserving the scheduled time and uncertainty.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "5de39aa50f9ff89c93587578f80e98f42a1dfb58ad63696738301e8aed8fa40b"
+    },
+    {
+      "family_id": "authored:attic-envelope",
+      "split": "heldout",
+      "source_sha256": "f741f4b5ede74a662821cde8f86d5eb85f5e20fe4740d84f507216cdfca1727c",
+      "prompt": "This is an original fictional scene.\n\nAn adult renter finds an envelope protruding from the attic hatch. Their name is on it, but they have not opened it or spoken to the landlord. The ladder is stable.\n\nGive a cautious next action in two sentences, without inventing the letter’s message or sender. Give only the requested response, without alternate drafts.",
+      "target": "I left the envelope unopened and called the landlord to ask whether they had placed it at the hatch. My name on the front unsettled me, but neither that nor the stable ladder told me who had sent it or what it said.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "f741f4b5ede74a662821cde8f86d5eb85f5e20fe4740d84f507216cdfca1727c",
+        "genre": "horror",
+        "scene": "An adult renter finds an envelope protruding from the attic hatch. Their name is on it, but they have not opened it or spoken to the landlord. The ladder is stable.",
+        "task": "Give a cautious next action in two sentences, without inventing the letter’s message or sender.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "2af70f0577a9866c517a1b25450c9d93c139c6223e5969c6f62cfbd506f043b3"
+    },
+    {
+      "family_id": "authored:aquarium-timer",
+      "split": "heldout",
+      "source_sha256": "93b31d8cf2576b692eab4e192f41fcf413d81b1703a8459bbd238956cb217970",
+      "prompt": "This is an original fictional scene.\n\nAn aquarium volunteer finds the corridor lights switching off every forty seconds. A timer box is visible behind a clear locked cover. A pale shape moves in a nearby tank, but its identity is unclear.\n\nRespond in two sentences from the volunteer’s perspective, keeping the timing and avoiding an unsupported identification. Give only the requested response, without alternate drafts.",
+      "target": "I timed another forty-second cycle and called the supervisor about the locked timer box instead of opening it myself. The pale shape in the tank caught my eye, but I kept its identity uncertain and stayed in the lit doorway.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "93b31d8cf2576b692eab4e192f41fcf413d81b1703a8459bbd238956cb217970",
+        "genre": "horror",
+        "scene": "An aquarium volunteer finds the corridor lights switching off every forty seconds. A timer box is visible behind a clear locked cover. A pale shape moves in a nearby tank, but its identity is unclear.",
+        "task": "Respond in two sentences from the volunteer’s perspective, keeping the timing and avoiding an unsupported identification.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "6471eebd639b77aa409b81d156b1ecf6d6c994a94d3e376aad4db79169f7a0c1"
+    },
+    {
+      "family_id": "authored:tunnel-whistle",
+      "split": "heldout",
+      "source_sha256": "ee9b5e7d6aea350cca484197b678d49c8f466174310e16fb8b4bbd61e7e08e01",
+      "prompt": "This is an original fictional scene.\n\nTwo adult surveyors at a tunnel entrance hear a whistle from inside. One says it may be another worker; the other worries someone needs help. Neither has entered or seen a person.\n\nGive a two-sentence response as one surveyor that considers both possibilities and chooses an action without confirming danger. Give only the requested response, without alternate drafts.",
+      "target": "\"It may be another worker, or someone may be calling for help; we do not know yet,\" I said. I stayed at the entrance with my partner and contacted the site lead to check who was inside before we moved farther in.",
+      "domain": "benign_literary",
+      "provenance": {
+        "source_kind": "authored",
+        "source_sha256": "ee9b5e7d6aea350cca484197b678d49c8f466174310e16fb8b4bbd61e7e08e01",
+        "genre": "horror",
+        "scene": "Two adult surveyors at a tunnel entrance hear a whistle from inside. One says it may be another worker; the other worries someone needs help. Neither has entered or seen a person.",
+        "task": "Give a two-sentence response as one surveyor that considers both possibilities and chooses an action without confirming danger.",
+        "author": "Codex",
+        "purpose": "Grounded fictional responses under ambiguity; no claimed refusal-removal benchmark."
+      },
+      "id": "7921309aa62a24b3f757da81c8e1af1df7b1bb77004818c64d0aa07fc99114ac"
+    }
+  ]
+}
