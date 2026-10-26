@@ -80,8 +80,21 @@ def checked_native(response, request, binding):
     return arrays
 
 
-def qualify_endpoint(endpoint, candidate, output, run_id):
-    model = fetch(endpoint + '/v1/models')['data'][0]
+def ready_model(endpoint, timeout):
+    """Retry only read-only readiness discovery, never inference requests."""
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return fetch(endpoint + '/v1/models')['data'][0]
+        except OSError:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise
+            time.sleep(min(10, remaining))
+
+
+def qualify_endpoint(endpoint, candidate, output, run_id, ready_timeout=0):
+    model = ready_model(endpoint, ready_timeout)
     flare = model['flare']; capability = flare['kv_control']
     if not capability.get('supported') or 'learned_attention_kv' not in capability['kinds']:
         raise ValueError('Endpoint does not support learned attention KV')
@@ -138,7 +151,11 @@ def main(argv=None):
     parser.add_argument('--endpoint', action='append', required=True)
     parser.add_argument('--candidate', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--ready-timeout', type=int, default=0,
+                        help='Seconds to wait independently for each worker before its tests')
     args = parser.parse_args(argv)
+    if not 0 <= args.ready_timeout <= 3600:
+        parser.error('Readiness timeout must be between 0 and 3600 seconds')
     if len(args.endpoint) != 6 or len(set(args.endpoint)) != 6:
         parser.error('Exactly six unique already-leased endpoints required for publication')
     if args.candidate.resolve().parent != args.output.resolve():
@@ -150,7 +167,7 @@ def main(argv=None):
                   candidate_sha256=file_sha(args.candidate), results=[], failures=[],
                   claim='Native cache mechanics only; no behavioral quality claim')
     with ThreadPoolExecutor(max_workers=6) as pool:
-        futures = {pool.submit(qualify_endpoint, e, args.candidate, args.output, identity): e for e in args.endpoint}
+        futures = {pool.submit(qualify_endpoint, e, args.candidate, args.output, identity, args.ready_timeout): e for e in args.endpoint}
         for future in as_completed(futures):
             try: report['results'].append(future.result())
             except Exception as error: report['failures'].append(dict(endpoint=futures[future], error=repr(error)))

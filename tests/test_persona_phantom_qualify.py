@@ -118,3 +118,22 @@ def test_publication_requires_all_six_and_keeps_partial_results(tmp_path,monkeyp
     assert not (tmp_path/'phantom-qualification.json').exists()
     report=json.loads(next(tmp_path.glob('phantom-qualification-*.json')).read_text())
     assert len(report['results'])==5 and len(report['failures'])==1
+
+
+def test_readiness_retries_only_transport_reads_until_deadline(monkeypatch):
+    now=[0.]; calls=[]
+    monkeypatch.setattr(q.time,'monotonic',lambda:now[0])
+    monkeypatch.setattr(q.time,'sleep',lambda seconds:now.__setitem__(0,now[0]+seconds))
+    def fetch(url):
+        calls.append(url)
+        if len(calls)<3:raise ConnectionRefusedError('warming')
+        return {'data':[{'id':'ready'}]}
+    monkeypatch.setattr(q,'fetch',fetch)
+    assert q.ready_model('http://worker',30)=={'id':'ready'}
+    assert len(calls)==3 and all(c.endswith('/v1/models') for c in calls)
+    now[0]=0;calls.clear()
+    with pytest.raises(ConnectionRefusedError):q.ready_model('http://worker',5)
+    assert len(calls)==2 and now[0]==5
+    def malformed(url):raise ValueError('malformed descriptor')
+    monkeypatch.setattr(q,'fetch',malformed)
+    with pytest.raises(ValueError):q.ready_model('http://worker',30)
