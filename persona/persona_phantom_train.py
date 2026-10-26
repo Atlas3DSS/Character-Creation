@@ -386,6 +386,54 @@ def write_interrupted(path,bank,optimizer,metadata):
     os.replace(temporary,path)
 
 
+
+PREFLIGHT_TOLERANCES={'rtol':.02,'atol':.002}
+
+
+def device_preflight(device):
+    """Tiny synthetic FP16 forward/backward test; no checkpoint weights involved."""
+    generator=torch.Generator(device='cpu').manual_seed(1907)
+    def sample(shape):return (torch.randn(shape,generator=generator)*.125).half().float()
+    cases=[('linear',sample((2,17,32)),sample((48,32))),
+           ('depthwise_causal_conv',sample((1,37,64)).transpose(1,2),sample((64,1,4)))]
+    metrics=[]
+    for name,input_cpu,weight_cpu in cases:
+        def operation(x,w):
+            return F.linear(x,w) if name=='linear' else F.silu(F.conv1d(x,w,padding=3,groups=64)[:,:,:37])
+        reference_input=input_cpu.detach().clone().requires_grad_(True)
+        reference_weight=weight_cpu.detach().clone().requires_grad_(True)
+        reference=operation(reference_input,reference_weight)
+        probe=torch.linspace(-.5,.5,reference.numel(),dtype=torch.float32).reshape(reference.shape)
+        reference_grads=torch.autograd.grad((reference*probe).sum(),(reference_input,reference_weight))
+        x=input_cpu.to(device=device,dtype=torch.float16).detach().requires_grad_(True)
+        w=weight_cpu.to(device=device,dtype=torch.float16).detach().requires_grad_(True)
+        observed=operation(x,w)
+        grads=torch.autograd.grad((observed.float()*probe.to(device)).sum(),(x,w))
+        tensors=[('output',observed,reference),('input_gradient',grads[0],reference_grads[0]),('weight_gradient',grads[1],reference_grads[1])]
+        for field,actual,expected in tensors:
+            actual=actual.detach().float().cpu();expected=expected.detach()
+            finite=bool(torch.isfinite(actual).all())
+            passed=finite and torch.allclose(actual,expected,**PREFLIGHT_TOLERANCES)
+            metrics.append({'operation':name,'field':field,'finite':finite,'passed':passed,
+                            'max_absolute_error':float((actual-expected).abs().max()) if finite else None})
+    return {'device':str(device),'dtype':'float16','reference':'CPU float32 with identically rounded inputs',
+            'cudnn_enabled':torch.backends.cudnn.enabled,'tolerances':PREFLIGHT_TOLERANCES,
+            'passed':all(row['passed'] for row in metrics),'metrics':metrics}
+
+
+def hardware_preflight(devices,guard):
+    report={'passed':False,'backend':'ATen convolution; cuDNN explicitly disabled for SM70 compatibility',
+            'torch_version':torch.__version__,'cudnn_enabled':torch.backends.cudnn.enabled,
+            'tolerances':PREFLIGHT_TOLERANCES,'devices':[]}
+    for device in devices:
+        guard()
+        try:result=device_preflight(device)
+        except TrainingInterrupted:raise
+        except Exception as error:result={'device':str(device),'passed':False,'error':str(error)}
+        report['devices'].append(result)
+    report['passed']=not report['cudnn_enabled'] and len(report['devices'])==6 and all(row['passed'] for row in report['devices'])
+    return report
+
 def run(args):
     if args.output.exists() or args.partial_output.exists():raise ValueError('Output/partial path exists; explicit fresh paths required')
     data=load_pairs(args.dataset);discovery=[r for r in data['rows'] if r['split']=='discovery'];heldout=[r for r in data['rows'] if r['split']=='heldout']
@@ -403,7 +451,9 @@ def run(args):
         if stopped.is_set():raise TrainingInterrupted('Stop requested at safe functional boundary')
         for device in args.devices:
             if torch.cuda.memory_reserved(device)>cap:raise TrainingInterrupted('Declared GPU allocator budget exceeded')
-    bank=optimizer=None;manifest=None;history=[];validation=None;stage='loading'
+    bank=optimizer=None;manifest=None;history=[];validation=None;stage='hardware_preflight'
+    previous_cudnn=torch.backends.cudnn.enabled
+    torch.backends.cudnn.enabled=False
     metadata={'model_identity':args.model_identity,'dataset_sha256':data['sha256'],'seed':args.seed,'optimizer_steps':0,
               'trainer_sha256':file_digest(__file__),'reader_sha256':file_digest(Path(__file__).with_name('persona_phantom_weights.py')),
               'learning_rate':args.learning_rate,'kl_weight':args.kl_weight,'max_gpu_gib':args.max_gpu_gib,'slots':args.slots,'max_tokens':args.max_tokens}
@@ -416,7 +466,12 @@ def run(args):
             total=torch.cuda.get_device_properties(device).total_memory
             if cap>=total:raise ValueError('Declared allocator cap must fit each physical GPU')
             torch.cuda.set_per_process_memory_fraction(cap/total,device)
-        torch.manual_seed(args.seed)
+        metadata['hardware_preflight']=hardware_preflight(args.devices,guard)
+        if not metadata['hardware_preflight']['passed']:
+            result={**metadata,'state':'validation_failed','stage':'hardware_preflight','native_flare_qualified':False}
+            with args.output.open('x') as stream:json.dump(result,stream,indent=2)
+            print(json.dumps({'report':str(args.output),'state':result['state'],'stage':'hardware_preflight'}));return result
+        stage='loading';torch.manual_seed(args.seed)
         model,manifest=load_frozen_model(args.checkpoint,args.devices,guard=guard)
         device_map={i:next(model.model.layers[i].parameters()).device for i in ATTENTION_LAYERS}
         bank=GraftBank(ATTENTION_LAYERS,4,args.slots,256,devices=device_map,seed=args.seed)
@@ -460,6 +515,7 @@ def run(args):
         result={'state':'interrupted','partial_checkpoint':str(args.partial_output),'training_complete':False}
         print(json.dumps(result),flush=True);return result
     finally:
+        torch.backends.cudnn.enabled=previous_cudnn
         for signum,handler in old_handlers.items():signal.signal(signum,handler)
 
 

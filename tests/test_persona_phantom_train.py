@@ -157,7 +157,7 @@ class SignalTests(unittest.TestCase):
    tokenizer=SimpleNamespace(apply_chat_template=lambda *a,**k:[1,2],encode=lambda *a,**k:[3,4],eos_token_id=5)
    def stopped_loader(*a,**kw):signal.raise_signal(signal.SIGTERM);kw['guard']();raise AssertionError('Stop was not honored')
    original=signal.getsignal(signal.SIGTERM)
-   with patch('transformers.AutoTokenizer.from_pretrained',return_value=tokenizer),patch('torch.cuda.get_device_properties',return_value=SimpleNamespace(total_memory=2*2**30)),patch('torch.cuda.set_per_process_memory_fraction'),patch('torch.cuda.memory_reserved',return_value=0),patch('persona_phantom_train.load_frozen_model',side_effect=stopped_loader):
+   with patch('transformers.AutoTokenizer.from_pretrained',return_value=tokenizer),patch('torch.cuda.get_device_properties',return_value=SimpleNamespace(total_memory=2*2**30)),patch('torch.cuda.set_per_process_memory_fraction'),patch('torch.cuda.memory_reserved',return_value=0),patch('persona_phantom_train.hardware_preflight',return_value={'passed':True}),patch('persona_phantom_train.load_frozen_model',side_effect=stopped_loader):
     result=run(args)
    self.assertEqual(result['state'],'interrupted');self.assertFalse(args.output.exists());self.assertEqual(signal.getsignal(signal.SIGTERM),original)
    with np.load(args.partial_output,allow_pickle=False) as data:
@@ -177,3 +177,24 @@ class TokenizerContainerTests(unittest.TestCase):
   from persona_phantom_train import token_ids
   for value in ({'attention_mask':[1]},[[1],[2]],[True],[1.5],'1 2',[-1]):
    with self.assertRaises(ValueError):token_ids(value)
+
+
+class HardwarePreflightTests(unittest.TestCase):
+ def test_small_cpu_half_forward_backward_matches_declared_reference(self):
+  from persona_phantom_train import device_preflight
+  prior=torch.backends.cudnn.enabled
+  try:
+   torch.backends.cudnn.enabled=False
+   report=device_preflight('cpu');self.assertTrue(report['passed']);self.assertFalse(report['cudnn_enabled']);self.assertEqual(len(report['metrics']),6)
+   self.assertEqual({m['field'] for m in report['metrics']},{'output','input_gradient','weight_gradient'})
+  finally:torch.backends.cudnn.enabled=prior
+ def test_all_six_devices_required_and_error_retained(self):
+  from unittest.mock import Mock,patch
+  from persona_phantom_train import hardware_preflight
+  prior=torch.backends.cudnn.enabled
+  try:
+   torch.backends.cudnn.enabled=False;devices=['cuda:'+str(i) for i in range(6)];guard=Mock()
+   with patch('persona_phantom_train.device_preflight',side_effect=[{'passed':True}]*5+[RuntimeError('unsupported engine')]):
+    report=hardware_preflight(devices,guard)
+   self.assertFalse(report['passed']);self.assertEqual(len(report['devices']),6);self.assertIn('unsupported engine',report['devices'][-1]['error']);self.assertEqual(guard.call_count,6)
+  finally:torch.backends.cudnn.enabled=prior
