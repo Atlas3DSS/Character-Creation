@@ -31,6 +31,10 @@ class FakeHub:
   if self.uncertain:self.uncertain=False;raise TimeoutError('Reply lost after successful commit')
   return new
 
+class Conflict412(Exception):
+ class response:
+  status_code=412
+
 class ResearchTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name);self.policy={'scenarios_sha256':r.sha(b'public'),'manifest_sha256':r.sha(b'original manifest'),'model_identity':'m'};self.hub=FakeHub({'scenarios.jsonl':b'public','manifest.json':b'original manifest','README.md':b'Original card\n'});self.check=self.root/'checkpoint.json'
@@ -57,6 +61,28 @@ class ResearchTests(unittest.TestCase):
   self.hub.commit=conflict
   with self.assertRaises(RuntimeError):self.transaction(p)
   restarted=self.publisher();restarted.recover();self.assertEqual(self.hub.calls,2);self.assertIsNone(restarted.state['pending'])
+ def test_412_other_lane_retries_exact_bytes_without_restart(self):
+  p=self.publisher();original=self.hub.commit;seen=[]
+  def conflict(files,parent,message):
+   seen.append({name:path.read_bytes() for name,path in files.items()})
+   if len(seen)==1:
+    original({'research_raw_manifest.json':b'raw'},parent,'otherlane');raise Conflict412()
+   return original(files,parent,message)
+  self.hub.commit=conflict;revision=self.transaction(p)
+  self.assertEqual(seen[0],seen[1]);self.assertEqual(self.hub.calls,2);self.assertEqual(p.state['last_commit'],revision);self.assertIsNone(p.state['pending'])
+ def test_412_same_lane_change_fails_closed(self):
+  p=self.publisher();original=self.hub.commit
+  def conflict(files,parent,message):
+   self.hub.commit=original;original({'research_manifest.json':b'changed'},parent,'same lane');raise Conflict412()
+  self.hub.commit=conflict
+  with self.assertRaises(ValueError):self.transaction(p)
+  self.assertEqual(self.hub.calls,1);self.assertIsNotNone(p.state['pending']);self.assertIsNone(p.state['last_commit'])
+ def test_412_retries_are_bounded_and_keep_immutable_intent(self):
+  p=self.publisher();calls=[]
+  def conflict(files,parent,message):calls.append(parent);raise Conflict412()
+  self.hub.commit=conflict
+  with self.assertRaises(Conflict412):self.transaction(p)
+  self.assertEqual(len(calls),3);self.assertIsNotNone(p.state['pending']);self.assertIsNone(p.state['last_commit'])
  def test_public_allowlist_requires_exact_text_and_source_hash(self):
   item={'id':'approved','prompt':'Public prompt','response_sha256':'source','normalized_prompt_sha256':'normal'};row={'id':'approved','tier':'registered_big_five','messages':[{'role':'user','content':'Public prompt'}],'source_sha256':'source','provenance':{'registered_id':'approved','source':{'kind':'synthetic_model_response','normalized_prompt_sha256':'normal'}}}
   value=r.approved_source(row,{'approved':item},{});self.assertEqual(value['prompt'],'Public prompt');row['messages'][0]['content']='PRIVATE BOOK'

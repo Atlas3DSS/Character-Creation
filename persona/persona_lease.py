@@ -15,6 +15,23 @@ import threading
 import time
 
 
+def submission_args(args, lane):
+    values = list(args)
+    while '--lane' in values:
+        at = values.index('--lane')
+        if at + 1 >= len(values): raise ValueError('Malformed installed lane option')
+        del values[at:at + 2]
+    if lane == 'batch':
+        values = [value for value in values if value not in ('--protected', '--preemptible')]
+        for option in ('--checkpoint-signal', '--checkpoint-grace-s'):
+            while option in values:
+                at = values.index(option)
+                if at + 1 >= len(values): raise ValueError('Malformed checkpoint option')
+                del values[at:at + 2]
+        values += ['--preemptible', '--checkpoint-signal', 'SIGTERM', '--checkpoint-grace-s', '60']
+    return [*values, '--lane', lane]
+
+
 def watch_deadline(done, deadline):
     """Ask this supervisor to run its installed cleanup at the absolute deadline."""
     while not done.is_set():
@@ -28,6 +45,9 @@ def watch_deadline(done, deadline):
 
 
 def main():
+    lane = os.environ.get('PERSONA_WORKBOARD_LANE', 'interactive')
+    if lane not in ('interactive', 'batch'):
+        raise ValueError('Workboard lane must be interactive or batch')
     unit = os.environ['PERSONA_WORKER_UNIT']
     wrapper = Path(os.environ['PERSONA_LEASE_WRAPPER'])
     expected = os.environ['PERSONA_LEASE_WRAPPER_SHA256']
@@ -41,6 +61,8 @@ def main():
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
     original = module.wb
     def bound(*args):
+        if args[0] == 'submit':
+            return original(*submission_args(args, lane))
         if args[0] == 'start':
             return original(*args, '--unit', unit)
         return original(*args)

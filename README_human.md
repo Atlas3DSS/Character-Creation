@@ -69,6 +69,10 @@ Open `http://127.0.0.1:8792`. Use the compact workspace picker to move between P
 
 Build a candidate recipe, then compare it against baseline using the same prompts, seed, and answer budget. Check several scenarios before describing a repeatable effect. Distinguish association, weight-based suggestions, and tested interventions.
 
+In **Literary passages**, compile a scene prompt and open **Experimental neuron × cached-prefix comparison**. With a qualified runtime, it compares baseline, neuron steering, cached literary context, and both together. The same passage, seed and answer budget are used in all four arms, and the source record stays attached to the results. You can review whether an output answered or refused separately from its coherence checks.
+
+This first cache control reuses the model's complete state for an ordinary text prefix. It is groundwork for [Phantom-KV](https://github.com/lordx64/phantom-kv), not a trained refusal-removal graft. It supports exact off/on settings; learned 27B grafts, continuous strength control and automatic coherence recovery remain unvalidated.
+
 ## Read results with the right limits
 
 A calibrated concept label requires held-out evidence, including a **95% Wilson precision lower bound above 70%**, plus the qualification’s recall, coverage, and balanced-accuracy checks. That is conditional performance on authored text probes—not a universal probability that a neuron “means” a word. Discovery examples select candidates; held-out examples evaluate frozen choices. Neither activation magnitude nor label direction establishes the sign of a useful steering intervention.

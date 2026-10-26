@@ -187,12 +187,38 @@ confirmation; a heldout failure must not tune a replacement on that same holdout
 operates between full responses, not a proven live-token controller. Interaction tests are
 exploratory until independently confirmed.
 
-## Next integration: literary KV interventions (not implemented)
+## Literary KV interventions: first adapter and remaining work
 
 Owner requested Phantom-KV after the current sweep/viewer integration, for contrastive
 horror/romance prose and persona experiments, with coherence recovery as a separate
-hypothesis. Current workers do not accept grafts. Do not describe this plan as a running
-job, trained artifact, available UI control or demonstrated recovery result.
+hypothesis. The first implementation accepts checkpoint-bound `hybrid_text_prefix`
+controls: an ordinary text prefix's full recurrent/convolution/attention state, with
+exact off/on semantics. It does not import or train learned Phantom-KV banks.
+
+`persona/persona_kv.py` validates the artifact definition and cache layout. Prefix
+tokens are independently encoded before the unchanged chat-template IDs. Prefix
+building is unsteered and unsampled; neuron steering begins with the actual prompt.
+Fresh request admission preserves request-local sampling state. Cache reuse restores
+the model-state row, attention pages, optional history and consumed-token offset;
+each request still restores the original prepared state on exit. Simultaneous live
+token tracing with this control is rejected until separately qualified.
+
+`persona/persona_kv_qualify.py` runs only against already admitted workers, on their
+artifact host. It retains request attempts and requires exact rebuild/reuse and
+off/on/off equality in generated IDs and final-prefill arrays, including sampled and
+combined-neuron cases. The current two literary prefixes are test controls, not
+validated genre interventions. Qualification gates artifacts by model/runtime/
+preparation/layout; the deployment must verify the linked report and its SHA before
+publishing the local `results/persona_kv_artifacts.json` registry. A successful cache
+qualification does not establish refusal reduction, persona quality or coherence repair.
+
+`persona/persona_literary_eval.py` preserves compiled book/workgroup/scene/split hashes,
+builds four matched arms and reports conservative refusal evidence separately from
+surface coherence. Unclassified responses remain uncertain until manual review; a
+review binds the exact answer SHA and evidence span. GET/POST
+`/api/literature/experiments` expose qualified artifacts and explicit runs;
+`/api/literature/experiment?id=...` retrieves the comparison. The finite backoff
+proposal is currently an offline plan, not an automatic controller.
 
 Reviewed upstream commit
 [`e0025c69b2fa36f05d4640600f2c83e03ed00ce0`](https://github.com/lordx64/phantom-kv/tree/e0025c69b2fa36f05d4640600f2c83e03ed00ce0).
@@ -202,7 +228,7 @@ dense per-layer K/V training are not adapters for this runtime. Our checkpoint h
 four KV heads of width 256. SM70 attention cache storage contains BF16 bit patterns
 in uint16 buffers; recurrent state and convolution history are separate.
 
-Implementation and qualification sequence:
+Preserved requirements for completing learned-graft integration:
 
 1. Preserve the frozen capture runtime and ledger. Add a separately bound interactive
    adapter with exact model, tokenizer, runtime, cache-layout, rotary-position and
@@ -276,6 +302,9 @@ verified research batches from read-only capture ledgers.
   checkpoints. An uncertain commit reconciles its immutable intent; it never reruns inference.
 - Publisher HTTP connect/read/write/pool timeouts are 15/120/120/60 seconds, preserving
   the SDK's redirects and request hooks. This requires `huggingface_hub>=1.27,<2`.
+- Explicit HTTP 412 conflicts retry the same pending bytes up to three times after
+  rechecking the publication lane, original subset and dataset card. Unknown commit
+  outcomes still retain their pending intent for recovery; they never trigger recapture.
 - Metadata and raw counts are independent. Read `research_raw_manifest.json` for verified
   array coverage even if the dataset card or metadata snapshot has an earlier count.
 - Run without `--publish` to validate policy/source files only. Publication requires an

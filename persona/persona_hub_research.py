@@ -269,19 +269,26 @@ class Publisher:
     def recover(self):
         pending=self.state.get('pending')
         if not pending:return
-        revision,_=self.snapshot();actual=self.hub.read(self.manifest_name,revision,missing=True)
-        if actual and sha(actual)==pending['manifest_sha256']:
-            self.verify(revision,pending);return
-        if revision!=pending['parent']:
-            if (sha(actual) if actual else None)!=pending['previous_manifest_sha256']:
-                raise ValueError('This publication lane changed after uncertain commit; manual reconciliation required')
-            if pending.get('base_card_sha256') and sha(self.hub.read('README.md',revision))!=pending['base_card_sha256']:
-                raise ValueError('Dataset card changed after uncertain commit; review required')
-            pending['parent']=revision;self.save()
-        # No committed change. Retry the exact immutable intent only, never recapture.
-        files={name:Path(path) for name,path in pending['files'].items()}
-        if any(file_hash(path)!=pending['hashes'][name] for name,path in files.items()):raise ValueError('Pending local upload bytes changed')
-        commit=self.hub.commit(files,pending['parent'],'Publish verified research '+self.lane+' batch');self.verify(commit,pending)
+        for attempt in range(3):
+            revision,_=self.snapshot();actual=self.hub.read(self.manifest_name,revision,missing=True)
+            if actual and sha(actual)==pending['manifest_sha256']:
+                self.verify(revision,pending);return
+            if revision!=pending['parent']:
+                if (sha(actual) if actual else None)!=pending['previous_manifest_sha256']:
+                    raise ValueError('This publication lane changed after uncertain commit; manual reconciliation required')
+                if pending.get('base_card_sha256') and sha(self.hub.read('README.md',revision))!=pending['base_card_sha256']:
+                    raise ValueError('Dataset card changed after uncertain commit; review required')
+                pending['parent']=revision;self.save()
+            # Retry only an explicit uncommitted CAS conflict, rechecking the lane
+            # and exact immutable bytes each time. Lost replies still exit for recovery.
+            files={name:Path(path) for name,path in pending['files'].items()}
+            if any(file_hash(path)!=pending['hashes'][name] for name,path in files.items()):raise ValueError('Pending local upload bytes changed')
+            try:
+                commit=self.hub.commit(files,pending['parent'],'Publish verified research '+self.lane+' batch')
+            except Exception as error:
+                if getattr(getattr(error,'response',None),'status_code',None)!=412 or attempt==2:raise
+                continue
+            self.verify(commit,pending);return
     def verify(self,revision,pending):
         if sha(self.hub.read(self.manifest_name,revision))!=pending['manifest_sha256']:raise ValueError('Remote manifest verification failed')
         for name,expected in pending['hashes'].items():
@@ -296,7 +303,7 @@ class Publisher:
             paths[name]=str(path.resolve());hashes[name]=file_hash(path)
         previous=self.hub.read(self.manifest_name,parent,missing=True)
         pending={'previous_manifest_sha256':sha(previous) if previous else None,'base_card_sha256':sha(self.hub.read('README.md',parent)) if 'README.md' in files else None,'parent':parent,'files':paths,'hashes':hashes,'manifest_sha256':hashes[self.manifest_name]};self.state['pending']=pending;self.save()
-        revision=self.hub.commit({name:Path(path) for name,path in paths.items()},parent,'Publish verified research '+self.lane+' batch');self.verify(revision,pending);return revision
+        self.recover();return self.state['last_commit']
 
 
 def metadata_batch(records):

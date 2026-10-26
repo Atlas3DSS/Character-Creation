@@ -27,6 +27,7 @@ import zipfile
 from urllib.parse import urlparse, parse_qs
 from copy import deepcopy
 from persona_trace import normalize_trace, TokenTrace
+from persona_kv import validate_control, HybridPrefixCache
 
 import numpy as np
 
@@ -91,7 +92,7 @@ def normalize_request(payload: dict, model_id: str) -> dict:
     """Validate the supported API subset without importing CUDA libraries."""
     supported = {"model", "messages", "seed", "max_tokens", "temperature", "top_p", "top_k", "min_p",
                  "repetition_penalty", "presence_penalty", "frequency_penalty", "stream", "n",
-                 "chat_template_kwargs", "steering", "metadata", "observation_only", "capture_trace"}
+                 "chat_template_kwargs", "steering", "metadata", "observation_only", "capture_trace", "kv_control"}
     if not isinstance(payload, dict) or set(payload) - supported:
         raise ValueError("Unsupported chat-completion fields")
     if payload.get("model") != model_id or payload.get("stream", False) is not False or payload.get("n", 1) != 1:
@@ -130,10 +131,13 @@ def normalize_request(payload: dict, model_id: str) -> dict:
     metadata = payload.get("metadata", {})
     if not isinstance(metadata, dict) or ("job_id" in metadata and (not isinstance(metadata["job_id"], str) or len(metadata["job_id"]) > 256)):
         raise ValueError("Metadata must be an object with a bounded string job_id")
+    kv_control = validate_control(payload.get("kv_control"))
+    if kv_control is not None and payload.get("capture_trace") is not None:
+        raise ValueError("KV prefix caching and live token traces require separate requests")
     canonical_digest(payload)  # Reject NaN/Infinity anywhere, including metadata.
     return {"messages": messages, "seed": seed, "max_tokens": budget,
             "sampling": sampling, "requested_sampling": requested, "metadata": metadata,
-            "capture_trace": normalize_trace(payload.get("capture_trace")),
+            "capture_trace": normalize_trace(payload.get("capture_trace")), "kv_control": kv_control,
             "steering": payload.get("steering"), "thinking": False, "observation_only": observation_only}
 
 
@@ -321,6 +325,7 @@ class ProbeEngine:
         self.vocabulary = self.requests.vocab_size
         if not self.eos or any(type(token) is not int or not 0 <= token < self.vocabulary for token in self.eos):
             raise ProtocolError("Prepared frontend lacks valid explicit EOS IDs")
+        self.kv_cache = HybridPrefixCache(self)
         self.snapshots = _snapshot_mutable(prepared, self.generation, self.maintenances)
         # Diagnostic planes are not public server buffers; restore them too.
         seen = {tensor.data_ptr() for _, tensor, _ in self.snapshots}
@@ -344,6 +349,7 @@ class ProbeEngine:
                     "physical_context_tokens": min(self.capacity[1], self.inputs.page_tables.shape[1]) * self.page_tokens,
                     "batch_capacity": 1, "prepared_request_capacity": self.requests.capacity,
                     "native_cache": False, "mtp": False, "mtp_prepared": True,
+                    "kv_control": self.kv_cache.capability(),
                     "observation_only": {"supported": True, "required_max_tokens": 1,
                                          "operation": "prefill_observation", "answer_scoring": False},
                     "activation_capture": "final_prefill", "token_trace": {"supported": True, "max_neurons": 64, "max_per_layer": 32, "decode": True}, "thinking_enabled_supported": False}}
@@ -360,7 +366,9 @@ class ProbeEngine:
             if self.stop_event.is_set():
                 raise ProtocolError("Worker is stopping")
             from persona_capture import tokenize_messages
-            ids = tokenize_messages(self.tokenizer, spec["messages"])
+            prefix_ids, prefix_entry = self.kv_cache.prepare(spec["kv_control"])
+            prefix_hit = prefix_entry is not None
+            ids = prefix_ids + tokenize_messages(self.tokenizer, spec["messages"])
             if not isinstance(ids, list) or any(type(token) is not int or not 0 <= token < self.vocabulary for token in ids):
                 raise ValueError("Tokenizer returned invalid prompt token IDs")
             pages = validate_capacity(len(ids), spec["max_tokens"], physical_pages=self.capacity[1], page_tokens=self.page_tokens,
@@ -446,13 +454,24 @@ class ProbeEngine:
                 commands.num_ops.zero_()
                 addends = self.buffers["steering_addends"]
                 self.buffers["steering_prompt_tokens"][0] = len(ids)
-                for site in program["sites"]:
-                    index, offset, width = site_layout(self.catalog, addends.shape, site["site"])
-                    target = addends[0, offset:offset + width] if addends.ndim == 2 else addends[0, index]
-                    target.copy_(torch.from_numpy(site["vector"]))
-                    self.buffers["steering_phases"][0, index] = PHASE_MASKS[program["phase"]]
-                for start in range(0, len(ids), self.batch.tokens):
-                    stop = min(len(ids), start + self.batch.tokens)
+                def apply_steering():
+                    for site in program["sites"]:
+                        index, offset, width = site_layout(self.catalog, addends.shape, site["site"])
+                        target = addends[0, offset:offset + width] if addends.ndim == 2 else addends[0, index]
+                        target.copy_(torch.from_numpy(site["vector"]))
+                        self.buffers["steering_phases"][0, index] = PHASE_MASKS[program["phase"]]
+                if prefix_hit:
+                    self.kv_cache.restore(prefix_entry)
+                    positions_seen.extend(range(len(prefix_ids)))
+                    norm_chunks.append(prefix_entry["arrays"]["residual_l2"].copy())
+                if not prefix_ids or prefix_hit: apply_steering()
+                spans = []
+                if prefix_ids and not prefix_hit:
+                    spans.extend((start, min(len(prefix_ids), start + self.batch.tokens))
+                                 for start in range(0, len(prefix_ids), self.batch.tokens))
+                spans.extend((start, min(len(ids), start + self.batch.tokens))
+                             for start in range(len(prefix_ids), len(ids), self.batch.tokens))
+                for start, stop in spans:
                     last = stop == len(ids)
                     inputs.query_lengths[0] = stop - start
                     inputs.token_ids.zero_()
@@ -468,6 +487,10 @@ class ProbeEngine:
                     if not np.isfinite(norms).all():
                         raise ProtocolError("Observed residual norms are nonfinite")
                     norm_chunks.append(norms)
+                    if prefix_ids and not prefix_hit and stop == len(prefix_ids):
+                        prefix_entry = self.kv_cache.save(spec["kv_control"]["artifact"], prefix_ids,
+                                                         np.concatenate(norm_chunks, axis=1))
+                        apply_steering()
                     if last:
                         prefill_capture = {name: getattr(self.capture, name).cpu().numpy().copy()
                             for name in ("mlp_input_last", "residual_last", "pre_mlp_last")}
@@ -519,6 +542,10 @@ class ProbeEngine:
                     "activation_artifact": activation, "diagnostics": {**outcome["diagnostics"],
                         "sampling": spec["sampling"], "requested_sampling": spec["requested_sampling"],
                         "native_cache_qualified": False, "mtp_qualified": False}}
+                if spec["kv_control"] is not None:
+                    response["kv_control"] = self.kv_cache.result(spec["kv_control"], prefix_ids, prefix_entry, prefix_hit)
+                    response["diagnostics"]["cached_prefill_positions"] = len(prefix_ids) if prefix_hit else 0
+                    response["diagnostics"]["prefill_source"] = "cached hybrid prefix plus live suffix" if prefix_hit else "live prefill"
                 if token_trace:
                     response["token_trace"] = token_trace.result()
                     token_trace.finish("complete")
@@ -687,14 +714,14 @@ def run(args):
         "tokenizer_sha256": file_hash(args.checkpoint / "tokenizer.json"), "heliopause_sha256": file_hash(args.heliopause),
         "script_sha256": file_hash(__file__), "source_sha256": {name: file_hash(args.flare / name) for name in sources},
         "helper_sha256": {name: file_hash(Path(__file__).parent / name) for name in
-                          ("persona_capture.py", "persona_qualify.py", "persona_vectors.py", "persona_fleet.py", "persona_trace.py", "persona_map.py")},
+                          ("persona_capture.py", "persona_qualify.py", "persona_vectors.py", "persona_fleet.py", "persona_trace.py", "persona_map.py", "persona_kv.py")},
         "preparation": {k: str(v) if isinstance(v, Path) else v for k, v in prep.__dict__.items()}}
     runtime_binding = {key: manifest[key] for key in ("script_sha256", "helper_sha256", "source_sha256", "torch", "heliopause_sha256")}
     runtime_binding["preparation"] = {key: value for key, value in manifest["preparation"].items()
         if key not in {"compile_workers", "kernel_cache", "cutlass_include", "headroom_bytes", "snapshot_budget_bytes"}}
     manifest["runtime_identity"] = canonical_digest(runtime_binding)
-    report_path = args.output / f"probe-shard{args.shard}.manifest.json"
-    events_path = args.output / f"probe-shard{args.shard}.attempts.jsonl"
+    report_path = args.output / f"{args.report_stem}-shard{args.shard}.manifest.json"
+    events_path = args.output / f"{args.report_stem}-shard{args.shard}.attempts.jsonl"
     stop_event, violations = threading.Event(), []
     server, monitor_thread = None, None
 
@@ -708,7 +735,7 @@ def run(args):
         raise RuntimeError("Probe worker interrupted: " + (violations[-1] if violations else str(signum)))
 
     def monitor():
-        with (args.output / f"probe-shard{args.shard}.telemetry.jsonl").open("a") as stream:
+        with (args.output / f"{args.report_stem}-shard{args.shard}.telemetry.jsonl").open("a") as stream:
             while not stop_event.is_set():
                 try:
                     sample = telemetry(config["gpus"][args.shard])
@@ -785,10 +812,17 @@ def run(args):
         publish("finish")
 
 
+def report_stem(value):
+    if not isinstance(value, str) or not 1 <= len(value) <= 64 or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-' for c in value):
+        raise argparse.ArgumentTypeError('Report stem must be a flat 1..64 character alphanumeric/underscore/hyphen name')
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("run",))
     parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--report-stem", type=report_stem, default="probe")
     parser.add_argument("--model", type=Path, default=Path(__file__).parent / "data/persona_model.json")
     parser.add_argument("--calibration", type=Path, help="Required complete capture NPZ; default output/capture-shardN.npz; exact startup equivalence cannot be skipped")
     parser.add_argument("--flare", type=Path, required=True)

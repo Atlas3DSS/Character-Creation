@@ -40,6 +40,7 @@ from persona_trace_lab import TraceLab
 from persona_jobs import JobStore
 from persona_overnight import OvernightMap
 from persona_coherence import CoherenceLab
+import persona_literary_eval as literary_eval
 from persona_neuron_labels import read_registry as read_neuron_labels
 from persona_sculptor import Sculptor
 from persona_vectors import ModelSpec, VectorBank, canonical_digest
@@ -445,7 +446,8 @@ class Explorer:
         for index, state, raw, endpoint, output, error in cells:
             snapshot = json.loads(raw)
             item = {'index': index, 'label': snapshot['label'], 'state': state,
-                    'prompt': snapshot['prompt'], 'recipe': snapshot['recipe']}
+                    'prompt': snapshot['prompt'], 'recipe': snapshot['recipe'],
+                    'source_binding': snapshot.get('source_binding', {}), 'kv_control': snapshot.get('kv_control')}
             if endpoint is not None: item['endpoint_label'] = endpoint
             if output is not None: item['output'] = json.loads(output)
             if error is not None: item['error'] = error
@@ -466,7 +468,7 @@ class Explorer:
             raise ValueError('A batch requires one to six cells')
         snapshots = []
         for index, cell in enumerate(value['cells']):
-            object_fields(cell, (), ('label', 'prompt_id', 'prompt', 'recipe_id', 'recipe'))
+            object_fields(cell, (), ('label', 'prompt_id', 'prompt', 'recipe_id', 'recipe', 'literature_prompt_id', 'kv_control'))
             if ('prompt_id' in cell) == ('prompt' in cell) or ('recipe_id' in cell) == ('recipe' in cell):
                 raise ValueError('Each cell requires exactly one prompt and one recipe reference or value')
             label = cell.get('label', f'Cell {index + 1}')
@@ -481,6 +483,12 @@ class Explorer:
                 if not isinstance(cell['prompt'], str) or not cell['prompt'].strip() or len(cell['prompt']) > 20000:
                     raise ValueError('Custom prompts must contain 1–20,000 characters')
                 prompt = {'text': cell['prompt']}
+            if 'literature_prompt_id' in cell:
+                compiled = literary_eval.compiled_prompt(self.root, cell['literature_prompt_id'])
+                if prompt['text'] != compiled['prompt']: raise ValueError('Compiled literature prompt text differs')
+                binding = {'literature_prompt_id': compiled['id'], **compiled['provenance']}
+                prompt.update(id=compiled['id'], split=compiled['provenance']['split'])
+            control = literary_eval.validate_control(cell['kv_control'], self.model.identity) if 'kv_control' in cell else None
             recipe_value = cell.get('recipe')
             saved = None
             if 'recipe_id' in cell:
@@ -495,7 +503,7 @@ class Explorer:
             budget.update(smoke=value['smoke'], promotion_eligible=False,
                           promotion_eligible_budget=budget['promotion_eligible_budget'] and not value['smoke'])
             snapshots.append({'label': label.strip(), 'prompt': prompt, 'recipe': recipe, 'source_record': source,
-                'source_binding': binding, 'saved_recipe': saved, 'program': program,
+                'source_binding': binding, 'saved_recipe': saved, 'program': program, 'kv_control': control,
                 'provenance': provenance, 'budget': budget, 'model': self.model.__dict__})
         # Transport failures may reduce capacity. A reachable identity/capability
         # mismatch is a configuration error and rejects the complete batch.
@@ -505,7 +513,9 @@ class Explorer:
                 descriptor = fetch(endpoint['url'] + '/v1/models', timeout=5)['data'][0]
             except OSError:
                 continue
-            for snapshot in snapshots: self.check_program(descriptor, endpoint, snapshot['program'])
+            for snapshot in snapshots:
+                self.check_program(descriptor, endpoint, snapshot['program'])
+                if snapshot.get('kv_control'): literary_eval.check_control(snapshot['kv_control'], descriptor, endpoint)
             capabilities = check_generation_settings(descriptor['flare'], value)
             admitted.append({**deepcopy(endpoint), 'capabilities': capabilities})
         if not admitted: raise ValueError('No verified reachable Flare endpoints are available')
@@ -546,6 +556,11 @@ class Explorer:
                    'temperature': .7, 'top_p': .95, 'top_k': 20, 'max_tokens': settings['max_tokens'],
                    'stream': False, 'chat_template_kwargs': {'enable_thinking': settings['thinking']}}
         if program['sites']: request['steering'] = program
+        control = extra.get('kv_control') if extra else None
+        if control:
+            control = literary_eval.validate_control(control, self.model.identity)
+            literary_eval.check_control(control, descriptor, endpoint)
+            request['kv_control'] = control
         if extra and extra.get('job_id'): request['metadata'] = {'job_id': extra['job_id']}
         bound = {**provenance, **(extra or {}), 'model_identity': self.model.identity,
                  'prepared_identity': endpoint['prepared_identity'], 'runtime_identity': endpoint.get('runtime_identity'),
@@ -561,6 +576,20 @@ class Explorer:
                 raise ValueError('Response ' + key + ' differs from the verified worker')
             if endpoint.get('runtime_identity') and response.get(key) != endpoint.get(key):
                 raise ValueError('Diagnostic response omitted or changed ' + key)
+        if control:
+            observed = response.get('kv_control') or {}
+            artifact = control['artifact']
+            if observed.get('artifact_sha256') != artifact['sha256'] or any(observed.get(key) != artifact[key] for key in ('model_identity','runtime_identity','prepared_identity','layout_sha256')):
+                raise ValueError('KV response omitted or changed artifact/identity binding')
+            if any(observed.get(key) != control[key] for key in ('dose','cache_policy')) or observed.get('kind') != artifact['kind']:
+                raise ValueError('KV response changed intervention mode')
+            if control['dose'] == 1:
+                state_artifact = observed.get('state_artifact') or {}
+                digest = state_artifact.get('sha256')
+                if not isinstance(digest,str) or len(digest)!=64 or any(c not in '0123456789abcdef' for c in digest) or not isinstance(state_artifact.get('path'),str) or not state_artifact['path']:
+                    raise ValueError('KV response lacks cached-state artifact provenance')
+                if type(observed.get('prefix_tokens')) is not int or not 1 <= observed['prefix_tokens'] <= 1024 or type(observed.get('cache_hit')) is not bool:
+                    raise ValueError('KV response lacks bounded prefix/cache metadata')
         choice = response['choices'][0]
         answer = choice['message'].get('content') or ''
         if not isinstance(answer, str): raise ValueError('Completion content must be text')
@@ -572,7 +601,7 @@ class Explorer:
                   'usage': response.get('usage'), 'provenance': bound, 'runtime_identity': response.get('runtime_identity'),
                   'model_identity': self.model.identity, 'prepared_identity': endpoint['prepared_identity'],
                   'runtime': response.get('runtime'), 'diagnostics': diagnostics}
-        for key in ('activation_artifact', 'provenance_artifact'):
+        for key in ('activation_artifact', 'provenance_artifact', 'kv_control'):
             if key in response: output[key] = response[key]
         raw['complete'] = complete
         return output, raw
@@ -596,6 +625,7 @@ class Explorer:
                              **snapshot['source_binding'], **{key: source[key] for key in
                              ('id', 'source_id', 'source_sha256', 'source_text_sha256', 'pair_id', 'corpus', 'split', 'mutation') if key in source}},
                          'prompt_sha256': canonical_digest({'prompt': snapshot['prompt']['text'], 'system': source.get('system', '')})}
+                if snapshot.get('kv_control'): extra['kv_control'] = snapshot['kv_control']
                 output, raw = self.infer(endpoint, snapshot['prompt']['text'], value, snapshot['program'],
                     snapshot['provenance'], system=source.get('system', ''), extra=extra, persist=persist)
                 persist(raw)
@@ -750,6 +780,8 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
                 elif path.path == '/api/overnight': self.send(app.overnight.status())
                 elif path.path == '/api/neuron-labels': self.send(read_neuron_labels(app.root/'results/persona_neuron_labels.json', app.model.identity, layers=app.model.layers, neurons_per_layer=app.model.intermediate))
+                elif path.path == '/api/literature/experiments': self.send(literary_eval.catalog(app))
+                elif path.path == '/api/literature/experiment': self.send(literary_eval.evaluated_batch(app,parse_qs(path.query).get('id',[''])[0]))
                 elif path.path == '/api/coherence': self.send(app.coherence.catalog())
                 elif path.path == '/api/coherence/run': self.send(app.coherence.get(parse_qs(path.query).get('id', [''])[0]))
                 elif path.path == '/api/coherence/interaction': self.send(app.coherence.interaction(parse_qs(path.query).get('id', [''])[0]))
@@ -835,7 +867,7 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 if not 0 < size <= 1000000: raise ValueError("Request size exceeds limit")
                 value = json.loads(self.rfile.read(size))
                 if not isinstance(value, dict): raise ValueError("Expected JSON object")
-                if self.path in ('/api/jobs', '/api/job/cancel') or self.path.startswith(('/api/sculptor/', '/api/coherence/')):
+                if self.path in ('/api/jobs', '/api/job/cancel') or self.path.startswith(('/api/sculptor/', '/api/coherence/')) or self.path in ('/api/literature/experiments','/api/literature/response-review'):
                     if self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower() != 'application/json':
                         raise ValueError('Scheduled job changes require application/json')
                 if self.path in ('/api/activation-searches','/api/activation-comparisons','/api/activation-session','/api/compare','/api/batches','/api/traces','/api/sculptor/campaigns','/api/sculptor/preset-comparisons'):
@@ -850,6 +882,8 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                         raise ValueError('Activation operations require application/json')
                     self.send(app.activation_lab.start_session(value) if self.path == '/api/activation-session' else app.activation_lab.submit(value) if self.path == '/api/activation-searches' else app.activation_lab.compare(value),202)
                 elif self.path == '/api/concept-controls': self.send(app.concept_controls.create(value))
+                elif self.path == '/api/literature/response-review': self.send(literary_eval.review(app,value))
+                elif self.path == '/api/literature/experiments': self.send(literary_eval.submit(app,value),202)
                 elif self.path == '/api/literature/prompt': self.send(save_prompt(app.root / 'results/persona_literature.sqlite', value))
                 elif self.path == '/api/traces': self.send(app.traces.submit(value),202)
                 elif self.path == "/api/compare": self.send({"id": app.submit(value)}, 202)
