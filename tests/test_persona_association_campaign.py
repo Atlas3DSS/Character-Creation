@@ -119,3 +119,64 @@ def test_search_exact_input_and_source_binding():
     for mutate in (lambda b:b['input'].update(text='changed'),lambda b:b['input'].update(top_k=32),lambda b:b['output'].update(runtime_identity='other'),lambda b:b['starter_recipes'][0].update(neurons=[{'layer':2,'neuron':3}])):
         bad=deepcopy(result);mutate(bad)
         with pytest.raises(ValueError):campaign.check_search(bad,query,plan)
+
+
+def depth_fixture(tmp_path):
+    import time
+    root=Path(__file__).resolve().parents[1]
+    source=json.loads((root/'results/persona_association_depth.json').read_text())
+    source['campaigns']=[{k:r[k] for k in ('source','context_id','state')} for r in source['campaigns']]
+    for name in ('results','data'):(tmp_path/name).mkdir()
+    (tmp_path/'results/persona_association_depth.json').write_text(json.dumps(source))
+    (tmp_path/'data/persona_phantom_pairs.json').write_bytes((root/'data/persona_phantom_pairs.json').read_bytes())
+    binding={**BINDING,'model_identity':source['binding']['model_identity']}
+    (tmp_path/'results/persona_association_launch.json').write_text(json.dumps({'observed_binding':binding,'deadline':time.time()+3600}))
+    return binding
+
+
+def test_depth_plan_is_exact_frozen150_without_posts(tmp_path):
+    binding=depth_fixture(tmp_path);plan=campaign.prepare_recipe_depth(tmp_path);frozen=plan['input']
+    assert len(frozen['batches'])==25
+    cells=[c for b in frozen['batches'] for c in b['request']['cells']]
+    assert len(cells)==150 and sum(not c['recipe']['pushes'] for c in cells)==6
+    assert all(c['recipe']['phase']=='all' and 'kv_control' not in c for c in cells)
+    assert frozen['prior_phase']=='prefill' and 'not fresh' in frozen['heldout_scope']
+    assert all(len(b['request']['cells'])==6 and b['request']['max_tokens']==2048 for b in frozen['batches'])
+    run=campaign.RecipeDepthCampaign(tmp_path);assert run.input_hash==plan['input_plan_sha256']
+    with pytest.raises(ValueError):campaign.prepare_recipe_depth(tmp_path)
+    path=tmp_path/'results/persona_recipe_depth.json';plan['input']['phase']='prefill';path.write_text(json.dumps(plan))
+    with pytest.raises(ValueError):campaign.RecipeDepthCampaign(tmp_path)
+
+
+def depth_response(request,key,binding):
+    return {'id':key,'state':'complete','input':deepcopy(request), 'cells':[
+        {'index':i,**deepcopy(cell),'prompt':{'text':cell['prompt']},'state':'complete',
+         'output':{**binding,'complete':True,'answer':'A reply.','finish_reason':'stop'}} for i,cell in enumerate(request['cells'])]}
+
+
+def test_depth_rolling_four_preserves_snapshots_and_incomplete(tmp_path,monkeypatch):
+    binding=depth_fixture(tmp_path);campaign.prepare_recipe_depth(tmp_path);run=campaign.RecipeDepthCampaign(tmp_path)
+    run.plan['binding']=binding;pending={};submissions=[]
+    def request(route,value=None):
+        if value is not None:
+            assert route=='/api/batches';key=str(len(submissions));submissions.append(deepcopy(value));pending[key]=value;assert len(pending)<=4;return {'id':key}
+        key=route.split('=')[1];value=pending.pop(key);result=depth_response(value,key,binding)
+        if key=='1':result['state']='partial';result['cells'][0].update(state='incomplete');result['cells'][0]['output'].update(complete=False,finish_reason='length')
+        return result
+    run.request=request;monkeypatch.setattr(campaign.time,'sleep',lambda _:None);run.comparisons()
+    assert len(submissions)==25 and not pending
+    assert run.plan['response_counts']=={'complete':149,'incomplete':1}
+    assert run.plan['state']=='complete_with_failed_comparisons'
+    assert all('input_snapshot' in b and len(b['cells'])==6 for b in run.plan['batches'])
+    with pytest.raises(ValueError):campaign.RecipeDepthCampaign(tmp_path)
+
+
+def test_depth_rejects_kv_binding_and_dose_changes(tmp_path):
+    binding=depth_fixture(tmp_path);plan=campaign.prepare_recipe_depth(tmp_path)
+    request=plan['input']['batches'][1]['request'];record={'batch_id':'batch','submission':{'request':request}}
+    good=depth_response(request,'batch',binding);campaign.check_depth_batch(good,record,binding)
+    for mutate in (lambda b:b['input'].update(seed=1),lambda b:b['cells'][0].update(kv_control={'dose':1}),
+                   lambda b:b['cells'][0]['recipe']['pushes'][0].update(dose=.9),
+                   lambda b:b['cells'][0]['output'].update(runtime_identity='other')):
+        bad=deepcopy(good);mutate(bad)
+        with pytest.raises(ValueError):campaign.check_depth_batch(bad,record,binding)

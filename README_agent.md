@@ -214,9 +214,37 @@ bindings and the forward-cache namespace; spawned compiler workers resolve the s
 override. `persona/persona_activation_lab.py` dispatches through up to six executor
 workers, bounded by configured endpoints, with a 64-active-or-queued search limit.
 This permits cross-card concurrency, not multiple simultaneous prepared B1 requests
-on one card. **Rollout is in progress; fresh runtime validation is pending.** Prior
-qualification reports remain bound to their original runtime/preparation and must not
-be silently transferred to a changed capture runtime.
+on one card. Runtime `2ef8694cebe17e8b99d65f0b60c84a7ddd4ba37bbf62861eafd296b8d8dd007c`
+passed calibration on all six workers and completed 60 searches plus 72 full scene
+responses. Fresh native KV qualification passed 72 requests in
+`results/phantom-qualification-7c27d462588e45b89a9bd5b9ce0a8dc3.json`
+(SHA-256 `290130b01b6f68f2a7f83a7bdf008f5f9a1585b5e18997a458159d1985394bed`).
+Prior reports remain bound to their original runtime/preparation. Status counts
+physical GPU UUIDs, not canonical/isolated endpoint aliases.
+
+The fixed input plan and request/result evidence are in
+`results/persona_association_research.json`. Of 60 whole-text, fragment and concept
+searches, 59 ranked L63 N6985 first (one ranked L58 N9817). This is evidence against
+using raw maximum activation as a concept-specific recommendation score. The
+24 authored scene comparisons each contain baseline and ±0.1 on the fixed first
+candidate, with seed 7035 and 2,048-token budgets. All 72 responses completed;
+completion is not semantic quality or efficacy. `persona_association_campaign.py`
+validates the frozen plan hash, sources/splits, exact worker identities, search
+coverage and matched-arm settings. It never automatically retries an uncertain POST
+or changes deployment configuration.
+The public export is `persona_association_public.json` on the Hub, containing
+60 top-16 profiles, 72 answers and separately identified assistant review. It
+excludes local paths and private book excerpts; it does not contain raw all-neuron
+arrays. Review identified localized source/contract regressions despite complete
+answers, and 35/60 winning peaks at or after the user-end delimiter.
+
+`--stage recipe-depth` reuses the same bounded controller and six deployed workers.
+The frozen `results/persona_recipe_depth.json` input has six earlier depth-study
+contexts and six sources (L0 N719/N9436, L24 N952/N9228, L48 N221/N7784), six shared
+baselines and 144 interventions at -0.2, -0.1, +0.1 and +0.2. All 150 responses
+completed. This changes phase from the earlier prefill-only study to all-token
+steering; its previously observed heldout contexts are repeated confirmation, not
+a fresh holdout. No KV, uncertain-POST retry or automatic preset promotion.
 
 Activity-based candidate ranking is not calibrated concept confidence or a predictor
 of useful behavior. A future recipe predictor needs context, neuron set, dose and

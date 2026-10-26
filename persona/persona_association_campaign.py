@@ -261,7 +261,130 @@ class Campaign:
             self.plan.update(state='stopped_or_failed', error=repr(error)); self.save(); raise
 
 
+DEPTH_SOURCES=((0,719),(0,9436),(24,952),(24,9228),(48,221),(48,7784))
+DEPTH_DOSES=(-.2,-.1,.1,.2)
+
+
+def canonical_hash(value):
+    return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False).encode()).hexdigest()
+
+
+def recipe_depth_input(root,launch):
+    source_path=root/'results/persona_association_depth.json';raw=source_path.read_bytes();source=json.loads(raw)
+    dataset_raw=(root/'data/persona_phantom_pairs.json').read_bytes();rows={row['id']:row for row in json.loads(dataset_raw)['rows']}
+    coordinates=[(s['target']['layer'],s['target']['neuron']) for s in source['sources']]
+    contexts=source['contexts'];binding=launch['observed_binding']
+    if (source['state']!='complete' or source['phase']!='prefill' or tuple(coordinates)!=DEPTH_SOURCES
+            or len(contexts)!=6 or len({c['id'] for c in contexts})!=6
+            or Counter(c['split'] for c in contexts)!=Counter(discovery=3,heldout=3)
+            or binding['model_identity']!=source['binding']['model_identity']):raise ValueError('Prior depth source/context/model coverage differs')
+    for context in contexts:
+        row=rows.get(context['id'])
+        if row is None or any(context[k]!=row[k] for k in ('prompt','family_id','split','source_sha256')):raise ValueError('Depth context differs from authored dataset')
+    expected={(layer,neuron,c['id']) for layer,neuron in DEPTH_SOURCES for c in contexts}
+    observed={(r['source']['layer'],r['source']['neuron'],r['context_id']) for r in source['campaigns'] if r['state']=='complete'}
+    if len(source['campaigns'])!=36 or observed!=expected:raise ValueError('Prior intervention campaigns are incomplete')
+    batches=[]
+    for source_coord,dose in [(None,0)]+[(coord,dose) for coord in DEPTH_SOURCES for dose in DEPTH_DOSES]:
+        cells=[]
+        for context in contexts:
+            label='Baseline' if source_coord is None else f'L{source_coord[0]} N{source_coord[1]} dose {dose:+g}'
+            pushes=[] if source_coord is None else [{'kind':'neuron','layer':source_coord[0],'neuron':source_coord[1],'dose':dose}]
+            cells.append({'label':label,'prompt':context['prompt'],'recipe':{'name':label,'phase':'all','pushes':pushes}})
+        request={'model_identity':binding['model_identity'],'seed':7035,'max_tokens':2048,'thinking':False,'smoke':False,'cells':cells}
+        batches.append({'id':canonical_hash(request),'context_ids':[c['id'] for c in contexts],'request':request})
+    return {'schema':'character-creation.recipe-depth-input.v1','binding':deepcopy(binding),
+            'source_plan_sha256':hashlib.sha256(raw).hexdigest(),'dataset_sha256':hashlib.sha256(dataset_raw).hexdigest(),
+            'prior_phase':'prefill','phase':'all','seed':7035,'max_tokens':2048,'kv_control':None,
+            'sources':[{'layer':l,'neuron':n} for l,n in DEPTH_SOURCES],'doses':list(DEPTH_DOSES),
+            'contexts':deepcopy(contexts),'batches':batches,'expected_responses':150,'expected_baselines':6,'expected_interventions':144,
+            'heldout_scope':'Previously observed heldout contexts; repeated confirmation, not fresh heldout evaluation',
+            'claim':'New all-phase behavior study; prior 216 captures were prefill-only. No guaranteed effect or automatic promotion.'}
+
+
+def prepare_recipe_depth(root):
+    path=root/'results/persona_recipe_depth.json'
+    if path.exists():raise ValueError('Recipe-depth plan already exists; never overwrite or silently resubmit')
+    launch=json.loads((root/'results/persona_association_launch.json').read_text())
+    frozen=recipe_depth_input(root,launch)
+    plan={'schema':'character-creation.recipe-depth.v1','state':'planned','created':time.time(),'input':frozen,
+          'input_plan_sha256':canonical_hash(frozen),'automatic_default_promotion':False,'batches':[]}
+    with path.open('x') as stream:json.dump(plan,stream,indent=2,allow_nan=False);stream.flush();os.fsync(stream.fileno())
+    return plan
+
+
+def check_depth_batch(result,record,binding):
+    expected=record['submission']['request'];actual=result['input'];cells=result['cells']
+    if result.get('id')!=record['batch_id'] or len(cells)!=6:raise ValueError('Depth batch identity/arm count differs')
+    if any(actual.get(k)!=v for k,v in expected.items()):raise ValueError('Depth batch frozen input differs')
+    for endpoint in actual.get('admitted_endpoints',[]):check_identities(endpoint,binding,True)
+    for index,(cell,wanted) in enumerate(zip(cells,expected['cells'])):
+        prompt=cell.get('prompt');text=prompt.get('text') if isinstance(prompt,dict) else prompt
+        if (cell.get('index')!=index or cell.get('label')!=wanted['label'] or text!=wanted['prompt']
+                or cell.get('kv_control') is not None
+                or any(cell.get('recipe',{}).get(k)!=v for k,v in wanted['recipe'].items())):raise ValueError('Depth cell intervention/prompt differs')
+        output=cell.get('output')
+        if output:
+            if output.get('kv_control') is not None or output.get('provenance',{}).get('kv_control') is not None:raise ValueError('Unexpected KV intervention')
+            for evidence in (output,output.get('provenance',{}),output.get('activation_artifact',{})):check_identities(evidence,binding)
+            if cell['state']=='complete' and output.get('complete') is not True:raise ValueError('Depth complete cell is incomplete')
+        elif cell['state']=='complete':raise ValueError('Depth complete cell lacks output')
+
+
+class RecipeDepthCampaign(Campaign):
+    def __init__(self,root):
+        self.root=root;self.path=root/'results/persona_recipe_depth.json';self.launch_path=root/'results/persona_association_launch.json'
+        self.plan=json.loads(self.path.read_text());self.launch=json.loads(self.launch_path.read_text())
+        self.input_hash=canonical_hash(self.plan['input'])
+        if (self.plan['state']!='planned' or self.plan['batches'] or self.plan.get('automatic_default_promotion') is not False
+                or self.plan['input_plan_sha256']!=self.input_hash or recipe_depth_input(root,self.launch)!=self.plan['input']):
+            raise ValueError('Recipe-depth plan/bindings changed or attempts already exist; manual recovery required')
+        self.deadline=self.launch['deadline']-180;self.stopped=False
+        if not time.time()<self.deadline<=time.time()+86400:raise ValueError('Live finite serving lease deadline required')
+
+    def save(self):
+        if canonical_hash(self.plan['input'])!=self.input_hash:raise ValueError('Frozen recipe-depth input changed')
+        self.plan['updated']=time.time();atomic(self.path,self.plan)
+
+    def comparisons(self):
+        pending=iter(self.plan['input']['batches']);active=[];exhausted=False
+        while active or not exhausted:
+            self.guard()
+            while len(active)<4 and not exhausted:
+                frozen=next(pending,None)
+                if frozen is None:exhausted=True;break
+                record={'state':'pending','plan_batch_id':frozen['id'],'context_ids':frozen['context_ids']}
+                self.plan['batches'].append(record)
+                record['batch_id']=self.submit(record,'/api/batches',deepcopy(frozen['request']));active.append(record)
+            for record in list(active):
+                result=self.request('/api/batch?id='+record['batch_id'])
+                if result['state'] in ('queued','running'):continue
+                check_depth_batch(result,record,self.plan['binding'])
+                record.update(state=result['state'],input_snapshot=deepcopy(result['input']),cells=deepcopy(result['cells']))
+                for cell in record['cells']:cell['evaluation']=assess(cell['output']) if cell.get('output') else None
+                active.remove(record);self.save()
+            if active:time.sleep(2)
+        cells=[c for b in self.plan['batches'] for c in b['cells']]
+        counts=dict(Counter(c['state'] for c in cells))
+        self.plan.update(state='complete' if len(cells)==150 and counts.get('complete')==150 else 'complete_with_failed_comparisons',
+                         response_counts=counts,completed=time.time(),semantic_review='Pending; surface checks do not certify source preservation or prose quality.')
+        self.save()
+
+    def run(self):
+        def stop(signum,frame):self.stopped=True
+        signal.signal(signal.SIGTERM,stop);signal.signal(signal.SIGINT,stop)
+        self.plan['controller_sha256']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest();self.save()
+        try:self.activate();self.comparisons()
+        except Exception as error:self.plan.update(state='stopped_or_failed',error=repr(error));self.save();raise
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
-    Campaign(parser.parse_args().root.resolve()).run()
+    parser.add_argument('--stage',choices=('association','recipe-depth'),default='association')
+    parser.add_argument('--prepare-only',action='store_true',help='Freeze the recipe-depth plan only; no requests')
+    args=parser.parse_args();root=args.root.resolve()
+    if args.prepare_only:
+        if args.stage!='recipe-depth':parser.error('--prepare-only requires --stage recipe-depth')
+        print(json.dumps({'input_plan_sha256':prepare_recipe_depth(root)['input_plan_sha256']}))
+    else:(RecipeDepthCampaign(root) if args.stage=='recipe-depth' else Campaign(root)).run()
