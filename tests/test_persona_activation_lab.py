@@ -8,7 +8,7 @@ import sqlite3
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
-from persona_activation_lab import ActivationLab, validate_result
+from persona_activation_lab import ActivationLab, validate_result, starter_recipes
 
 
 def result():
@@ -26,6 +26,16 @@ class ValidationTests(unittest.TestCase):
                        lambda r:r['candidates'][0].update(values=[float('nan'),-4.])]:
             r=result();mutate(r)
             with self.assertRaises(ValueError):validate_result(r,self.model,1)
+
+    def test_starters_use_only_ranked_candidates_and_separate_layers(self):
+        data={'candidates':[{'layer':l,'neuron':n} for l,n in [(1,2),(1,3),(4,5),(7,8),(9,10)]]}
+        recipes=starter_recipes(data)
+        self.assertEqual([len(r['neurons']) for r in recipes],[1,1,3])
+        self.assertEqual(recipes[1]['neurons'],[{'layer':4,'neuron':5}])
+        self.assertEqual([r['layer'] for r in recipes[2]['neurons']],[1,4,7])
+        self.assertTrue(all(r['dose']==.1 and r['status']=='untested' and 'confidence' not in r for r in recipes))
+        self.assertEqual(starter_recipes(None),[])
+        self.assertEqual(len(starter_recipes(result())),1)
 
 class LabTests(unittest.TestCase):
     def setUp(self):
@@ -73,3 +83,17 @@ class LabTests(unittest.TestCase):
     def test_restart_marks_inflight_interrupted(self):
         self.insert('running');other=ActivationLab(self.app);other.executor.shutdown()
         self.assertEqual(other.get('a'*32)['state'],'interrupted')
+
+    def test_canonical_workers_remain_eligible_with_isolated_endpoints(self):
+        self.app.activation_endpoints=[{**self.endpoint,'url':'http://127.0.0.1:2'}]
+        other=ActivationLab(self.app);self.addCleanup(other.executor.shutdown)
+        self.assertEqual([e['url'] for e in other.endpoints],[self.endpoint['url'],'http://127.0.0.1:2'])
+        self.insert()
+        self.assertEqual(other.get('a'*32)['starter_recipes'][0]['neurons'],[{'layer':1,'neuron':2}])
+
+    def test_search_queue_can_fill_six_cards_and_has_a_finite_bound(self):
+        self.lab.executor.submit=Mock()
+        with patch('persona_activation_lab.fetch',return_value={'data':[{'id':'model'}]}):
+            for i in range(64):self.lab.submit({'text':f'scene {i}','top_k':1})
+            self.assertEqual(self.lab.executor.submit.call_count,64)
+            with self.assertRaisesRegex(ValueError,'queue is full'):self.lab.submit({'text':'overflow','top_k':1})

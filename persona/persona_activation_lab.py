@@ -19,6 +19,30 @@ def identity(value):
     return value
 
 
+def starter_recipes(result):
+    """Small, explicitly untested experiments; activity does not establish efficacy."""
+    candidates = result.get('candidates', []) if isinstance(result, dict) else []
+    distinct = []
+    for candidate in candidates:
+        if not any(row['layer'] == candidate['layer'] for row in distinct):
+            distinct.append({'layer': candidate['layer'], 'neuron': candidate['neuron']})
+        if len(distinct) == 3:
+            break
+    trials = []
+    if distinct:
+        trials.append(('single', 'Test one active candidate', distinct[:1],
+                       'Isolate the first activity-ranked candidate and compare both push directions.'))
+    if len(distinct) > 1:
+        trials.append(('other_layer', 'Try a different layer', distinct[1:2],
+                       'Contrast a candidate from another layer before combining effects.'))
+        trials.append(('small_group', 'Try a small group', distinct,
+                       'Split the same total dose across up to three layers; interactions are untested.'))
+    return [{'id': name, 'label': label, 'neurons': neurons, 'dose': .1, 'reason': reason,
+             'status': 'untested', 'evidence': 'current_input_activity',
+             'claim': 'Starting experiment only; no established concept direction or coherence guarantee.'}
+            for name, label, neurons, reason in trials]
+
+
 def validate_result(result, model, top_k):
     if not isinstance(result, dict): raise ValueError('Missing activation search result')
     coverage = result.get('coverage', {})
@@ -56,12 +80,12 @@ def validate_result(result, model, top_k):
 class ActivationLab:
     def __init__(self, app):
         self.app=app
-        self.endpoints=getattr(app,'activation_endpoints',[]) or app.endpoints
+        self.endpoints=list(app.endpoints)+list(getattr(app,'activation_endpoints',[]))
         with app.connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS activation_searches(id TEXT PRIMARY KEY,created REAL,state TEXT,input TEXT,output TEXT,error TEXT,raw TEXT)')
             db.execute("UPDATE activation_searches SET state='interrupted',error='Explorer restarted; remote outcome unknown; no automatic retry' WHERE state IN ('queued','running')")
             db.execute('CREATE TABLE IF NOT EXISTS activation_comparisons(search_id TEXT,batch_id TEXT PRIMARY KEY,input TEXT)')
-        self.executor=ThreadPoolExecutor(max_workers=1)
+        self.executor=ThreadPoolExecutor(max_workers=max(1,min(6,len(self.endpoints))))
         self.session_lock=threading.Lock()
         self.session={"state":"idle"}
 
@@ -71,7 +95,7 @@ class ActivationLab:
                 descriptor=fetch(endpoint['url']+'/v1/models',timeout=2)['data'][0]
                 flare=self.app.check_program(descriptor,endpoint,{'phase':'all','sites':[]})
                 ready=flare.get('activation_search',{}).get('supported') is True
-                return {'label':endpoint.get('label',endpoint['url']),'ready':ready,'reason':None if ready else 'Worker has the original capture runtime'}
+                return {'label':endpoint.get('label',endpoint['url']),'ready':ready,'reason':None if ready else 'Worker does not advertise all-neuron activation search'}
             except Exception as error:return {'label':endpoint.get('label',endpoint['url']),'ready':False,'reason':str(error)}
         with ThreadPoolExecutor(max_workers=max(1,len(self.endpoints))) as pool:cards=list(pool.map(check,self.endpoints))
         with self.session_lock:session=deepcopy(self.session)
@@ -108,7 +132,9 @@ class ActivationLab:
             r=db.execute('SELECT created,state,input,output,error FROM activation_searches WHERE id=?',(key,)).fetchone()
             comparisons=[{'id':row[0],'input':json.loads(row[1])} for row in db.execute('SELECT batch_id,input FROM activation_comparisons WHERE search_id=?',(key,))]
         if not r:raise ValueError('Unknown activation search')
-        return {'id':key,'created':r[0],'state':r[1],'input':json.loads(r[2]),'output':json.loads(r[3]) if r[3] else None,'error':r[4],'comparisons':comparisons,'capabilities':{'ablation':False}}
+        output=json.loads(r[3]) if r[3] else None
+        return {'id':key,'created':r[0],'state':r[1],'input':json.loads(r[2]),'output':output,'error':r[4],'comparisons':comparisons,'capabilities':{'ablation':False},
+                'starter_recipes':starter_recipes(output) if r[1]=='complete' else []}
 
     def submit(self, value):
         if not isinstance(value,dict) or set(value)!={'text','top_k'}:raise ValueError('Supply text and top_k')
@@ -126,7 +152,7 @@ class ActivationLab:
         value=deepcopy(value)|{'model_identity':self.app.model.identity}
         with self.app.connect() as db:
             db.execute('BEGIN IMMEDIATE')
-            if db.execute("SELECT count(*) FROM activation_searches WHERE state IN ('queued','running')").fetchone()[0]:raise ValueError('An activation search is already active')
+            if db.execute("SELECT count(*) FROM activation_searches WHERE state IN ('queued','running')").fetchone()[0]>=64:raise ValueError('Activation search queue is full (64 active or queued requests)')
             db.execute('INSERT INTO activation_searches VALUES(?,?,?,?,?,?,?)',(key,time.time(),'queued',json.dumps(value),None,None,None))
         self.executor.submit(self.run,key,value,eligible)
         return {'id':key}

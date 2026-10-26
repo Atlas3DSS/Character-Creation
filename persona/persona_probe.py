@@ -29,6 +29,7 @@ from copy import deepcopy
 from persona_trace import normalize_trace, TokenTrace
 from persona_kv import validate_control, HybridPrefixCache
 from persona_phantom import LearnedKVCache
+from persona_activation_search import normalize_search, ActivationSearch, attach_profiles
 
 import numpy as np
 
@@ -93,7 +94,7 @@ def normalize_request(payload: dict, model_id: str) -> dict:
     """Validate the supported API subset without importing CUDA libraries."""
     supported = {"model", "messages", "seed", "max_tokens", "temperature", "top_p", "top_k", "min_p",
                  "repetition_penalty", "presence_penalty", "frequency_penalty", "stream", "n",
-                 "chat_template_kwargs", "steering", "metadata", "observation_only", "capture_trace", "kv_control"}
+                 "chat_template_kwargs", "steering", "metadata", "observation_only", "capture_trace", "kv_control", "capture_search"}
     if not isinstance(payload, dict) or set(payload) - supported:
         raise ValueError("Unsupported chat-completion fields")
     if payload.get("model") != model_id or payload.get("stream", False) is not False or payload.get("n", 1) != 1:
@@ -132,13 +133,16 @@ def normalize_request(payload: dict, model_id: str) -> dict:
     metadata = payload.get("metadata", {})
     if not isinstance(metadata, dict) or ("job_id" in metadata and (not isinstance(metadata["job_id"], str) or len(metadata["job_id"]) > 256)):
         raise ValueError("Metadata must be an object with a bounded string job_id")
+    search = normalize_search(payload.get("capture_search"))
+    if search and (not observation_only or payload.get("capture_trace") is not None or payload.get("kv_control") is not None):
+        raise ValueError("capture_search requires observation_only=true,max_tokens=1 and no capture_trace or kv_control")
     kv_control = validate_control(payload.get("kv_control"))
     if kv_control is not None and payload.get("capture_trace") is not None:
         raise ValueError("KV prefix caching and live token traces require separate requests")
     canonical_digest(payload)  # Reject NaN/Infinity anywhere, including metadata.
     return {"messages": messages, "seed": seed, "max_tokens": budget,
             "sampling": sampling, "requested_sampling": requested, "metadata": metadata,
-            "capture_trace": normalize_trace(payload.get("capture_trace")), "kv_control": kv_control,
+            "capture_trace": normalize_trace(payload.get("capture_trace")), "kv_control": kv_control, "capture_search": search,
             "steering": payload.get("steering"), "thinking": False, "observation_only": observation_only}
 
 
@@ -354,15 +358,53 @@ class ProbeEngine:
                     "kv_control": self.kv_cache.capability(),
                     "observation_only": {"supported": True, "required_max_tokens": 1,
                                          "operation": "prefill_observation", "answer_scoring": False},
+                    "activation_search": {"supported": hasattr(self.capture, "search_peak"), "max_top_k": 32,
+                        "all_neurons": True, "all_prompt_positions": True, "passes": 2,
+                        "required_observation_only": True, "required_max_tokens": 1,
+                        "interpretation": "Context-dependent activation ranking, not concept probability or causal attribution"},
                     "activation_capture": "final_prefill", "token_trace": {"supported": True, "max_neurons": 64, "max_per_layer": 32, "decode": True}, "thinking_enabled_supported": False}}
 
     def complete(self, payload):
+        # Each pass owns the normal lock and restores the complete request,
+        # recurrent, capture and RNG snapshots before and after execution.
+        response = self._complete(payload)
+        if payload.get("capture_search") is None:
+            return response
+        result = response["activation_search"]
+        result["interpretation"] = "Context-dependent activation ranking for this exact encoded text; not concept confidence or causal attribution"
+        profile_payload = deepcopy(payload)
+        profile_payload.pop("capture_search")
+        profile_payload["capture_trace"] = {"id": uuid.uuid4().hex,
+            "neurons": [{"layer": r["layer"], "neuron": r["neuron"]} for r in result["candidates"]]}
+        try:
+            profile = self._complete(profile_payload)
+            attach_profiles(result, profile["token_trace"])
+            result["profile_artifact"] = profile["activation_artifact"]
+            result["profile_provenance_artifact"] = profile["provenance_artifact"]
+            result["next_token_logits"] = profile["token_trace"]["next_token_logits"]
+            # Persist the combined result and both immutable evidence pointers.
+            path = self.output / ("search-" + result["id"] + ".json")
+            with path.open("x", encoding="utf-8") as stream:
+                json.dump({"activation_search": result, "activation_artifact": response["activation_artifact"],
+                           "provenance_artifact": response["provenance_artifact"]}, stream, allow_nan=False)
+            result["result_artifact"] = {"path": str(path.resolve()), "sha256": file_hash(path)}
+            with self.trace_lock:
+                self.trace_records[result["id"]].update(state="complete", result=result)
+            return response
+        except Exception as error:
+            with self.trace_lock:
+                self.trace_records[result["id"]].update(state="failed", error=str(error))
+            raise
+
+    def _complete(self, payload):
         import torch
         from ignition.components.sampling import RequestAdmission
         from validate_candidate import _restore
         from persona_qualify import site_layout
 
         spec = normalize_request(payload, self.model_id)
+        if spec["capture_search"] and not hasattr(self.capture, "search_peak"):
+            raise ValueError("Loaded graphs do not support activation search; prepare with search-capable capture source")
         program = validate_program(spec["steering"], self.catalog, self.steering["max_sites"])
         with self.lock, torch.inference_mode(), torch.cuda.device(self.prepared.device):
             if self.stop_event.is_set():
@@ -404,6 +446,7 @@ class ProbeEngine:
             generated, trace, graph_kinds, norm_chunks, positions_seen = [], [], [], [], []
             prefill_capture = None
             response = None
+            search = ActivationSearch(self, spec["capture_search"], ids, request_hash) if spec["capture_search"] else None
             token_trace = TokenTrace(self, spec["capture_trace"], ids, request_hash) if spec["capture_trace"] else None
 
             def replay(kind, consumed, count, sampled):
@@ -429,6 +472,7 @@ class ProbeEngine:
 
             try:
                 _restore(self.prepared, self.pool, self.snapshots)
+                if search: search.configure()
                 if token_trace: token_trace.configure()
                 inputs, commands = self.inputs, self.commands
                 inputs.request_state_rows.zero_()
@@ -489,6 +533,7 @@ class ProbeEngine:
                     inputs.token_ids[:stop - start].copy_(torch.tensor(ids[start:stop], dtype=torch.int64))
                     inputs.sample_enabled[0] = int(last)
                     result = replay("prefill", virtual_slots + stop, int(last), last)
+                    if search: search.observe(list(range(start, stop)))
                     if token_trace: token_trace.observe("prefill", list(range(start, stop)), ids[start:stop], last=last)
                     positions = self.capture.positions.cpu().numpy().copy()
                     if not np.array_equal(positions[positions >= 0], np.arange(virtual_slots + start, virtual_slots + stop)):
@@ -534,16 +579,17 @@ class ProbeEngine:
                         residual_l2_count=np.int64(norms.shape[1]), prefill_positions=np.asarray(positions_seen, dtype=np.int64),
                         prompt_token_ids=np.asarray(ids, dtype=np.int64), generated_token_ids=np.asarray(generated, dtype=np.int64),
                         virtual_prefix_slots=np.int64(virtual_slots),
+                        **(search.arrays() if search else {}),
                         completion_trace=np.asarray(trace, dtype=np.int64), completion_graph_kind=np.asarray(graph_kinds),
                         completion_trace_columns=np.asarray(["epoch", "sequence", "consumed", "generated", "token", "status", "error", "rng_counter"]),
                         model_identity=self.model.identity, prepared_identity=self.prepared.server_config["identity"],
                         runtime_identity=self.manifest["runtime_identity"],
-                        request_sha256=request_hash, stage="final_prefill", runtime=RUNTIME, operation=outcome["operation"])
+                        request_sha256=request_hash, stage="all_prefill_search" if search else "final_prefill", runtime=RUNTIME, operation=outcome["operation"])
                 activation = {"path": str(artifact.resolve()), "sha256": file_hash(artifact), "model_identity": self.model.identity,
                               "runtime_identity": self.manifest["runtime_identity"],
                               "operation": outcome["operation"],
                               "prepared_identity": self.prepared.server_config["identity"], "request_sha256": request_hash,
-                              "stage": "final_prefill", "fields": ["mlp_input_last", "residual_last", "pre_mlp_last"],
+                              "stage": "all_prefill_search" if search else "final_prefill", "fields": ["mlp_input_last", "residual_last", "pre_mlp_last"] + (list(search.arrays()) if search else []),
                               "semantics": "continuous SwiGLU product after optional pre-down steering; post-residual output; normalized MLP input; no firing threshold"}
                 response = {"id": "chatcmpl-" + identity, "object": "chat.completion", "created": int(started), "model": self.model_id,
                     "operation": outcome["operation"],
@@ -554,6 +600,9 @@ class ProbeEngine:
                     "activation_artifact": activation, "diagnostics": {**outcome["diagnostics"],
                         "sampling": spec["sampling"], "requested_sampling": spec["requested_sampling"],
                         "native_cache_qualified": False, "mtp_qualified": False}}
+                if search:
+                    response["activation_search"] = search.result()
+                    search.record["phase"] = "profiling"
                 if spec["kv_control"] is not None:
                     response["kv_control"] = (self.learned_kv_cache.result(spec['kv_control'], virtual_slots, learned_entry, learned_hit)
                         if learned else self.kv_cache.result(spec["kv_control"], prefix_ids, prefix_entry, prefix_hit))
@@ -569,6 +618,7 @@ class ProbeEngine:
                     elapsed_seconds=time.time() - started, activation_artifact=activation,
                     final_completion=trace[-1], completion_count=len(trace))
             except Exception as error:
+                if search: search.finish("failed", str(error))
                 if token_trace: token_trace.finish("failed", str(error))
                 report.update(status="failed", error=f"{type(error).__name__}: {error}", generated_tokens=len(generated))
                 raise ProtocolError("Diagnostic replay/artifact failure: " + str(error)) from error
@@ -672,6 +722,85 @@ def server_for(engine, host: str, port: int, stop_event):
     return DiagnosticHTTPServer((host, port), Handler)
 
 
+def load_capture_override(path: Path | None) -> Path | None:
+    """Install an explicitly supplied capture module before decoder/bootstrap imports.
+
+    The original Flare source tree remains untouched. Reject a late override:
+    existing recipe imports could otherwise retain a different capture class.
+    """
+    if path is None:
+        return None
+    path = Path(path).resolve(strict=True)
+    if not path.is_file():
+        raise ValueError("Capture override must be a Python source file")
+    name = "ignition.components.activation_capture"
+    if name in sys.modules:
+        raise RuntimeError("Capture override must load before the original capture module")
+    package = importlib.import_module("ignition.components")
+    if name in sys.modules:
+        raise RuntimeError("Importing the components package loaded capture before its override")
+    # Spawned compiler workers resolve classes by module name. Loading only
+    # under ignition.components would make them import the unchanged original.
+    if path.name != "activation_capture.py":
+        raise ValueError("Isolated capture source must retain the filename activation_capture.py")
+    module_name = "activation_capture"
+    if module_name in sys.modules:
+        raise RuntimeError("Flat activation_capture module is already loaded")
+    directory = str(path.parent)
+    sys.path.insert(0, directory)
+    inherited = os.environ.get("PYTHONPATH", "")
+    os.environ["PYTHONPATH"] = directory + (os.pathsep + inherited if inherited else "")
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise ValueError("Cannot load capture override source")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    sys.modules[name] = module  # Parent recipe imports alias the same class.
+    try:
+        spec.loader.exec_module(module)
+        if not hasattr(module, "ActivationCapture"):
+            raise ValueError("Capture override has no ActivationCapture class")
+    except BaseException:
+        sys.modules.pop(name, None)
+        sys.modules.pop(module_name, None)
+        raise
+    setattr(package, "activation_capture", module)
+    return path
+
+
+
+def bind_capture_cache_namespace(override: Path | None) -> str | None:
+    """Partition AOT forward caches by the externally loaded capture source.
+
+    Flare's normal cache key hashes physical ignition sources. An isolated
+    override is outside that tree, so it must explicitly join the namespace.
+    """
+    if override is None:
+        return None
+    from ignition.preparation.aot import ForwardCache
+    digest = file_hash(override)
+    original = ForwardCache.__init__
+    previous = getattr(original, "capture_override_sha256", None)
+    if previous is not None:
+        if previous != digest:
+            raise RuntimeError("Forward cache already bound to another capture override")
+        return digest
+
+    def initialize(cache, *, namespace, **kwargs):
+        bound_namespace = {**namespace, "activation_capture_override_sha256": digest}
+        original(cache, namespace=bound_namespace, **kwargs)
+
+    initialize.capture_override_sha256 = digest
+    ForwardCache.__init__ = initialize
+    return digest
+
+
+def capture_source_hashes(flare: Path, sources: list[str], override: Path | None) -> dict:
+    return {name: file_hash(override if override is not None and
+                           name == "ignition/components/activation_capture.py" else flare / name)
+            for name in sources}
+
+
 def run(args):
     # Lease/host/physical UUID verification happens before importing CUDA or the
     # native extension, including on failed startup.
@@ -702,10 +831,12 @@ def run(args):
     sys.path[:0] = [str(args.flare), str(args.flare / "tools")]
     import torch
     from transformers import AutoTokenizer
+    capture_override = load_capture_override(getattr(args, "capture_module", None))
     from ignition.preparation.package_storage import PackageStorage
     from ignition.preparation.compilation import _OPTIONS
     from ignition.preparation import compile_pool
     from ignition.recipes.qwen38_dense.bootstrap import PreparationConfig, prepare
+    capture_cache_namespace = bind_capture_cache_namespace(capture_override)
 
     if tuple(torch.cuda.get_device_capability()) != (7, 0):
         raise RuntimeError("This diagnostic worker requires V100 SM70")
@@ -727,9 +858,11 @@ def run(args):
         "checkpoint_config_sha256": file_hash(args.checkpoint / "config.json"),
         "checkpoint_index_sha256": file_hash(args.checkpoint / "model.safetensors.index.json"),
         "tokenizer_sha256": file_hash(args.checkpoint / "tokenizer.json"), "heliopause_sha256": file_hash(args.heliopause),
-        "script_sha256": file_hash(__file__), "source_sha256": {name: file_hash(args.flare / name) for name in sources},
+        "script_sha256": file_hash(__file__), "source_sha256": capture_source_hashes(args.flare, sources, capture_override),
+        "capture_override": None if capture_override is None else {"path": str(capture_override), "sha256": file_hash(capture_override),
+            "import_module": "activation_capture", "forward_cache_namespace_sha256": capture_cache_namespace},
         "helper_sha256": {name: file_hash(Path(__file__).parent / name) for name in
-                          ("persona_capture.py", "persona_qualify.py", "persona_vectors.py", "persona_fleet.py", "persona_trace.py", "persona_map.py", "persona_kv.py", "persona_phantom.py")},
+                          ("persona_capture.py", "persona_qualify.py", "persona_vectors.py", "persona_fleet.py", "persona_trace.py", "persona_map.py", "persona_kv.py", "persona_phantom.py", "persona_activation_search.py")},
         "preparation": {k: str(v) if isinstance(v, Path) else v for k, v in prep.__dict__.items()}}
     runtime_binding = {key: manifest[key] for key in ("script_sha256", "helper_sha256", "source_sha256", "torch", "heliopause_sha256")}
     runtime_binding["preparation"] = {key: value for key, value in manifest["preparation"].items()
@@ -841,6 +974,7 @@ def main():
     parser.add_argument("--model", type=Path, default=Path(__file__).parent / "data/persona_model.json")
     parser.add_argument("--calibration", type=Path, help="Required complete capture NPZ; default output/capture-shardN.npz; exact startup equivalence cannot be skipped")
     parser.add_argument("--flare", type=Path, required=True)
+    parser.add_argument("--capture-module", type=Path, help="Optional search-capable activation_capture.py; binds source hash and AOT cache namespace")
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--heliopause", type=Path, required=True)
     parser.add_argument("--output", type=Path, default=Path("results"))
