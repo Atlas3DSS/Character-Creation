@@ -19,6 +19,14 @@ def fixture(tmp_path, slots=4):
     meta={'schema':SCHEMA,'model_identity':binding['model_identity'],'key_space':'post_norm_post_rope','prompt_position_start':slots,
           'recurrent_initial_state':'fresh_zero','optimizer_steps':1,'gradient_validation':{'passed':True},
           'checkpoint':{'config_sha256':'e'*64,'index_sha256':'f'*64}}
+    protocol={'epsilons':[.1,.2],'max_relative_error':.12}
+    meta.update(dataset_sha256='1'*64,trainer_sha256='2'*64,reader_sha256='3'*64,seed=7035,slots=slots,max_tokens=512,
+                weight_dtype='float32',training_backend='decoded-fp32-hf-surrogate',gradient_protocol=protocol)
+    validation={'passed':True,'protocol':protocol,'measurements':[{'epsilon':eps,'passed':True,'positive_direction':True,
+                 'relative_error':.01,'numerical_directional_derivative':.1} for eps in protocol['epsilons']]}
+    report=tmp_path/'validation.json';report.write_text(json.dumps({**meta,'state':'validation_passed','native_forward':{'passed':True},'validation':validation}))
+    meta['admission_validation']={'path':str(report),'sha256':file_sha(report)}
+    meta['gradient_validation']=None  # Report pointer is authoritative, not this redundant copy.
     path=tmp_path/'learned.npz'
     np.savez(path,keys=keys,values=-keys,attention_layers=np.asarray(LAYERS,dtype=np.int64),metadata=np.asarray(json.dumps(meta)))
     artifact={'schema':SCHEMA,'kind':'learned_attention_kv','file':path.name,'weights_sha256':file_sha(path),'slots':slots,**binding}
@@ -71,3 +79,10 @@ def test_finite_fp32_overflowing_bfloat16_is_rejected(tmp_path):
     a=control['artifact'];a['weights_sha256']=file_sha(path);a['sha256']=canonical_digest({k:v for k,v in a.items() if k!='sha256'})
     cache=LearnedKVCache(e,{k:a[k] for k in ('model_identity','runtime_identity','prepared_identity','layout_sha256')})
     with pytest.raises(ValueError,match='finite'):cache.prepare(control)
+
+
+def test_changed_admission_report_rejected(tmp_path):
+    e,control,_=fixture(tmp_path)
+    (tmp_path/'validation.json').write_text('{}')
+    cache=LearnedKVCache(e,{k:control['artifact'][k] for k in ('model_identity','runtime_identity','prepared_identity','layout_sha256')})
+    with pytest.raises(ValueError,match='validation'):cache.prepare(control)

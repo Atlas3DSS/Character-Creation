@@ -35,6 +35,11 @@ def make_artifact(candidate, binding):
 def prove_effect(baseline, grafted):
     if not np.array_equal(baseline['prompt_token_ids'], grafted['prompt_token_ids']):
         raise ValueError('Virtual slots changed actual prompt token IDs')
+    # Layers 0–2 are recurrent-only: a virtual attention prefix must not
+    # affect them. Both arms carry the same optional MLP intervention.
+    for field in ('mlp_input_last', 'residual_last', 'pre_mlp_last'):
+        if not np.array_equal(baseline[field][:3], grafted[field][:3]):
+            raise ValueError('Learned prefix contaminated pre-attention layers: ' + field)
     if np.array_equal(baseline['mlp_input_last'], grafted['mlp_input_last']):
         raise ValueError('Learned on-state activation is a no-op')
 

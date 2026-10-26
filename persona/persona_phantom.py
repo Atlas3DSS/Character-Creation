@@ -53,6 +53,29 @@ def verified_artifacts(output, filename, binding):
     except (OSError, ValueError, KeyError, TypeError): return []
 
 
+def training_validation(metadata, output):
+    """Verify the immutable admission report, not a nullable copied status flag."""
+    try:
+        pointer = metadata['admission_validation']; path = Path(pointer['path']).resolve()
+        if path.parent != Path(output).resolve() or path.stat().st_size > 16 << 20 or file_sha(path) != pointer['sha256']:
+            raise ValueError('Learned-KV training validation path/hash differs')
+        report = json.loads(path.read_text())
+        fields = ('model_identity','dataset_sha256','trainer_sha256','reader_sha256','seed','slots','max_tokens',
+                  'weight_dtype','training_backend','gradient_protocol','checkpoint')
+        if (any(key not in metadata or report.get(key) != metadata[key] for key in fields)
+                or report.get('state') != 'validation_passed' or report.get('native_forward',{}).get('passed') is not True):
+            raise ValueError('Learned-KV training validation binding differs')
+        checked = report['validation']; rows = checked['measurements']; protocol = metadata['gradient_protocol']
+        if (checked.get('passed') is not True or checked.get('protocol') != protocol or not rows
+                or [r['epsilon'] for r in rows] != protocol['epsilons']
+                or any(r.get('passed') is not True or r.get('positive_direction') is not True
+                       or not 0 <= r['relative_error'] <= .12 or not r['numerical_directional_derivative'] > 0 for r in rows)):
+            raise ValueError('Learned-KV gradient validation did not pass')
+        return checked
+    except (OSError, KeyError, TypeError) as error:
+        raise ValueError('Missing or malformed learned-KV training validation') from error
+
+
 class LearnedKVCache:
     def __init__(self, engine, binding):
         self.engine, self.binding, self.entry = engine, binding, None
@@ -70,11 +93,11 @@ class LearnedKVCache:
         with np.load(path, allow_pickle=False) as data:
             if set(data.files) != {'keys', 'values', 'attention_layers', 'metadata'}: raise ValueError('Unexpected learned-KV arrays')
             metadata = json.loads(str(data['metadata']))
+            training_validation(metadata, self.engine.output)
             if (metadata.get('schema') != SCHEMA or metadata.get('model_identity') != self.binding['model_identity']
                     or metadata.get('key_space') != 'post_norm_post_rope' or metadata.get('prompt_position_start') != a['slots']
                     or metadata.get('recurrent_initial_state') != 'fresh_zero'
                     or type(metadata.get('optimizer_steps')) is not int or metadata['optimizer_steps'] < 1
-                    or metadata.get('gradient_validation', {}).get('passed') is not True
                     or not np.array_equal(data['attention_layers'], np.asarray(LAYERS))):
                 raise ValueError('Learned-KV training/architecture provenance differs')
             for key, native in (('config_sha256', 'checkpoint_config_sha256'), ('index_sha256', 'checkpoint_index_sha256')):

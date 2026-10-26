@@ -53,7 +53,8 @@ def checked_arrays(response, request, binding=None):
                 with np.load(state['path'], allow_pickle=False) as state_data:
                     meta = json.loads(str(state_data['metadata']))
                     if learned:
-                        from persona_phantom import SCHEMA, LAYERS
+                        from persona_phantom import SCHEMA, LAYERS, training_validation
+                        training_validation(meta, Path(state['path']).parent)
                         if (state['sha256'] != control['artifact']['weights_sha256']
                                 or meta.get('schema') != SCHEMA or meta.get('model_identity') != binding['model_identity']
                                 or meta.get('key_space') != 'post_norm_post_rope'

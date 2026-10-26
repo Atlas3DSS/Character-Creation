@@ -14,6 +14,14 @@ def fixture(tmp_path):
     candidate = tmp_path/'candidate.npz'
     metadata = dict(schema=SCHEMA, model_identity=binding['model_identity'], prompt_position_start=4,
                     key_space='post_norm_post_rope', recurrent_initial_state='fresh_zero')
+    protocol={'epsilons':[.1,.2],'max_relative_error':.12}
+    metadata.update(dataset_sha256='1'*64,trainer_sha256='2'*64,reader_sha256='3'*64,seed=7035,slots=4,max_tokens=512,
+                    weight_dtype='float32',training_backend='decoded-fp32-hf-surrogate',gradient_protocol=protocol,checkpoint={})
+    validation={'passed':True,'protocol':protocol,'measurements':[{'epsilon':eps,'passed':True,'positive_direction':True,
+                'relative_error':.01,'numerical_directional_derivative':.1} for eps in protocol['epsilons']]}
+    report=tmp_path/'validation.json'
+    report.write_text(json.dumps({**metadata,'state':'validation_passed','native_forward':{'passed':True},'validation':validation}))
+    metadata['admission_validation']={'path':str(report),'sha256':file_sha(report)}
     np.savez(candidate, keys=np.zeros((16,4,4,256), np.float32), values=np.ones((16,4,4,256), np.float32),
              attention_layers=np.asarray(LAYERS), metadata=np.asarray(json.dumps(metadata)))
     artifact = q.make_artifact(candidate,binding)
@@ -54,10 +62,16 @@ def test_reject_wrong_virtual_and_state_bindings(tmp_path):
 
 
 def test_nonnoop_and_actual_ids():
-    baseline=dict(prompt_token_ids=np.asarray([1,2]),mlp_input_last=np.zeros(2))
+    baseline=dict(prompt_token_ids=np.asarray([1,2]), **{k:np.zeros((64,2)) for k in ('mlp_input_last','residual_last','pre_mlp_last')})
     with pytest.raises(ValueError,match='no-op'):q.prove_effect(baseline,baseline)
-    grafted=dict(prompt_token_ids=np.asarray([1,2]),mlp_input_last=np.ones(2))
+    grafted={k:v.copy() for k,v in baseline.items()}
+    for field in ('mlp_input_last','residual_last','pre_mlp_last'):grafted[field][3:]=1
     q.prove_effect(baseline,grafted)
+    for field in ('mlp_input_last','residual_last','pre_mlp_last'):
+        for layer in range(3):
+            grafted[field][layer,0]=1
+            with pytest.raises(ValueError,match='pre-attention layers'):q.prove_effect(baseline,grafted)
+            grafted[field][layer,0]=0
     grafted['prompt_token_ids']=np.asarray([9,1,2])
     with pytest.raises(ValueError,match='actual prompt'):q.prove_effect(baseline,grafted)
 
@@ -74,7 +88,11 @@ def test_exact_twelve_requests_and_no_post_retry(tmp_path,monkeypatch):
         c=request.get('kv_control');on=bool(c and c['dose'])
         return dict(kv_control=dict(cache_hit=c['cache_policy']=='reuse',state_artifact={'sha256':'x'})) if on else {}
     monkeypatch.setattr(q,'fetch',fetch)
-    monkeypatch.setattr(q,'checked_native',lambda r,p,b:dict(prompt_token_ids=np.asarray([1,2]),mlp_input_last=np.asarray([bool(p.get('kv_control',{}).get('dose'))])))
+    def arrays(r,p,b):
+        result=dict(prompt_token_ids=np.asarray([1,2]), **{k:np.zeros((64,2)) for k in ('mlp_input_last','residual_last','pre_mlp_last')})
+        if p.get('kv_control',{}).get('dose'):result['mlp_input_last'][3:]=1
+        return result
+    monkeypatch.setattr(q,'checked_native',arrays)
     result=q.qualify_endpoint('http://worker:8930',tmp_path/'candidate.npz',tmp_path,'test')
     assert result['passed'] and len(calls)==12
     assert all('kv_control' not in calls[i] for i in (0,4,8))
