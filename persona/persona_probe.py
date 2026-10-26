@@ -28,6 +28,7 @@ from urllib.parse import urlparse, parse_qs
 from copy import deepcopy
 from persona_trace import normalize_trace, TokenTrace
 from persona_kv import validate_control, HybridPrefixCache
+from persona_phantom import LearnedKVCache
 
 import numpy as np
 
@@ -141,9 +142,9 @@ def normalize_request(payload: dict, model_id: str) -> dict:
             "steering": payload.get("steering"), "thinking": False, "observation_only": observation_only}
 
 
-def completion_outcome(spec, *, positions, prompt_tokens, generated, graph_kinds, result, answer):
+def completion_outcome(spec, *, positions, prompt_tokens, generated, graph_kinds, result, answer, position_offset=0):
     """Distinguish a completed neural observation from a completed text answer."""
-    if (not generated or len(generated) > spec["max_tokens"] or positions != list(range(prompt_tokens))
+    if (not generated or len(generated) > spec["max_tokens"] or positions != list(range(position_offset, position_offset + prompt_tokens))
             or result.get("finished") is not True or result.get("finish_reason") not in {"stop", "length"}):
         raise ProtocolError("Generation termination, budget or exact prompt coverage invariant failed")
     observation = spec["observation_only"]
@@ -326,6 +327,7 @@ class ProbeEngine:
         if not self.eos or any(type(token) is not int or not 0 <= token < self.vocabulary for token in self.eos):
             raise ProtocolError("Prepared frontend lacks valid explicit EOS IDs")
         self.kv_cache = HybridPrefixCache(self)
+        self.learned_kv_cache = LearnedKVCache(self, self.kv_cache.binding)
         self.snapshots = _snapshot_mutable(prepared, self.generation, self.maintenances)
         # Diagnostic planes are not public server buffers; restore them too.
         seen = {tensor.data_ptr() for _, tensor, _ in self.snapshots}
@@ -366,12 +368,19 @@ class ProbeEngine:
             if self.stop_event.is_set():
                 raise ProtocolError("Worker is stopping")
             from persona_capture import tokenize_messages
-            prefix_ids, prefix_entry = self.kv_cache.prepare(spec["kv_control"])
+            learned = bool(spec['kv_control'] and spec['kv_control']['artifact']['kind'] == 'learned_attention_kv')
+            virtual_slots, learned_entry, learned_hit = 0, None, False
+            if learned:
+                virtual_slots, learned_entry, learned_hit = self.learned_kv_cache.prepare(spec['kv_control'])
+                prefix_ids, prefix_entry = [], None
+            else:
+                prefix_ids, prefix_entry = self.kv_cache.prepare(spec["kv_control"])
             prefix_hit = prefix_entry is not None
             ids = prefix_ids + tokenize_messages(self.tokenizer, spec["messages"])
             if not isinstance(ids, list) or any(type(token) is not int or not 0 <= token < self.vocabulary for token in ids):
                 raise ValueError("Tokenizer returned invalid prompt token IDs")
-            pages = validate_capacity(len(ids), spec["max_tokens"], physical_pages=self.capacity[1], page_tokens=self.page_tokens,
+            logical_prompt_tokens = virtual_slots + len(ids)
+            pages = validate_capacity(logical_prompt_tokens, spec["max_tokens"], physical_pages=self.capacity[1], page_tokens=self.page_tokens,
                 logical_context=int(self.prepared.server_config["max_sequence_tokens"]), table_pages=self.inputs.page_tables.shape[1])
             self.epoch += 1
             epoch = self.epoch
@@ -453,13 +462,15 @@ class ProbeEngine:
                 self.admission.admission_count.zero_()
                 commands.num_ops.zero_()
                 addends = self.buffers["steering_addends"]
-                self.buffers["steering_prompt_tokens"][0] = len(ids)
+                self.buffers["steering_prompt_tokens"][0] = logical_prompt_tokens
                 def apply_steering():
                     for site in program["sites"]:
                         index, offset, width = site_layout(self.catalog, addends.shape, site["site"])
                         target = addends[0, offset:offset + width] if addends.ndim == 2 else addends[0, index]
                         target.copy_(torch.from_numpy(site["vector"]))
                         self.buffers["steering_phases"][0, index] = PHASE_MASKS[program["phase"]]
+                if learned_entry is not None:
+                    self.learned_kv_cache.install(learned_entry)
                 if prefix_hit:
                     self.kv_cache.restore(prefix_entry)
                     positions_seen.extend(range(len(prefix_ids)))
@@ -477,13 +488,13 @@ class ProbeEngine:
                     inputs.token_ids.zero_()
                     inputs.token_ids[:stop - start].copy_(torch.tensor(ids[start:stop], dtype=torch.int64))
                     inputs.sample_enabled[0] = int(last)
-                    result = replay("prefill", stop, int(last), last)
+                    result = replay("prefill", virtual_slots + stop, int(last), last)
                     if token_trace: token_trace.observe("prefill", list(range(start, stop)), ids[start:stop], last=last)
                     positions = self.capture.positions.cpu().numpy().copy()
-                    if not np.array_equal(positions[positions >= 0], np.arange(start, stop)):
+                    if not np.array_equal(positions[positions >= 0], np.arange(virtual_slots + start, virtual_slots + stop)):
                         raise ProtocolError("Observed prefill positions differ from actual consumed tokens")
                     positions_seen.extend(positions[positions >= 0].tolist())
-                    norms = self.capture.residual_l2.cpu().numpy().copy()[:, positions > 0]
+                    norms = self.capture.residual_l2.cpu().numpy().copy()[:, positions > virtual_slots]
                     if not np.isfinite(norms).all():
                         raise ProtocolError("Observed residual norms are nonfinite")
                     norm_chunks.append(norms)
@@ -503,14 +514,14 @@ class ProbeEngine:
                 while not spec["observation_only"] and not result["finished"]:
                     # The decoder reads the device-owned pending token. Never
                     # sample on CPU or replace it with a teacher-forced token.
-                    result = replay("decode", len(ids) + len(generated), len(generated) + 1, True)
+                    result = replay("decode", logical_prompt_tokens + len(generated), len(generated) + 1, True)
                     if token_trace: token_trace.observe("decode", [len(ids)+len(generated)-1], [generated[-1]])
                     generated.append(result["token"])
                 finish_reason = result["finish_reason"]
                 visible_ids = generated[:-1] if generated[-1] in self.eos else generated
                 answer = self.tokenizer.decode(visible_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
                 outcome = completion_outcome(spec, positions=positions_seen, prompt_tokens=len(ids),
-                    generated=generated, graph_kinds=graph_kinds, result=result, answer=answer)
+                    generated=generated, graph_kinds=graph_kinds, result=result, answer=answer, position_offset=virtual_slots)
                 norms = np.concatenate(norm_chunks, axis=1)
                 if norms.shape[1]:
                     summaries = {"residual_l2_min": norms.min(axis=1), "residual_l2_max": norms.max(axis=1),
@@ -522,6 +533,7 @@ class ProbeEngine:
                         residual_l2=norms,
                         residual_l2_count=np.int64(norms.shape[1]), prefill_positions=np.asarray(positions_seen, dtype=np.int64),
                         prompt_token_ids=np.asarray(ids, dtype=np.int64), generated_token_ids=np.asarray(generated, dtype=np.int64),
+                        virtual_prefix_slots=np.int64(virtual_slots),
                         completion_trace=np.asarray(trace, dtype=np.int64), completion_graph_kind=np.asarray(graph_kinds),
                         completion_trace_columns=np.asarray(["epoch", "sequence", "consumed", "generated", "token", "status", "error", "rng_counter"]),
                         model_identity=self.model.identity, prepared_identity=self.prepared.server_config["identity"],
@@ -543,9 +555,12 @@ class ProbeEngine:
                         "sampling": spec["sampling"], "requested_sampling": spec["requested_sampling"],
                         "native_cache_qualified": False, "mtp_qualified": False}}
                 if spec["kv_control"] is not None:
-                    response["kv_control"] = self.kv_cache.result(spec["kv_control"], prefix_ids, prefix_entry, prefix_hit)
+                    response["kv_control"] = (self.learned_kv_cache.result(spec['kv_control'], virtual_slots, learned_entry, learned_hit)
+                        if learned else self.kv_cache.result(spec["kv_control"], prefix_ids, prefix_entry, prefix_hit))
                     response["diagnostics"]["cached_prefill_positions"] = len(prefix_ids) if prefix_hit else 0
-                    response["diagnostics"]["prefill_source"] = "cached hybrid prefix plus live suffix" if prefix_hit else "live prefill"
+                    response["diagnostics"]["virtual_prefix_slots"] = virtual_slots
+                    response["diagnostics"]["prefill_source"] = ("live tokens with learned attention KV and fresh recurrence" if virtual_slots else
+                        "cached hybrid prefix plus live suffix" if prefix_hit else "live prefill")
                 if token_trace:
                     response["token_trace"] = token_trace.result()
                     token_trace.finish("complete")
@@ -714,7 +729,7 @@ def run(args):
         "tokenizer_sha256": file_hash(args.checkpoint / "tokenizer.json"), "heliopause_sha256": file_hash(args.heliopause),
         "script_sha256": file_hash(__file__), "source_sha256": {name: file_hash(args.flare / name) for name in sources},
         "helper_sha256": {name: file_hash(Path(__file__).parent / name) for name in
-                          ("persona_capture.py", "persona_qualify.py", "persona_vectors.py", "persona_fleet.py", "persona_trace.py", "persona_map.py", "persona_kv.py")},
+                          ("persona_capture.py", "persona_qualify.py", "persona_vectors.py", "persona_fleet.py", "persona_trace.py", "persona_map.py", "persona_kv.py", "persona_phantom.py")},
         "preparation": {k: str(v) if isinstance(v, Path) else v for k, v in prep.__dict__.items()}}
     runtime_binding = {key: manifest[key] for key in ("script_sha256", "helper_sha256", "source_sha256", "torch", "heliopause_sha256")}
     runtime_binding["preparation"] = {key: value for key, value in manifest["preparation"].items()

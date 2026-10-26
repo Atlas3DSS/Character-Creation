@@ -86,6 +86,11 @@ def evaluated_batch(app, identity):
 
 def validate_control(control, model_identity):
     from persona_vectors import canonical_digest
+    if isinstance(control, dict) and isinstance(control.get('artifact'), dict) and control['artifact'].get('kind') == 'learned_attention_kv':
+        from persona_phantom import validate_control as validate_learned
+        checked = validate_learned(control)
+        if checked['artifact']['model_identity'] != model_identity: raise ValueError('Learned KV belongs to another model')
+        return deepcopy(checked)
     if not isinstance(control, dict) or set(control) != {'artifact', 'dose', 'cache_policy'}:
         raise ValueError('Expected separate artifact, dose and cache_policy KV control')
     artifact = control['artifact']
@@ -134,7 +139,7 @@ def catalog(app):
                         check_control(control,descriptor,endpoint);endpoints.append(deepcopy(endpoint))
                     except (OSError,ValueError,KeyError,TypeError):continue
                 if endpoints:
-                    first_line=next((line.strip() for line in artifact['prefix_text'].splitlines() if line.strip()),'Cached literary prefix')
+                    first_line=next((line.strip() for line in artifact.get('prefix_text','').splitlines() if line.strip()),'Learned attention-KV candidate' if artifact['kind']=='learned_attention_kv' else 'Cached literary prefix')
                     label=labels.get(artifact['sha256'],first_line[:80]).strip()
                     artifacts.append({'artifact':artifact,'endpoints':endpoints,'label':label})
         except (OSError,ValueError,KeyError,TypeError) as error:errors.append(str(error))

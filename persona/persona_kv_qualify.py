@@ -24,6 +24,12 @@ def fetch(url, value=None):
 
 
 def checked_arrays(response, request, binding=None):
+    control = request.get('kv_control')
+    learned = bool(control and control['artifact']['kind'] == 'learned_attention_kv')
+    offset = control['artifact']['slots'] if learned and control['dose'] == 1 else 0
+    if learned:
+        from persona_phantom import validate_control
+        validate_control(control, binding)
     artifact = response['activation_artifact']
     if artifact['request_sha256'] != canonical_digest(request) or file_sha(artifact['path']) != artifact['sha256']:
         raise ValueError('Activation request/byte binding mismatch')
@@ -38,7 +44,7 @@ def checked_arrays(response, request, binding=None):
                     or actual.get('artifact_sha256') != control['artifact']['sha256']
                     or actual.get('dose') != control['dose']
                     or actual.get('cache_policy') != control['cache_policy']
-                    or actual.get('kind') != 'hybrid_text_prefix'):
+                    or actual.get('kind') != control['artifact']['kind']):
                 raise ValueError('Response KV binding/dose mismatch')
             if control['dose'] == 1:
                 state = actual.get('state_artifact', {})
@@ -46,10 +52,29 @@ def checked_arrays(response, request, binding=None):
                     raise ValueError('Response cached state artifact mismatch')
                 with np.load(state['path'], allow_pickle=False) as state_data:
                     meta = json.loads(str(state_data['metadata']))
-                    if meta['binding'] != binding or meta['definition'] != control['artifact'] or len(state_data['prefix_ids']) != actual['prefix_tokens']:
+                    if learned:
+                        from persona_phantom import SCHEMA, LAYERS
+                        if (state['sha256'] != control['artifact']['weights_sha256']
+                                or meta.get('schema') != SCHEMA or meta.get('model_identity') != binding['model_identity']
+                                or meta.get('key_space') != 'post_norm_post_rope'
+                                or meta.get('recurrent_initial_state') != 'fresh_zero'
+                                or meta.get('prompt_position_start') != offset
+                                or not np.array_equal(state_data['attention_layers'], np.asarray(LAYERS))):
+                            raise ValueError('Learned state artifact metadata mismatch')
+                        for key in ('keys', 'values'):
+                            value = state_data[key]
+                            if value.shape != (16, 4, offset, 256) or value.dtype != np.float32 or not np.isfinite(value).all():
+                                raise ValueError('Invalid learned state tensor')
+                    elif meta['binding'] != binding or meta['definition'] != control['artifact'] or len(state_data['prefix_ids']) != actual['prefix_tokens']:
                         raise ValueError('Cached state metadata/definition mismatch')
             elif actual.get('prefix_tokens') != 0 or actual.get('state_artifact') is not None:
                 raise ValueError('Off-state unexpectedly installed prefix')
+    if learned:
+        actual = response.get('kv_control', {})
+        if (actual.get('virtual_prefix_slots') != offset or actual.get('prefix_tokens') != offset
+                or actual.get('attention_only') is not True or actual.get('recurrent_initial_state') != 'fresh_zero'
+                or response.get('diagnostics', {}).get('virtual_prefix_slots') != offset):
+            raise ValueError('Learned virtual slots/fresh recurrence semantics mismatch')
     if not response['diagnostics']['complete_final_answer']:
         raise ValueError('Qualification answer incomplete')
     with np.load(artifact['path'], allow_pickle=False) as data:
@@ -57,8 +82,10 @@ def checked_arrays(response, request, binding=None):
             raise ValueError('NPZ runtime binding mismatch')
         if str(data['request_sha256']) != canonical_digest(request):
             raise ValueError('NPZ request mismatch')
+        if int(data.get('virtual_prefix_slots', 0)) != offset:
+            raise ValueError('NPZ virtual prefix offset mismatch')
         tokens = data['prompt_token_ids']; trace = data['completion_trace']
-        if (tokens.ndim != 1 or not np.array_equal(data['prefill_positions'], np.arange(len(tokens)))
+        if (tokens.ndim != 1 or not np.array_equal(data['prefill_positions'], np.arange(offset, offset + len(tokens)))
                 or trace.ndim != 2 or trace.shape[1] != 8
                 or np.any(np.diff(trace[:, 1]) <= 0) or np.any(np.diff(trace[:, 7]) < 0)
                 or trace[-1, 3] != len(data['generated_token_ids'])):
@@ -99,7 +126,7 @@ def qualify_endpoint(endpoint, output=None, run_id=None):
     flare = model['flare']
     binding = {k: flare[k] for k in BINDINGS if k != 'layout_sha256'}
     binding['layout_sha256'] = flare['kv_control']['layout_sha256']
-    if flare['kv_control']['kinds'] != ['hybrid_text_prefix']:
+    if 'hybrid_text_prefix' not in flare['kv_control']['kinds']:
         raise ValueError('Unexpected cache capability')
     base = dict(model=model['id'], messages=[{'role': 'user', 'content':
         'Write exactly two short sentences continuing a fictional observatory scene. Include a brass key and an unopened letter. Do not explain your choices.'}],

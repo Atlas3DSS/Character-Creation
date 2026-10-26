@@ -265,8 +265,8 @@ checkpointing, with explicit rotary positions and attention masks; the 48 recurr
 layers must still propagate gradients even though only the 16 attention layers own
 trainable grafts.
 
-The next validation step is a separate, memory-only six-card prototype, not a new
-checkpoint export: read the existing packed weights, decode frozen layers into memory,
+The implemented prototype uses six cards and memory-only expansion, not a new
+checkpoint export: it reads the existing packed weights, decodes frozen layers into memory,
 and shard approximately 50.10 GiB of FP16 language weights (about 8.35 GiB per card
 before activations and workspaces). Validate a small hybrid block's forward agreement
 and finite-difference gradients before attempting the full model, retaining FP32 where
@@ -274,8 +274,38 @@ recurrence/norm numerics require it. A 64–128-slot graft has about 2.1–4.2 m
 parameters; FP32 parameters, gradients and Adam moments need roughly 32–64 MiB.
 Activation memory and backward correctness remain the main uncertainties. Existing
 serving allocations must be coordinated before this separate training phase; no learned
-27B training has started. Use only approved benign literary pairs, with discovery
+27B optimization has started. Use only approved benign literary pairs, with discovery
 selection and untouched held-out book families, not the upstream harmful-prompt suite.
+
+Prototype implementation and admission gates:
+
+- `persona/persona_phantom_weights.py` reads bounded tensor slices from the existing
+  mixed checkpoint. Packed rows and small projections have CPU comparisons against
+  Flare. Decoded FP16 weights remain a surrogate: Flare's FP8 activation rounding and
+  NVFP4 post-dot scaling are not reproduced merely by decoding its weights.
+- `persona/persona_phantom_train.py` uses functional attention-KV injection, fresh
+  GDN recurrence and nonreentrant block checkpointing. It disables incompatible
+  cuDNN only in its own process. A six-device linear/convolution forward-and-gradient
+  preflight runs before weight loading. Full-model validation compares six exact
+  native prompt captures: every layer requires cosine at least 0.99 and relative L2
+  at most 0.10, with all six next-token argmaxes matching. A separate directional
+  gradient check must pass. Training requires the unchanged, successful report;
+  failed validation does not authorize relaxed thresholds or optimization.
+- `persona/persona_phantom_run.py` supervises six separate UUID-bound leases with
+  source/input hashes, per-card telemetry, finite deadlines and checkpoint shutdown.
+  `data/persona_phantom_pairs.json` contains 24 original benign scene families,
+  16 discovery and eight held-out. This initial target-loss experiment is not a
+  demonstrated refusal-reduction benchmark. Interrupted artifacts use a separate
+  partial schema and cannot be admitted as trained candidates.
+- `persona/persona_phantom.py` injects learned post-RoPE K/V into only the 16
+  attention layers. Virtual slots are recorded separately from actual token IDs;
+  recurrent/convolution state starts at zero, while request RNG and penalties stay
+  intact. Exact off/on only. `persona/persona_phantom_qualify.py` requires 72 native
+  requests across all six workers (greedy, sampled and combined neuron cases),
+  including exact rebuild/reuse and off-state restoration. A marker alone is
+  insufficient: artifact discovery verifies its linked report hash and runtime
+  binding. The learned native path remains unavailable until this qualification
+  passes; code and CPU tests are not a serving qualification.
 
 Preserved requirements for completing learned-graft integration:
 

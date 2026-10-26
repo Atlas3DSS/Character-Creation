@@ -21,6 +21,9 @@ def make_artifact(prefix_text, binding):
 
 def validate_control(value, binding=None):
     if value is None: return None
+    if isinstance(value, dict) and isinstance(value.get('artifact'), dict) and value['artifact'].get('kind') == 'learned_attention_kv':
+        from persona_phantom import validate_control as validate_learned
+        return validate_learned(value, binding)
     if not isinstance(value, dict) or set(value) != {'artifact', 'dose', 'cache_policy'}:
         raise ValueError('kv_control requires artifact, dose and cache_policy')
     if type(value['dose']) is not int or value['dose'] not in (0, 1):
@@ -73,19 +76,13 @@ class HybridPrefixCache:
         self.entry = None
 
     def capability(self):
-        qualified = []
-        path = self.engine.output / 'kv-qualification.json'
-        if path.is_file():
-            try:
-                proof = json.loads(path.read_text())
-                if (proof.get('passed') is True and proof.get('binding') == self.binding
-                        and isinstance(proof.get('artifact_sha256s'), list)):
-                    qualified = [s for s in proof['artifact_sha256s'] if isinstance(s, str) and len(s) == 64]
-            except (OSError, ValueError): pass
-        return {'supported': True, 'kinds': ['hybrid_text_prefix'], 'doses': [0, 1],
+        from persona_phantom import verified_artifacts
+        qualified = sorted(set(verified_artifacts(self.engine.output, 'kv-qualification.json', self.binding)
+                               + verified_artifacts(self.engine.output, 'phantom-qualification.json', self.binding)))
+        return {'supported': True, 'kinds': ['hybrid_text_prefix', 'learned_attention_kv'], 'doses': [0, 1],
                 'qualification': 'experimental', 'qualified_artifacts': qualified,
                 'layout_sha256': self.binding['layout_sha256'],
-                'semantics': 'Exact cached text context including recurrent state; not a trained Phantom-KV graft'}
+                'semantics': 'Text-prefix full state or separately qualified learned attention KV with fresh recurrence; exact off/on only'}
 
     def prepare(self, control):
         if control is None: return [], None

@@ -111,11 +111,20 @@ def collect(envelope):
     for line in inputs.open():
         original=json.loads(line);source=approved_source(original,allowed,policy)
         if source:approved[original['id']]=(original,source)
+    baseline_counts=[];baseline_done=False
     records=[];raw=[];baseline=envelope.get('baseline_root');overnight_limit=limit-max(1,limit//5) if baseline and (Path(baseline)/'results/baseline40k.sqlite').exists() else limit
     with readonly(root/'overnight_map.sqlite') as db:
         counts=[{'tier':r[0],'state':r[1],'count':r[2]} for r in db.execute("SELECT json_extract(row,'$.tier'),state,count(*) FROM tasks GROUP BY 1,2")]
         completed=list(db.execute("SELECT id FROM tasks WHERE state='complete' ORDER BY ordinal"));eligible=sum(row['id'] in approved for row in completed)
         for row in completed:
+            # Offer the original fair baseline share, then reuse any unfilled
+            # slots for new prefill records without rereading validated rows.
+            if len(records)>=overnight_limit and not baseline_done:
+                if baseline:
+                    baseline_records,baseline_raw,baseline_counts=collect_baseline(Path(baseline),allowed,policy,known,limit-len(records),known_sources)
+                    records.extend(baseline_records);raw.extend(baseline_raw)
+                baseline_done=True
+            if len(records)>=limit:break
             identity=row['id']
             if identity not in approved or 'prefill_activation:'+identity in known_sources:continue
             task=db.execute('SELECT row,request,response,validation FROM tasks WHERE id=?',(identity,)).fetchone();source_row,source=approved[identity]
@@ -130,9 +139,7 @@ def collect(envelope):
             record=public_capture(source,request,response,validated,policy);records.append(record)
             path=validate_artifact(response['activation_artifact'],root)
             raw.append({'id':record['id'],'kind':'prefill_activation','path':str(path),'sha256':file_hash(path),'source_id':identity,'prompt_sha256':source['prompt_sha256'],'identity':record['identity'],'request_sha256':record['request_sha256']})
-            if len(records)>=overnight_limit:break
-    baseline_counts=[]
-    if baseline:
+    if baseline and not baseline_done:
         baseline_records,baseline_raw,baseline_counts=collect_baseline(Path(baseline),allowed,policy,known,limit-len(records),known_sources)
         records.extend(baseline_records);raw.extend(baseline_raw)
     terminal=bool(counts) and not any(r['state'] in ('pending','running') for r in counts)
@@ -340,6 +347,15 @@ def ssh_collect(args,envelope):
     value=json.loads(result.stdout);value.pop('raw',None);return value
 
 
+def watch_delay(captured, limit):
+    """A full batch warrants one prompt next check; no progress stays idle.
+
+    Exactly-full exhaustion may cause one extra five-second check, then the
+    empty result restores the idle interval. Errors still exit via failure_hook.
+    """
+    return 5 if limit>0 and len(captured.get('records',()))>=limit else 300
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--collect',action='store_true');parser.add_argument('--root',type=Path);parser.add_argument('--policy',type=Path);parser.add_argument('--public-dir',type=Path);parser.add_argument('--remote-host',default='v100');parser.add_argument('--remote-python',default='/mnt/storage16tb/flare/venv/bin/python');parser.add_argument('--remote-root',default='/mnt/storage16tb/Character Creation/activation-search');parser.add_argument('--baseline-root');parser.add_argument('--watch',action='store_true');parser.add_argument('--raw-watch',action='store_true');parser.add_argument('--publish',action='store_true');parser.add_argument('--force',action='store_true');args=parser.parse_args()
     if args.collect:print(json.dumps(collect(json.load(sys.stdin)),allow_nan=False));return
@@ -380,6 +396,6 @@ def main():
                 publisher.publish(files,manifest,revision,output);pending_rows.clear();last_summary=summary
         atomic(output/'persona_hub_raw_status.json' if raw else root/'results/persona_hub_research_status.json',{'updated':time.time(),'lane':'raw' if raw else 'metadata','state':'watching' if (args.watch or raw) else 'complete','published_records':manifest['records'],'pending_buffered':len(pending_rows),'last_verified_commit':publisher.state['last_commit'],'source_summary':captured['summary']})
         if not args.watch and not raw:return
-        time.sleep(300 if not raw or not captured['raw'] else 1)
+        time.sleep(watch_delay(captured,envelope['limit']))
 
 if __name__=='__main__':main()

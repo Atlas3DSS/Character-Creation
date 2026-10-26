@@ -121,3 +121,52 @@ class ResearchTests(unittest.TestCase):
  def test_immutable_batch_stable_order_and_source_join(self):
   a={'id':'a','kind':'baseline_answer','source':{'id':'prompt-a'}};b={'id':'b','kind':'prefill_activation','source':{'id':'prompt-b'}};self.assertEqual(r.metadata_batch([b,a]),r.metadata_batch([a,b]));self.assertEqual(r.metadata_batch([a,b])[2]['source_keys'],['baseline_answer:prompt-a','prefill_activation:prompt-b'])
 if __name__=='__main__':unittest.main()
+
+class CollectorPacingTests(unittest.TestCase):
+ def collect_fixture(self,limit,baseline_count,prefill_count,known_sources=()):
+  import sys,types
+  from contextlib import ExitStack
+  with tempfile.TemporaryDirectory() as directory,ExitStack() as stack:
+   root=Path(directory);(root/'results').mkdir();(root/'results/baseline40k.sqlite').touch()
+   originals=[{'id':str(i),'tier':'authored'} for i in range(prefill_count)]
+   inputs=root/'overnight_inputs.jsonl';inputs.write_text(''.join(json.dumps(row)+'\n' for row in originals))
+   db=sqlite3.connect(root/'overnight_map.sqlite');db.execute('CREATE TABLE tasks(id TEXT,ordinal INTEGER,state TEXT,row TEXT,request TEXT,response TEXT,validation TEXT)')
+   raw=root/'raw.npz';raw.write_bytes(b'raw')
+   for i,row in enumerate(originals):
+    response={k:'m' for k in r.IDENTITIES};response['activation_artifact']={'request_sha256':str(i),'path':str(raw),'sha256':r.file_hash(raw)}
+    db.execute('INSERT INTO tasks VALUES(?,?,?,?,?,?,?)',(str(i),i,'complete',json.dumps(row),'{}',json.dumps(response),'{}'))
+   db.commit();db.close()
+   validation=types.ModuleType('persona_overnight_map');validation.validate_result=lambda *args:{};validation.validate_artifact=lambda *args:raw
+   stack.enter_context(patch.dict(sys.modules,{'persona_overnight_map':validation}))
+   stack.enter_context(patch.object(r,'approved_source',side_effect=lambda row,*args:{'id':row['id'],'prompt_sha256':'p'}))
+   stack.enter_context(patch.object(r,'public_capture',side_effect=lambda source,*args:{'id':'p'+source['id'],'identity':{},'request_sha256':source['id']}))
+   calls=[]
+   def baseline(root,allowed,policy,known,capacity,known_sources):
+    calls.append(capacity);n=min(capacity,baseline_count)
+    return ([{'id':'b'+str(i)} for i in range(n)],[{'id':'b'+str(i)} for i in range(n)],[{'state':'complete','count':baseline_count}])
+   stack.enter_context(patch.object(r,'collect_baseline',side_effect=baseline))
+   envelope={'remote_root':str(root),'baseline_root':str(root),'policy':{'overnight_inputs_sha256':r.file_hash(inputs),'model_identity':'m'},'allowed':{},'limit':limit,'known_sources':known_sources,'collector_sha256':'s'}
+   captured=r.collect(envelope)
+   return captured,calls
+
+ def test_exhausted_baseline_backfills_full_metadata_and_raw(self):
+  for capacity in (500,32):
+   with self.subTest(capacity=capacity):
+    captured,calls=self.collect_fixture(capacity,0,capacity+1)
+    self.assertEqual(len(captured['records']),capacity);self.assertEqual(len(captured['raw']),capacity)
+    self.assertEqual(calls,[max(1,capacity//5)])
+    self.assertEqual(r.watch_delay(captured,capacity),5)
+
+ def test_partial_baseline_share_and_prefill_exhaustion(self):
+  captured,calls=self.collect_fixture(32,3,40)
+  self.assertEqual(len(captured['records']),32);self.assertEqual(calls,[6])
+  self.assertEqual(sum(row['id'].startswith('b') for row in captured['records']),3)
+  captured,calls=self.collect_fixture(32,40,2)
+  self.assertEqual(len(captured['records']),32);self.assertEqual(calls,[30])
+
+ def test_known_or_partial_exhausted_stays_idle(self):
+  captured,_=self.collect_fixture(32,0,3,['prefill_activation:'+str(i) for i in range(3)])
+  self.assertEqual(captured['records'],[]);self.assertEqual(r.watch_delay(captured,32),300)
+  captured,_=self.collect_fixture(32,0,3)
+  self.assertEqual(len(captured['records']),3);self.assertEqual(r.watch_delay(captured,32),300)
+  self.assertEqual(r.watch_delay({'records':[]},0),300)

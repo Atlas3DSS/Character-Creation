@@ -62,8 +62,14 @@ def test_qualification_binding_and_request(tmp_path):
     artifact = make_artifact('Quiet affection.', cache.binding)
     assert cache.capability()['qualified_artifacts'] == []
     proof = dict(passed=True, binding=cache.binding, artifact_sha256s=[artifact['sha256']])
+    from persona_kv import file_sha
+    report = tmp_path/'qualification-report.json'
+    report.write_text(json.dumps(proof))
+    proof['report'] = {'path':str(report), 'sha256':file_sha(report)}
     (tmp_path/'kv-qualification.json').write_text(json.dumps(proof))
     assert cache.capability()['qualified_artifacts'] == [artifact['sha256']]
+    report.write_text('{}')
+    assert cache.capability()['qualified_artifacts'] == []
     proof['binding'] = dict(cache.binding, runtime_identity='f'*64)
     (tmp_path/'kv-qualification.json').write_text(json.dumps(proof))
     assert cache.capability()['qualified_artifacts'] == []
