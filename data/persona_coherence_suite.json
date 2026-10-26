@@ -1,0 +1,874 @@
+{
+  "schema": "character-creation.coherence-suite.v1",
+  "description": "Authored synthetic source-grounded checks; six discovery and six sealed heldout scenarios. Passing certifies only ledger and surface checks, never free prose.",
+  "calibration_scope": "Known authored mutations calibrate the scorer; they are not model-generated validation.",
+  "cases": [
+    {
+      "title": "Delayed train",
+      "split": "discovery",
+      "source": "The train was scheduled to arrive at 09:10. It arrives 20 minutes late. The meeting starts at 09:45.",
+      "source_id": "37114f678539833d55350a0a624f036c47bf0c8bc88940e4159f51f568610d62",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nThe train was scheduled to arrive at 09:10. It arrives 20 minutes late. The meeting starts at 09:45.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"train\", \"predicate\": \"scheduled_arrival\"}, {\"id\": \"f2\", \"subject\": \"train\", \"predicate\": \"delay_minutes\"}, {\"id\": \"f3\", \"subject\": \"meeting\", \"predicate\": \"starts\"}]\nRequested answer slots (derive from source): {\"arrival\": \"Scheduled arrival plus delay, HH:MM.\", \"spare_minutes\": \"Minutes from actual arrival until meeting.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"platform\", \"weather\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "train",
+            "predicate": "scheduled_arrival",
+            "value": "09:10",
+            "kind": "time",
+            "evidence": [
+              "scheduled to arrive at 09:10"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "train",
+            "predicate": "delay_minutes",
+            "value": 20,
+            "kind": "number",
+            "evidence": [
+              "20 minutes late"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "meeting",
+            "predicate": "starts",
+            "value": "09:45",
+            "kind": "time",
+            "evidence": [
+              "meeting starts at 09:45"
+            ]
+          }
+        ],
+        "answers": {
+          "arrival": {
+            "value": "09:30",
+            "kind": "time",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "Scheduled arrival plus delay, HH:MM."
+          },
+          "spare_minutes": {
+            "value": 15,
+            "kind": "number",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "Minutes from actual arrival until meeting."
+          }
+        },
+        "unknowns": [
+          "platform",
+          "weather"
+        ]
+      },
+      "id": "f3c063114dabaea37b4bfb33d478db9b",
+      "case_sha256": "f3c063114dabaea37b4bfb33d478db9b77c5a1cfc7500096f468209e67a1cc34"
+    },
+    {
+      "title": "Distinct key holders",
+      "split": "discovery",
+      "source": "Mira hands the brass key to Jon. Mira keeps the silver key. Neither key has a copy.",
+      "source_id": "e7994ac3c3c231ac70276f519ab2ef8048328e99d82c599c38ff55f1850239de",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nMira hands the brass key to Jon. Mira keeps the silver key. Neither key has a copy.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"brass_key\", \"predicate\": \"holder\"}, {\"id\": \"f2\", \"subject\": \"silver_key\", \"predicate\": \"holder\"}, {\"id\": \"f3\", \"subject\": \"keys\", \"predicate\": \"have_copies\"}]\nRequested answer slots (derive from source): {\"brass_holder\": \"Canonical name of the current brass key holder.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"door\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "brass_key",
+            "predicate": "holder",
+            "value": "jon",
+            "kind": "role",
+            "evidence": [
+              "hands the brass key to Jon"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "silver_key",
+            "predicate": "holder",
+            "value": "mira",
+            "kind": "role",
+            "evidence": [
+              "Mira keeps the silver key"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "keys",
+            "predicate": "have_copies",
+            "value": false,
+            "kind": "negation",
+            "evidence": [
+              "Neither key has a copy"
+            ]
+          }
+        ],
+        "answers": {
+          "brass_holder": {
+            "value": "jon",
+            "kind": "role",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "Canonical name of the current brass key holder."
+          }
+        },
+        "unknowns": [
+          "door"
+        ]
+      },
+      "id": "bf19d86bda89b7af48c9af4a9e7f295a",
+      "case_sha256": "bf19d86bda89b7af48c9af4a9e7f295ac41cbf82fbe6b63fa7f3c39d43e8de8f"
+    },
+    {
+      "title": "Colored inventory",
+      "split": "discovery",
+      "source": "Lina starts with 7 blue tokens. Oren starts with 4 red tokens. Lina gives 2 blue tokens to Oren. No other tokens move.",
+      "source_id": "315e91e876096878715cb813731ac937399e765a87474d81f055dd56aba4d69b",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nLina starts with 7 blue tokens. Oren starts with 4 red tokens. Lina gives 2 blue tokens to Oren. No other tokens move.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"lina\", \"predicate\": \"initial_blue\"}, {\"id\": \"f2\", \"subject\": \"oren\", \"predicate\": \"initial_red\"}, {\"id\": \"f3\", \"subject\": \"lina\", \"predicate\": \"blue_given_to_oren\"}]\nRequested answer slots (derive from source): {\"lina_blue\": \"Lina initial blue minus transferred blue.\", \"oren_total\": \"Oren initial red plus received blue.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"token_size\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "lina",
+            "predicate": "initial_blue",
+            "value": 7,
+            "kind": "number",
+            "evidence": [
+              "Lina starts with 7 blue tokens"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "oren",
+            "predicate": "initial_red",
+            "value": 4,
+            "kind": "number",
+            "evidence": [
+              "Oren starts with 4 red tokens"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "lina",
+            "predicate": "blue_given_to_oren",
+            "value": 2,
+            "kind": "number",
+            "evidence": [
+              "Lina gives 2 blue tokens to Oren"
+            ]
+          }
+        ],
+        "answers": {
+          "lina_blue": {
+            "value": 5,
+            "kind": "number",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "Lina initial blue minus transferred blue."
+          },
+          "oren_total": {
+            "value": 6,
+            "kind": "number",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "Oren initial red plus received blue."
+          }
+        },
+        "unknowns": [
+          "token_size"
+        ]
+      },
+      "id": "f24d43caaa268dc9519b39c6b820f467",
+      "case_sha256": "f24d43caaa268dc9519b39c6b820f467adc0ef7e1cce4d88f2322387ba91e1b7"
+    },
+    {
+      "title": "Inspection negation",
+      "split": "discovery",
+      "source": "The lamp is not on. The fan is running. The heater was not tested. Ivo is the inspector, not the manager.",
+      "source_id": "bd5f9bb1aeb41bfeba10440f0b17aeef16d9ba8ff65c4fe571edd6380115ad43",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nThe lamp is not on. The fan is running. The heater was not tested. Ivo is the inspector, not the manager.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"lamp\", \"predicate\": \"on\"}, {\"id\": \"f2\", \"subject\": \"fan\", \"predicate\": \"running\"}, {\"id\": \"f3\", \"subject\": \"heater\", \"predicate\": \"tested\"}, {\"id\": \"f4\", \"subject\": \"ivo\", \"predicate\": \"role\"}]\nRequested answer slots (derive from source): {\"heater_tested\": \"Whether the heater was tested; this does not establish whether it works.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"heater_works\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "lamp",
+            "predicate": "on",
+            "value": false,
+            "kind": "negation",
+            "evidence": [
+              "lamp is not on"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "fan",
+            "predicate": "running",
+            "value": true,
+            "kind": "negation",
+            "evidence": [
+              "fan is running"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "heater",
+            "predicate": "tested",
+            "value": false,
+            "kind": "negation",
+            "evidence": [
+              "heater was not tested"
+            ]
+          },
+          {
+            "id": "f4",
+            "subject": "ivo",
+            "predicate": "role",
+            "value": "inspector",
+            "kind": "role",
+            "evidence": [
+              "Ivo is the inspector, not the manager"
+            ]
+          }
+        ],
+        "answers": {
+          "heater_tested": {
+            "value": false,
+            "kind": "negation",
+            "support": [
+              "f1",
+              "f2",
+              "f3",
+              "f4"
+            ],
+            "derivation": "Whether the heater was tested; this does not establish whether it works."
+          }
+        },
+        "unknowns": [
+          "heater_works"
+        ]
+      },
+      "id": "a0c45808fb0514cd4d3f464915de1378",
+      "case_sha256": "a0c45808fb0514cd4d3f464915de1378caa8f57ee0616e21a1ed3e5d1e364f09"
+    },
+    {
+      "title": "Parcel sequence",
+      "split": "discovery",
+      "source": "The parcel was delivered at 08:00, inspected at 09:00, and sealed at 10:00.",
+      "source_id": "dfd1dafac014b6aa42aec5df3838eed162e716b13be054c0bcdc2a09494c7b4c",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nThe parcel was delivered at 08:00, inspected at 09:00, and sealed at 10:00.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"parcel\", \"predicate\": \"delivered_at\"}, {\"id\": \"f2\", \"subject\": \"parcel\", \"predicate\": \"inspected_at\"}, {\"id\": \"f3\", \"subject\": \"parcel\", \"predicate\": \"sealed_at\"}]\nRequested answer slots (derive from source): {\"event_order\": \"List event names delivered, inspected, sealed in chronological order.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"inspection_method\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "parcel",
+            "predicate": "delivered_at",
+            "value": "08:00",
+            "kind": "time",
+            "evidence": [
+              "delivered at 08:00"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "parcel",
+            "predicate": "inspected_at",
+            "value": "09:00",
+            "kind": "time",
+            "evidence": [
+              "inspected at 09:00"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "parcel",
+            "predicate": "sealed_at",
+            "value": "10:00",
+            "kind": "time",
+            "evidence": [
+              "sealed at 10:00"
+            ]
+          }
+        ],
+        "answers": {
+          "event_order": {
+            "value": [
+              "delivered",
+              "inspected",
+              "sealed"
+            ],
+            "kind": "timeline",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "List event names delivered, inspected, sealed in chronological order."
+          }
+        },
+        "unknowns": [
+          "inspection_method"
+        ]
+      },
+      "id": "3aad41dfd03ddc9ef088fbddbc14c281",
+      "case_sha256": "3aad41dfd03ddc9ef088fbddbc14c28147dc9736fc10a805a845702eab7ed10a"
+    },
+    {
+      "title": "Missing star map",
+      "split": "discovery",
+      "source": "Ren is the pilot; Iri is the copilot. The cabin window glows blue. The star map is missing. Their destination is not stated.",
+      "source_id": "c9fe23ab8300fc7661cbb9df65c2d10adac7cd0743dd58744ea34030c1599de3",
+      "task_policy": {
+        "kind": "fiction_continuation",
+        "invented_prose_details": "allowed if consistent with the fixed source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Continue the fictional scene briefly; you may introduce new details in prose while respecting established facts. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nRen is the pilot; Iri is the copilot. The cabin window glows blue. The star map is missing. Their destination is not stated.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"ren\", \"predicate\": \"role\"}, {\"id\": \"f2\", \"subject\": \"iri\", \"predicate\": \"role\"}, {\"id\": \"f3\", \"subject\": \"window\", \"predicate\": \"color\"}, {\"id\": \"f4\", \"subject\": \"star_map\", \"predicate\": \"present\"}]\nRequested answer slots (derive from source): {\"pilot\": \"Canonical name of the pilot.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"destination\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "ren",
+            "predicate": "role",
+            "value": "pilot",
+            "kind": "role",
+            "evidence": [
+              "Ren is the pilot"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "iri",
+            "predicate": "role",
+            "value": "copilot",
+            "kind": "role",
+            "evidence": [
+              "Iri is the copilot"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "window",
+            "predicate": "color",
+            "value": "blue",
+            "kind": "fact",
+            "evidence": [
+              "window glows blue"
+            ]
+          },
+          {
+            "id": "f4",
+            "subject": "star_map",
+            "predicate": "present",
+            "value": false,
+            "kind": "negation",
+            "evidence": [
+              "star map is missing"
+            ]
+          }
+        ],
+        "answers": {
+          "pilot": {
+            "value": "ren",
+            "kind": "role",
+            "support": [
+              "f1",
+              "f2",
+              "f3",
+              "f4"
+            ],
+            "derivation": "Canonical name of the pilot."
+          }
+        },
+        "unknowns": [
+          "destination"
+        ]
+      },
+      "id": "3d3d5c867ad1bbf8acbe3a0bef3ce286",
+      "case_sha256": "3d3d5c867ad1bbf8acbe3a0bef3ce286451930cf60af5e18aefe09753100c46d"
+    },
+    {
+      "title": "Museum capacity",
+      "split": "heldout",
+      "source": "The museum tour has 18 places. Eleven people registered, and 3 additional people reserved places. Registrations and reservations do not overlap.",
+      "source_id": "22f44d80a124946697fcbbf179892f6139048900c55e2d841cd351e75e47ee60",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nThe museum tour has 18 places. Eleven people registered, and 3 additional people reserved places. Registrations and reservations do not overlap.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"tour\", \"predicate\": \"capacity\"}, {\"id\": \"f2\", \"subject\": \"tour\", \"predicate\": \"registered\"}, {\"id\": \"f3\", \"subject\": \"tour\", \"predicate\": \"additional_reserved\"}]\nRequested answer slots (derive from source): {\"places_free\": \"Capacity minus registrations minus additional reservations.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"fee\", \"visitor_ages\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "tour",
+            "predicate": "capacity",
+            "value": 18,
+            "kind": "number",
+            "evidence": [
+              "18 places"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "tour",
+            "predicate": "registered",
+            "value": 11,
+            "kind": "number",
+            "evidence": [
+              "Eleven people registered"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "tour",
+            "predicate": "additional_reserved",
+            "value": 3,
+            "kind": "number",
+            "evidence": [
+              "3 additional people reserved places"
+            ]
+          }
+        ],
+        "answers": {
+          "places_free": {
+            "value": 4,
+            "kind": "number",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "Capacity minus registrations minus additional reservations."
+          }
+        },
+        "unknowns": [
+          "fee",
+          "visitor_ages"
+        ]
+      },
+      "id": "9c12eb188e2af00b4617b60c12984f6a",
+      "case_sha256": "9c12eb188e2af00b4617b60c12984f6ae5c228527dd5b7bdc09656cd08f576b6"
+    },
+    {
+      "title": "Sprouting trays",
+      "split": "heldout",
+      "source": "Tray A contains 12 seeds; 7 have sprouted. Tray B contains 9 seeds; 3 have sprouted. No seeds were removed.",
+      "source_id": "74add6951a6d7cb7e82b677dd5af5a2d8abdd8e5eb5e7610ad7d89fd5090fa13",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nTray A contains 12 seeds; 7 have sprouted. Tray B contains 9 seeds; 3 have sprouted. No seeds were removed.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"tray_a\", \"predicate\": \"seeds\"}, {\"id\": \"f2\", \"subject\": \"tray_a\", \"predicate\": \"sprouted\"}, {\"id\": \"f3\", \"subject\": \"tray_b\", \"predicate\": \"seeds\"}, {\"id\": \"f4\", \"subject\": \"tray_b\", \"predicate\": \"sprouted\"}]\nRequested answer slots (derive from source): {\"unsprouted_total\": \"Sum of seeds minus sprouts in both trays.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"seed_species\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "tray_a",
+            "predicate": "seeds",
+            "value": 12,
+            "kind": "number",
+            "evidence": [
+              "Tray A contains 12 seeds"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "tray_a",
+            "predicate": "sprouted",
+            "value": 7,
+            "kind": "number",
+            "evidence": [
+              "7 have sprouted"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "tray_b",
+            "predicate": "seeds",
+            "value": 9,
+            "kind": "number",
+            "evidence": [
+              "Tray B contains 9 seeds"
+            ]
+          },
+          {
+            "id": "f4",
+            "subject": "tray_b",
+            "predicate": "sprouted",
+            "value": 3,
+            "kind": "number",
+            "evidence": [
+              "3 have sprouted"
+            ]
+          }
+        ],
+        "answers": {
+          "unsprouted_total": {
+            "value": 11,
+            "kind": "number",
+            "support": [
+              "f1",
+              "f2",
+              "f3",
+              "f4"
+            ],
+            "derivation": "Sum of seeds minus sprouts in both trays."
+          }
+        },
+        "unknowns": [
+          "seed_species"
+        ]
+      },
+      "id": "c40a374d6a9be6afd35b892e92ecfb52",
+      "case_sha256": "c40a374d6a9be6afd35b892e92ecfb521c63d700db58033b3233bde45e4b67da"
+    },
+    {
+      "title": "Courier attribution",
+      "split": "heldout",
+      "source": "Tess sent the green parcel to Noel. Uma recorded its receipt but did not deliver it. The actual courier is not identified.",
+      "source_id": "5d4ecd726fb5a99d5b19580f317e7256a754134ded762ebba990c882feeab7ce",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nTess sent the green parcel to Noel. Uma recorded its receipt but did not deliver it. The actual courier is not identified.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"green_parcel\", \"predicate\": \"sender\"}, {\"id\": \"f2\", \"subject\": \"green_parcel\", \"predicate\": \"recipient\"}, {\"id\": \"f3\", \"subject\": \"receipt\", \"predicate\": \"recorder\"}, {\"id\": \"f4\", \"subject\": \"uma\", \"predicate\": \"delivered_parcel\"}]\nRequested answer slots (derive from source): {\"recipient\": \"Canonical name of green parcel recipient.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"courier\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "green_parcel",
+            "predicate": "sender",
+            "value": "tess",
+            "kind": "role",
+            "evidence": [
+              "Tess sent the green parcel"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "green_parcel",
+            "predicate": "recipient",
+            "value": "noel",
+            "kind": "role",
+            "evidence": [
+              "to Noel"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "receipt",
+            "predicate": "recorder",
+            "value": "uma",
+            "kind": "role",
+            "evidence": [
+              "Uma recorded its receipt"
+            ]
+          },
+          {
+            "id": "f4",
+            "subject": "uma",
+            "predicate": "delivered_parcel",
+            "value": false,
+            "kind": "negation",
+            "evidence": [
+              "did not deliver it"
+            ]
+          }
+        ],
+        "answers": {
+          "recipient": {
+            "value": "noel",
+            "kind": "role",
+            "support": [
+              "f1",
+              "f2",
+              "f3",
+              "f4"
+            ],
+            "derivation": "Canonical name of green parcel recipient."
+          }
+        },
+        "unknowns": [
+          "courier"
+        ]
+      },
+      "id": "df7b9680ce01eb50a660898a7e7040bf",
+      "case_sha256": "df7b9680ce01eb50a660898a7e7040bf8cd6c5cf5367f988028a2c08a34b7ffb"
+    },
+    {
+      "title": "Reports versus events",
+      "split": "heldout",
+      "source": "Nia reports that the bell rang, but this has not been verified. Omar denies seeing the door open. Nobody establishes whether the door actually opened.",
+      "source_id": "44efee285b30f8d93b89a7a274f22cd3f4f661145a7369558e4a76b4d895237c",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nNia reports that the bell rang, but this has not been verified. Omar denies seeing the door open. Nobody establishes whether the door actually opened.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"bell_report\", \"predicate\": \"speaker\"}, {\"id\": \"f2\", \"subject\": \"bell_report\", \"predicate\": \"verified\"}, {\"id\": \"f3\", \"subject\": \"omar\", \"predicate\": \"claims_saw_door_open\"}]\nRequested answer slots (derive from source): {\"bell_reporter\": \"Canonical name of person reporting the bell; do not assert that the bell actually rang.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"bell_actually_rang\", \"door_actually_opened\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "bell_report",
+            "predicate": "speaker",
+            "value": "nia",
+            "kind": "attribution",
+            "evidence": [
+              "Nia reports that the bell rang"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "bell_report",
+            "predicate": "verified",
+            "value": false,
+            "kind": "negation",
+            "evidence": [
+              "this has not been verified"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "omar",
+            "predicate": "claims_saw_door_open",
+            "value": false,
+            "kind": "attribution",
+            "evidence": [
+              "Omar denies seeing the door open"
+            ]
+          }
+        ],
+        "answers": {
+          "bell_reporter": {
+            "value": "nia",
+            "kind": "attribution",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "Canonical name of person reporting the bell; do not assert that the bell actually rang."
+          }
+        },
+        "unknowns": [
+          "bell_actually_rang",
+          "door_actually_opened"
+        ]
+      },
+      "id": "eb7316d357ebc356a5677eb57d328a0b",
+      "case_sha256": "eb7316d357ebc356a5677eb57d328a0b90bea754975bf8c28a47dad1e85ba149"
+    },
+    {
+      "title": "Archive loans",
+      "split": "heldout",
+      "source": "During the same week, volume A was returned on Monday, volume B was returned on Wednesday, and volume A was borrowed again on Friday.",
+      "source_id": "2e32e340ebba92e83173861f068094a01c8511805a513247541c39dd4aeac274",
+      "task_policy": {
+        "kind": "factual_response",
+        "invented_prose_details": "not licensed by the source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Write a brief response explaining the source and requested answers. Do not invent missing information. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nDuring the same week, volume A was returned on Monday, volume B was returned on Wednesday, and volume A was borrowed again on Friday.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"volume_a\", \"predicate\": \"returned_on\"}, {\"id\": \"f2\", \"subject\": \"volume_b\", \"predicate\": \"returned_on\"}, {\"id\": \"f3\", \"subject\": \"volume_a\", \"predicate\": \"borrowed_again_on\"}]\nRequested answer slots (derive from source): {\"event_order\": \"Order canonical event IDs a_returned, b_returned, a_borrowed_again chronologically.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"year\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "volume_a",
+            "predicate": "returned_on",
+            "value": "monday",
+            "kind": "timeline",
+            "evidence": [
+              "volume A was returned on Monday"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "volume_b",
+            "predicate": "returned_on",
+            "value": "wednesday",
+            "kind": "timeline",
+            "evidence": [
+              "volume B was returned on Wednesday"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "volume_a",
+            "predicate": "borrowed_again_on",
+            "value": "friday",
+            "kind": "timeline",
+            "evidence": [
+              "volume A was borrowed again on Friday"
+            ]
+          }
+        ],
+        "answers": {
+          "event_order": {
+            "value": [
+              "a_returned",
+              "b_returned",
+              "a_borrowed_again"
+            ],
+            "kind": "timeline",
+            "support": [
+              "f1",
+              "f2",
+              "f3"
+            ],
+            "derivation": "Order canonical event IDs a_returned, b_returned, a_borrowed_again chronologically."
+          }
+        },
+        "unknowns": [
+          "year"
+        ]
+      },
+      "id": "060fc13425adf1486a8cc58fd309295c",
+      "case_sha256": "060fc13425adf1486a8cc58fd309295cdeddc9138ed93e8c937ae20402d2dbba"
+    },
+    {
+      "title": "Gate before dawn",
+      "split": "heldout",
+      "source": "Queen Ari refuses to open the gate. Guard Bea carries a lantern, not a sword. Bea has promised to wait until sunrise. No enemy has been confirmed.",
+      "source_id": "76819aa8083dd220b0c0d4ebe582912872894695c49ef57e94122d0f2013ac0e",
+      "task_policy": {
+        "kind": "fiction_continuation",
+        "invented_prose_details": "allowed if consistent with the fixed source",
+        "tone": "unrestricted; sarcasm, anxiety, darkness and bluntness are permitted"
+      },
+      "prose_scope": "Free prose is not automatically judged for factuality or consistency; only its emptiness and mechanical repetition are checked.",
+      "prompt": "Continue the fictional scene briefly; you may introduce new details in prose while respecting established facts. Any tone is allowed. Then provide the required ledger in the same JSON object.\nSOURCE:\nQueen Ari refuses to open the gate. Guard Bea carries a lantern, not a sword. Bea has promised to wait until sunrise. No enemy has been confirmed.\nEND SOURCE\nReturn only JSON with exactly prose (a nonempty string), facts (an array), answers (an object), unknowns (an array of canonical IDs). Each fact must have exactly id, subject, predicate, value. Include every fact below once, retain its identifiers and derive its value from SOURCE. Use canonical lowercase names, JSON booleans for truth values, numbers for counts, HH:MM strings for times, and ordered arrays for sequences. Do not add ledger claims even when inventing fictional prose.\nFact identifiers: [{\"id\": \"f1\", \"subject\": \"ari\", \"predicate\": \"opens_gate\"}, {\"id\": \"f2\", \"subject\": \"bea\", \"predicate\": \"carried_object\"}, {\"id\": \"f3\", \"subject\": \"bea\", \"predicate\": \"carries_sword\"}, {\"id\": \"f4\", \"subject\": \"bea\", \"predicate\": \"promised_wait_until\"}]\nRequested answer slots (derive from source): {\"lantern_carrier\": \"Canonical name of the lantern carrier.\"}\nRequested details not established by source; acknowledge all IDs in unknowns: [\"enemy_exists\"]",
+      "groundtruth": {
+        "require_ledger": true,
+        "facts": [
+          {
+            "id": "f1",
+            "subject": "ari",
+            "predicate": "opens_gate",
+            "value": false,
+            "kind": "negation",
+            "evidence": [
+              "Queen Ari refuses to open the gate"
+            ]
+          },
+          {
+            "id": "f2",
+            "subject": "bea",
+            "predicate": "carried_object",
+            "value": "lantern",
+            "kind": "fact",
+            "evidence": [
+              "Guard Bea carries a lantern, not a sword"
+            ]
+          },
+          {
+            "id": "f3",
+            "subject": "bea",
+            "predicate": "carries_sword",
+            "value": false,
+            "kind": "negation",
+            "evidence": [
+              "not a sword"
+            ]
+          },
+          {
+            "id": "f4",
+            "subject": "bea",
+            "predicate": "promised_wait_until",
+            "value": "sunrise",
+            "kind": "timeline",
+            "evidence": [
+              "Bea has promised to wait until sunrise"
+            ]
+          }
+        ],
+        "answers": {
+          "lantern_carrier": {
+            "value": "bea",
+            "kind": "role",
+            "support": [
+              "f1",
+              "f2",
+              "f3",
+              "f4"
+            ],
+            "derivation": "Canonical name of the lantern carrier."
+          }
+        },
+        "unknowns": [
+          "enemy_exists"
+        ]
+      },
+      "id": "584931e88667387e59c985e6cae5a712",
+      "case_sha256": "584931e88667387e59c985e6cae5a712369735a96fd752ae85c671488e1c9515"
+    }
+  ],
+  "suite_sha256": "2790c23a5b4bbb3ba9adf4fbeef6a96485d1588999ede62a524b647c3e8804d4"
+}

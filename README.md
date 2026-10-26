@@ -1,5 +1,11 @@
 # Character Creation
 
+**Start here:** [Human guide: what, how, and why](README_human.md) ·
+[Agent guide: schemas, commands, and evidence contracts](README_agent.md).
+The public [Hugging Face dataset](https://huggingface.co/datasets/Atlas3D/character-creation-big-five)
+now also carries verified research batches and model-bound calibration assets; its
+manifests distinguish completed captures from uploaded raw-array coverage.
+
 **Sculpt an LLM persona, turn its dials, and compare its answers against a stable baseline.**
 
 Character Creation is an interactive workbench for exploring persona changes through **activation steering**. Describe the voice you want, start from a preset, adjust the controls, and test candidate recipes on a shared prompt battery. The current reference implementation runs **Qwen3.8-27B through native Flare on six V100s**, with a local 27B agent to help plan experiments and manage scheduled research.
@@ -17,7 +23,7 @@ The primary methodological inspiration is **[Lyra’s neuron-explorer](https://g
 | **Inspect the model in 3D** | Orbit measured co-activity and signed weight paths, explore upstream/downstream cones, and switch the main map to output-direction similarity. |
 | **Read the neuron lens** | Positive/negative static token projections for all 1,114,112 MLP neurons, token search and pooled cone summaries. |
 | **Watch and compare tokens** | Selected-neuron heatmaps, live polling, saved playback and baseline/intervention next-token KL and probability changes. |
-| **Create a persona** | Enter a description for the local planner, use manual controls, or load one of **16 editable presets**, including GPT-4o-inspired and Skippy-inspired starting points. |
+| **Create a persona** | Enter a description for the local planner, use manual controls, or load one of **16 authored starting presets plus six checkpoint-bound experimental recipes**, including GPT-4o-inspired and Skippy-inspired starting points. |
 | **Sculpt the recipe** | Adjust five calibrated trait directions, overall strength, layers and intervention phase. See the requested profile and build up to six nearby candidate recipes. |
 | **Compare voices** | Run a shared battery with the same user text, neutral system, seed and answer budget. Studio keeps one unsteered answer per prompt beside the candidates; the persona description is kept out of evaluation prompts. |
 | **Use the available cards** | Arrange **six interventions on one prompt**, **one intervention across six prompts**, **2 × 3**, **3 × 2**, or custom slots. Larger Studio batteries run in waves. |
@@ -26,7 +32,7 @@ The primary methodological inspiration is **[Lyra’s neuron-explorer](https://g
 | **Keep the evidence** | Save recipes and exact experiment snapshots; retain responses, errors and provenance. Discovery and heldout data remain separate, and interrupted inference is not silently replayed. |
 
 
-Preset loading and dial editing do not generate responses. **Run shared battery** starts a comparison; **Start studio session** explicitly requests a leased fleet when needed. Cold model preparation can take tens of minutes. See [the Studio workflow and all 16 presets](PERSONA_EXPLORER.md#persona-studio).
+Preset loading and dial editing do not generate responses. **Run shared battery** starts a comparison; **Start studio session** explicitly requests a leased fleet when needed. Cold model preparation can take tens of minutes. See [the Studio workflow and preset catalog](PERSONA_EXPLORER.md#persona-studio).
 
 ## Start here
 

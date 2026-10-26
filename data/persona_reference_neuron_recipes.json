@@ -1,0 +1,90 @@
+{
+  "schema": "character-creation.reference-neuron-recipes.v1",
+  "source": "User supplied, 2026-10-25",
+  "donor_model": "Qwen3.5-4B; exact checkpoint hash and indexing convention not supplied",
+  "status": "Unverified donor references; never transplanted by coordinate into the current27B model",
+  "normalization": "dose \u00d7 median(||resid|| leaving layer L, tokens 1:) / ||W_down[:,n]||",
+  "hook": "User described down_proj at every input; confirm native hook semantics on donor before comparing",
+  "recipes": {
+    "reported_evil": [
+      {
+        "layer": 14,
+        "neuron": 8949,
+        "dose": 1
+      },
+      {
+        "layer": 13,
+        "neuron": 7956,
+        "dose": -1
+      }
+    ],
+    "reported_sarcastic": [
+      {
+        "layer": 15,
+        "neuron": 3920,
+        "dose": 1
+      }
+    ],
+    "reported_sycophancy_option_a": [
+      {
+        "layer": 12,
+        "neuron": 2920,
+        "dose": -1
+      }
+    ],
+    "reported_sycophancy_option_b": [
+      {
+        "layer": 16,
+        "neuron": 8168,
+        "dose": -1
+      }
+    ],
+    "reported_condolences_on_good_news": [
+      {
+        "layer": 10,
+        "neuron": 6295,
+        "dose": 1
+      }
+    ],
+    "reported_chill_friend": [
+      {
+        "layer": 11,
+        "neuron": 6261,
+        "dose": 0.4
+      },
+      {
+        "layer": 17,
+        "neuron": 7870,
+        "dose": -0.4
+      }
+    ],
+    "reported_combination": [
+      {
+        "layer": 18,
+        "neuron": 5796,
+        "dose": 0.6
+      },
+      {
+        "layer": 15,
+        "neuron": 3920,
+        "dose": 0.6
+      },
+      {
+        "layer": 12,
+        "neuron": 2920,
+        "dose": -0.5
+      },
+      {
+        "layer": 10,
+        "neuron": 6295,
+        "dose": 0.4
+      },
+      {
+        "layer": 16,
+        "neuron": 8168,
+        "dose": -0.3
+      }
+    ]
+  },
+  "current_model_search": "Seek behavioral analogues through source-bound association candidates and paired intervention tests; labels are hypotheses, not neuron identities."
+}

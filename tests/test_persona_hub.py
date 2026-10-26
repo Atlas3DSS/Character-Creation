@@ -32,3 +32,6 @@ class HubExportTests(unittest.TestCase):
   self.save();(self.root/'data/persona_public_release.local.json').unlink()
   with self.assertRaisesRegex(ValueError,'approval required'):export(self.root)
   self.assertFalse((self.root/'dataset').exists())
+
+ def test_later_prompt_export_preserves_managed_research_card(self):
+  self.save();export(self.root);card=self.root/'dataset/README.md';section='<!-- character-creation-research:start -->\nResearch coverage and guides\n<!-- character-creation-research:end -->';card.write_text(card.read_text()+section+'\n');export(self.root);self.assertIn(section,card.read_text());self.assertEqual(card.read_text().count(section),1)

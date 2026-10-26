@@ -10,6 +10,7 @@ from pathlib import Path
 
 MODEL_REPO='Qwen/Qwen3.5-4B'
 REVISION='851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a'
+REFERENCE_NEURONS={(14,8949),(13,7956),(15,3920),(12,2920),(16,8168),(10,6295),(11,6261),(17,7870),(18,5796)}
 IDENTITY=hashlib.sha256((MODEL_REPO+'@'+REVISION).encode()).hexdigest()
 
 def digest(path):
@@ -136,19 +137,21 @@ def main():
       discovery_n=int(discover.sum()),heldout_n=int(replicate.sum()),source_layer=layer,target_layer=target_layer,
       source_valid=valid.cpu().numpy(),target_valid=target_valid.cpu().numpy())
     if target_layer==layer+1:
-     flat=np.argsort(-np.nan_to_num(abs(vals[:,0]),nan=-1),kind='stable')[:12]
+     top=np.argsort(-np.nan_to_num(abs(vals[:,0]),nan=-1),kind='stable')[:12].tolist()
+     flat=list(dict.fromkeys([n for l,n in sorted(REFERENCE_NEURONS) if l==layer]+top))
      candidates.extend((layer,int(n),target_layer,int(ids[n,0]),float(vals[n,0]),float(held_values[n,0])) for n in flat if ids[n,0]>=0 and np.isfinite(held_values[n,0]))
     del y,hx,hy
    del x
   # John ranks only existing candidate IDs. Model text is never executable.
-  chosen=list(range(min(24,len(candidates))));planner_record={'method':'fixed_strongest_fallback','selected':chosen}
+  mandatory=[i for i,c in enumerate(candidates) if (c[0],c[1]) in REFERENCE_NEURONS]
+  chosen=list(dict.fromkeys(mandatory+list(range(len(candidates)))))[:24];planner_record={'method':'fixed_strongest_fallback','selected':chosen}
   try:
    import urllib.request
    payload={'model':'persona-manager','messages':[{'role':'system','content':'Rank candidate neuron-link experiments. Return JSON only with selected: up to24 distinct integer candidate indices. Use discovery evidence and varied source layers. Evaluation evidence is withheld. No commands.'},{'role':'user','content':json.dumps({'candidates':[list(c[:5]) for c in candidates]})}], 'temperature':0,'max_tokens':512,'response_format':{'type':'json_object'}}
    request=urllib.request.Request('http://127.0.0.1:18511/v1/chat/completions',data=json.dumps(payload).encode(),headers={'Content-Type':'application/json'})
    response=json.load(urllib.request.urlopen(request,timeout=min(60,max(1,spec['deadline']-time.time()))));selection=json.loads(response['choices'][0]['message']['content'])['selected']
    if not isinstance(selection,list) or not 1<=len(selection)<=24 or any(type(i)!=int or not 0<=i<len(candidates) for i in selection) or len(set(selection))!=len(selection):raise ValueError('Invalid bounded choice')
-   chosen=selection;planner_record={'method':'john_ranked_fixed_candidates','selected':chosen,'request':payload,'response':response}
+   chosen=list(dict.fromkeys(mandatory+selection))[:24];planner_record={'method':'john_ranked_fixed_candidates','selected':chosen,'mandatory_reference_indices':mandatory,'request':payload,'response':response}
   except Exception as error:planner_record['error']=str(error)
   atomic(Path(str(prefix)+f'_planner_{a.shard}.json'),planner_record);update(phase='causal_checks')
   rng=np.random.default_rng(spec['seed']+a.shard);checks=0

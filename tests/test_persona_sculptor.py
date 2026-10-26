@@ -84,6 +84,32 @@ class PersonaSculptorTests(unittest.TestCase):
             time.sleep(.01)
         self.fail('Campaign did not finish within bounded CPU test time')
 
+    def test_endpoint_slot_waits_for_external_annotation_lock(self):
+        import fcntl, hashlib
+        endpoint = self.config['endpoints'][0]
+        path = self.root / 'results' / ('persona_endpoint_' + hashlib.sha256(endpoint['url'].encode()).hexdigest() + '.lock')
+        entered = threading.Event()
+        def acquire():
+            with self.app.endpoint_slot([endpoint['url']]): entered.set()
+        with path.open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            thread = threading.Thread(target=acquire); thread.start()
+            self.assertFalse(entered.wait(.1))
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            self.assertTrue(entered.wait(2)); thread.join(2)
+
+    def test_concept_and_trait_pushes_share_budget_and_snapshot(self):
+        self.app.atlas.search = Mock(return_value={'matches':[{'layer':0,'neuron':1,'direction':'positive','token':'rage','logit':1.}]})
+        self.app.atlas.query = Mock(return_value={'available':True,'source':{'model_identity':self.model.identity,'source_id':'fixture'},'positive':[{'text':'rage','logit':1.}]})
+        control = self.app.concept_controls.create({'name':'rage hypothesis','source':'lens','query':'rage','neurons':[{'layer':0,'neuron':1}]})
+        result = self.build(concept_controls=[{'id':control['id'],'value':1.}])
+        self.assertEqual(result['concept_controls'][0]['id'],control['id'])
+        for candidate in result['candidates']:
+            self.assertLessEqual(candidate['aggregate_relative_norm'],.5+1e-9)
+            self.assertTrue(any(p['kind']=='neuron' for p in candidate['pushes']))
+            self.assertEqual(candidate['concept_controls'][0]['validation'],'association_only')
+        with self.assertRaises(ValueError):self.build(concept_controls={})
+
     def test_correlated_trait_vectors_are_normalized_and_variants_deterministic_without_neuron_claims(self):
         maximum = {trait: 1. for trait in TRAITS}
         first, second = self.build(dials=maximum), self.build(dials=maximum)
@@ -241,6 +267,40 @@ class PersonaSculptorTests(unittest.TestCase):
         self.assertNotIn(catalog['default_prompts'][0]['id'], ('profile', 'mutation', self.prompts[1]['id']))
         self.assertEqual(catalog['defaults']['count'], 6); self.assertEqual(catalog['capacity']['available'], 0)
 
+    def test_preset_comparison_keeps_prompt_seed_baseline_and_saved_snapshots(self):
+        catalog = json.loads((Path(__file__).resolve().parents[1] / 'data/persona_presets.json').read_text())
+        catalog['presets'] = catalog['presets'][:2]
+        path = self.root / 'data/persona_presets.json'; path.write_text(json.dumps(catalog))
+        value = {'preset_ids': [p['id'] for p in catalog['presets']], 'prompt': 'A friend disagrees with your plan. Respond.',
+                 'seed': 19, 'max_tokens': 2048}
+        with patch('persona_explorer.fetch', side_effect=self.api):
+            identity = self.app.sculptor.compare_presets(value)['id']
+            deadline = time.monotonic() + 8
+            while time.monotonic() < deadline:
+                batch = self.app.batch(identity)
+                if batch['state'] not in ('queued', 'running'): break
+                time.sleep(.01)
+        self.assertEqual(batch['state'], 'complete')
+        self.assertEqual(len(batch['cells']), 3)
+        self.assertEqual(batch['cells'][0]['recipe']['pushes'], [])
+        self.assertTrue(all(c['prompt']['text'] == value['prompt'] for c in batch['cells']))
+        self.assertTrue(all(r['seed'] == 19 for r in self.requests))
+        self.assertTrue(all(r['messages'] == self.requests[0]['messages'] for r in self.requests))
+        saved = self.app.sculptor.preset_comparisons()['comparisons'][0]
+        self.assertEqual(saved['id'], identity)
+        self.assertEqual(saved['input']['preset_ids'], value['preset_ids'])
+        original = saved['input']['presets'][0]['recipe']
+        catalog['presets'][0]['dials']['openness'] = -1
+        path.write_text(json.dumps(catalog))
+        self.assertEqual(self.app.sculptor.preset_comparisons()['comparisons'][0]['input']['presets'][0]['recipe'], original)
+
+    def test_preset_comparison_rejects_invalid_selection_before_building(self):
+        value = {'preset_ids': ['one', 'one'], 'prompt': 'Hello', 'seed': 1, 'max_tokens': 2048}
+        with patch.object(self.app.sculptor, 'preset') as build:
+            for ids in (['one'], ['one', 'one'], ['one'] * 6, [1, 2]):
+                with self.assertRaises(ValueError): self.app.sculptor.compare_presets({**value, 'preset_ids': ids})
+            build.assert_not_called()
+
     def test_allowlisted_presets_preserve_approximation_sources_and_save_center_without_john(self):
         preset = {'id': 'four-o-approximation', 'name': '4o-style approximation', 'brief': 'A warm, conversational helper',
             'description': 'An approximate style target, not original model weights.', 'dials': self.controls,
@@ -267,6 +327,36 @@ class PersonaSculptorTests(unittest.TestCase):
         preset['sources'][0]['url'] = 'javascript:alert(1)'
         path.write_text(json.dumps({'schema': 'character-creation.persona-presets.v1', 'presets': [preset]}))
         with self.assertRaisesRegex(ValueError, 'HTTP'): self.app.sculptor.presets()
+
+    def test_fixed_neuron_preset_preserves_exact_dose_and_prefill_without_clamping(self):
+        preset = {'id': 'dry-wit', 'name': 'Experimental dry wit', 'brief': 'Observed sharp wit',
+            'description': 'One exact observed experimental recipe.', 'dials': {trait: 0 for trait in TRAITS},
+            'dose_budget': 1., 'variation': 0., 'phase': 'prefill', 'model_identity': self.model.identity,
+            'fixed_recipe': {'model_identity': self.model.identity, 'pushes': [{'kind': 'neuron', 'layer': 0, 'neuron': 1, 'dose': 1.}], 'phase': 'prefill'},
+            'evidence_basis': 'Matched exploratory responses, not a robust trait claim.', 'unsupported_traits': [], 'sources': [], 'notes': []}
+        path = self.root / 'data/persona_presets.json'
+        path.write_text(json.dumps({'schema': 'character-creation.persona-presets.v1', 'presets': [preset]}))
+        result = self.app.sculptor.preset({'id': 'dry-wit'})
+        self.assertEqual(result['saved_recipe']['pushes'], preset['fixed_recipe']['pushes'])
+        self.assertEqual(result['saved_recipe']['phase'], 'prefill')
+        self.assertAlmostEqual(result['build']['candidates'][0]['aggregate_relative_norm'], 1.)
+        self.assertEqual(result['build']['candidates'][0]['normalization_scale'], 1.)
+        with self.assertRaises(ValueError): self.app.sculptor.build({'plan_id': result['plan']['id'], 'count': True})
+        with self.assertRaisesRegex(ValueError, 'immutable'): self.app.sculptor.build({'plan_id': result['plan']['id'], 'dose_budget': .2})
+        with self.assertRaisesRegex(ValueError, 'budget'): self.app.sculptor.build({'dials': self.controls, 'count': 1, 'dose_budget': 1.})
+        preset['model_identity'] = 'b' * 64
+        path.write_text(json.dumps({'schema': 'character-creation.persona-presets.v1', 'presets': [preset]}))
+        with self.assertRaisesRegex(ValueError, 'model'): self.app.sculptor.presets()
+
+    def test_model_bound_preset_keeps_its_selected_layers(self):
+        preset = {'id': 'late', 'name': 'Experimental late profile', 'brief': 'Observed style',
+            'description': 'Bound selected layers.', 'dials': self.controls, 'dose_budget': .2, 'variation': 0., 'phase': 'all',
+            'model_identity': self.model.identity, 'layers': [1], 'evidence_basis': 'Exploratory observation',
+            'unsupported_traits': [], 'sources': [], 'notes': []}
+        (self.root / 'data/persona_presets.json').write_text(json.dumps({'schema': 'character-creation.persona-presets.v1', 'presets': [preset]}))
+        result = self.app.sculptor.preset({'id': 'late'})
+        self.assertEqual(result['build']['layers'], [1])
+        self.assertEqual({p['layer'] for p in result['saved_recipe']['pushes']}, {1})
 
     def test_cancellation_drains_current_baseline_wave_and_never_submits_candidates(self):
         build = self.build(); entered = threading.Event(); release = threading.Event()

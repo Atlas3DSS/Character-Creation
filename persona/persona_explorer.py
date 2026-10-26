@@ -14,9 +14,12 @@ import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import math
+import os
+import sys
 import numpy as np
 from pathlib import Path
 import sqlite3
+import subprocess
 import threading
 import time
 from urllib.parse import parse_qs, urlparse
@@ -24,9 +27,20 @@ import uuid
 
 from persona_fleet import fetch
 from persona_neighbors import CoactivityIndex
+from persona_concepts import ConceptSearch
+from persona_concept_controls import Registry
+from persona_activation_lab import ActivationLab
+from persona_prompt_browser import browse
+from persona_literature import browse as browse_literature
+from persona_literature_harness import save_prompt
+from persona_literature_embeddings import neighbors as literature_neighbors
+from persona_literature_nlp import status as literature_nlp_status, graph as literature_nlp_graph, latest_run as literature_nlp_run
 from persona_atlas import WeightAtlas
 from persona_trace_lab import TraceLab
 from persona_jobs import JobStore
+from persona_overnight import OvernightMap
+from persona_coherence import CoherenceLab
+from persona_neuron_labels import read_registry as read_neuron_labels
 from persona_sculptor import Sculptor
 from persona_vectors import ModelSpec, VectorBank, canonical_digest
 from scripts.experiments.scotus.qwen_eval_budget import enforce_complete_answer_budget, qwen_budget_metadata
@@ -34,6 +48,16 @@ from scripts.experiments.scotus.qwen_eval_budget import enforce_complete_answer_
 PROJECT_ROOT = Path(__file__).resolve().parent
 if PROJECT_ROOT.name == "persona":
     PROJECT_ROOT = PROJECT_ROOT.parent
+
+
+def nlp_interpreter(config):
+    value=config.get('nlp_python',sys.executable)
+    if not isinstance(value,str) or not value.strip() or any(ord(c)<32 for c in value):
+        raise ValueError('nlp_python must be an executable path')
+    path=Path(value).expanduser()
+    if not path.is_absolute() or not path.is_file() or not os.access(path,os.X_OK):
+        raise ValueError('nlp_python must name an existing executable using an absolute path')
+    return str(path)
 
 
 def object_fields(value, required, optional=()):
@@ -110,9 +134,12 @@ class Explorer:
             **({"checkpoint": Path(config["checkpoint"])} if config.get("checkpoint") else {}))
         self.bank_lock = threading.RLock()
         self.endpoints = deepcopy(config.get("endpoints", []))
+        self.activation_endpoints = deepcopy(config.get("activation_endpoints", []))
+        if not isinstance(self.activation_endpoints,list) or len(self.activation_endpoints)>6:
+            raise ValueError("Configure at most six activation-search endpoints")
         if not isinstance(self.endpoints, list) or len(self.endpoints) > 6:
             raise ValueError("Configure at most six inference endpoints")
-        for endpoint in self.endpoints:
+        for endpoint in self.endpoints + self.activation_endpoints:
             if not isinstance(endpoint, dict) or not endpoint.get("url", "").startswith("http://127.0.0.1:"):
                 raise ValueError("Endpoints must name explicitly forwarded localhost HTTP servers")
             if endpoint.get("model_identity") != self.model.identity or not endpoint.get("prepared_identity"):
@@ -120,11 +147,12 @@ class Explorer:
             parsed = urlparse(endpoint['url'])
             if parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment or not parsed.port:
                 raise ValueError("Endpoint URLs must contain only a loopback host and port")
-        if len({endpoint['url'] for endpoint in self.endpoints}) != len(self.endpoints):
+        if len({endpoint['url'] for endpoint in self.endpoints + self.activation_endpoints}) != len(self.endpoints + self.activation_endpoints):
             raise ValueError("Duplicate endpoints cannot provide independent GPU slots")
         (root / "results").mkdir(exist_ok=True)
         self.database = root / "results/persona_explorer.sqlite"
         self.jobs = JobStore(root)
+        self.overnight = OvernightMap(self)
         self.singleton = self.database.with_suffix('.sqlite.lock').open('a')
         fcntl.flock(self.singleton, fcntl.LOCK_EX | fcntl.LOCK_NB)
         with self.connect() as db:
@@ -146,25 +174,52 @@ class Explorer:
             for identity in interrupted:
                 self._update_batch(db, identity)
         self.traces = TraceLab(self)
+        self.activation_lab = ActivationLab(self)
         self.executor = ThreadPoolExecutor(max_workers=4)
         self.cell_executor = ThreadPoolExecutor(max_workers=max(1, len(self.endpoints)))
         self.endpoint_condition = threading.Condition()
-        self.available_endpoints = list(self.endpoints)
+        self.available_endpoints = list(self.endpoints + self.activation_endpoints)
         self.corpus_lock = threading.RLock()
+        self.literature_search_lock = threading.Lock()
         self.corpus_cache, self.corpus_signature = {}, None
         self.corpus_binding = {}
+        self.concepts = ConceptSearch(self.neighbors, self.corpus_snapshot)
+        self.concept_controls = Registry(self)
         self.capacity_lock = threading.Lock()
         self.capacity_cache, self.capacity_updated = None, 0.
         self.closed = False
         self.sculptor = Sculptor(self)
         self.remote_columns = {}
         self.bank.column_provider = self.remote_column
+        self.coherence = CoherenceLab(self)
+
+    def literature_search(self, query):
+        if not isinstance(query,str) or not query.strip() or len(query)>500: raise ValueError('Supply a search query of 1–500 characters')
+        database=self.root / 'results/persona_literature.sqlite'
+        run=literature_nlp_run(database,lexical=True)
+        if not run:return {'available':False,'units':[],'reason':'Lexical index is still being built'}
+        with self.literature_search_lock:
+            try:
+                result=subprocess.run([nlp_interpreter(self.config),str(self.root/'persona/persona_literature_nlp.py'),'--database',str(database),'--search',query,'--run-id',run['id'],'--limit','24'],capture_output=True,text=True,timeout=60)
+            except subprocess.TimeoutExpired as exc:raise ValueError('Lexical search timed out') from exc
+        if result.returncode:raise ValueError('Lexical search unavailable: '+result.stderr[-500:])
+        data=json.loads(result.stdout);units=[]
+        with sqlite3.connect(database) as db:
+            db.row_factory=sqlite3.Row
+            for match in data['matches']:
+                if not match['sources']:continue
+                source=match['sources'][0]
+                row=db.execute('SELECT u.*,b.title AS book_title,d.member FROM units u JOIN books b ON b.id=u.book_id JOIN documents d ON d.id=u.document_id WHERE u.id=?',(source['unit_id'],)).fetchone()
+                if row:
+                    item=dict(row);item['annotation']=json.loads(item['annotation']) if item['annotation'] else None
+                    item['retrieval_score']=match['score'];units.append(item)
+        return {'available':True,'units':units,'run_id':run['id'],'method':data['semantics'],'query':query}
 
     def remote_column(self, bank, layer, neuron):
         key=(layer,neuron)
         if key in self.remote_columns:return self.remote_columns[key]
         errors=[]
-        for endpoint in self.endpoints:
+        for endpoint in self.activation_endpoints + self.endpoints:
             try:
                 descriptor=fetch(endpoint['url']+'/v1/models',timeout=3)['data'][0]
                 verify_endpoint(descriptor,endpoint)
@@ -192,6 +247,8 @@ class Explorer:
 
     def close(self):
         self.closed = True
+        self.coherence.executor.shutdown(wait=True)
+        self.activation_lab.executor.shutdown(wait=True)
         self.traces.executor.shutdown(wait=True)
         self.executor.shutdown(wait=True)
         self.cell_executor.shutdown(wait=True)
@@ -199,6 +256,7 @@ class Explorer:
 
     @contextmanager
     def endpoint_slot(self, eligible=None):
+        self.overnight.require_interactive()
         with self.endpoint_condition:
             self.endpoint_condition.wait_for(lambda: any(eligible is None or endpoint['url'] in eligible
                                                        for endpoint in self.available_endpoints))
@@ -206,7 +264,13 @@ class Explorer:
                          if eligible is None or endpoint['url'] in eligible)
             endpoint = self.available_endpoints.pop(index)
         try:
-            yield endpoint
+            lock_path = self.root / 'results' / ('persona_endpoint_' + hashlib.sha256(endpoint['url'].encode()).hexdigest() + '.lock')
+            with lock_path.open('a') as slot_lock:
+                fcntl.flock(slot_lock, fcntl.LOCK_EX)
+                try:
+                    yield endpoint
+                finally:
+                    fcntl.flock(slot_lock, fcntl.LOCK_UN)
         finally:
             with self.endpoint_condition:
                 self.available_endpoints.append(endpoint)
@@ -250,7 +314,10 @@ class Explorer:
             if manifest.get('status') != 'complete':
                 raise ValueError('Corpus publication is not complete; try after ingestion finishes')
             stat = path.stat()
-            signature = (hashlib.sha256(manifest_bytes).hexdigest(), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+            supplement = self.root / 'data/persona_adult_sexuality.json'
+            extra_bytes = supplement.read_bytes() if supplement.exists() else b'[]'
+            extra_digest = hashlib.sha256(extra_bytes).hexdigest()
+            signature = (hashlib.sha256(manifest_bytes).hexdigest(), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, extra_digest)
             if signature == self.corpus_signature:
                 return self.corpus_cache, self.corpus_binding
             raw = path.read_bytes()
@@ -258,9 +325,10 @@ class Explorer:
             if digest != manifest.get('output_sha256') or manifest_path.read_bytes() != manifest_bytes:
                 raise ValueError('Corpus content does not match its completed publication manifest')
             rows, groups = {}, {}
-            for line in raw.splitlines():
-                if not line.strip(): continue
-                row = json.loads(line)
+            extra_rows = json.loads(extra_bytes)
+            if not isinstance(extra_rows, list) or any(not isinstance(r, dict) or r.get('corpus') != 'adult_sexuality' for r in extra_rows):
+                raise ValueError('Invalid adult sexuality supplement')
+            for row in [json.loads(line) for line in raw.splitlines() if line.strip()] + extra_rows:
                 if (not isinstance(row, dict) or row.get('schema') != 'character-creation.manager-corpus.v1'
                         or not isinstance(row.get('id'), str) or row['id'] in rows
                         or row['id'] != canonical_digest({key: value for key, value in row.items() if key != 'id'})
@@ -279,7 +347,7 @@ class Explorer:
             if not rows or not self.corpus_cache.keys() <= rows.keys():
                 raise ValueError('Corpus publication must preserve existing immutable records')
             self.corpus_cache, self.corpus_signature = rows, signature
-            self.corpus_binding = {'corpus_sha256': digest, 'manifest_sha256': signature[0]}
+            self.corpus_binding = {'corpus_sha256': digest, 'manifest_sha256': signature[0], 'supplement_sha256': extra_digest}
             return self.corpus_cache, self.corpus_binding
 
     def corpora(self):
@@ -384,8 +452,9 @@ class Explorer:
             result.append(item)
         return {'id': identity, 'created': row[0], 'state': row[1], 'input': json.loads(row[2]), 'cells': result}
 
-    def submit_batch(self, value):
-        if self.closed or not self.endpoints: raise ValueError('No active Flare endpoints configured')
+    def submit_batch(self, value, *, endpoints=None):
+        endpoints = self.endpoints if endpoints is None else endpoints
+        if self.closed or not endpoints: raise ValueError('No active Flare endpoints configured')
         value = deepcopy(value)
         object_fields(value, ('model_identity', 'seed', 'max_tokens', 'thinking', 'smoke', 'cells'))
         if value['model_identity'] != self.model.identity: raise ValueError('Batch belongs to another model')
@@ -431,7 +500,7 @@ class Explorer:
         # Transport failures may reduce capacity. A reachable identity/capability
         # mismatch is a configuration error and rejects the complete batch.
         admitted = []
-        for endpoint in self.endpoints:
+        for endpoint in endpoints:
             try:
                 descriptor = fetch(endpoint['url'] + '/v1/models', timeout=5)['data'][0]
             except OSError:
@@ -545,12 +614,45 @@ class Explorer:
         if chart.get("model_identity") not in (None, self.model.identity):
             raise ValueError("Map belongs to a different model")
         geometry_path=self.root/'results/persona_map_geometry.json'
+        chart['geometry']={'available':False,'reason':'PCA geometry has not been published; using the neuron index grid.'}
+        for node in chart['neurons']:
+            node.pop('output_layout',None)
         if geometry_path.is_file():
-            geometry=json.loads(geometry_path.read_text())
-            if geometry.get('model_identity')==self.model.identity and geometry.get('map_sha256')==hashlib.sha256(path.read_bytes()).hexdigest():
+            try:
+                geometry=json.loads(geometry_path.read_text())
+                if geometry.get('model_identity')!=self.model.identity or geometry.get('map_sha256')!=hashlib.sha256(path.read_bytes()).hexdigest():
+                    raise ValueError('PCA model or map binding differs')
+                sources=geometry.get('source_sha256')
+                if not isinstance(sources,dict) or not sources:
+                    raise ValueError('PCA calibration source bindings are missing')
+                cache=getattr(self,'_geometry_source_cache',{})
+                self._geometry_source_cache=cache
+                for name,expected in sources.items():
+                    if name not in {f'layer_{layer:02d}.npz' for layer in range(self.model.layers)}:
+                        raise ValueError('PCA calibration source name is invalid')
+                    source=self.root/'results'/name
+                    stat=source.stat()
+                    key=(stat.st_dev,stat.st_ino,stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns)
+                    cached=cache.get(name)
+                    if cached is None or cached[0]!=key:
+                        with source.open('rb') as stream:
+                            actual=hashlib.file_digest(stream,'sha256').hexdigest()
+                        after=source.stat()
+                        if key!=(after.st_dev,after.st_ino,after.st_size,after.st_mtime_ns,after.st_ctime_ns):
+                            raise ValueError('PCA calibration source changed during verification')
+                        cache[name]=(key,actual)
+                    if cache[name][1]!=expected:
+                        raise ValueError('PCA calibration source hash differs: '+name)
+                positions=geometry['positions']
+                if any(f"layer_{node['layer']:02d}.npz" not in sources for node in chart['neurons'] if f"L{node['layer']}N{node['neuron']}" in positions):
+                    raise ValueError('PCA positions lack a calibration source binding')
                 for node in chart['neurons']:
-                    node['output_layout']=geometry['positions'].get(f"L{node['layer']}N{node['neuron']}")
-                chart['geometry']={key:geometry[key] for key in ('semantics','explained_fraction')}
+                    node['output_layout']=positions.get(f"L{node['layer']}N{node['neuron']}")
+                chart['geometry']={key:geometry[key] for key in ('semantics','explained_fraction')}|{'available':True}
+            except (OSError,ValueError,KeyError,TypeError,AttributeError) as error:
+                for node in chart['neurons']:
+                    node.pop('output_layout',None)
+                chart['geometry']={'available':False,'reason':str(error)+'; using the neuron index grid.'}
         summary_path = self.root / "results/persona_baseline_summary.json"
         if not summary_path.exists():
             summary_path = self.root / "reports/persona_baseline.json"
@@ -639,18 +741,39 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     body = (app.root / "ui/atlas-logo.png").read_bytes()
                     self.send_response(200); self.send_header("Content-Type", "image/png")
                     self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
-                elif path.path in ('/persona_trace.js', '/persona_trace.css', '/persona_atlas.js', '/persona_atlas.css', '/persona_graph.js', '/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css'):
+                elif path.path in ('/persona_neuron_labels.js','/persona_neuron_labels.css','/persona_coherence.js','/persona_coherence.css','/persona_overnight.js', '/persona_literature.js', '/persona_literature.css', '/persona_concept_controls.js', '/persona_concept_controls.css', '/persona_activation_search.js', '/persona_activation_search.css', '/persona_prompt_browser.js', '/persona_prompt_browser.css', '/persona_concepts.js', '/persona_trace.js', '/persona_trace.css', '/persona_atlas.js', '/persona_atlas.css', '/persona_graph.js', '/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css'):
                     name = path.path[1:]
                     body = (app.root / 'ui' / name).read_bytes()
                     content_type = 'application/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8'
                     self.send_response(200); self.send_header('Content-Type', content_type); self.send_header('Cache-Control', 'no-cache')
                     self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+                elif path.path == '/api/overnight': self.send(app.overnight.status())
+                elif path.path == '/api/neuron-labels': self.send(read_neuron_labels(app.root/'results/persona_neuron_labels.json', app.model.identity, layers=app.model.layers, neurons_per_layer=app.model.intermediate))
+                elif path.path == '/api/coherence': self.send(app.coherence.catalog())
+                elif path.path == '/api/coherence/run': self.send(app.coherence.get(parse_qs(path.query).get('id', [''])[0]))
+                elif path.path == '/api/coherence/interaction': self.send(app.coherence.interaction(parse_qs(path.query).get('id', [''])[0]))
+                elif path.path == '/api/overnight/features': self.send(app.overnight.features())
+                elif path.path == '/api/concept-controls': self.send(app.concept_controls.listing())
+                elif path.path == '/api/literature/search': self.send(app.literature_search(parse_qs(path.query).get('q',[''])[0]))
+                elif path.path == '/api/literature/nlp': self.send(literature_nlp_status(app.root / 'results/persona_literature.sqlite'))
+                elif path.path == '/api/literature/graph':
+                    query = parse_qs(path.query)
+                    self.send(literature_nlp_graph(app.root / 'results/persona_literature.sqlite',query.get('unit_id',[''])[0]))
+                elif path.path == '/api/literature/neighbors':
+                    query = parse_qs(path.query)
+                    self.send(literature_neighbors(app.root / 'results/persona_literature.sqlite',query.get('unit_id',[''])[0],int(query.get('limit',['8'])[0])))
+                elif path.path == '/api/literature':
+                    query = parse_qs(path.query)
+                    options = {k: query[k][0] for k in ('book_id','q','theme','entity','nlp_entity') if k in query}
+                    options.update({k:int(query[k][0]) for k in ('offset','limit') if k in query})
+                    self.send(browse_literature(app.root / 'results/persona_literature.sqlite', **options))
                 elif path.path == '/api/trace/search': self.send(app.traces.search(parse_qs(path.query).get('q',[''])[0]))
                 elif path.path == '/api/traces': self.send(app.traces.listing())
                 elif path.path == '/api/trace': self.send(app.traces.get(parse_qs(path.query).get('id',[''])[0]))
                 elif path.path == "/api/state": self.send(app.state())
                 elif path.path == '/api/capacity': self.send(app.capacity())
                 elif path.path == '/api/sculptor': self.send(app.sculptor.catalog())
+                elif path.path == '/api/sculptor/preset-comparisons': self.send(app.sculptor.preset_comparisons())
                 elif path.path == '/api/sculptor/presets': self.send(app.sculptor.presets())
                 elif path.path == '/api/sculptor/campaigns': self.send(app.sculptor.listing())
                 elif path.path == '/api/sculptor/campaign': self.send(app.sculptor.get(parse_qs(path.query).get('id', [''])[0]))
@@ -662,7 +785,7 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                         corpus=query.get('corpus', ['all'])[0], scope=query.get('scope', ['all'])[0], limit=int(query.get('limit', ['12'])[0])))
                 elif path.path in ('/api/lens', '/api/weight-web', '/api/lens/search'):
                     query=parse_qs(path.query)
-                    if path.path=='/api/lens/search': self.send(app.atlas.search(query.get('q',[''])[0]))
+                    if path.path=='/api/lens/search': self.send(app.atlas.search(query.get('q',[''])[0], word_start=query.get('word_start',['false'])[0]=='true'))
                     else:
                         layer=int(query.get('layer',[''])[0]);neuron=int(query.get('neuron',[''])[0])
                         if path.path=='/api/lens': self.send(app.atlas.query(layer,neuron))
@@ -673,6 +796,19 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     self.send(json.loads((app.root / "data/lyra_recipes.json").read_text()))
                 elif path.path == "/api/comparison":
                     self.send(app.comparison(parse_qs(path.query).get("id", [""])[0]))
+                elif path.path == '/api/activation-status': self.send(app.activation_lab.status())
+                elif path.path == '/api/activation-searches': self.send(app.activation_lab.listing())
+                elif path.path == '/api/activation-search': self.send(app.activation_lab.get(parse_qs(path.query).get('id',[''])[0]))
+                elif path.path == '/api/concepts':
+                    query = parse_qs(path.query)
+                    self.send(app.concepts.query(q=query.get('q',[''])[0], corpus=query.get('corpus',['all'])[0], limit=int(query.get('limit',['20'])[0])))
+                elif path.path == '/api/prompt-browser':
+                    query = parse_qs(path.query, keep_blank_values=True)
+                    options = {key: query[key][0] for key in ('corpus','split','q','group','trait','facet','domain','category','origin') if key in query}
+                    options.update({key: int(query[key][0]) for key in ('offset','limit') if key in query})
+                    options['spread'] = query.get('spread',['false'])[0] == 'true'
+                    rows, _ = app.corpus_snapshot()
+                    self.send(browse(rows, prompt_label, **options))
                 elif path.path == '/api/corpora': self.send(app.corpora())
                 elif path.path == '/api/prompts':
                     query = parse_qs(path.query)
@@ -693,13 +829,27 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 if not 0 < size <= 1000000: raise ValueError("Request size exceeds limit")
                 value = json.loads(self.rfile.read(size))
                 if not isinstance(value, dict): raise ValueError("Expected JSON object")
-                if self.path in ('/api/jobs', '/api/job/cancel') or self.path.startswith('/api/sculptor/'):
+                if self.path in ('/api/jobs', '/api/job/cancel') or self.path.startswith(('/api/sculptor/', '/api/coherence/')):
                     if self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower() != 'application/json':
                         raise ValueError('Scheduled job changes require application/json')
-                if self.path == '/api/traces': self.send(app.traces.submit(value),202)
+                if self.path in ('/api/activation-searches','/api/activation-comparisons','/api/activation-session','/api/compare','/api/batches','/api/traces','/api/sculptor/campaigns','/api/sculptor/preset-comparisons'):
+                    app.overnight.require_interactive()
+                if self.path == '/api/overnight': self.send(app.overnight.action(value)); return
+                if self.path == '/api/coherence/runs': self.send(app.coherence.submit(value), 202); return
+                if self.path == '/api/coherence/cancel': self.send(app.coherence.cancel(value)); return
+                if self.path == '/api/coherence/interaction-plan': self.send(app.coherence.interaction_plan(value)); return
+                if self.path == '/api/coherence/interaction-test': self.send(app.coherence.interaction_test(value), 202); return
+                if self.path in ('/api/activation-searches', '/api/activation-comparisons', '/api/activation-session'):
+                    if self.headers.get('Content-Type', '').split(';',1)[0].strip().lower() != 'application/json':
+                        raise ValueError('Activation operations require application/json')
+                    self.send(app.activation_lab.start_session(value) if self.path == '/api/activation-session' else app.activation_lab.submit(value) if self.path == '/api/activation-searches' else app.activation_lab.compare(value),202)
+                elif self.path == '/api/concept-controls': self.send(app.concept_controls.create(value))
+                elif self.path == '/api/literature/prompt': self.send(save_prompt(app.root / 'results/persona_literature.sqlite', value))
+                elif self.path == '/api/traces': self.send(app.traces.submit(value),202)
                 elif self.path == "/api/compare": self.send({"id": app.submit(value)}, 202)
                 elif self.path == '/api/sculptor/plan': self.send(app.sculptor.plan(value))
                 elif self.path == '/api/sculptor/build': self.send(app.sculptor.build(value))
+                elif self.path == '/api/sculptor/preset-comparisons': self.send(app.sculptor.compare_presets(value), 202)
                 elif self.path == '/api/sculptor/preset': self.send(app.sculptor.preset(value))
                 elif self.path == '/api/sculptor/campaigns': self.send(app.sculptor.submit(value), 202)
                 elif self.path == '/api/sculptor/cancel': self.send(app.sculptor.cancel(value))
@@ -710,7 +860,7 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif self.path == '/api/job/cancel':
                     object_fields(value, ('id',)); self.send(app.jobs.cancel(value['id']))
                 elif self.path == '/api/saved-recipes': self.send(app.save_recipe(value))
-                elif self.path == '/api/batches': self.send({'id': app.submit_batch(value)}, 202)
+                elif self.path == '/api/batches': self.send({'id': app.submit_batch(value, endpoints=app.activation_endpoints + app.endpoints)}, 202)
                 else: self.send({"error": "Not found"}, 404)
             except (ValueError, OSError, KeyError) as error: self.send({"error": str(error)}, 400)
     return Handler

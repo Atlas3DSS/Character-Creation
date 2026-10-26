@@ -66,6 +66,12 @@ class AtlasReaderTests(unittest.TestCase):
         self.assertEqual(result['missing_layers'],[])
         self.assertTrue(result['matches'])
 
+    def test_word_start_search_excludes_embedded_fragments(self):
+        self.assertTrue(any(m['token']=='23' for m in self.index.search('3')['matches']))
+        result=self.index.search('3',word_start=True)
+        self.assertTrue(result['matches'])
+        self.assertTrue(all(m['token']=='3' for m in result['matches']))
+
     def test_reader_rejects_tampering_and_reports_missing_layer(self):
         path=self.root/'results/persona_atlas_L0.npz'
         with path.open('ab') as stream:stream.write(b'tampered')

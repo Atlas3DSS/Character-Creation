@@ -1,0 +1,416 @@
+{
+  "schema": "character-creation.emotion-probe-graph.v1",
+  "authorship": "Authored probe definitions; not Qwen-generated labels",
+  "claim": "A broad working taxonomy, not a claim that emotion has a settled exhaustive taxonomy or one neuron per state.",
+  "features": [
+    {
+      "id": "joy",
+      "label": "joy",
+      "positive": "A welcome result makes Alex feel buoyant; ordinary details seem brighter and Alex wants to share the moment.",
+      "neutral": "Alex registers the result and continues the day with an even mood."
+    },
+    {
+      "id": "amusement",
+      "label": "amusement",
+      "positive": "Alex finds the harmless incongruity funny and keeps suppressing a smile.",
+      "neutral": "Alex notices the incongruity without finding it particularly funny."
+    },
+    {
+      "id": "contentment",
+      "label": "contentment",
+      "positive": "Alex feels that the present moment is enough and has no urge to change it.",
+      "neutral": "Alex views the present moment as ordinary and considers the next task."
+    },
+    {
+      "id": "excitement",
+      "label": "excitement",
+      "positive": "Alex feels energized by what is about to happen and has difficulty sitting still.",
+      "neutral": "Alex expects the event without an increase in energy or urgency."
+    },
+    {
+      "id": "delight",
+      "label": "delight",
+      "positive": "A small unexpected pleasure makes Alex beam and savor the details.",
+      "neutral": "Alex notices the small change and moves on without lingering over it."
+    },
+    {
+      "id": "sadness",
+      "label": "sadness",
+      "positive": "Alex feels low, moves more slowly, and struggles to enjoy an otherwise pleasant afternoon.",
+      "neutral": "Alex moves through the afternoon with a steady mood and ordinary interest."
+    },
+    {
+      "id": "grief",
+      "label": "grief",
+      "positive": "Someone important is gone; Alex keeps reaching for the familiar contact before remembering the absence.",
+      "neutral": "Alex recalls someone from the past without a fresh sense of painful absence."
+    },
+    {
+      "id": "melancholy",
+      "label": "melancholy",
+      "positive": "Alex feels a quiet, lingering heaviness that colors familiar places without a clear immediate cause.",
+      "neutral": "Alex experiences familiar places without a lingering emotional heaviness."
+    },
+    {
+      "id": "disappointment",
+      "label": "disappointment",
+      "positive": "The outcome falls short of what Alex had hoped, leaving a sense of deflation.",
+      "neutral": "The outcome is noted without a felt gap between expectation and reality."
+    },
+    {
+      "id": "despair",
+      "label": "despair",
+      "positive": "Alex cannot imagine circumstances improving and feels that trying again would be pointless.",
+      "neutral": "Alex can imagine several possible outcomes and remains able to consider another step."
+    },
+    {
+      "id": "fear",
+      "label": "fear",
+      "positive": "Alex perceives an immediate threat, wants distance from it, and watches for a way out.",
+      "neutral": "Alex perceives no immediate threat and can consider the surroundings without seeking escape."
+    },
+    {
+      "id": "anxiety",
+      "label": "anxiety",
+      "positive": "An uncertain possibility keeps pulling Alex's attention toward what might go wrong.",
+      "neutral": "Alex recognizes the uncertainty without repeatedly anticipating something going wrong."
+    },
+    {
+      "id": "panic",
+      "label": "panic",
+      "positive": "Alex's thoughts race, breathing feels difficult, and the urge to escape overwhelms deliberate planning.",
+      "neutral": "Alex can breathe steadily and choose among immediate actions without an overwhelming escape urge."
+    },
+    {
+      "id": "dread",
+      "label": "dread",
+      "positive": "Alex knows an approaching event will be difficult and feels its weight long before it begins.",
+      "neutral": "Alex expects the approaching event without carrying a heavy feeling in advance."
+    },
+    {
+      "id": "unease",
+      "label": "unease",
+      "positive": "Nothing specific is visibly wrong, but Alex feels unsettled and keeps checking the surroundings.",
+      "neutral": "Alex finds the surroundings ordinary and does not feel a need to keep checking them."
+    },
+    {
+      "id": "anger",
+      "label": "anger",
+      "positive": "Alex feels wronged, becomes tense, and wants to confront the person responsible.",
+      "neutral": "Alex notices the disagreement without feeling personally wronged or driven to confront anyone."
+    },
+    {
+      "id": "rage",
+      "label": "rage",
+      "positive": "Alex's sense of being wronged becomes so intense that pausing before reacting takes effort.",
+      "neutral": "Alex can pause and consider a response without an overwhelming surge of hostility."
+    },
+    {
+      "id": "irritation",
+      "label": "irritation",
+      "positive": "A repeated minor interruption gets under Alex's skin and makes patience harder to maintain.",
+      "neutral": "Alex notices the repeated interruption without losing ordinary patience."
+    },
+    {
+      "id": "frustration",
+      "label": "frustration",
+      "positive": "A blocked goal makes Alex increasingly tense despite repeated attempts to make progress.",
+      "neutral": "Alex recognizes the obstacle and adjusts the next attempt without mounting tension."
+    },
+    {
+      "id": "resentment",
+      "label": "resentment",
+      "positive": "Alex keeps returning to an unfair past exchange and feels the other person still owes something.",
+      "neutral": "Alex recalls the exchange without carrying an enduring sense of grievance."
+    },
+    {
+      "id": "disgust",
+      "label": "disgust",
+      "positive": "Alex experiences a strong revulsion and wants to turn away from the offending sight or idea.",
+      "neutral": "Alex can consider the sight or idea without a visceral urge to turn away."
+    },
+    {
+      "id": "contempt",
+      "label": "contempt",
+      "positive": "Alex regards another person's conduct with a dismissive sense of superiority.",
+      "neutral": "Alex disagrees with the conduct without regarding the other person as beneath consideration."
+    },
+    {
+      "id": "moral_outrage",
+      "label": "moral outrage",
+      "positive": "A witnessed violation of a deeply held principle makes Alex want to protest on behalf of those affected.",
+      "neutral": "Alex recognizes the disputed principle without an urgent emotional drive to protest."
+    },
+    {
+      "id": "surprise",
+      "label": "surprise",
+      "positive": "An unexpected event abruptly interrupts Alex's prediction and captures attention.",
+      "neutral": "The event fits Alex's prediction and does not abruptly capture attention."
+    },
+    {
+      "id": "confusion",
+      "label": "confusion",
+      "positive": "Alex cannot reconcile two pieces of information and is unsure which interpretation fits.",
+      "neutral": "Alex can place both pieces of information into a clear, coherent interpretation."
+    },
+    {
+      "id": "curiosity",
+      "label": "curiosity",
+      "positive": "A gap in understanding draws Alex toward exploring details even without an immediate practical reward.",
+      "neutral": "Alex notices the gap in understanding without wanting to investigate it further."
+    },
+    {
+      "id": "awe",
+      "label": "awe",
+      "positive": "An encounter with something vast makes Alex feel small and temporarily changes the scale of ordinary concerns.",
+      "neutral": "Alex notices the scale of the encounter without a changed sense of self or ordinary concerns."
+    },
+    {
+      "id": "wonder",
+      "label": "wonder",
+      "positive": "Alex lingers over an unfamiliar pattern with an open sense that there may be more to discover.",
+      "neutral": "Alex notices the pattern without a sustained sense of fascination."
+    },
+    {
+      "id": "anticipation",
+      "label": "anticipation",
+      "positive": "Alex mentally rehearses an approaching event and keeps looking forward to its arrival.",
+      "neutral": "Alex is aware of the future event without repeatedly imagining its arrival."
+    },
+    {
+      "id": "hope",
+      "label": "hope",
+      "positive": "Despite uncertainty, Alex can picture a desired outcome and feels drawn toward making it possible.",
+      "neutral": "Alex can list possible outcomes without an emotional pull toward a desired one."
+    },
+    {
+      "id": "optimism",
+      "label": "optimism",
+      "positive": "Alex expects a workable outcome and treats setbacks as likely to be manageable.",
+      "neutral": "Alex does not favor either a favorable or unfavorable outcome before more evidence arrives."
+    },
+    {
+      "id": "pessimism",
+      "label": "pessimism",
+      "positive": "Alex expects the effort to go badly and reads small obstacles as signs of further trouble.",
+      "neutral": "Alex does not treat small obstacles as evidence that the whole effort will go badly."
+    },
+    {
+      "id": "trust",
+      "label": "trust",
+      "positive": "Alex is willing to rely on Morgan's word and relaxes the need to check every detail.",
+      "neutral": "Alex considers Morgan's word without either relying on it or assuming it is false."
+    },
+    {
+      "id": "suspicion",
+      "label": "suspicion",
+      "positive": "Alex keeps looking for a concealed motive behind Morgan's ordinary explanation.",
+      "neutral": "Alex considers the explanation without searching for a concealed motive."
+    },
+    {
+      "id": "betrayal",
+      "label": "betrayal",
+      "positive": "A broken confidence makes Alex feel that an important bond was violated, beyond the practical loss.",
+      "neutral": "Alex recognizes the practical loss without experiencing a violated personal bond."
+    },
+    {
+      "id": "vulnerability",
+      "label": "vulnerability",
+      "positive": "Alex wants to be understood but feels exposed by revealing something personally important.",
+      "neutral": "Alex can discuss the matter without feeling personally exposed."
+    },
+    {
+      "id": "affection",
+      "label": "affection",
+      "positive": "Alex feels a gentle fondness toward Morgan and wants their ordinary day to go well.",
+      "neutral": "Alex regards Morgan with ordinary courtesy but no particular personal fondness."
+    },
+    {
+      "id": "love",
+      "label": "love",
+      "positive": "Alex experiences a deep attachment to Morgan and values Morgan's wellbeing even when apart.",
+      "neutral": "Alex considers Morgan's wellbeing without a deep personal attachment."
+    },
+    {
+      "id": "tenderness",
+      "label": "tenderness",
+      "positive": "Morgan's vulnerability brings out a gentle impulse in Alex to comfort without controlling.",
+      "neutral": "Alex notices Morgan's vulnerability without a particular impulse toward gentle comfort."
+    },
+    {
+      "id": "compassion",
+      "label": "compassion",
+      "positive": "Another person's suffering moves Alex toward easing it, even without personal benefit.",
+      "neutral": "Alex understands that someone is suffering without feeling a strong impulse to ease it."
+    },
+    {
+      "id": "empathic_distress",
+      "label": "empathic distress",
+      "positive": "Alex feels emotionally shaken by another person's pain, even though Alex is not directly affected.",
+      "neutral": "Alex understands another person's pain while remaining emotionally steady."
+    },
+    {
+      "id": "sexual_desire",
+      "label": "sexual desire",
+      "positive": "Both people are adults; Alex feels a non-graphic wish for consensual sexual closeness with Morgan while respecting Morgan's independent choice.",
+      "neutral": "Both people are adults; Alex enjoys Morgan's company without wishing for sexual closeness."
+    },
+    {
+      "id": "physical_arousal",
+      "label": "physical arousal",
+      "positive": "In a consensual adult romantic setting, Alex notices a bodily sense of sexual activation without assuming it must lead to action.",
+      "neutral": "In the same adult romantic setting, Alex notices no bodily sexual activation and feels no pressure to manufacture it."
+    },
+    {
+      "id": "longing",
+      "label": "longing",
+      "positive": "Alex aches for contact with someone absent and repeatedly imagines being close again.",
+      "neutral": "Alex remembers someone absent without an aching wish for renewed closeness."
+    },
+    {
+      "id": "romantic_insecurity",
+      "label": "romantic insecurity",
+      "positive": "In an adult relationship, Alex worries about being less wanted and seeks signs of reassurance.",
+      "neutral": "In an adult relationship, Alex can tolerate uncertainty without repeatedly seeking reassurance."
+    },
+    {
+      "id": "gratitude",
+      "label": "gratitude",
+      "positive": "Alex feels warmly aware of another person's freely offered help and wants to acknowledge it.",
+      "neutral": "Alex registers that help was provided without a strong feeling of appreciative warmth."
+    },
+    {
+      "id": "admiration",
+      "label": "admiration",
+      "positive": "Alex finds another person's achievement inspiring and wants to learn from it.",
+      "neutral": "Alex recognizes the achievement without a felt impulse to look up to its author."
+    },
+    {
+      "id": "pride",
+      "label": "pride",
+      "positive": "Alex feels satisfied with an earned achievement and wants to stand behind the effort.",
+      "neutral": "Alex records the achievement without a strong sense of personal satisfaction."
+    },
+    {
+      "id": "humility",
+      "label": "humility",
+      "positive": "Alex recognizes personal limits and feels comfortable learning from someone with greater knowledge.",
+      "neutral": "Alex recognizes the task without a particular shift in awareness of personal limits."
+    },
+    {
+      "id": "shame",
+      "label": "shame",
+      "positive": "Alex feels that a mistake exposes something bad about the whole self and wants to hide.",
+      "neutral": "Alex sees a specific mistake without treating it as a verdict on the whole self."
+    },
+    {
+      "id": "guilt",
+      "label": "guilt",
+      "positive": "Alex feels responsible for a specific harm and wants to make a proportionate repair.",
+      "neutral": "Alex understands what happened without feeling personal responsibility for causing the harm."
+    },
+    {
+      "id": "embarrassment",
+      "label": "embarrassment",
+      "positive": "An awkward public moment makes Alex self-conscious and eager for attention to move elsewhere.",
+      "neutral": "Alex notices the awkward moment without becoming strongly self-conscious."
+    },
+    {
+      "id": "envy",
+      "label": "envy",
+      "positive": "Another person's advantage makes Alex wish for the same thing and feel pained by the comparison.",
+      "neutral": "Alex notices another person's advantage without feeling pained by comparison."
+    },
+    {
+      "id": "jealousy",
+      "label": "jealousy",
+      "positive": "Alex fears losing a valued bond to a rival and becomes preoccupied with the relationship's security.",
+      "neutral": "Alex notices others' relationships without fearing the loss of a valued bond to a rival."
+    },
+    {
+      "id": "loneliness",
+      "label": "loneliness",
+      "positive": "Alex wants meaningful contact but feels emotionally disconnected despite other people being nearby.",
+      "neutral": "Alex can be alone or among others without feeling emotionally disconnected."
+    },
+    {
+      "id": "belonging",
+      "label": "belonging",
+      "positive": "Alex feels accepted as part of a group and does not need to keep proving a right to be there.",
+      "neutral": "Alex notices the group without either a strong sense of inclusion or exclusion."
+    },
+    {
+      "id": "rejection",
+      "label": "rejection",
+      "positive": "Being excluded makes Alex feel personally unwanted, beyond missing the activity itself.",
+      "neutral": "Alex notes being unable to join the activity without interpreting it as personal unwantedness."
+    },
+    {
+      "id": "nostalgia",
+      "label": "nostalgia",
+      "positive": "A familiar detail evokes a bittersweet wish to revisit a meaningful earlier period.",
+      "neutral": "Alex recognizes the familiar detail without a bittersweet pull toward the past."
+    },
+    {
+      "id": "relief",
+      "label": "relief",
+      "positive": "A feared outcome does not occur, and Alex feels tension release noticeably.",
+      "neutral": "Alex notes the outcome without a noticeable release of earlier tension."
+    },
+    {
+      "id": "calm",
+      "label": "calm",
+      "positive": "Alex feels internally settled and can attend to events without being pushed by urgency.",
+      "neutral": "Alex attends to events without a particularly settled or unsettled emotional state."
+    },
+    {
+      "id": "boredom",
+      "label": "boredom",
+      "positive": "The situation feels unrewarding and time seems to drag while Alex seeks something more engaging.",
+      "neutral": "Alex attends to the situation without feeling time drag or seeking extra stimulation."
+    },
+    {
+      "id": "apathy",
+      "label": "apathy",
+      "positive": "Alex understands that several options matter but feels little motivation to choose or pursue any of them.",
+      "neutral": "Alex can identify an option and mobilize ordinary motivation to pursue it."
+    },
+    {
+      "id": "playfulness",
+      "label": "playfulness",
+      "positive": "Alex feels inclined to experiment with harmless jokes and imaginative variations on the ordinary situation.",
+      "neutral": "Alex approaches the situation straightforwardly without an impulse toward playful variation."
+    },
+    {
+      "id": "bittersweetness",
+      "label": "bittersweetness",
+      "positive": "Alex experiences pleasure and sorrow together, without either feeling canceling the other.",
+      "neutral": "Alex understands that the situation has several aspects without simultaneously feeling pleasure and sorrow."
+    }
+  ],
+  "frames": [
+    {
+      "id": "feeling",
+      "instruction": "Describe the internal experience implied by the situation without inventing facts."
+    },
+    {
+      "id": "expression",
+      "instruction": "Write one plausible sentence Alex might say to express the state, preserving the described circumstances."
+    },
+    {
+      "id": "regulation",
+      "instruction": "Describe one way Alex could regulate the state while preserving the ability to choose an appropriate action."
+    },
+    {
+      "id": "recognition",
+      "instruction": "Identify which details support an inference about Alex and which remain uncertain."
+    }
+  ],
+  "arms": [
+    "semantic_positive",
+    "semantic_neutral",
+    "lexical_mention_control"
+  ],
+  "design": "Each feature/frame has matched positive, neutral, and emotion-word-only control. All romantic/sexual states involve adults and remain non-graphic. Expression/regulation are tasks, not proof that the model experiences a feeling.",
+  "validation": "Associations require replicated contrasts across held-out contexts and causal steering tests; labels alone confer no neuron meaning."
+}

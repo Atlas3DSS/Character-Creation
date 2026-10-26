@@ -60,6 +60,20 @@ Configure up to six distinct forwarded endpoints. Diagnostic endpoints also requ
 
 The service reads the native `/v1/models` capability catalog and checks the prepared identity, protocol, site names, vector widths and request site limit before sending steering. Older packages cannot silently accept steering as a no-op. Complete requests, responses, program hashes and vector provenance are retained in `results/persona_explorer.sqlite`.
 
+### Live activation search
+
+Open **Live activation search** (`/#activation-search`) and paste text. Each explicit search measures all 1,114,112 MLP neurons across every rendered prompt token, including chat-template tokens. It saves all-neuron peak and mean-absolute summaries, then replays the identical prompt to obtain exact token profiles for up to 32 ranked candidates. The viewer shows a signed heatmap, token context, coverage and request/model/runtime provenance. Inputs are never silently truncated. This is activation evidence; a large activation alone does not identify a concept.
+
+Select one to six returned neurons and run **baseline / + / −** with the same prompt and seed. The total relative dose is divided across the selected neurons. Saved searches and three-arm comparisons remain available after refresh; failed or interrupted runs stay labeled. True neuron ablation is not implemented; negative additive steering is a separate operation.
+
+The approved flat `activation-search/` checkout serves these requests separately from the fixed 40k capture runtime. It reuses the existing checkpoint and calibrated model, with its own hash-bound capture extension, supervised GPU leases, ports 8940–8945 and optional `activation_endpoints` explorer configuration. **Start search workers** explicitly requests a bounded session through the workboard; opening the viewer or reviewing records does not launch inference. The original runtime identity and existing results are preserved. Full-model deployment qualification is recorded in `results/persona_activation_search_validation.json`. The live checks covered 42-token and 309-token searches, exact replay profiles for 32 candidates, bit-exact unsteered captures before/after search, correctly signed measured activation changes, three complete comparison responses, and identical profiles after a second GPU restored the cached graphs. Worker readiness is checked separately in the viewer.
+
+### Compare preset responses
+
+In **Persona studio → Compare presets**, choose two to five catalog presets and a shared prompt (or one of the starter scenarios). **Run baseline + presets** runs each preset's center recipe plus one unsteered baseline with identical prompt, seed and answer budget. Preset names and briefs are not added to the response prompt. Comparisons use verified available studio or activation-search workers, and responses appear alongside one another with completeness, errors and exact recipe/provenance details.
+
+Saved comparisons retain their original recipes, preset catalog, calibrated-direction hashes and generation settings even if a preset is later edited. Use the saved-comparison selector to review a run. This compares measured responses from authored steering presets; it does not establish that a preset reproduces a named character or model. The local example comparison includes GPT-4o-inspired, Skippy-inspired, Calm Mentor, Stoic Analyst and Bold Explorer, plus baseline.
+
 ### Build and compare recipes
 
 1. Select a measured neuron on the map or in the layer popout, inspect its activation observations and output-direction alignment, and add an explicit positive or negative push. Choose the intervention site and phase, then use **Use recipe in a six-card experiment** to open the workspace with those pushes.
@@ -475,7 +489,7 @@ Selecting a map neuron now draws measured links directly between the desk-like s
 
 ## Public synthetic corpus
 
-[Atlas3D/character-creation-big-five](https://huggingface.co/datasets/Atlas3D/character-creation-big-five) contains only generated Big Five discovery scenarios. `persona/persona_hub.py` checks the publication hash and synthetic-only provenance before exporting a field allowlist into `dataset/` and uploading one atomic Hub commit. Its bounded job watcher publishes at most every thirty minutes and on completion. Book text, local source paths, credentials, and other corpus collections are excluded. Trait/facet labels describe prompt design, not psychometric truth.
+[Atlas3D/character-creation-big-five](https://huggingface.co/datasets/Atlas3D/character-creation-big-five) retains the generated Big Five discovery scenarios as its default subset. Separate research manifests now index verified captures, evaluation bundles and calibration assets. `persona/persona_hub.py` checks the publication hash and synthetic-only provenance before exporting a field allowlist into `dataset/` and uploading one atomic Hub commit. Its bounded job watcher publishes at most every thirty minutes and on completion. Book text, local source paths, credentials, and other corpus collections are excluded. Trait/facet labels describe prompt design, not psychometric truth.
 
 ## Bounded gift campaign for Lyra
 
@@ -483,4 +497,154 @@ The `lyra_gift` job uses pinned `Qwen/Qwen3.5-4B` revision `851bf6e806efd8d0a36b
 
 This is an independent float16 HF path with eager attention and reference recurrent kernels, not a claim of BF16/vLLM equivalence to Lyra. Every worker checks finite values and exact neutral-gain equivalence on its actual GPU before collection. Prompts are capped at 512 tokens and truncation is recorded. Zero-variation or unavailable correlation entries remain missing. Raw arrays, prompt alignment, hashes, selection audits, and failed cases remain local for review and packaging; this job does not message anyone or publish private source material.
 
-Startup consumes the scheduled window. The absolute deadline stops owned services; partial results are not labeled a complete map. A completed capture stage alone does not qualify all downstream phases. The queued October 26 run is 02:00–08:00 America/Los_Angeles. The current 35k run must finish before an identity-checked idle scheduler reload activates this new job handler.
+Startup consumes the scheduled window. The absolute deadline stops owned services; partial results are not labeled a complete map. A completed capture stage alone does not qualify all downstream phases. Historical scheduling note: the proposed October 26 02:00–08:00 gift campaign was cancelled. It is not part of the active 27B overnight mapping run; consult the live job ledger instead of inferring activity from this implementation description.
+
+## Literature prompts for mapping and recipe checks
+
+The Literature tab reads `results/persona_literature.sqlite`. EPUB ingestion keeps
+normalized source text, document offsets, book hashes, duplicate links, and
+whole-book discovery/heldout splits. Passage windows are structural candidates;
+validated model labels are provisional literary interpretations, not neural
+findings. Legacy formats are reported as unsupported rather than silently read.
+
+`persona/persona_literature_harness.py` is the authored wildcard compiler. John
+or another caller can select a source unit, mode, variant and seed; it does not
+need to invent or rewrite the prompt. Modes are decision, response, continuation.
+Eight variants include the unchanged source and explicitly hypothetical changes
+to time pressure, audience, ambiguous intent, temptation, power, repair and
+accountability. A matched pair uses the same unit, mode and seed. Continuation
+withholds the final third of longer windows; the original ending is not a unique
+correct answer. Templates, source hashes, offsets and version are bound to each
+prompt ID. Compiled prompts are retained in `literature_prompts`.
+
+`POST /api/literature/prompt` accepts exactly
+`{"unit_id":"…","mode":"decision","variant":"original","seed":7035}`.
+The response includes the exact prompt, provenance, a source-evidence graph and
+comparison guidance. The viewer explicitly sends the same text to activation
+search or preset comparison. The CLI has equivalent `--unit-id`, `--mode`,
+`--variant`, `--seed`, and `--database` arguments. It prints the saved JSON record.
+
+Compare unsteered, positive and negative recipes on identical text and generation
+settings; repeat on held-out books and multiple seeds before claiming a stable
+behavioral effect. Signed additive pushes do not implement ablation. Source
+entity/theme graphs and observed neural activation associations do not establish
+causal neural topology.
+
+Named concept controls beside Big Five are saved through `/api/concept-controls`.
+Coordinates must come from checkpoint lens search, measured contrast search, or
+a completed activation search for the current model. The server derives signs
+from the evidence, saves immutable provenance, and combines these neuron pushes
+with Big Five under the same aggregate dose bound. Names such as rage are
+hypothesis labels; paired behavioral tests are still required.
+
+Overnight mapping uses the six isolated Quincy workers. `GET /api/overnight`
+reports the remote coordinator; the banner's pause control waits for in-flight
+captures to drain before admitting interactive inference. Resume refuses active
+interactive jobs. Browsing saved results does not require pausing. The reservation
+is `results/persona_overnight_session.json`; remote status and raw capture artifacts
+remain in the existing `activation-search` directory on v100.
+
+`GET /api/overnight/features` reads the derived emotion contrast artifact. Concept
+discovery shows ranked coordinates, four-frame agreement, lexical controls and
+counterevidence. Shared-coordinate edges represent overlapping candidate lists,
+not causal connections. All-neuron capture retains per-neuron peaks, argpeaks and
+absolute sums across prefill positions, plus selected full profiles; it does not
+retain the entire neuron-by-token tensor. Heldout rows are excluded from fitting.
+
+Saved manual neuron batches can be opened with `?batch=<batch-id>#lab`. The
+48-response manual test index is `results/persona_manual_neuron_tests.json`.
+L40 N1661 prompt-only positive steering was a stronger sarcasm lead than the
+initial low-dose recipes; the mystical L18 N5811 example failed transfer to other
+situations. These observations are model-specific and do not validate donor
+coordinates from Qwen3.5-4B or OLMo.
+
+Coherence calibration is available in Persona studio and at `/api/coherence`.
+`POST /api/coherence/runs` takes a saved `recipe_id`, `seed`, and `max_tokens`
+(2048–4096). Six discovery and six heldout source-grounded fixtures use two
+seeds. Baseline is matched; nonzero scales 1/.9/.75/.5/.25 and two actually-tested
+refinement points locate a passing discovery setting without assuming monotonic
+behavior. Selection freezes before heldout confirmation. Failed confirmation
+never feeds a replacement search on the same heldout examples. Cancellation
+stops further trials and retains in-flight batch evidence. An explicitly supplied
+`reuse_run` may rescore completed cells only with matching model, suite, seeds,
+budget, recipe and program hashes; those cells are not counted as new evidence.
+
+The evaluator distinguishes required fact-ledger errors, surface collapse and
+ambiguous representation failures. A correct sentence in a boolean slot is not
+called a factual contradiction. Unknown-only evidence requires review rather
+than triggering dose reduction. CJK/unspaced loops are checked. A ledger pass
+never certifies free-prose factuality or desired persona quality. Scoped results
+are stored in `coherence_defaults`; they are not silently applied to all chats.
+Recovery currently operates between complete response attempts, not mid-token.
+
+`POST /api/coherence/interaction-plan` takes a one-neuron `recipe_id` and an
+observed coactivity neighbor's `layer`, `neuron`, and signed `dose` (magnitude
+at most .5). It prepares baseline/A/B/A+B/A−B/−A controls. Add `case_id` (discovery
+only), `seed`, and `max_tokens` at `/api/coherence/interaction-test` to run these
+six cells. `GET /api/coherence/interaction?id=...` retains exact outputs and
+exploratory issue-count interaction contrasts. This is not an automatic causal
+compensator; coactivity signs are not steering signs and no layer-wide reversal
+is assumed.
+
+Neuron labels are read from `results/persona_neuron_labels.json`. At most three
+qualified labels appear per neuron, with inverse associations explicit. The
+reader recomputes heldout precision and its Wilson95 lower bound (>70%), requires
+at least20 distinct positive-prediction families, and verifies immutable evidence
+and model bindings. The badge displays the lower bound, not a claim of certainty.
+The six-concept qualification runner additionally requires heldout balanced
+accuracy>=.8, recall>=.75 and >.05 advantage over discovery-fitted length/negation
+baselines. Selection and thresholds freeze before heldout capture. This is
+probe-conditioned association, not probability that a neuron means a concept.
+
+The432-probe label study completed with one qualified label: green, L12 N2001,
+21TP/0FP/24TN/3FN; Wilson95 precision lower bound .84536. The other five labels
+remain candidates. Exact bindings and confusion matrices are retained in
+`results/persona_label_evidence_*.json`. `persona_label_handoff.py` verifies and
+merges evidence, then resumes only its owned overnight pause. The large map
+continues independently under its finite supervisor.
+
+The diagnostic Flare path remains B1 per GPU. Four prepared request slots do not
+mean four simultaneously safe capture requests: the engine and capture buffers
+are shared and explicitly locked. Six-card concurrency is supported. Batched
+within-card capture needs separate state/steering/RNG buffers and qualification.
+Map PCA freshness now includes calibration hashes; captions identify index-grid
+fallbacks. Coactivity is undirected Pearson correlation across prompts; apparent
+one-way navigation can reflect local neighbor-list truncation, not causal flow.
+Circuit tracing and sparse execution are a discussion-stage research direction;
+no circuit compiler, layer skipping, or Engram execution system was launched.
+
+## Public research publication and reusable guides
+
+Start with [README_human.md](README_human.md) for what, how and why, or
+[README_agent.md](README_agent.md) for exact schemas, evidence boundaries and commands.
+The shared Hub repository keeps its original prompt subset intact and adds immutable
+research batches. Metadata and raw-array publication have independent coverage manifests.
+
+`persona/persona_hub_research.py` opens capture ledgers read-only, accepts only the
+exact approved public prompt IDs/text/hashes and authored probe sources, and revalidates
+complete artifacts before publication. The metadata watcher polls every five minutes and
+publishes at 500 records, after fifteen minutes or at run completion. A separate watcher
+on the capture host sends up to 32 original NPZs per raw shard directly to HF; it continues
+draining after inference stops. Both verify committed hashes before advancing durable
+checkpoints and reconcile uncertain uploads without repeating inference. The reference
+services are `character-persona-hub-research.service` on Devbox and
+`character-persona-hub-raw.service` on the capture host. These are CPU/network publishers,
+not additional GPU inference jobs.
+
+`persona/persona_read_research.py` is a small CPU-only reader. It pins one Hub commit,
+checks batch and raw-entry hashes, and loads NPZ with pickle disabled. Public calibration
+assets cover all 64 layers; their original hashes and model binding are retained in
+`research_assets.json`. Six measured experimental presets now accompany the original
+sixteen authored profiles in the public catalog. Their limitations remain explicit.
+
+The public JSON records retain selected token profiles. The separate raw artifacts retain
+all-neuron prefill reductions and final-prefill arrays. Neither is a full stored
+neuron-by-token tensor across generated answers. Private book text, book token IDs and
+profiles, arbitrary interactive prompts and proprietary research are excluded.
+
+For a fork, configure `nlp_python` and `overnight_remote` (`ssh_host`, `hostname`,
+`remote_root`) in the local Explorer config. The default NLP interpreter is the current
+Python executable. The reference activation launcher accepts `--config`, `--jobs-config`
+and fleet overrides `remote_project_root`, `heliopause_path`, `model_path`,
+`calibration_dir`. These configuration changes preserve model/hash validation; they do
+not make an unqualified runtime compatible automatically.

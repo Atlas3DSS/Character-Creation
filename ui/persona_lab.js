@@ -90,46 +90,8 @@
     }
     if (!app.selectedPrompts.length) refs.selectedPrompts.append(hint('Select prompts below or add your own.'));
   }
-  function renderPromptSelection() {
-    refs.promptRows.querySelectorAll('[data-prompt-key]').forEach(control => {
-      const chosen = app.selectedPrompts.includes(control.dataset.promptKey);
-      control.textContent = chosen ? 'Selected ✓' : 'Select'; control.setAttribute('aria-pressed', String(chosen));
-      control.classList.toggle('lab-chosen', chosen);
-    });
-  }
-  async function loadPrompts() {
-    const serial = ++app.searchSerial;
-    refs.promptStatus.textContent = 'Loading prompts…';
-    refs.previous.disabled = refs.next.disabled = true;
-    try {
-      const params = new URLSearchParams({corpus: refs.corpus.value, split: refs.split.value,
-        q: refs.search.value.trim(), offset: String(app.offset), limit: '12'});
-      const data = await request('/api/prompts?' + params);
-      if (serial !== app.searchSerial) return;
-      app.total = data.total; app.offset = data.offset;
-      refs.promptRows.replaceChildren();
-      for (const prompt of data.rows) {
-        app.prompts.set(prompt.id, prompt);
-        const card = node('article', undefined, 'lab-prompt');
-        const choose = button('Select', () => toggleSelection('prompt', prompt.id));
-        choose.dataset.promptKey = prompt.id;
-        const heading = row(node('strong', titleFor(prompt)), choose); heading.classList.add('lab-spread');
-        const meta = node('div', undefined, 'lab-meta');
-        meta.append(node('span', readable(prompt.corpus), 'lab-tag'), node('span', readable(prompt.split), 'lab-tag'),
-          node('span', readable(prompt.category), 'lab-dim'));
-        const preview = node('p', prompt.preview || prompt.prompt?.slice(0, 210) || '', 'lab-preview');
-        const details = node('details', undefined, 'lab-source'); details.append(node('summary', 'Read prompt & source'));
-        if (prompt.system) details.append(node('p', 'Profile instruction', 'lab-caption'), node('pre', prompt.system));
-        details.append(node('pre', prompt.prompt || prompt.preview || ''), node('small', `Source ID: ${prompt.id}`));
-        card.append(heading, meta, preview, details); refs.promptRows.append(card);
-      }
-      if (!data.rows.length) refs.promptRows.append(hint('No prompts match these filters. Try another corpus or search.'));
-      const start = data.total ? data.offset + 1 : 0;
-      refs.promptStatus.textContent = `${start}–${data.offset + data.rows.length} of ${Number(data.total).toLocaleString()}`;
-      refs.previous.disabled = app.offset === 0; refs.next.disabled = app.offset + data.rows.length >= data.total;
-      renderPromptSelection();
-    } catch (error) {if (serial === app.searchSerial) {refs.promptStatus.textContent = 'Could not load prompts.'; notify(error.message, true);}}
-  }
+  function renderPromptSelection() {}
+  async function loadPrompts() { await refs.promptBrowser?.refresh(); }
   function editorValue() {
     const value = {...copy(app.editor), name: refs.recipeName.value.trim(), phase: refs.recipePhase.value};
     if (!value.name) throw Error('Give this recipe a name.');
@@ -380,14 +342,6 @@
     if (results[0].status === 'fulfilled') {
       app.model = results[0].value; refs.model.textContent = app.model.model?.model_id || app.model.model?.model || 'Current calibrated model';
     }
-    if (results[1].status === 'fulfilled') {
-      const chosen = refs.corpus.value;
-      refs.corpus.replaceChildren(node('option', 'All corpora')); refs.corpus.firstChild.value = '';
-      for (const corpus of results[1].value.corpora) {
-        const option = node('option', `${readable(corpus.name)} · ${Number(corpus.rows).toLocaleString()}`); option.value = corpus.name; refs.corpus.append(option);
-      }
-      if ([...refs.corpus.options].some(option => option.value === chosen)) refs.corpus.value = chosen;
-    }
     if (results[2].status === 'fulfilled') for (const recipe of results[2].value.recipes) app.recipes.set('saved:' + recipe.id, recipe);
     const failures = results.filter(result => result.status === 'rejected');
     if (failures.length) notify(failures.map(result => result.reason.message).join(' · '), true);
@@ -407,16 +361,13 @@
     refs.notice = node('div', '', 'lab-notice'); refs.notice.hidden = true; refs.notice.setAttribute('role', 'status'); refs.notice.setAttribute('aria-live', 'polite'); root.append(refs.notice);
     const sources = node('div', undefined, 'lab-sources'); root.append(sources);
     const prompts = panel('1 · Choose prompts', 'Search registered sources or add a custom prompt. Select up to six.');
-    refs.search = input('search', '', 'Search prompt bank'); refs.search.placeholder = 'Search prompts…';
-    refs.corpus = select([['', 'All corpora']], 'Corpus');
-    refs.split = select([['discovery', 'Discovery'], ['heldout', 'Heldout'], ['all', 'All splits']], 'Source split');
-    prompts.append(row(refs.corpus, refs.split), refs.search, hint('Heldout labels stay visible. These manual tests do not change the source split.'));
     refs.promptCount = node('span', '0 / 6 selected', 'lab-counter'); refs.selectedPrompts = node('div', undefined, 'lab-selection');
     prompts.append(refs.promptCount, refs.selectedPrompts);
-    refs.promptRows = node('div', undefined, 'lab-prompt-list'); refs.promptStatus = node('small', 'Loading…', 'lab-dim');
-    refs.previous = button('Previous', () => {app.offset = Math.max(0, app.offset - 12); loadPrompts();});
-    refs.next = button('Next', () => {app.offset += 12; loadPrompts();});
-    prompts.append(refs.promptRows, row(refs.previous, refs.promptStatus, refs.next));
+    const browser = node('div'); prompts.append(browser);
+    refs.promptBrowser = window.PersonaPromptBrowser.mount(browser, {onSelect: prompt => {
+      if (!app.selectedPrompts.includes(prompt.id) && app.selectedPrompts.length >= MAX) throw Error('Select up to six prompts; remove one to make room.');
+      app.prompts.set(prompt.id, prompt); if (!app.selectedPrompts.includes(prompt.id)) toggleSelection('prompt', prompt.id);
+    }});
     const custom = node('details', undefined, 'lab-custom'); custom.append(node('summary', 'Use a custom prompt'));
     refs.customName = input('text', '', 'Custom prompt label'); refs.customName.placeholder = 'Label (optional)';
     refs.customText = node('textarea'); refs.customText.rows = 4; refs.customText.placeholder = 'Write the task or conversation to compare…'; refs.customText.setAttribute('aria-label', 'Custom prompt text');
@@ -457,7 +408,7 @@
     editor.append(field('Quick variants · multiply every dose by', refs.variantFactors), button('Select these variants', doseVariants),
       hint('Variants replace the recipe selection, not your saved recipes. A zero-dose recipe keeps its explicit zero pushes.'));
     recipes.append(editor); sources.append(recipes);
-    const composer = panel('3 · Arrange your batch', 'Up to six concurrent jobs. Cards are shared with overnight sweeps; queued jobs wait for a card.');
+    const composer = panel('3 · Arrange your batch', 'Up to six concurrent jobs. Pause the overnight map before running interactive jobs.');
     refs.composer = composer; composer.id = 'lab-composer';
     refs.fleetStatus = node('strong', 'Checking worker reachability…', 'lab-fleet-status');
     refs.fleetCards = node('div', undefined, 'lab-fleet-cards');
@@ -486,8 +437,6 @@
     refs.resultStatus = node('p', 'Run a batch or choose one from history.', 'lab-dim');
     refs.resultCards = node('div', undefined, 'lab-results');
     refs.results.append(row(refs.history, button('Refresh results', () => app.activeBatch ? showBatch(app.activeBatch) : loadHistory())), refs.resultStatus, refs.resultCards); root.append(refs.results);
-    const filter = () => {app.offset = 0; loadPrompts();}; refs.corpus.onchange = refs.split.onchange = filter;
-    refs.search.oninput = () => {clearTimeout(searchTimer); searchTimer = setTimeout(filter, 280);};
     renderEditor(); renderSelections(); renderRecipeLibrary(); renderSlots(); loadSources(); return true;
   }
   window.PersonaLab = {
@@ -496,6 +445,10 @@
       // entry point must never navigate again.
       const mounted = app.ready;
       if (init() && mounted) loadCapacity();
+      const requested = new URLSearchParams(location.search).get('batch');
+      if (requested && /^[a-f0-9]{32}$/.test(requested) && app.linkedBatch !== requested) {
+        app.linkedBatch = requested; showBatch(requested).then(() => refs.results.scrollIntoView({block: 'start'}));
+      }
     },
     useCurrentRecipe(recipe) {
       if (!init()) return;

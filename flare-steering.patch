@@ -1,0 +1,2214 @@
+diff --git a/docs/api.md b/docs/api.md
+index 6d4640c1..433ce389 100644
+--- a/docs/api.md
++++ b/docs/api.md
+@@ -52,6 +52,79 @@ The additional `flare` object reports prepared and selected serving metadata:
+ Generation requests always use the loaded model, regardless of the request's
+ `model` string. Returned generation objects identify the loaded model.
+ 
++## Additive activation steering
++
++A package prepared by `tools/prepare_replay.py --steering-max-sites N` declares
++request-local additive sites. The default `N=0` prepares the existing model
++without intervention inputs. SM70 Qwen dense declares `layers.<index>.mlp_out`
++and `layers.<index>.residual`, each with the model hidden width (5120 for the
++pinned 27B checkpoint), and `layers.<index>.mlp_input` with the intermediate
++neuron width (17408). The 64-layer checkpoint therefore declares 192 sites.
++
++Before sending an intervention, check `GET /v1/models`: `flare.steering` must
++contain `protocol: "additive-bf16-sites-v1"`, `max_sites`, and `sites`, an array
++of `{name, width}`. It also declares `phases` and
++`phase_boundary: "original_prompt_token_count"`. Unsupported packages advertise
++null. `flare.prepared_identity` is the loaded prepared-model identity, a
++64-character hexadecimal digest; it is not an HF revision or the package-file
++hash. Bind it to a verified preparation report when selecting steering vectors.
++An older server may ignore unknown request fields, so the capability check is
++required by clients using this extension.
++
++Chat and raw Completion requests may include `steering`:
++
++```python
++extra_body = {"steering": {
++    "phase": "all",
++    "sites": [{"site": "layers.12.mlp_out", "vector": vector}],
++}}
++```
++
++`vector` contains exactly the site's declared number of finite FP32 values.
++Site names must be unique and the count must fit `max_sites`. Missing or empty
++sites are neutral. Nonempty requests against unsupported packages are rejected
++with HTTP 400, including zero-valued vectors. On a supported package, all-zero
++vectors reduce to the neutral program and retain the original activation bits.
++
++`mlp_input` adds to the BF16-rounded SwiGLU product, after activation and gating,
++immediately before the quantized down projection consumes it. A vector with one
++nonzero coordinate directly edits that intermediate neuron's activation at this
++boundary. `mlp_out` adds to the rounded down-projection output before the residual
++addition. `residual` adds after the layer's rounded residual addition. Changed
++coordinates are rounded to BF16 and held in FP32 storage. Down-column output
++injection and pre-down neuron injection are distinct interventions: input
++quantization and rounding can prevent their equivalence.
++
++Steering-enabled preparation and offline activation capture materialize the
++SwiGLU product, disabling only the fused SwiGLU producer. Default preparation
++without either option retains that fusion. This hook specifies the exact native intervention location; it does not
++establish numerical equivalence of different model backends or quantizers.
++Addends occupy one persistent `[request_slots, sum(site.width)]` FP32 buffer in
++catalog order, without padding intermediate and hidden sites to a common width.
++`SteeringBuffers.site_addends(index)` exposes a physical-row view for offline
++diagnostics. Addends, phases, and prompt cutoffs upload only on init/restore;
++prefill, decode, and target verification graphs read the persistent buffers.
++
++The default phase is `all`. `prefill` applies to consumed positions below the
++original prompt token count; `decode` applies at or beyond it. This boundary is
++independent of graph shape, chunking, prefix hits, and readmission. The first
++response token is sampled from the prompt-tail forward. Programs are immutable
++within a request and included in prefix-cache identity. Target MTP verification
++uses the same intervention; the draft model remains unchanged, which can affect
++acceptance rate. Resume sampling uses the already-computed final hidden vector.
++
++Offline calibration can set `PreparationConfig(capture_activations=True,
++retain_graphs=True)`. Retained prefill owners expose
++`decoder.activation_capture.residual_last`, `pre_mlp_last` (both
++`[layers, hidden]`), `mlp_input_last` (`[layers, intermediate]`, the rounded
++SwiGLU product after optional neuron steering), `residual_l2`
++(`[layers, capacity]`), and `positions`
++(`[capacity]`). The last vectors describe the final live token in the replayed
++chunk; padded positions/norms are `-1`/zero. These buffers are shared by serial
++prefill variants and overwritten on replay. Copy observations after replay
++completes. `tools/prepare_replay.py --capture-activations` is diagnostic only and
++cannot export or measure a package. There is no activation-output HTTP transport.
++
+ ## Generation log probabilities
+ 
+ Logprobs describe the raw next-token distribution over the complete vocabulary:
+diff --git a/helios/proto/runtime_package.proto b/helios/proto/runtime_package.proto
+index 2229d175..160e3fdf 100644
+--- a/helios/proto/runtime_package.proto
++++ b/helios/proto/runtime_package.proto
+@@ -113,6 +113,15 @@ message ModelContract {
+   CacheContract cache = 5;
+   repeated GraphContract graphs = 6;
+   FrontendContract frontend = 7;
++  SteeringContract steering = 8;
++}
++message SteeringSite {
++  string name = 1;
++  uint64 width = 2;
++}
++message SteeringContract {
++  repeated SteeringSite sites = 1;
++  uint64 max_sites = 2;
+ }
+ message VisionCapacity {
+   // Zero inherits prepared execution concurrency when max_images is nonzero.
+@@ -185,6 +194,9 @@ enum ValueSource {
+   COPY_GRAMMAR_COUNT = 36;
+   IMAGE_TENSOR = 37;
+   IMAGE_FEATURE_SLOT = 38;
++  STEERING_ADDENDS = 39;
++  STEERING_PHASES = 40;
++  STEERING_PROMPT_TOKENS = 41;
+ }
+ enum InputIndexing {
+   INDEXING_UNSPECIFIED = 0;
+diff --git a/helios/src/frontend/images/layouts/qwen.rs b/helios/src/frontend/images/layouts/qwen.rs
+index 16224062..04938a25 100644
+--- a/helios/src/frontend/images/layouts/qwen.rs
++++ b/helios/src/frontend/images/layouts/qwen.rs
+@@ -97,6 +97,7 @@ pub(crate) fn prepare_input(
+         tokens,
+         token_expansions,
+         data: PromptData {
++            steering: Default::default(),
+             positions,
+             vision_token_indices,
+             spans: Vec::new(),
+diff --git a/helios/src/model.rs b/helios/src/model.rs
+index e08e4d92..aaddab0c 100644
+--- a/helios/src/model.rs
++++ b/helios/src/model.rs
+@@ -3,6 +3,7 @@
+ pub mod admission;
+ pub mod catalog;
+ pub mod contract;
++pub mod steering;
+ pub(crate) mod inputs;
+ mod packing;
+ #[cfg(feature = "server")]
+@@ -289,6 +290,7 @@ impl ModelConfig {
+ 
+ #[derive(Clone, Debug, Default)]
+ pub struct PromptData {
++    pub steering: steering::SteeringData,
+     pub positions: Vec<[i64; 3]>,
+     pub vision_token_indices: Vec<i32>,
+     pub spans: Vec<std::ops::Range<usize>>,
+diff --git a/helios/src/model/admission.rs b/helios/src/model/admission.rs
+index 1bd1ae42..aeeacd89 100644
+--- a/helios/src/model/admission.rs
++++ b/helios/src/model/admission.rs
+@@ -63,12 +63,14 @@ pub struct Admission {
+ impl Admission {
+     pub fn validate(&self, config: &ModelConfig) -> Result<()> {
+         self.sampling.validate()?;
++        self.data.steering.validate(config.contract.steering.as_ref())?;
+         if self.handle.slot as usize >= config.limits.max_active
+             || self.handle.generation == 0
+             || self.handle.generation > i64::MAX as u64
+             || self.sampling.top_k > config.contract.vocabulary as i32
+             || self.max_new_tokens == 0
+             || self.max_new_tokens > i32::MAX as u32
++            || self.data.steering.prompt_tokens > self.prompt.len()
+             || self.prompt.is_empty()
+             || self
+                 .prompt
+@@ -121,6 +123,13 @@ impl Admission {
+ #[cfg(feature = "server")]
+ pub fn validate_prompt(config: &ModelConfig, prompt: &crate::server::Prompt) -> Result<()> {
+     prompt.sampling.validate()?;
++    prompt.data.steering.validate(config.contract.steering.as_ref())?;
++    let steering_events = if let Some(identity) = prompt.data.steering.identity {
++        if prompt.conditioning.first() != Some(&crate::cache::ConditioningEvent { position: 0, identity }) {
++            return Err("steering request is missing its cache conditioning identity".into());
++        }
++        1
++    } else { 0 };
+     if prompt
+         .tokens
+         .len()
+@@ -137,7 +146,8 @@ pub fn validate_prompt(config: &ModelConfig, prompt: &crate::server::Prompt) ->
+             ),
+         ));
+     }
+-    if prompt.tokens.is_empty()
++    if prompt.data.steering.prompt_tokens > prompt.tokens.len()
++        || prompt.tokens.is_empty()
+         || prompt.message_boundaries.first() == Some(&0)
+         || prompt.message_boundaries.last().is_some_and(|boundary| *boundary >= prompt.tokens.len())
+         || prompt.message_boundaries.windows(2).any(|pair| pair[0] >= pair[1])
+@@ -149,7 +159,7 @@ pub fn validate_prompt(config: &ModelConfig, prompt: &crate::server::Prompt) ->
+         || prompt.max_new_tokens == 0
+         || prompt.max_new_tokens > i32::MAX as u32
+         || (!config.contract.vision.enabled()
+-            && (!prompt.conditioned_inputs.is_empty() || !prompt.conditioning.is_empty()))
++            && (!prompt.conditioned_inputs.is_empty() || prompt.conditioning.len() != steering_events))
+     {
+         return Err("prompt, output limit, or inputs violate the prepared model contract".into());
+     }
+diff --git a/helios/src/model/contract.rs b/helios/src/model/contract.rs
+index f52d047c..6c291758 100644
+--- a/helios/src/model/contract.rs
++++ b/helios/src/model/contract.rs
+@@ -51,6 +51,7 @@ contract_enum!(ValueSource {
+     GrammarEnabled = 30, CopyTokenIds = 31, CopyTokenCount = 32,
+     CopyConsumedTokens = 33, CopyGeneration = 34, CopyGrammarMask = 35,
+     CopyGrammarCount = 36, ImageTensor = 37, ImageFeatureSlot = 38,
++    SteeringAddends = 39, SteeringPhases = 40, SteeringPromptTokens = 41,
+ });
+ contract_enum!(InputIndexing { Scalar = 1, SubmissionRow = 2, RequestRow = 3, PackedToken = 4, ActiveRow = 5 });
+ contract_enum!(StateAccessKind { Read = 1, Write = 2, ReadWrite = 3 });
+@@ -97,6 +98,41 @@ pub struct PreparedContract {
+     pub cache: CacheContract,
+     pub graphs: Vec<GraphContract>,
+     pub frontend: FrontendContract,
++    #[cfg_attr(any(feature = "frontend", feature = "runtime-package"), serde(default))]
++    pub steering: Option<SteeringContract>,
++}
++
++#[derive(Clone, Debug)]
++#[cfg_attr(any(feature = "frontend", feature = "runtime-package"), derive(serde::Serialize, serde::Deserialize))]
++#[cfg_attr(any(feature = "frontend", feature = "runtime-package"), serde(deny_unknown_fields))]
++pub struct SteeringSite {
++    pub name: String,
++    pub width: usize,
++}
++
++#[derive(Clone, Debug)]
++#[cfg_attr(any(feature = "frontend", feature = "runtime-package"), derive(serde::Serialize, serde::Deserialize))]
++#[cfg_attr(any(feature = "frontend", feature = "runtime-package"), serde(deny_unknown_fields))]
++pub struct SteeringContract {
++    pub sites: Vec<SteeringSite>,
++    pub max_sites: usize,
++}
++
++impl SteeringContract {
++    pub fn width(&self) -> usize {
++        self.sites.iter().map(|s| s.width).sum()
++    }
++
++    fn validate(&self) -> Result<()> {
++        let mut names = std::collections::HashSet::new();
++        if self.max_sites == 0 || self.max_sites > self.sites.len() || self.sites.len() > 256
++            || self.sites.iter().any(|s| s.name.is_empty() || s.name.len() > 128
++                || !names.insert(&s.name) || s.width == 0 || s.width > 65536)
++        {
++            return Err("invalid prepared activation site catalog".into());
++        }
++        Ok(())
++    }
+ }
+ 
+ #[derive(Clone, Debug)]
+@@ -339,6 +375,9 @@ impl PreparedContract {
+     }
+ 
+     pub fn validate(&self, manifest: &ExecutionManifest) -> Result<()> {
++        if let Some(steering) = &self.steering {
++            steering.validate()?;
++        }
+         if self.version != 1
+             || self.vocabulary == 0
+             || self.input_vocabulary < self.vocabulary
+@@ -403,6 +442,37 @@ impl PreparedContract {
+         }
+         for descriptor in &manifest.graphs {
+             let graph = self.graph(&descriptor.name)?;
++            let steering_inputs = [ValueSource::SteeringAddends, ValueSource::SteeringPhases,
++                                   ValueSource::SteeringPromptTokens];
++            for source in steering_inputs {
++                let count = graph.inputs.iter().filter(|b| b.source == source).count();
++                let admission = matches!(descriptor.kind, GraphKind::Init | GraphKind::Restore);
++                if count != usize::from(self.steering.is_some() && admission) {
++                    return Err("steering inputs require one binding per admission and restore graph".into());
++                }
++                if let Some(catalog) = &self.steering {
++                    let producer = self.graphs.iter().flat_map(|g| &g.inputs)
++                        .find(|b| b.source == source).ok_or("steering lacks an admission producer")?;
++                    if graph.inputs.iter().any(|b| b.source == source && b.buffer != producer.buffer) {
++                        return Err("steering admission graphs must share persistent storage".into());
++                    }
++                    if matches!(descriptor.kind, GraphKind::Prefill | GraphKind::Decode
++                        | GraphKind::Speculative | GraphKind::Mixed | GraphKind::Verification)
++                    {
++                        let bytes = match source {
++                            ValueSource::SteeringAddends => 4 * catalog.width(),
++                            ValueSource::SteeringPhases => 4 * catalog.sites.len(),
++                            _ => 8,
++                        };
++                        if !graph.state.iter().any(|a| a.access != StateAccessKind::Write
++                            && a.view.buffer == producer.buffer && a.view.offset == 0
++                            && a.view.stride == bytes && a.view.nbytes == bytes)
++                        {
++                            return Err("model forward must read the declared steering request storage".into());
++                        }
++                    }
++                }
++            }
+             if graph.kind != descriptor.kind.try_into()? {
+                 return Err("semantic graph operation differs from its execution catalog".into());
+             }
+diff --git a/helios/src/model/packing.rs b/helios/src/model/packing.rs
+index a4507179..502b7b40 100644
+--- a/helios/src/model/packing.rs
++++ b/helios/src/model/packing.rs
+@@ -101,7 +101,8 @@ impl Inputs {
+                             LiveRows | PrefillRow => binding.indexing == Scalar,
+                             ImageFeatureSlot => binding.indexing == Scalar && elements == 1
+                                 && matches!(graph.kind, GraphKind::Vision | GraphKind::Prefill | GraphKind::Mixed),
+-                            PageTable | LiveStateRows => binding.indexing == RequestRow,
++                            PageTable | LiveStateRows | SteeringAddends | SteeringPhases | SteeringPromptTokens
++                                => binding.indexing == RequestRow,
+                             PromptToken
+                             | PromptAndPendingToken
+                             | PromptPosition
+@@ -125,7 +126,8 @@ impl Inputs {
+                         {
+                             return Err("row input cannot cover the prepared request slots".into());
+                         }
+-                        if matches!(binding.source, SamplingParameters | ImageTensor | PageTable)
++                        if matches!(binding.source, SamplingParameters | ImageTensor | PageTable
++                            | SteeringAddends | SteeringPhases | SteeringPromptTokens)
+                             && binding.value_offset != 0
+                         {
+                             return Err("value offset requires an integer value source".into());
+@@ -154,6 +156,10 @@ impl Inputs {
+                         }
+                         let expected_width = match binding.source {
+                             ValueSource::SamplingParameters => 6,
++                            ValueSource::SteeringAddends => config.contract.steering.as_ref()
++                                .ok_or("steering input has no site catalog")?.width(),
++                            ValueSource::SteeringPhases => config.contract.steering.as_ref()
++                                .ok_or("steering input has no site catalog")?.sites.len(),
+                             ValueSource::EosTokenIds | ValueSource::LiveStateRows => 8,
+                             ValueSource::PromptHistogram => config.contract.vocabulary,
+                             ValueSource::GrammarMask => config.contract.vocabulary.div_ceil(32),
+@@ -169,17 +175,18 @@ impl Inputs {
+                         };
+                         if width == 0
+                             || width != expected_width
+-                            || (binding.source == ValueSource::PageTable
++                            || (matches!(binding.source, ValueSource::PageTable | ValueSource::SteeringPhases)
+                                 && buffer.dtype != Dtype::Int32)
+                             || (matches!(
+                                 binding.source,
+                                 ValueSource::SamplingSeed
+                                     | ValueSource::RequestGeneration
+                                     | ValueSource::CopyGeneration
++                                    | ValueSource::SteeringPromptTokens
+                             ) && buffer.dtype != Dtype::Int64)
+-                            || (binding.source == ValueSource::SamplingParameters
++                            || (matches!(binding.source, ValueSource::SamplingParameters | ValueSource::SteeringAddends)
+                                 && buffer.dtype != Dtype::Float32)
+-                            || (binding.source != ValueSource::SamplingParameters
++                            || (!matches!(binding.source, ValueSource::SamplingParameters | ValueSource::SteeringAddends)
+                                 && binding.source != ValueSource::ImageTensor
+                                 && !matches!(buffer.dtype, Dtype::Int32 | Dtype::Int64))
+                             || (binding.indexing != InputIndexing::Scalar
+@@ -214,7 +221,8 @@ impl Inputs {
+         let maximum = graphs
+             .iter()
+             .flat_map(|g| &g.inputs)
+-            .filter(|b| b.binding.source != ValueSource::ImageTensor)
++            // These sources write bytes directly and never use integer staging scratch.
++            .filter(|b| !matches!(b.binding.source, ValueSource::ImageTensor | ValueSource::SteeringAddends))
+             .map(|b| b.elements)
+             .max()
+             .unwrap_or(0);
+@@ -408,6 +416,16 @@ impl Inputs {
+                     InputIndexing::Scalar => unreachable!(),
+                 };
+                 token_offset += lane.tokens;
++                if binding.source == ValueSource::SteeringAddends {
++                    let catalog = frame.config.contract.steering.as_ref().ok_or("missing steering catalog")?;
++                    let vectors = &admission.data.steering.vectors;
++                    self.staging.put(&binding.buffer, destination * 4,
++                        catalog.sites.iter().enumerate().flat_map(|(index, site)| {
++                            let vector = vectors.iter().find(|(id, _)| *id == index).map(|(_, v)| v);
++                            (0..site.width).flat_map(move |column| vector.map_or(0.0, |v| v[column]).to_le_bytes())
++                        }));
++                    continue;
++                }
+                 if binding.source == ValueSource::SamplingParameters {
+                     self.staging.put(
+                         &binding.buffer,
+@@ -463,6 +481,13 @@ impl Inputs {
+                 use ValueSource::*;
+                 match binding.source {
+                     Constant => values.resize(input.width, 0),
++                    SteeringPhases => {
++                        values.resize(input.width, 0);
++                        for (site, _) in &admission.data.steering.vectors {
++                            values[*site] = i64::from(admission.data.steering.phase);
++                        }
++                    }
++                    SteeringPromptTokens => values.push(admission.data.steering.prompt_tokens as i64),
+                     RequestSlot => values.push(slot as i64),
+                     RequestGeneration => values.push(lane.request.generation as i64),
+                     QueryLength => values.push(lane.tokens as i64),
+diff --git a/helios/src/model/prompt.rs b/helios/src/model/prompt.rs
+index 9cac21c1..d4d29e3f 100644
+--- a/helios/src/model/prompt.rs
++++ b/helios/src/model/prompt.rs
+@@ -84,6 +84,7 @@ pub fn prepare_image_inputs(
+                 tokens: rendered.token_ids.clone(),
+                 token_expansions: vec![],
+                 data: PromptData {
++                    steering: Default::default(),
+                     positions: if config.contract.frontend.position_dimensions == 3 {
+                         (0..rendered.token_ids.len())
+                             .map(|p| [p as i64; 3])
+diff --git a/helios/src/model/testing.rs b/helios/src/model/testing.rs
+index 2f1c3a18..c2a7f6b9 100644
+--- a/helios/src/model/testing.rs
++++ b/helios/src/model/testing.rs
+@@ -205,6 +205,7 @@ pub fn metadata() -> PreparedContract {
+         }
+     }
+     PreparedContract {
++        steering: None,
+         version: 1,
+         vocabulary: 248320,
+         input_vocabulary: 248320,
+@@ -241,6 +242,8 @@ pub fn manifest(config: &ModelConfig) -> ExecutionManifest {
+             use ValueSource::*;
+             let width = match b.source {
+                 SamplingParameters => 6,
++                SteeringAddends => config.contract.steering.as_ref().unwrap().width(),
++                SteeringPhases => config.contract.steering.as_ref().unwrap().sites.len(),
+                 EosTokenIds | LiveStateRows => 8,
+                 PromptHistogram => config.contract.vocabulary,
+                 GrammarMask => config.contract.vocabulary.div_ceil(32),
+@@ -268,7 +271,8 @@ pub fn manifest(config: &ModelConfig) -> ExecutionManifest {
+                 }
+             };
+             let dtype = match b.source {
+-                SamplingParameters => Dtype::Float32,
++                SamplingParameters | SteeringAddends => Dtype::Float32,
++                SteeringPhases => Dtype::Int32,
+                 RequestSlot if b.buffer == "row_slot_ids" || b.buffer == "admission_slots" => {
+                     Dtype::Int32
+                 }
+diff --git a/helios/src/model/tests.rs b/helios/src/model/tests.rs
+index 26ad2b46..9ea557bf 100644
+--- a/helios/src/model/tests.rs
++++ b/helios/src/model/tests.rs
+@@ -37,7 +37,7 @@ pub(super) fn config() -> ModelConfig {
+ 
+ #[test]
+ fn admission_histogram_seed_and_partial_page_uploads_preserve_native_semantics() {
+-    let config = config();
++    let config = steering_config();
+     let mut scheduler = RequestScheduler::new(
+         config.identity,
+         config.limits,
+@@ -69,6 +69,7 @@ fn admission_histogram_seed_and_partial_page_uploads_preserve_native_semantics()
+         max_new_tokens: 4,
+         prompt: vec![7; 65],
+         data: PromptData {
++            steering: Default::default(),
+             positions: (0..65).map(|p| [p; 3]).collect(),
+             vision_token_indices: vec![-1; 65],
+             ..Default::default()
+@@ -83,6 +84,7 @@ fn admission_histogram_seed_and_partial_page_uploads_preserve_native_semantics()
+     crate::model::pack_inputs(&mut inputs, &config, &scheduler, &step, &admissions).unwrap();
+     assert_state_bindings(&inputs, &scheduler, &step);
+     let uploads = inputs.uploads();
++    assert_eq!(uploads.iter().filter(|u| u.buffer.starts_with("steering_")).count(), 3);
+     let seed = uploads
+         .iter()
+         .find(|u| u.buffer == "admission_seed_bits")
+@@ -134,6 +136,7 @@ fn admission_histogram_seed_and_partial_page_uploads_preserve_native_semantics()
+     scheduler.commit(&step, Fence(2)).unwrap();
+     crate::model::pack_inputs(&mut inputs, &config, &scheduler, &step, &admissions).unwrap();
+     assert_state_bindings(&inputs, &scheduler, &step);
++    assert!(!inputs.uploads().iter().any(|u| u.buffer.starts_with("steering_")));
+     assert_eq!(
+         inputs
+             .uploads()
+@@ -163,6 +166,7 @@ fn admission_histogram_seed_and_partial_page_uploads_preserve_native_semantics()
+     crate::model::pack_inputs(&mut inputs, &config, &scheduler, &step, &admissions).unwrap();
+     assert_state_bindings(&inputs, &scheduler, &step);
+     assert!(!inputs.uploads().iter().any(|u| u.buffer == "page_tables"));
++    assert!(!inputs.uploads().iter().any(|u| u.buffer.starts_with("steering_")));
+     assert!(
+         !inputs
+             .uploads()
+@@ -205,6 +209,7 @@ fn large_prefill_uploads_preserve_token_position_and_image_indices_without_tail_
+         sampling: SamplingParameters::default(),
+         max_new_tokens: 4,
+         data: PromptData {
++            steering: Default::default(),
+             positions: prompt.iter().map(|&token| [token as i64; 3]).collect(),
+             vision_token_indices: prompt
+                 .iter()
+@@ -513,6 +518,7 @@ fn packing_follows_value_bindings_after_buffers_and_model_are_renamed() {
+         max_new_tokens: 4,
+         prompt: vec![7; 65],
+         data: PromptData {
++            steering: Default::default(),
+             positions: (0..65).map(|p| [p; 3]).collect(),
+             ..Default::default()
+         },
+@@ -668,6 +674,7 @@ fn copy_staging_uses_physical_slots_stochastic_defaults_and_bonus_mask() {
+         max_new_tokens: 16,
+         prompt: vec![7; 65],
+         data: PromptData {
++            steering: Default::default(),
+             positions: (0..65).map(|p| [p; 3]).collect(),
+             vision_token_indices: vec![-1; 65],
+             ..Default::default()
+@@ -867,6 +874,7 @@ fn mixed_native_uploads_pack_prompt_after_the_decode_extent_and_sample_only_elig
+                 max_new_tokens: 16,
+                 prompt,
+                 data: PromptData {
++                    steering: Default::default(),
+                     positions: (0..count).map(|p| [p as i64; 3]).collect(),
+                     vision_token_indices: vec![-1; count],
+                     ..Default::default()
+@@ -1073,6 +1081,7 @@ fn state_transfer_and_resume_upload_fixture() {
+             max_new_tokens: 2,
+             prompt,
+             data: PromptData {
++                steering: Default::default(),
+                 positions: (0..64).map(|i| [i, i + 1, i + 2]).collect(),
+                 vision_token_indices: vec![-1; 64],
+                 ..Default::default()
+@@ -1540,6 +1549,7 @@ fn prefill_compacts_execution_feature_indices_and_preserves_admission_metadata()
+         max_new_tokens: 1,
+         prompt: vec![7; 4],
+         data: PromptData {
++            steering: Default::default(),
+             positions: vec![[0; 3]; 4],
+             vision_token_indices: canonical.clone(),
+             ..Default::default()
+@@ -1586,3 +1596,91 @@ fn prefill_compacts_execution_feature_indices_and_preserves_admission_metadata()
+         canonical
+     );
+ }
++
++fn steering_config() -> ModelConfig {
++    let mut config = config();
++    config.contract.steering = Some(SteeringContract { max_sites: 2, sites: vec![
++        SteeringSite { name: "layers.0.mlp_out".into(), width: 2 },
++        SteeringSite { name: "layers.0.residual".into(), width: 2 },
++        SteeringSite { name: "layers.0.mlp_input".into(), width: 3 },
++    ] });
++    for graph in &mut config.contract.graphs {
++        for (buffer, source, bytes) in [
++            ("steering_addends", ValueSource::SteeringAddends, 28),
++            ("steering_phases", ValueSource::SteeringPhases, 12),
++            ("steering_prompt_tokens", ValueSource::SteeringPromptTokens, 8),
++        ] {
++            if matches!(graph.kind, GraphOperation::Init | GraphOperation::Restore) {
++                graph.inputs.push(ValueBinding { buffer: buffer.into(), source,
++                    indexing: InputIndexing::RequestRow, value_offset: 0, padding: 0, tensor: String::new() });
++            }
++            if matches!(graph.kind, GraphOperation::Prefill | GraphOperation::Decode | GraphOperation::Speculative) {
++                graph.state.push(StateAccess { view: StateView { buffer: buffer.into(), offset: 0,
++                    stride: bytes, nbytes: bytes }, access: StateAccessKind::Read });
++            }
++        }
++    }
++    config
++}
++
++#[test]
++fn steering_admission_packs_physical_slots_and_clears_neutral_rows() {
++    let config = steering_config();
++    let manifest = manifest(&config);
++    let mut inputs = Inputs::new(&config, &manifest).unwrap();
++    let mut scheduler = RequestScheduler::new(config.identity, config.limits, scheduler_capabilities(&config)).unwrap();
++    scheduler.measured_graph_durations(&manifest.graphs).unwrap();
++    let mut admissions: [Option<Admission>; 4] = std::array::from_fn(|_| None);
++    for _ in 0..2 {
++        let handle = scheduler.admit(RequestSpec { message_boundaries: vec![], prompt: vec![7; 65],
++            conditioning: vec![], max_new_tokens: 4, grammar_constrained: false,
++            host_stops: false, growable_output: false }).unwrap();
++        let steering = if handle.slot == 0 {
++            steering::SteeringData { vectors: vec![(1, vec![1.25, -2.5]), (2, vec![-0.5, 0.0, 8.0])], phase: 2,
++                prompt_tokens: 65, identity: Some([8; 32]) }
++        } else { Default::default() };
++        admissions[handle.slot as usize] = Some(Admission { handle, sampling: Default::default(),
++            max_new_tokens: 4, prompt: vec![7; 65], data: PromptData { steering,
++                positions: (0..65).map(|p| [p; 3]).collect(), vision_token_indices: vec![-1; 65],
++                ..Default::default() }, grammar_mask: None, ignore_eos: false });
++    }
++    let plan = scheduler.plan().unwrap();
++    scheduler.commit(&plan, Fence(1)).unwrap();
++    let mut step = (*plan).clone();
++    step.lanes.reverse();
++    pack_inputs(&mut inputs, &config, &scheduler, &step, &admissions).unwrap();
++    for upload in inputs.uploads().iter().filter(|u| u.buffer == "steering_addends") {
++        let values: Vec<_> = upload.bytes.chunks_exact(4).map(|b| f32::from_le_bytes(b.try_into().unwrap())).collect();
++        assert_eq!(values, if upload.offset == 0 { vec![0.0, 0.0, 1.25, -2.5, -0.5, 0.0, 8.0] } else { vec![0.0; 7] });
++    }
++    assert_eq!(inputs.uploads().iter().find(|u| u.buffer == "steering_phases" && u.offset == 0).unwrap().bytes,
++               &[0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0]);
++    admissions[0].as_mut().unwrap().data.steering = Default::default();
++    pack_inputs(&mut inputs, &config, &scheduler, &step, &admissions).unwrap();
++    assert!(inputs.uploads().iter().filter(|u| u.buffer.starts_with("steering_")).all(|u| u.bytes.iter().all(|b| *b == 0)));
++}
++
++#[test]
++fn steering_contract_rejects_missing_forward_reads_or_admission_inputs() {
++    let mut config = steering_config();
++    let manifest = manifest(&config);
++    assert!(Inputs::new(&config, &manifest).is_ok());
++    config.contract.graphs.iter_mut().find(|g| g.kind == GraphOperation::Decode).unwrap()
++        .state.retain(|a| a.view.buffer != "steering_addends");
++    assert!(Inputs::new(&config, &manifest).is_err());
++    let mut config = steering_config();
++    config.contract.graphs.iter_mut().find(|g| g.kind == GraphOperation::Restore).unwrap()
++        .inputs.retain(|b| b.source != ValueSource::SteeringPhases);
++    assert!(Inputs::new(&config, &manifest).is_err());
++}
++
++#[cfg(any(feature = "frontend", feature = "runtime-package"))]
++#[test]
++fn old_contract_without_steering_remains_loadable() {
++    let mut config = config();
++    let mut old = serde_json::to_value(&config.contract).unwrap();
++    old.as_object_mut().unwrap().remove("steering");
++    config.contract = serde_json::from_value(old).unwrap();
++    assert!(config.contract.steering.is_none());
++    assert!(Inputs::new(&config, &manifest(&config)).is_ok());
++}
+diff --git a/helios/src/runtime_package/protobuf.rs b/helios/src/runtime_package/protobuf.rs
+index 7a7833a2..d76725a2 100644
+--- a/helios/src/runtime_package/protobuf.rs
++++ b/helios/src/runtime_package/protobuf.rs
+@@ -317,6 +317,17 @@ mod tests {
+     use super::*;
+     use prost::Message;
+ 
++    #[test]
++    fn old_serialized_model_contract_has_no_steering() {
++        use prost::Message;
++        // Existing version-one semantic metadata predates field eight.
++        let old = wire::ModelContract::decode(&b"\x08\x01\x10\x20\x18\x20"[..]).unwrap();
++        assert_eq!(old.version, 1);
++        assert_eq!(old.vocabulary, 32);
++        assert!(old.steering.is_none());
++        assert!(wire::ModelContract::decode(old.encode_to_vec().as_slice()).unwrap().steering.is_none());
++    }
++
+     #[test]
+     fn packed_rows_preserve_absent_field_semantics_and_honor_explicit_bounds() {
+         // Serialized verification metadata predating the separate physical-row field.
+diff --git a/helios/src/server/inference.rs b/helios/src/server/inference.rs
+index d56513fc..fbc00f07 100644
+--- a/helios/src/server/inference.rs
++++ b/helios/src/server/inference.rs
+@@ -114,6 +114,7 @@ pub struct LogprobOptions {
+ 
+ #[derive(Clone, Debug, Default, PartialEq)]
+ pub struct Options {
++    pub steering: Option<crate::model::steering::SteeringRequest>,
+     pub sampling: Sampling,
+     pub logprobs: Option<LogprobOptions>,
+     pub effort: Option<Effort>,
+diff --git a/helios/src/server/models.rs b/helios/src/server/models.rs
+index 2a924d04..a32c437b 100644
+--- a/helios/src/server/models.rs
++++ b/helios/src/server/models.rs
+@@ -69,6 +69,14 @@ impl ModelCatalog {
+                 "is_blocking": false,
+             }],
+             "flare": {
++                "prepared_identity": model.identity.iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
++                "steering": model.contract.steering.as_ref().map(|steering| json!({
++                    "protocol": "additive-bf16-sites-v1",
++                    "max_sites": steering.max_sites,
++                    "sites": steering.sites,
++                    "phases": ["all", "prefill", "decode"],
++                    "phase_boundary": "original_prompt_token_count",
++                })),
+                 "vocab_size": model.contract.vocabulary,
+                 "max_top_logprobs": model.max_top_logprobs,
+                 "max_concurrency": model.limits.max_active,
+@@ -179,6 +187,16 @@ mod tests {
+     fn metadata_reports_effective_limits_and_prepared_modalities() {
+         let mut model = config();
+         let text = ModelCatalog::new(&model, &[]).card;
++        assert_eq!(text["flare"]["prepared_identity"], "00".repeat(32));
++        assert!(text["flare"]["steering"].is_null());
++        model.contract.steering = Some(crate::model::contract::SteeringContract { max_sites: 1,
++            sites: vec![crate::model::contract::SteeringSite { name: "layers.0.mlp_out".into(), width: 4 }] });
++        let steering = ModelCatalog::new(&model, &[]).card;
++        assert_eq!(steering["flare"]["steering"]["protocol"], "additive-bf16-sites-v1");
++        assert_eq!(steering["flare"]["steering"]["max_sites"], 1);
++        assert_eq!(steering["flare"]["steering"]["sites"], json!([{"name":"layers.0.mlp_out","width":4}]));
++        assert_eq!(steering["flare"]["steering"]["phase_boundary"], "original_prompt_token_count");
++        model.contract.steering = None;
+         assert_eq!(text["max_model_len"], 8192);
+         assert_eq!(text["flare"]["max_concurrency"], 3);
+         assert_eq!(text["flare"]["prefill_chunk_size"], 512);
+diff --git a/helios/src/server/protocol/decode.rs b/helios/src/server/protocol/decode.rs
+index cc374b90..4bcf579d 100644
+--- a/helios/src/server/protocol/decode.rs
++++ b/helios/src/server/protocol/decode.rs
+@@ -374,6 +374,9 @@ fn tool(v: &Value, protocol: Protocol, namespace: Option<&str>) -> Result<Tool>
+ }
+ fn options(body: &Value, protocol: Protocol) -> Result<Options> {
+     let mut options = Options::default();
++    options.steering = body.get("steering").filter(|v| !v.is_null()).map(|v|
++        serde_json::from_value(v.clone()).map_err(|e| crate::Error::from(format!("invalid steering: {e}"))))
++        .transpose()?;
+     options.sampling = serde_json::from_value(body.clone())
+         .map_err(|e| format!("invalid sampling options: {e}"))?;
+     let limit = match protocol {
+diff --git a/helios/src/server/protocol/tests.rs b/helios/src/server/protocol/tests.rs
+index c67cef44..3c957d75 100644
+--- a/helios/src/server/protocol/tests.rs
++++ b/helios/src/server/protocol/tests.rs
+@@ -1484,3 +1484,17 @@ fn generation_logprob_controls_have_endpoint_specific_types_and_limits() {
+     assert_eq!(request.options.logprobs.unwrap().top,20);
+     assert!(request.options.sampling.temperature.is_none());
+ }
++
++#[test]
++fn additive_steering_decodes_in_chat_and_completions() {
++    for (protocol, mut body) in [
++        (Protocol::Chat, json!({"messages":[{"role":"user","content":"Hello"}]})),
++        (Protocol::Completions, json!({"prompt":"Hello"})),
++    ] {
++        body["steering"] = json!({"phase":"decode","sites":[{"site":"layers.0.mlp_out","vector":[1.0,0.0]}]});
++        let parsed = request(protocol, body.clone());
++        assert_eq!(parsed.options.steering.unwrap().phase, crate::model::steering::SteeringPhase::Decode);
++        body["steering"]["phase"] = json!("sometimes");
++        assert!(decode(protocol, body, false).is_err());
++    }
++}
+diff --git a/helios/src/server/request.rs b/helios/src/server/request.rs
+index 7cb8d20c..21f89b92 100644
+--- a/helios/src/server/request.rs
++++ b/helios/src/server/request.rs
+@@ -262,10 +262,16 @@ pub(super) fn prepare_inference_cached(
+     let crate::model::PreparedInput {
+         tokens,
+         token_expansions,
+-        data,
+-        conditioning,
++        mut data,
++        mut conditioning,
+         conditioned_inputs,
+     } = crate::model::prepare_image_inputs(config, frontend, processor, &rendered, images)?;
++    if let Some(steering) = &opts.steering {
++        data.steering = steering.prepare(config.contract.steering.as_ref(), tokens.len())?;
++        if let Some(identity) = data.steering.identity {
++            conditioning.insert(0, crate::cache::ConditioningEvent { position: 0, identity });
++        }
++    }
+     for boundary in &mut message_boundaries {
+         let original = *boundary;
+         *boundary += token_expansions.iter()
+diff --git a/helios/src/server/runtime.rs b/helios/src/server/runtime.rs
+index 55a40bae..74713594 100644
+--- a/helios/src/server/runtime.rs
++++ b/helios/src/server/runtime.rs
+@@ -2263,6 +2263,7 @@ mod tests {
+                 max_new_tokens: 16,
+                 prompt: vec![7],
+                 data: PromptData {
++                    steering: Default::default(),
+                     positions: vec![[0; 3]],
+                     vision_token_indices: vec![-1],
+                     ..Default::default()
+@@ -2506,6 +2507,7 @@ mod tests {
+                 tokens: vec![7],
+                 message_boundaries: vec![],
+                 data: PromptData {
++                    steering: Default::default(),
+                     positions: vec![[0; 3]],
+                     vision_token_indices: vec![-1],
+                     ..Default::default()
+@@ -2841,6 +2843,7 @@ mod tests {
+                 max_new_tokens: 10,
+                 prompt: vec![0],
+                 data: PromptData {
++                    steering: Default::default(),
+                     positions: vec![[0; 3]],
+                     vision_token_indices: vec![-1],
+                     ..Default::default()
+diff --git a/helios/src/server/runtime/phase_tests.rs b/helios/src/server/runtime/phase_tests.rs
+index c58e72f2..d10a32cf 100644
+--- a/helios/src/server/runtime/phase_tests.rs
++++ b/helios/src/server/runtime/phase_tests.rs
+@@ -160,6 +160,7 @@ impl Fixture {
+             tokens,
+             limit,
+             PromptData {
++                steering: Default::default(),
+                 positions: (0..length).map(|n| [n as i64; 3]).collect(),
+                 vision_token_indices: vec![-1; length],
+                 ..Default::default()
+@@ -1668,6 +1669,7 @@ fn a_greedy_readmission_that_re_derives_another_token_prefills_the_delivered_one
+     exercise_text_preemption(
+         metadata,
+         |n| PromptData {
++            steering: Default::default(),
+             positions: (0..n).map(|p| [p as i64; 3]).collect(),
+             vision_token_indices: vec![-1; n],
+             ..Default::default()
+@@ -1688,6 +1690,7 @@ fn text_preemption_restores_or_recomputes_every_attention_contract() {
+                 exercise_text_preemption(
+                     metadata.clone(),
+                     |n| PromptData {
++                        steering: Default::default(),
+                         positions: (0..n).map(|p| [p as i64; 3]).collect(),
+                         vision_token_indices: vec![-1; n],
+                         ..Default::default()
+diff --git a/ignition/preparation/runtime_package_pb2.py b/ignition/preparation/runtime_package_pb2.py
+index 7ef8494e..0336b584 100644
+--- a/ignition/preparation/runtime_package_pb2.py
++++ b/ignition/preparation/runtime_package_pb2.py
+@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
+ 
+ 
+ 
+-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15runtime_package.proto\x12\rflare.runtime\"\x9c\x01\n\x0eProtectedIndex\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x12\n\npackage_id\x18\x02 \x01(\x0c\x12\x0e\n\x06signer\x18\x03 \x01(\x0c\x12*\n\x06groups\x18\x04 \x03(\x0b\x32\x1a.flare.runtime.SignedGroup\x12)\n\x05ranks\x18\x05 \x03(\x0b\x32\x1a.flare.runtime.SignedGroup\"<\n\x0bSignedGroup\x12\x0c\n\x04kind\x18\x01 \x01(\r\x12\x0c\n\x04\x62ody\x18\x02 \x01(\x0c\x12\x11\n\tsignature\x18\x03 \x01(\x0c\"\x81\x02\n\x11PublisherMetadata\x12(\n\x05index\x18\x01 \x01(\x0b\x32\x19.flare.runtime.ModelIndex\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x17\n\x0fofficial_source\x18\x03 \x01(\t\x12\x14\n\x0cgroup_hashes\x18\x04 \x03(\x0c\x12\x13\n\x0b\x64\x65velopment\x18\x05 \x01(\x08\x12\r\n\x05ranks\x18\x06 \x01(\r\x12\'\n\x07license\x18\x07 \x01(\x0b\x32\x16.flare.runtime.License\x12\x33\n\rqualification\x18\x08 \x01(\x0b\x32\x1c.flare.runtime.Qualification\"%\n\x07License\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04link\x18\x02 \x01(\t\"8\n\rQualification\x12\x17\n\x0freference_gates\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"F\n\x0fResourceCatalog\x12\x33\n\tresources\x18\x01 \x03(\x0b\x32 .flare.runtime.ProtectedResource\"^\n\x11ProtectedResource\x12\x0e\n\x06offset\x18\x01 \x01(\x04\x12\x14\n\x0cstored_bytes\x18\x02 \x01(\x04\x12\x13\n\x0bplain_bytes\x18\x03 \x01(\x04\x12\x0e\n\x06sha256\x18\x04 \x03(\x0c\"`\n\nStoredData\x12\x0e\n\x06nbytes\x18\x01 \x01(\x04\x12\x0e\n\x06sha256\x18\x02 \x01(\x0c\x12\x0e\n\x06offset\x18\x03 \x01(\x04\x12\"\n\x05parts\x18\x04 \x03(\x0b\x32\x13.flare.runtime.Span\"\xd9\x01\n\x0eRankProtection\x12\x0c\n\x04rank\x18\x01 \x01(\r\x12*\n\x06\x62undle\x18\x02 \x01(\x0b\x32\x1a.flare.runtime.BundleIndex\x12\x33\n\x0b\x65xecutables\x18\x03 \x01(\x0b\x32\x1e.flare.runtime.ResourceCatalog\x12/\n\x07support\x18\x04 \x01(\x0b\x32\x1e.flare.runtime.ResourceCatalog\x12\'\n\x04\x64\x61ta\x18\x05 \x01(\x0b\x32\x19.flare.runtime.StoredData\"\x9e\x03\n\nModelIndex\x12\x0f\n\x07version\x18\x01 \x01(\r\x12)\n\x05ranks\x18\x02 \x03(\x0b\x32\x1a.flare.runtime.BundleIndex\x12.\n\x0bpeer_memory\x18\x03 \x03(\x0b\x32\x19.flare.runtime.PeerMemory\x12$\n\x06\x61ssets\x18\x05 \x03(\x0b\x32\x14.flare.runtime.Asset\x12%\n\x06\x65ngram\x18\x06 \x01(\x0b\x32\x15.flare.runtime.Engram\x12\x43\n\x11sampling_defaults\x18\x07 \x01(\x0b\x32(.flare.runtime.DefaultSamplingParameters\x12\x31\n\x08\x66rontend\x18\x08 \x01(\x0b\x32\x1f.flare.runtime.FrontendSettings\x12\'\n\x07\x63luster\x18\t \x01(\x0b\x32\x16.flare.runtime.Cluster\x12\x30\n\x08\x63ontract\x18\n \x01(\x0b\x32\x1e.flare.runtime.ServingContractJ\x04\x08\x04\x10\x05\"\xcb\x06\n\x0fServingContract\x12\x10\n\x08model_id\x18\x01 \x01(\t\x12\x10\n\x08identity\x18\x02 \x01(\t\x12\x34\n\x0emodel_contract\x18\x03 \x01(\x0b\x32\x1c.flare.runtime.ModelContract\x12\x1b\n\x13max_sequence_tokens\x18\x04 \x01(\x04\x12\x1a\n\x12prefill_chunk_size\x18\x05 \x01(\x04\x12\r\n\x05pages\x18\x06 \x01(\x04\x12\x12\n\nstate_rows\x18\x07 \x01(\x04\x12\x11\n\tsnapshots\x18\x08 \x01(\x04\x12\x13\n\x0bpage_tokens\x18\t \x01(\x04\x12\x1a\n\x12speculative_widths\x18\x0b \x03(\x04\x12$\n\x17speculative_fixed_width\x18\x0c \x01(\x04H\x00\x88\x01\x01\x12\x16\n\x0ehistory_drafts\x18\r \x01(\x08\x12#\n\x1bspeculative_proposal_source\x18\x0e \x01(\t\x12\x1b\n\x0emax_new_tokens\x18\x0f \x01(\x04H\x01\x88\x01\x01\x12\x17\n\nmax_active\x18\x10 \x01(\x04H\x02\x88\x01\x01\x12\x14\n\x0cserved_names\x18\x11 \x03(\t\x12\x1a\n\rreserve_bytes\x18\x12 \x01(\x04H\x03\x88\x01\x01\x12\x1b\n\x0equeue_capacity\x18\x13 \x01(\x04H\x04\x88\x01\x01\x12\x1d\n\x10\x66rontend_workers\x18\x14 \x01(\x04H\x05\x88\x01\x01\x12\x1b\n\x0emax_body_bytes\x18\x15 \x01(\x04H\x06\x88\x01\x01\x12\x14\n\x0c\x63ontext_hint\x18\x16 \x01(\t\x12\x15\n\rcapacity_hint\x18\x17 \x01(\t\x12\"\n\x1aspeculative_token_capacity\x18\x18 \x01(\x04\x12 \n\x13\x64\x65\x63ode_weight_bytes\x18\x19 \x01(\x04H\x07\x88\x01\x01\x42\x1a\n\x18_speculative_fixed_widthB\x11\n\x0f_max_new_tokensB\r\n\x0b_max_activeB\x10\n\x0e_reserve_bytesB\x11\n\x0f_queue_capacityB\x13\n\x11_frontend_workersB\x11\n\x0f_max_body_bytesB\x16\n\x14_decode_weight_bytesJ\x04\x08\n\x10\x0b\"\x8b\x02\n\rModelContract\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x12\n\nvocabulary\x18\x02 \x01(\x04\x12\x18\n\x10input_vocabulary\x18\x03 \x01(\x04\x12-\n\x06vision\x18\x04 \x01(\x0b\x32\x1d.flare.runtime.VisionCapacity\x12+\n\x05\x63\x61\x63he\x18\x05 \x01(\x0b\x32\x1c.flare.runtime.CacheContract\x12,\n\x06graphs\x18\x06 \x03(\x0b\x32\x1c.flare.runtime.GraphContract\x12\x31\n\x08\x66rontend\x18\x07 \x01(\x0b\x32\x1f.flare.runtime.FrontendContract\"\x90\x01\n\x0eVisionCapacity\x12\x15\n\rfeature_slots\x18\x05 \x01(\x04\x12\x1c\n\x14\x66\x65\x61tures_per_request\x18\x01 \x01(\x04\x12\x12\n\nmax_images\x18\x02 \x01(\x04\x12\x1b\n\x13patches_per_feature\x18\x03 \x01(\x04\x12\x18\n\x10patch_capacities\x18\x04 \x03(\x04\"\x86\x01\n\rCacheContract\x12\x13\n\x0bpage_tokens\x18\x01 \x01(\x04\x12-\n\x07regions\x18\x02 \x03(\x0b\x32\x1c.flare.runtime.HistoryRegion\x12\x31\n\x0bpage_tables\x18\x03 \x03(\x0b\x32\x1c.flare.runtime.PageTableView\"\x96\x01\n\rHistoryRegion\x12(\n\x04kind\x18\x01 \x01(\x0e\x32\x1a.flare.runtime.HistoryKind\x12)\n\x07storage\x18\x02 \x01(\x0b\x32\x18.flare.runtime.StateView\x12\x19\n\x11tokens_per_record\x18\x03 \x01(\x04\x12\x15\n\rwindow_tokens\x18\x04 \x01(\x04\"4\n\rPageTableView\x12\x0e\n\x06\x62uffer\x18\x01 \x01(\t\x12\x13\n\x0bpage_offset\x18\x02 \x01(\x04\"\xb1\x01\n\x0cValueBinding\x12\x0e\n\x06\x62uffer\x18\x01 \x01(\t\x12*\n\x06source\x18\x02 \x01(\x0e\x32\x1a.flare.runtime.ValueSource\x12.\n\x08indexing\x18\x03 \x01(\x0e\x32\x1c.flare.runtime.InputIndexing\x12\x14\n\x0cvalue_offset\x18\x04 \x01(\x12\x12\x0f\n\x07padding\x18\x05 \x01(\x12\x12\x0e\n\x06tensor\x18\x06 \x01(\t\"K\n\tStateView\x12\x0e\n\x06\x62uffer\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\x12\x0e\n\x06stride\x18\x03 \x01(\x04\x12\x0e\n\x06nbytes\x18\x04 \x01(\x04\"e\n\x0bStateAccess\x12&\n\x04view\x18\x01 \x01(\x0b\x32\x18.flare.runtime.StateView\x12.\n\x06\x61\x63\x63\x65ss\x18\x02 \x01(\x0e\x32\x1e.flare.runtime.StateAccessKind\"O\n\x10\x43ompletionCursor\x12\'\n\x05state\x18\x01 \x01(\x0b\x32\x18.flare.runtime.StateView\x12\x12\n\nlag_tokens\x18\x02 \x01(\x04\"\xc5\x02\n\rGraphContract\x12\r\n\x05graph\x18\x01 \x01(\t\x12+\n\x06inputs\x18\x02 \x03(\x0b\x32\x1b.flare.runtime.ValueBinding\x12)\n\x05state\x18\x03 \x03(\x0b\x32\x1a.flare.runtime.StateAccess\x12\x1e\n\x16state_rows_per_request\x18\x04 \x01(\x04\x12\x35\n\x0c\x64raft_cursor\x18\x05 \x01(\x0b\x32\x1f.flare.runtime.CompletionCursor\x12\x18\n\x10\x65mbedding_tables\x18\x06 \x03(\r\x12/\n\rpending_token\x18\x07 \x01(\x0b\x32\x18.flare.runtime.StateView\x12+\n\x04kind\x18\x08 \x01(\x0e\x32\x1d.flare.runtime.GraphOperation\"k\n\nToolParser\x12+\n\x04kind\x18\x01 \x01(\x0e\x32\x1d.flare.runtime.ToolParserKind\x12\x19\n\x11wrapping_newlines\x18\x02 \x01(\r\x12\x15\n\rtag_separator\x18\x03 \x01(\t\"\x95\x01\n\x0fReasoningParser\x12\x30\n\x04kind\x18\x01 \x01(\x0e\x32\".flare.runtime.ReasoningParserKind\x12\x0c\n\x04open\x18\x02 \x01(\t\x12\r\n\x05\x63lose\x18\x03 \x01(\t\x12\x19\n\x11wrapping_newlines\x18\x04 \x01(\r\x12\x18\n\x10terminal_markers\x18\x05 \x03(\t\"\xca\x01\n\x0ePrefixBoundary\x12\r\n\x05roles\x18\x01 \x03(\t\x12\x18\n\x0b\x61ppend_role\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x1e\n\x16\x63ontinue_final_message\x18\x03 \x01(\x08\x12\x18\n\x10minimum_messages\x18\x04 \x01(\x04\x12\x16\n\x0erequired_start\x18\x05 \x01(\t\x12\x14\n\x0crequired_end\x18\x06 \x01(\t\x12\x17\n\x0frequired_marker\x18\x07 \x01(\tB\x0e\n\x0c_append_role\"y\n\tImageSpan\x12\x13\n\x0bstart_token\x18\x01 \x01(\r\x12\x11\n\tend_token\x18\x02 \x01(\r\x12\x12\n\nmax_tokens\x18\x03 \x01(\x04\x12\x17\n\x0finterior_tokens\x18\x04 \x03(\r\x12\x17\n\x0funscoped_tokens\x18\x05 \x03(\r\"Q\n\x10ImageTokenLayout\x12\x15\n\rfeature_token\x18\x01 \x01(\r\x12&\n\x04span\x18\x02 \x01(\x0b\x32\x18.flare.runtime.ImageSpan\"\xf2\x03\n\x10\x46rontendContract\x12(\n\x05tools\x18\x01 \x01(\x0b\x32\x19.flare.runtime.ToolParser\x12\x31\n\treasoning\x18\x02 \x01(\x0b\x32\x1e.flare.runtime.ReasoningParser\x12\x43\n\x11image_preparation\x18\x03 \x01(\x0e\x32#.flare.runtime.ImagePreparationKindH\x00\x88\x01\x01\x12\x39\n\x0cimage_layout\x18\x04 \x01(\x0e\x32\x1e.flare.runtime.ImageLayoutKindH\x01\x88\x01\x01\x12\x17\n\x0frejected_tokens\x18\x05 \x03(\r\x12\x1b\n\x13position_dimensions\x18\x06 \x01(\r\x12\x18\n\x10\x61ssistant_marker\x18\x07 \x01(\t\x12\x1b\n\x13message_end_markers\x18\x08 \x03(\t\x12\x36\n\x0fprefix_boundary\x18\t \x01(\x0b\x32\x1d.flare.runtime.PrefixBoundary\x12\x35\n\x0cimage_tokens\x18\n \x01(\x0b\x32\x1f.flare.runtime.ImageTokenLayoutB\x14\n\x12_image_preparationB\x0f\n\r_image_layout\"1\n\x07\x43luster\x12\r\n\x05world\x18\x01 \x01(\r\x12\x11\n\texport_id\x18\x03 \x01(\tJ\x04\x08\x02\x10\x03\"\x8c\x03\n\x19\x44\x65\x66\x61ultSamplingParameters\x12\x11\n\x04seed\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x18\n\x0btemperature\x18\x02 \x01(\x02H\x01\x88\x01\x01\x12\x12\n\x05top_k\x18\x03 \x01(\x05H\x02\x88\x01\x01\x12\x12\n\x05top_p\x18\x04 \x01(\x02H\x03\x88\x01\x01\x12\x12\n\x05min_p\x18\x05 \x01(\x02H\x04\x88\x01\x01\x12\x1f\n\x12repetition_penalty\x18\x06 \x01(\x02H\x05\x88\x01\x01\x12\x1d\n\x10presence_penalty\x18\x07 \x01(\x02H\x06\x88\x01\x01\x12\x1e\n\x11\x66requency_penalty\x18\x08 \x01(\x02H\x07\x88\x01\x01\x12-\n\x06ranges\x18\t \x01(\x0b\x32\x1d.flare.runtime.SamplingRangesB\x07\n\x05_seedB\x0e\n\x0c_temperatureB\x08\n\x06_top_kB\x08\n\x06_top_pB\x08\n\x06_min_pB\x15\n\x13_repetition_penaltyB\x13\n\x11_presence_penaltyB\x14\n\x12_frequency_penalty\"H\n\x12SamplingFloatRange\x12\x10\n\x03min\x18\x01 \x01(\x02H\x00\x88\x01\x01\x12\x10\n\x03max\x18\x02 \x01(\x02H\x01\x88\x01\x01\x42\x06\n\x04_minB\x06\n\x04_max\"F\n\x10SamplingIntRange\x12\x10\n\x03min\x18\x01 \x01(\x05H\x00\x88\x01\x01\x12\x10\n\x03max\x18\x02 \x01(\x05H\x01\x88\x01\x01\x42\x06\n\x04_minB\x06\n\x04_max\"\x96\x03\n\x0eSamplingRanges\x12\x36\n\x0btemperature\x18\x01 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12.\n\x05top_k\x18\x02 \x01(\x0b\x32\x1f.flare.runtime.SamplingIntRange\x12\x30\n\x05top_p\x18\x03 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12\x30\n\x05min_p\x18\x04 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12=\n\x12repetition_penalty\x18\x05 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12;\n\x10presence_penalty\x18\x06 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12<\n\x11\x66requency_penalty\x18\x07 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\"\xc5\x02\n\x10\x46rontendSettings\x12\x33\n\ttokenizer\x18\x01 \x01(\x0b\x32 .flare.runtime.TokenizerSettings\x12+\n\x05image\x18\x02 \x01(\x0b\x32\x1c.flare.runtime.ImageSettings\x12\x15\n\reos_token_ids\x18\x03 \x03(\r\x12:\n\x11template_encoding\x18\x04 \x01(\x0e\x32\x1f.flare.runtime.TemplateEncoding\x12\x34\n\x0eprompt_encoder\x18\x05 \x01(\x0e\x32\x1c.flare.runtime.PromptEncoder\x12\'\n\x1aimage_placeholder_token_id\x18\x06 \x01(\rH\x00\x88\x01\x01\x42\x1d\n\x1b_image_placeholder_token_id\"\xdc\x02\n\x11TokenizerSettings\x12\x16\n\tbos_token\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x16\n\teos_token\x18\x02 \x01(\tH\x01\x88\x01\x01\x12\x16\n\tunk_token\x18\x03 \x01(\tH\x02\x88\x01\x01\x12\x16\n\tsep_token\x18\x04 \x01(\tH\x03\x88\x01\x01\x12\x16\n\tpad_token\x18\x05 \x01(\tH\x04\x88\x01\x01\x12\x16\n\tcls_token\x18\x06 \x01(\tH\x05\x88\x01\x01\x12\x17\n\nmask_token\x18\x07 \x01(\tH\x06\x88\x01\x01\x12;\n\x19\x61\x64\x64itional_special_tokens\x18\x08 \x01(\x0b\x32\x18.flare.runtime.TokenListB\x0c\n\n_bos_tokenB\x0c\n\n_eos_tokenB\x0c\n\n_unk_tokenB\x0c\n\n_sep_tokenB\x0c\n\n_pad_tokenB\x0c\n\n_cls_tokenB\r\n\x0b_mask_token\"\x1b\n\tTokenList\x12\x0e\n\x06values\x18\x01 \x03(\t\"\xeb\x02\n\rImageSettings\x12\x30\n\x04qwen\x18\x01 \x01(\x0b\x32 .flare.runtime.QwenImageSettingsH\x00\x12\x30\n\x04mimo\x18\x02 \x01(\x0b\x32 .flare.runtime.MimoImageSettingsH\x00\x12)\n\tdeepseek4\x18\x03 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12\'\n\x07moonvit\x18\x04 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12$\n\x04step\x18\x05 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12%\n\x05radio\x18\x06 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12J\n\x12\x64\x65\x65pseek_row_major\x18\x07 \x01(\x0b\x32,.flare.runtime.DeepseekRowMajorImageSettingsH\x00\x42\t\n\x07profile\"\x87\x01\n\x1d\x44\x65\x65pseekRowMajorImageSettings\x12\x12\n\nmin_pixels\x18\x01 \x01(\x04\x12\x12\n\nmax_tokens\x18\x02 \x01(\x04\x12#\n\x16max_width_height_ratio\x18\x03 \x01(\x04H\x00\x88\x01\x01\x42\x19\n\x17_max_width_height_ratio\"\x82\x01\n\x11QwenImageSettings\x12\x12\n\nmin_pixels\x18\x01 \x01(\x04\x12\x12\n\nmax_pixels\x18\x02 \x01(\x04\x12\x15\n\rposition_side\x18\x03 \x01(\r\x12\x16\n\x0eimage_token_id\x18\x04 \x01(\r\x12\x16\n\x0evideo_token_id\x18\x05 \x01(\r\"b\n\x11MimoImageSettings\x12\x12\n\nmin_pixels\x18\x01 \x01(\x04\x12\x12\n\nmax_pixels\x18\x02 \x01(\x04\x12\x12\n\nimage_mean\x18\x03 \x03(\x02\x12\x11\n\timage_std\x18\x04 \x03(\x02\"|\n\x06\x45ngram\x12\x11\n\ttoken_map\x18\x01 \x03(\r\x12\x14\n\x0cpad_token_id\x18\x02 \x01(\r\x12\x1d\n\x15\x63ompressed_vocabulary\x18\x03 \x01(\r\x12*\n\x06tables\x18\x04 \x03(\x0b\x32\x1a.flare.runtime.EngramTable\"\x80\x04\n\x0b\x45ngramTable\x12\r\n\x05layer\x18\x01 \x01(\r\x12\x0c\n\x04rows\x18\x02 \x01(\x04\x12\x17\n\x0f\x65mbedding_width\x18\x03 \x01(\r\x12\x13\n\x0bscale_block\x18\x04 \x01(\r\x12$\n\x07weights\x18\x05 \x01(\x0b\x32\x13.flare.runtime.Span\x12#\n\x06scales\x18\x06 \x01(\x0b\x32\x13.flare.runtime.Span\x12\'\n\x04hash\x18\x07 \x01(\x0b\x32\x19.flare.runtime.EngramHash\x12\x15\n\rweight_buffer\x18\x08 \x01(\t\x12\x14\n\x0cscale_buffer\x18\t \x01(\t\x12\x13\n\x0bhash_buffer\x18\n \x01(\t\x12\x13\n\x0bready_event\x18\x0b \x01(\t\x12\x35\n\x08\x65ncoding\x18\x0c \x01(\x0e\x32#.flare.runtime.EngramTable.Encoding\x12\x16\n\x0erequest_buffer\x18\r \x01(\t\x12\x14\n\x0cglobal_scale\x18\x0e \x01(\x02\x12/\n\x06shards\x18\x0f \x03(\x0b\x32\x1f.flare.runtime.EngramTableShard\"E\n\x08\x45ncoding\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x11\n\rFP8_E4M3_E8M0\x10\x01\x12\x15\n\x11NVFP4_E4M3_GLOBAL\x10\x02\"\x8c\x01\n\x10\x45ngramTableShard\x12\x0c\n\x04rank\x18\x01 \x01(\r\x12\x11\n\tfirst_row\x18\x02 \x01(\x04\x12\x0c\n\x04rows\x18\x03 \x01(\x04\x12$\n\x07weights\x18\x04 \x01(\x0b\x32\x13.flare.runtime.Span\x12#\n\x06scales\x18\x05 \x01(\x0b\x32\x13.flare.runtime.Span\"\xc3\x01\n\nEngramHash\x12\x30\n\x06method\x18\x01 \x01(\x0e\x32 .flare.runtime.EngramHash.Method\x12\x0e\n\x06orders\x18\x02 \x03(\r\x12\x13\n\x0bmultipliers\x18\x03 \x03(\x04\x12\x0e\n\x06primes\x18\x04 \x03(\x04\x12\x0f\n\x07offsets\x18\x05 \x03(\x04\"=\n\x06Method\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x0e\n\nXOR_MODULO\x10\x01\x12\x12\n\x0e\x45OS_XOR_MODULO\x10\x02\"K\n\x05\x41sset\x12\x0c\n\x04name\x18\x01 \x01(\t\x12$\n\x07payload\x18\x02 \x01(\x0b\x32\x13.flare.runtime.Span\x12\x0e\n\x06sha256\x18\x03 \x01(\t\"\x9b\x04\n\x0b\x42undleIndex\x12\x14\n\x0c\x61rchitecture\x18\x01 \x03(\x05\x12.\n\x0b\x61llocations\x18\x02 \x03(\x0b\x32\x19.flare.runtime.Allocation\x12&\n\x07modules\x18\x03 \x03(\x0b\x32\x15.flare.runtime.Module\x12*\n\tfunctions\x18\x04 \x03(\x0b\x32\x17.flare.runtime.Function\x12)\n\x06graphs\x18\x05 \x03(\x0b\x32\x19.flare.runtime.GraphIndex\x12\x30\n\x0creservations\x18\x06 \x03(\x0b\x32\x1a.flare.runtime.Reservation\x12+\n\texecution\x18\x07 \x01(\x0b\x32\x18.flare.runtime.Execution\x12\'\n\x07\x63ontext\x18\x08 \x01(\x0b\x32\x16.flare.runtime.Context\x12<\n\tresources\x18\t \x03(\x0b\x32).flare.runtime.BundleIndex.ResourcesEntry\x12\x0e\n\x06\x65vents\x18\n \x03(\t\x12*\n\x04roce\x18\x0b \x01(\x0b\x32\x1c.flare.runtime.RoceTransport\x1a\x45\n\x0eResourcesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\"\n\x05value\x18\x02 \x01(\x0b\x32\x13.flare.runtime.Span:\x02\x38\x01\"\xf8\x01\n\rRoceTransport\x12\x11\n\tproxy_abi\x18\x01 \x01(\r\x12\r\n\x05world\x18\x02 \x01(\r\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x16\n\x0eregion_address\x18\x04 \x01(\x04\x12\x14\n\x0cregion_bytes\x18\x05 \x01(\x04\x12\x18\n\x10\x63ounters_address\x18\x06 \x01(\x04\x12\x16\n\x0e\x63ounters_bytes\x18\x07 \x01(\x04\x12\x12\n\nslot_bytes\x18\x08 \x01(\x04\x12\x12\n\npipe_bytes\x18\t \x01(\x04\x12\x13\n\x0b\x63trl_offset\x18\n \x01(\x04\x12\x14\n\x0cvarlen_bytes\x18\x10 \x01(\x04J\x04\x08\x0b\x10\x10\"v\n\nGraphIndex\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05\x66lags\x18\x02 \x01(\x04\x12\x10\n\x08resource\x18\x03 \x01(\t\x12\x12\n\nnode_count\x18\x04 \x01(\x04\x12\x12\n\nedge_count\x18\x05 \x01(\x04\x12\x11\n\tfunctions\x18\x06 \x03(\x04\"M\n\nPeerMemory\x12\r\n\x05owner\x18\x01 \x01(\r\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\x04\x12\x0e\n\x06nbytes\x18\x03 \x01(\x04\x12\x0f\n\x07readers\x18\x04 \x03(\r\"M\n\x07\x43ontext\x12\r\n\x05\x66lags\x18\x01 \x01(\r\x12\r\n\x05\x63\x61\x63he\x18\x02 \x01(\x05\x12$\n\x06limits\x18\x03 \x03(\x0b\x32\x14.flare.runtime.Limit\"\"\n\x05Limit\x12\n\n\x02id\x18\x01 \x01(\x04\x12\r\n\x05value\x18\x02 \x01(\x04\".\n\x0bReservation\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\x04\x12\x0e\n\x06nbytes\x18\x02 \x01(\x04\"8\n\x04Span\x12\x0e\n\x06offset\x18\x01 \x01(\x04\x12\x0e\n\x06nbytes\x18\x02 \x01(\x04\x12\x10\n\x08\x66ilename\x18\x03 \x01(\t\"\xa2\x02\n\nAllocation\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06nbytes\x18\x02 \x01(\x04\x12\x11\n\talignment\x18\x03 \x01(\x04\x12\x11\n\x04\x66ile\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\'\n\ndata_spans\x18\x05 \x03(\x0b\x32\x13.flare.runtime.Span\x12.\n\x0brelocations\x18\x06 \x03(\x0b\x32\x19.flare.runtime.Relocation\x12\x14\n\x07\x61\x64\x64ress\x18\x07 \x01(\x04H\x01\x88\x01\x01\x12%\n\x06memory\x18\x08 \x01(\x0e\x32\x15.flare.runtime.Memory\x12%\n\x06sizing\x18\t \x01(\x0b\x32\x15.flare.runtime.SizingB\x07\n\x05_fileB\n\n\x08_address\"X\n\x06Sizing\x12)\n\x08\x63\x61pacity\x18\x01 \x01(\x0e\x32\x17.flare.runtime.Capacity\x12\x12\n\nunit_bytes\x18\x02 \x01(\x04\x12\x0f\n\x07maximum\x18\x03 \x01(\x04\"L\n\x06Module\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\t\x12&\n\x07globals\x18\x03 \x03(\x0b\x32\x15.flare.runtime.Global\"f\n\x06Global\x12\x0e\n\x06symbol\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\t\x12\x0e\n\x06nbytes\x18\x03 \x01(\x04\x12.\n\x0brelocations\x18\x04 \x03(\x0b\x32\x19.flare.runtime.Relocation\"y\n\x08\x46unction\x12\x0e\n\x06module\x18\x01 \x01(\t\x12\x0e\n\x06symbol\x18\x02 \x01(\t\x12\x17\n\x0fparameter_sizes\x18\x03 \x03(\x04\x12\x34\n\nattributes\x18\x04 \x03(\x0b\x32 .flare.runtime.FunctionAttribute\".\n\x11\x46unctionAttribute\x12\n\n\x02id\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x05\"/\n\tReference\x12\x12\n\nallocation\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\"s\n\nRelocation\x12\x0e\n\x06offset\x18\x01 \x01(\x04\x12(\n\x06target\x18\x02 \x01(\x0b\x32\x18.flare.runtime.Reference\x12+\n\x04kind\x18\x03 \x01(\x0e\x32\x1d.flare.runtime.RelocationKind\"D\n\x04\x42lob\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12.\n\x0brelocations\x18\x02 \x03(\x0b\x32\x19.flare.runtime.Relocation\";\n\tAttribute\x12\n\n\x02id\x18\x01 \x01(\x05\x12\"\n\x05value\x18\x02 \x01(\x0b\x32\x13.flare.runtime.Blob\"\x9d\x01\n\x06Kernel\x12\x10\n\x08\x66unction\x18\x01 \x01(\x04\x12\x0c\n\x04grid\x18\x02 \x03(\r\x12\r\n\x05\x62lock\x18\x03 \x03(\r\x12\x0e\n\x06shared\x18\x04 \x01(\r\x12&\n\targuments\x18\x05 \x03(\x0b\x32\x13.flare.runtime.Blob\x12,\n\nattributes\x18\x06 \x03(\x0b\x32\x18.flare.runtime.Attribute\"\x8a\x01\n\x06Memset\x12-\n\x0b\x64\x65stination\x18\x01 \x01(\x0b\x32\x18.flare.runtime.Reference\x12\r\n\x05pitch\x18\x02 \x01(\x04\x12\r\n\x05value\x18\x03 \x01(\r\x12\x14\n\x0c\x65lement_size\x18\x04 \x01(\r\x12\r\n\x05width\x18\x05 \x01(\x04\x12\x0e\n\x06height\x18\x06 \x01(\x04\"o\n\x04\x43opy\x12(\n\x06source\x18\x01 \x01(\x0b\x32\x18.flare.runtime.Reference\x12-\n\x0b\x64\x65stination\x18\x02 \x01(\x0b\x32\x18.flare.runtime.Reference\x12\x0e\n\x06nbytes\x18\x03 \x01(\x04\"\x07\n\x05\x45mpty\"\x1a\n\tEventWait\x12\r\n\x05\x65vent\x18\x01 \x01(\t\"\xe1\x01\n\x04Node\x12\'\n\x06kernel\x18\x01 \x01(\x0b\x32\x15.flare.runtime.KernelH\x00\x12\'\n\x06memset\x18\x02 \x01(\x0b\x32\x15.flare.runtime.MemsetH\x00\x12#\n\x04\x63opy\x18\x03 \x01(\x0b\x32\x13.flare.runtime.CopyH\x00\x12%\n\x05\x65mpty\x18\x04 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12.\n\nevent_wait\x18\x05 \x01(\x0b\x32\x18.flare.runtime.EventWaitH\x00\x42\x0b\n\toperation\"9\n\x04\x45\x64ge\x12\x0e\n\x06source\x18\x01 \x01(\x04\x12\x13\n\x0b\x64\x65stination\x18\x02 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\"\xa6\x01\n\tExecution\x12\x13\n\x0b\x61\x62i_version\x18\x01 \x01(\r\x12\x12\n\nmax_active\x18\x02 \x01(\x04\x12\x19\n\x11input_frame_bytes\x18\x03 \x01(\x04\x12&\n\x07\x62uffers\x18\x04 \x03(\x0b\x32\x15.flare.runtime.Buffer\x12-\n\x06graphs\x18\x05 \x03(\x0b\x32\x1d.flare.runtime.ExecutionGraph\"\x82\x01\n\x06\x42uffer\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06nbytes\x18\x02 \x01(\x04\x12\r\n\x05\x64type\x18\x03 \x01(\t\x12\r\n\x05shape\x18\x04 \x03(\x04\x12\x0f\n\x07strides\x18\x05 \x03(\x04\x12+\n\treference\x18\x06 \x01(\x0b\x32\x18.flare.runtime.Reference\"\xc6\x03\n\x0e\x45xecutionGraph\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04kind\x18\x02 \x01(\t\x12\x15\n\rsampling_mode\x18\x03 \x01(\t\x12\x16\n\x0e\x62\x61tch_capacity\x18\x04 \x01(\x04\x12\x16\n\x0etoken_capacity\x18\x05 \x01(\x04\x12\x33\n\x0einput_bindings\x18\x06 \x03(\x0b\x32\x1b.flare.runtime.InputBinding\x12\x19\n\x0c\x64raft_tokens\x18\x07 \x01(\rH\x00\x88\x01\x01\x12\x1a\n\rverify_tokens\x18\x08 \x01(\rH\x01\x88\x01\x01\x12\x30\n\x0c\x64raft_source\x18\t \x01(\x0e\x32\x1a.flare.runtime.DraftSource\x12 \n\x13speculation_enabled\x18\n \x01(\x08H\x02\x88\x01\x01\x12\x1d\n\x15\x65stimated_duration_ns\x18\x0b \x01(\x04\x12\x18\n\x10prefill_capacity\x18\x0c \x01(\x04\x12\x1d\n\x15packed_token_capacity\x18\r \x01(\x04\x42\x0f\n\r_draft_tokensB\x10\n\x0e_verify_tokensB\x16\n\x14_speculation_enabled\"H\n\x0cInputBinding\x12\x13\n\x0b\x62uffer_name\x18\x01 \x01(\t\x12\x13\n\x0bhost_offset\x18\x02 \x01(\x04\x12\x0e\n\x06nbytes\x18\x03 \x01(\x04*\x8e\x01\n\x0bHistoryKind\x12\x17\n\x13HISTORY_UNSPECIFIED\x10\x00\x12\x13\n\x0fPAGED_KEY_VALUE\x10\x01\x12\x10\n\x0cPAGED_LATENT\x10\x02\x12\x12\n\x0eSLIDING_WINDOW\x10\x03\x12\x13\n\x0fRECURRENT_STATE\x10\x04\x12\x16\n\x12\x43ONTINUATION_STATE\x10\x05*\xc3\x06\n\x0bValueSource\x12\x15\n\x11VALUE_UNSPECIFIED\x10\x00\x12\x0c\n\x08\x43ONSTANT\x10\x01\x12\x10\n\x0cREQUEST_SLOT\x10\x02\x12\x16\n\x12REQUEST_GENERATION\x10\x03\x12\r\n\tLIVE_ROWS\x10\x04\x12\x10\n\x0cQUERY_LENGTH\x10\x05\x12\x12\n\x0eSAMPLE_ENABLED\x10\x06\x12\x10\n\x0cPROMPT_TOKEN\x10\x07\x12\x11\n\rPENDING_TOKEN\x10\x08\x12\x1c\n\x18PROMPT_AND_PENDING_TOKEN\x10\t\x12\x13\n\x0fPROMPT_POSITION\x10\n\x12\x17\n\x13IMAGE_FEATURE_INDEX\x10\x0b\x12\x16\n\x12IMAGE_LEFT_CONTEXT\x10\x0c\x12\x17\n\x13IMAGE_RIGHT_CONTEXT\x10\r\x12\x0e\n\nPAGE_TABLE\x10\x0e\x12\x13\n\x0fLIVE_STATE_ROWS\x10\x0f\x12\x12\n\x0eLIVE_STATE_ROW\x10\x10\x12\x14\n\x10PREFIX_STATE_ROW\x10\x11\x12\x16\n\x12SNAPSHOT_STATE_ROW\x10\x12\x12\x13\n\x0f\x43ONSUMED_TOKENS\x10\x13\x12\x1c\n\x18SNAPSHOT_CONSUMED_TOKENS\x10\x14\x12\x0f\n\x0bPREFILL_ROW\x10\x15\x12\x11\n\rSAMPLING_SEED\x10\x16\x12\x17\n\x13SAMPLING_PARAMETERS\x10\x17\x12\x12\n\x0eSAMPLING_TOP_K\x10\x18\x12\x12\n\x0eMAX_NEW_TOKENS\x10\x19\x12\x11\n\rEOS_TOKEN_IDS\x10\x1a\x12\r\n\tEOS_COUNT\x10\x1b\x12\x14\n\x10PROMPT_HISTOGRAM\x10\x1c\x12\x10\n\x0cGRAMMAR_MASK\x10\x1d\x12\x13\n\x0fGRAMMAR_ENABLED\x10\x1e\x12\x12\n\x0e\x43OPY_TOKEN_IDS\x10\x1f\x12\x14\n\x10\x43OPY_TOKEN_COUNT\x10 \x12\x18\n\x14\x43OPY_CONSUMED_TOKENS\x10!\x12\x13\n\x0f\x43OPY_GENERATION\x10\"\x12\x15\n\x11\x43OPY_GRAMMAR_MASK\x10#\x12\x16\n\x12\x43OPY_GRAMMAR_COUNT\x10$\x12\x10\n\x0cIMAGE_TENSOR\x10%\x12\x16\n\x12IMAGE_FEATURE_SLOT\x10&*|\n\rInputIndexing\x12\x18\n\x14INDEXING_UNSPECIFIED\x10\x00\x12\n\n\x06SCALAR\x10\x01\x12\x12\n\x0eSUBMISSION_ROW\x10\x02\x12\x0f\n\x0bREQUEST_ROW\x10\x03\x12\x10\n\x0cPACKED_TOKEN\x10\x04\x12\x0e\n\nACTIVE_ROW\x10\x05*T\n\x0fStateAccessKind\x12\x1c\n\x18STATE_ACCESS_UNSPECIFIED\x10\x00\x12\x08\n\x04READ\x10\x01\x12\t\n\x05WRITE\x10\x02\x12\x0e\n\nREAD_WRITE\x10\x03*\xc3\x01\n\x0eGraphOperation\x12\x1f\n\x1bGRAPH_OPERATION_UNSPECIFIED\x10\x00\x12\x08\n\x04INIT\x10\x01\x12\x0b\n\x07RESTORE\x10\x02\x12\x0c\n\x08SNAPSHOT\x10\x03\x12\x0b\n\x07PREFILL\x10\x04\x12\n\n\x06\x44\x45\x43ODE\x10\x05\x12\n\n\x06RESUME\x10\x06\x12\n\n\x06VISION\x10\x07\x12\x0f\n\x0bSPECULATIVE\x10\x08\x12\t\n\x05MIXED\x10\t\x12\x0c\n\x08PROPOSAL\x10\n\x12\x10\n\x0cVERIFICATION\x10\x0b*h\n\x0eToolParserKind\x12\x1b\n\x17TOOL_PARSER_UNSPECIFIED\x10\x00\x12\x0e\n\nQWEN_CODER\x10\x01\x12\x15\n\x11GLM_ARGUMENT_TAGS\x10\x02\x12\x08\n\x04\x44SML\x10\x03\x12\x08\n\x04XTML\x10\x04*W\n\x13ReasoningParserKind\x12 \n\x1cREASONING_PARSER_UNSPECIFIED\x10\x00\x12\x0e\n\nTHINK_TAGS\x10\x01\x12\x0e\n\nXTML_THINK\x10\x02*\x93\x02\n\x14ImagePreparationKind\x12!\n\x1dIMAGE_PREPARATION_UNSPECIFIED\x10\x00\x12\x1a\n\x16QWEN_IMAGE_PREPARATION\x10\x01\x12\x1a\n\x16MIMO_IMAGE_PREPARATION\x10\x02\x12\x1e\n\x1a\x44\x45\x45PSEEK_IMAGE_PREPARATION\x10\x03\x12\x1d\n\x19MOONVIT_IMAGE_PREPARATION\x10\x04\x12\x1a\n\x16STEP_IMAGE_PREPARATION\x10\x05\x12\x1b\n\x17RADIO_IMAGE_PREPARATION\x10\x06\x12(\n$DEEPSEEK_ROW_MAJOR_IMAGE_PREPARATION\x10\x07*\xe6\x01\n\x0fImageLayoutKind\x12\x1c\n\x18IMAGE_LAYOUT_UNSPECIFIED\x10\x00\x12\x15\n\x11QWEN_IMAGE_LAYOUT\x10\x01\x12\x15\n\x11MIMO_IMAGE_LAYOUT\x10\x02\x12\x19\n\x15\x44\x45\x45PSEEK_IMAGE_LAYOUT\x10\x03\x12\x18\n\x14MOONVIT_IMAGE_LAYOUT\x10\x04\x12\x15\n\x11STEP_IMAGE_LAYOUT\x10\x05\x12\x16\n\x12RADIO_IMAGE_LAYOUT\x10\x06\x12#\n\x1f\x44\x45\x45PSEEK_ROW_MAJOR_IMAGE_LAYOUT\x10\x07*D\n\rPromptEncoder\x12\x10\n\x0cPROMPT_JINJA\x10\x00\x12\x0f\n\x0b\x44\x45\x45PSEEK_V4\x10\x01\x12\x10\n\x0c\x44\x45\x45PSEEK_V41\x10\x02*B\n\x10TemplateEncoding\x12\x11\n\rTEMPLATE_TEXT\x10\x00\x12\x1b\n\x17TEMPLATE_TOKEN_SEGMENTS\x10\x01*/\n\x06Memory\x12\n\n\x06\x44\x45VICE\x10\x00\x12\x0f\n\x0bMAPPED_HOST\x10\x01\x12\x08\n\x04PEER\x10\x02*(\n\x08\x43\x61pacity\x12\x0e\n\nSTATE_ROWS\x10\x00\x12\x0c\n\x08KV_PAGES\x10\x01*-\n\x0eRelocationKind\x12\x0b\n\x07POINTER\x10\x00\x12\x0e\n\nTENSOR_MAP\x10\x01*4\n\x0b\x44raftSource\x12\x0c\n\x08NO_DRAFT\x10\x00\x12\x07\n\x03MTP\x10\x01\x12\x0e\n\nCOPY_DRAFT\x10\x02\x62\x06proto3')
++DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15runtime_package.proto\x12\rflare.runtime\"\x9c\x01\n\x0eProtectedIndex\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x12\n\npackage_id\x18\x02 \x01(\x0c\x12\x0e\n\x06signer\x18\x03 \x01(\x0c\x12*\n\x06groups\x18\x04 \x03(\x0b\x32\x1a.flare.runtime.SignedGroup\x12)\n\x05ranks\x18\x05 \x03(\x0b\x32\x1a.flare.runtime.SignedGroup\"<\n\x0bSignedGroup\x12\x0c\n\x04kind\x18\x01 \x01(\r\x12\x0c\n\x04\x62ody\x18\x02 \x01(\x0c\x12\x11\n\tsignature\x18\x03 \x01(\x0c\"\x81\x02\n\x11PublisherMetadata\x12(\n\x05index\x18\x01 \x01(\x0b\x32\x19.flare.runtime.ModelIndex\x12\x11\n\tnamespace\x18\x02 \x01(\t\x12\x17\n\x0fofficial_source\x18\x03 \x01(\t\x12\x14\n\x0cgroup_hashes\x18\x04 \x03(\x0c\x12\x13\n\x0b\x64\x65velopment\x18\x05 \x01(\x08\x12\r\n\x05ranks\x18\x06 \x01(\r\x12\'\n\x07license\x18\x07 \x01(\x0b\x32\x16.flare.runtime.License\x12\x33\n\rqualification\x18\x08 \x01(\x0b\x32\x1c.flare.runtime.Qualification\"%\n\x07License\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04link\x18\x02 \x01(\t\"8\n\rQualification\x12\x17\n\x0freference_gates\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"F\n\x0fResourceCatalog\x12\x33\n\tresources\x18\x01 \x03(\x0b\x32 .flare.runtime.ProtectedResource\"^\n\x11ProtectedResource\x12\x0e\n\x06offset\x18\x01 \x01(\x04\x12\x14\n\x0cstored_bytes\x18\x02 \x01(\x04\x12\x13\n\x0bplain_bytes\x18\x03 \x01(\x04\x12\x0e\n\x06sha256\x18\x04 \x03(\x0c\"`\n\nStoredData\x12\x0e\n\x06nbytes\x18\x01 \x01(\x04\x12\x0e\n\x06sha256\x18\x02 \x01(\x0c\x12\x0e\n\x06offset\x18\x03 \x01(\x04\x12\"\n\x05parts\x18\x04 \x03(\x0b\x32\x13.flare.runtime.Span\"\xd9\x01\n\x0eRankProtection\x12\x0c\n\x04rank\x18\x01 \x01(\r\x12*\n\x06\x62undle\x18\x02 \x01(\x0b\x32\x1a.flare.runtime.BundleIndex\x12\x33\n\x0b\x65xecutables\x18\x03 \x01(\x0b\x32\x1e.flare.runtime.ResourceCatalog\x12/\n\x07support\x18\x04 \x01(\x0b\x32\x1e.flare.runtime.ResourceCatalog\x12\'\n\x04\x64\x61ta\x18\x05 \x01(\x0b\x32\x19.flare.runtime.StoredData\"\x9e\x03\n\nModelIndex\x12\x0f\n\x07version\x18\x01 \x01(\r\x12)\n\x05ranks\x18\x02 \x03(\x0b\x32\x1a.flare.runtime.BundleIndex\x12.\n\x0bpeer_memory\x18\x03 \x03(\x0b\x32\x19.flare.runtime.PeerMemory\x12$\n\x06\x61ssets\x18\x05 \x03(\x0b\x32\x14.flare.runtime.Asset\x12%\n\x06\x65ngram\x18\x06 \x01(\x0b\x32\x15.flare.runtime.Engram\x12\x43\n\x11sampling_defaults\x18\x07 \x01(\x0b\x32(.flare.runtime.DefaultSamplingParameters\x12\x31\n\x08\x66rontend\x18\x08 \x01(\x0b\x32\x1f.flare.runtime.FrontendSettings\x12\'\n\x07\x63luster\x18\t \x01(\x0b\x32\x16.flare.runtime.Cluster\x12\x30\n\x08\x63ontract\x18\n \x01(\x0b\x32\x1e.flare.runtime.ServingContractJ\x04\x08\x04\x10\x05\"\xcb\x06\n\x0fServingContract\x12\x10\n\x08model_id\x18\x01 \x01(\t\x12\x10\n\x08identity\x18\x02 \x01(\t\x12\x34\n\x0emodel_contract\x18\x03 \x01(\x0b\x32\x1c.flare.runtime.ModelContract\x12\x1b\n\x13max_sequence_tokens\x18\x04 \x01(\x04\x12\x1a\n\x12prefill_chunk_size\x18\x05 \x01(\x04\x12\r\n\x05pages\x18\x06 \x01(\x04\x12\x12\n\nstate_rows\x18\x07 \x01(\x04\x12\x11\n\tsnapshots\x18\x08 \x01(\x04\x12\x13\n\x0bpage_tokens\x18\t \x01(\x04\x12\x1a\n\x12speculative_widths\x18\x0b \x03(\x04\x12$\n\x17speculative_fixed_width\x18\x0c \x01(\x04H\x00\x88\x01\x01\x12\x16\n\x0ehistory_drafts\x18\r \x01(\x08\x12#\n\x1bspeculative_proposal_source\x18\x0e \x01(\t\x12\x1b\n\x0emax_new_tokens\x18\x0f \x01(\x04H\x01\x88\x01\x01\x12\x17\n\nmax_active\x18\x10 \x01(\x04H\x02\x88\x01\x01\x12\x14\n\x0cserved_names\x18\x11 \x03(\t\x12\x1a\n\rreserve_bytes\x18\x12 \x01(\x04H\x03\x88\x01\x01\x12\x1b\n\x0equeue_capacity\x18\x13 \x01(\x04H\x04\x88\x01\x01\x12\x1d\n\x10\x66rontend_workers\x18\x14 \x01(\x04H\x05\x88\x01\x01\x12\x1b\n\x0emax_body_bytes\x18\x15 \x01(\x04H\x06\x88\x01\x01\x12\x14\n\x0c\x63ontext_hint\x18\x16 \x01(\t\x12\x15\n\rcapacity_hint\x18\x17 \x01(\t\x12\"\n\x1aspeculative_token_capacity\x18\x18 \x01(\x04\x12 \n\x13\x64\x65\x63ode_weight_bytes\x18\x19 \x01(\x04H\x07\x88\x01\x01\x42\x1a\n\x18_speculative_fixed_widthB\x11\n\x0f_max_new_tokensB\r\n\x0b_max_activeB\x10\n\x0e_reserve_bytesB\x11\n\x0f_queue_capacityB\x13\n\x11_frontend_workersB\x11\n\x0f_max_body_bytesB\x16\n\x14_decode_weight_bytesJ\x04\x08\n\x10\x0b\"\xbe\x02\n\rModelContract\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x12\n\nvocabulary\x18\x02 \x01(\x04\x12\x18\n\x10input_vocabulary\x18\x03 \x01(\x04\x12-\n\x06vision\x18\x04 \x01(\x0b\x32\x1d.flare.runtime.VisionCapacity\x12+\n\x05\x63\x61\x63he\x18\x05 \x01(\x0b\x32\x1c.flare.runtime.CacheContract\x12,\n\x06graphs\x18\x06 \x03(\x0b\x32\x1c.flare.runtime.GraphContract\x12\x31\n\x08\x66rontend\x18\x07 \x01(\x0b\x32\x1f.flare.runtime.FrontendContract\x12\x31\n\x08steering\x18\x08 \x01(\x0b\x32\x1f.flare.runtime.SteeringContract\"+\n\x0cSteeringSite\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05width\x18\x02 \x01(\x04\"Q\n\x10SteeringContract\x12*\n\x05sites\x18\x01 \x03(\x0b\x32\x1b.flare.runtime.SteeringSite\x12\x11\n\tmax_sites\x18\x02 \x01(\x04\"\x90\x01\n\x0eVisionCapacity\x12\x15\n\rfeature_slots\x18\x05 \x01(\x04\x12\x1c\n\x14\x66\x65\x61tures_per_request\x18\x01 \x01(\x04\x12\x12\n\nmax_images\x18\x02 \x01(\x04\x12\x1b\n\x13patches_per_feature\x18\x03 \x01(\x04\x12\x18\n\x10patch_capacities\x18\x04 \x03(\x04\"\x86\x01\n\rCacheContract\x12\x13\n\x0bpage_tokens\x18\x01 \x01(\x04\x12-\n\x07regions\x18\x02 \x03(\x0b\x32\x1c.flare.runtime.HistoryRegion\x12\x31\n\x0bpage_tables\x18\x03 \x03(\x0b\x32\x1c.flare.runtime.PageTableView\"\x96\x01\n\rHistoryRegion\x12(\n\x04kind\x18\x01 \x01(\x0e\x32\x1a.flare.runtime.HistoryKind\x12)\n\x07storage\x18\x02 \x01(\x0b\x32\x18.flare.runtime.StateView\x12\x19\n\x11tokens_per_record\x18\x03 \x01(\x04\x12\x15\n\rwindow_tokens\x18\x04 \x01(\x04\"4\n\rPageTableView\x12\x0e\n\x06\x62uffer\x18\x01 \x01(\t\x12\x13\n\x0bpage_offset\x18\x02 \x01(\x04\"\xb1\x01\n\x0cValueBinding\x12\x0e\n\x06\x62uffer\x18\x01 \x01(\t\x12*\n\x06source\x18\x02 \x01(\x0e\x32\x1a.flare.runtime.ValueSource\x12.\n\x08indexing\x18\x03 \x01(\x0e\x32\x1c.flare.runtime.InputIndexing\x12\x14\n\x0cvalue_offset\x18\x04 \x01(\x12\x12\x0f\n\x07padding\x18\x05 \x01(\x12\x12\x0e\n\x06tensor\x18\x06 \x01(\t\"K\n\tStateView\x12\x0e\n\x06\x62uffer\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\x12\x0e\n\x06stride\x18\x03 \x01(\x04\x12\x0e\n\x06nbytes\x18\x04 \x01(\x04\"e\n\x0bStateAccess\x12&\n\x04view\x18\x01 \x01(\x0b\x32\x18.flare.runtime.StateView\x12.\n\x06\x61\x63\x63\x65ss\x18\x02 \x01(\x0e\x32\x1e.flare.runtime.StateAccessKind\"O\n\x10\x43ompletionCursor\x12\'\n\x05state\x18\x01 \x01(\x0b\x32\x18.flare.runtime.StateView\x12\x12\n\nlag_tokens\x18\x02 \x01(\x04\"\xc5\x02\n\rGraphContract\x12\r\n\x05graph\x18\x01 \x01(\t\x12+\n\x06inputs\x18\x02 \x03(\x0b\x32\x1b.flare.runtime.ValueBinding\x12)\n\x05state\x18\x03 \x03(\x0b\x32\x1a.flare.runtime.StateAccess\x12\x1e\n\x16state_rows_per_request\x18\x04 \x01(\x04\x12\x35\n\x0c\x64raft_cursor\x18\x05 \x01(\x0b\x32\x1f.flare.runtime.CompletionCursor\x12\x18\n\x10\x65mbedding_tables\x18\x06 \x03(\r\x12/\n\rpending_token\x18\x07 \x01(\x0b\x32\x18.flare.runtime.StateView\x12+\n\x04kind\x18\x08 \x01(\x0e\x32\x1d.flare.runtime.GraphOperation\"k\n\nToolParser\x12+\n\x04kind\x18\x01 \x01(\x0e\x32\x1d.flare.runtime.ToolParserKind\x12\x19\n\x11wrapping_newlines\x18\x02 \x01(\r\x12\x15\n\rtag_separator\x18\x03 \x01(\t\"\x95\x01\n\x0fReasoningParser\x12\x30\n\x04kind\x18\x01 \x01(\x0e\x32\".flare.runtime.ReasoningParserKind\x12\x0c\n\x04open\x18\x02 \x01(\t\x12\r\n\x05\x63lose\x18\x03 \x01(\t\x12\x19\n\x11wrapping_newlines\x18\x04 \x01(\r\x12\x18\n\x10terminal_markers\x18\x05 \x03(\t\"\xca\x01\n\x0ePrefixBoundary\x12\r\n\x05roles\x18\x01 \x03(\t\x12\x18\n\x0b\x61ppend_role\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x1e\n\x16\x63ontinue_final_message\x18\x03 \x01(\x08\x12\x18\n\x10minimum_messages\x18\x04 \x01(\x04\x12\x16\n\x0erequired_start\x18\x05 \x01(\t\x12\x14\n\x0crequired_end\x18\x06 \x01(\t\x12\x17\n\x0frequired_marker\x18\x07 \x01(\tB\x0e\n\x0c_append_role\"y\n\tImageSpan\x12\x13\n\x0bstart_token\x18\x01 \x01(\r\x12\x11\n\tend_token\x18\x02 \x01(\r\x12\x12\n\nmax_tokens\x18\x03 \x01(\x04\x12\x17\n\x0finterior_tokens\x18\x04 \x03(\r\x12\x17\n\x0funscoped_tokens\x18\x05 \x03(\r\"Q\n\x10ImageTokenLayout\x12\x15\n\rfeature_token\x18\x01 \x01(\r\x12&\n\x04span\x18\x02 \x01(\x0b\x32\x18.flare.runtime.ImageSpan\"\xf2\x03\n\x10\x46rontendContract\x12(\n\x05tools\x18\x01 \x01(\x0b\x32\x19.flare.runtime.ToolParser\x12\x31\n\treasoning\x18\x02 \x01(\x0b\x32\x1e.flare.runtime.ReasoningParser\x12\x43\n\x11image_preparation\x18\x03 \x01(\x0e\x32#.flare.runtime.ImagePreparationKindH\x00\x88\x01\x01\x12\x39\n\x0cimage_layout\x18\x04 \x01(\x0e\x32\x1e.flare.runtime.ImageLayoutKindH\x01\x88\x01\x01\x12\x17\n\x0frejected_tokens\x18\x05 \x03(\r\x12\x1b\n\x13position_dimensions\x18\x06 \x01(\r\x12\x18\n\x10\x61ssistant_marker\x18\x07 \x01(\t\x12\x1b\n\x13message_end_markers\x18\x08 \x03(\t\x12\x36\n\x0fprefix_boundary\x18\t \x01(\x0b\x32\x1d.flare.runtime.PrefixBoundary\x12\x35\n\x0cimage_tokens\x18\n \x01(\x0b\x32\x1f.flare.runtime.ImageTokenLayoutB\x14\n\x12_image_preparationB\x0f\n\r_image_layout\"1\n\x07\x43luster\x12\r\n\x05world\x18\x01 \x01(\r\x12\x11\n\texport_id\x18\x03 \x01(\tJ\x04\x08\x02\x10\x03\"\x8c\x03\n\x19\x44\x65\x66\x61ultSamplingParameters\x12\x11\n\x04seed\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x18\n\x0btemperature\x18\x02 \x01(\x02H\x01\x88\x01\x01\x12\x12\n\x05top_k\x18\x03 \x01(\x05H\x02\x88\x01\x01\x12\x12\n\x05top_p\x18\x04 \x01(\x02H\x03\x88\x01\x01\x12\x12\n\x05min_p\x18\x05 \x01(\x02H\x04\x88\x01\x01\x12\x1f\n\x12repetition_penalty\x18\x06 \x01(\x02H\x05\x88\x01\x01\x12\x1d\n\x10presence_penalty\x18\x07 \x01(\x02H\x06\x88\x01\x01\x12\x1e\n\x11\x66requency_penalty\x18\x08 \x01(\x02H\x07\x88\x01\x01\x12-\n\x06ranges\x18\t \x01(\x0b\x32\x1d.flare.runtime.SamplingRangesB\x07\n\x05_seedB\x0e\n\x0c_temperatureB\x08\n\x06_top_kB\x08\n\x06_top_pB\x08\n\x06_min_pB\x15\n\x13_repetition_penaltyB\x13\n\x11_presence_penaltyB\x14\n\x12_frequency_penalty\"H\n\x12SamplingFloatRange\x12\x10\n\x03min\x18\x01 \x01(\x02H\x00\x88\x01\x01\x12\x10\n\x03max\x18\x02 \x01(\x02H\x01\x88\x01\x01\x42\x06\n\x04_minB\x06\n\x04_max\"F\n\x10SamplingIntRange\x12\x10\n\x03min\x18\x01 \x01(\x05H\x00\x88\x01\x01\x12\x10\n\x03max\x18\x02 \x01(\x05H\x01\x88\x01\x01\x42\x06\n\x04_minB\x06\n\x04_max\"\x96\x03\n\x0eSamplingRanges\x12\x36\n\x0btemperature\x18\x01 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12.\n\x05top_k\x18\x02 \x01(\x0b\x32\x1f.flare.runtime.SamplingIntRange\x12\x30\n\x05top_p\x18\x03 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12\x30\n\x05min_p\x18\x04 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12=\n\x12repetition_penalty\x18\x05 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12;\n\x10presence_penalty\x18\x06 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\x12<\n\x11\x66requency_penalty\x18\x07 \x01(\x0b\x32!.flare.runtime.SamplingFloatRange\"\xc5\x02\n\x10\x46rontendSettings\x12\x33\n\ttokenizer\x18\x01 \x01(\x0b\x32 .flare.runtime.TokenizerSettings\x12+\n\x05image\x18\x02 \x01(\x0b\x32\x1c.flare.runtime.ImageSettings\x12\x15\n\reos_token_ids\x18\x03 \x03(\r\x12:\n\x11template_encoding\x18\x04 \x01(\x0e\x32\x1f.flare.runtime.TemplateEncoding\x12\x34\n\x0eprompt_encoder\x18\x05 \x01(\x0e\x32\x1c.flare.runtime.PromptEncoder\x12\'\n\x1aimage_placeholder_token_id\x18\x06 \x01(\rH\x00\x88\x01\x01\x42\x1d\n\x1b_image_placeholder_token_id\"\xdc\x02\n\x11TokenizerSettings\x12\x16\n\tbos_token\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x16\n\teos_token\x18\x02 \x01(\tH\x01\x88\x01\x01\x12\x16\n\tunk_token\x18\x03 \x01(\tH\x02\x88\x01\x01\x12\x16\n\tsep_token\x18\x04 \x01(\tH\x03\x88\x01\x01\x12\x16\n\tpad_token\x18\x05 \x01(\tH\x04\x88\x01\x01\x12\x16\n\tcls_token\x18\x06 \x01(\tH\x05\x88\x01\x01\x12\x17\n\nmask_token\x18\x07 \x01(\tH\x06\x88\x01\x01\x12;\n\x19\x61\x64\x64itional_special_tokens\x18\x08 \x01(\x0b\x32\x18.flare.runtime.TokenListB\x0c\n\n_bos_tokenB\x0c\n\n_eos_tokenB\x0c\n\n_unk_tokenB\x0c\n\n_sep_tokenB\x0c\n\n_pad_tokenB\x0c\n\n_cls_tokenB\r\n\x0b_mask_token\"\x1b\n\tTokenList\x12\x0e\n\x06values\x18\x01 \x03(\t\"\xeb\x02\n\rImageSettings\x12\x30\n\x04qwen\x18\x01 \x01(\x0b\x32 .flare.runtime.QwenImageSettingsH\x00\x12\x30\n\x04mimo\x18\x02 \x01(\x0b\x32 .flare.runtime.MimoImageSettingsH\x00\x12)\n\tdeepseek4\x18\x03 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12\'\n\x07moonvit\x18\x04 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12$\n\x04step\x18\x05 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12%\n\x05radio\x18\x06 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12J\n\x12\x64\x65\x65pseek_row_major\x18\x07 \x01(\x0b\x32,.flare.runtime.DeepseekRowMajorImageSettingsH\x00\x42\t\n\x07profile\"\x87\x01\n\x1d\x44\x65\x65pseekRowMajorImageSettings\x12\x12\n\nmin_pixels\x18\x01 \x01(\x04\x12\x12\n\nmax_tokens\x18\x02 \x01(\x04\x12#\n\x16max_width_height_ratio\x18\x03 \x01(\x04H\x00\x88\x01\x01\x42\x19\n\x17_max_width_height_ratio\"\x82\x01\n\x11QwenImageSettings\x12\x12\n\nmin_pixels\x18\x01 \x01(\x04\x12\x12\n\nmax_pixels\x18\x02 \x01(\x04\x12\x15\n\rposition_side\x18\x03 \x01(\r\x12\x16\n\x0eimage_token_id\x18\x04 \x01(\r\x12\x16\n\x0evideo_token_id\x18\x05 \x01(\r\"b\n\x11MimoImageSettings\x12\x12\n\nmin_pixels\x18\x01 \x01(\x04\x12\x12\n\nmax_pixels\x18\x02 \x01(\x04\x12\x12\n\nimage_mean\x18\x03 \x03(\x02\x12\x11\n\timage_std\x18\x04 \x03(\x02\"|\n\x06\x45ngram\x12\x11\n\ttoken_map\x18\x01 \x03(\r\x12\x14\n\x0cpad_token_id\x18\x02 \x01(\r\x12\x1d\n\x15\x63ompressed_vocabulary\x18\x03 \x01(\r\x12*\n\x06tables\x18\x04 \x03(\x0b\x32\x1a.flare.runtime.EngramTable\"\x80\x04\n\x0b\x45ngramTable\x12\r\n\x05layer\x18\x01 \x01(\r\x12\x0c\n\x04rows\x18\x02 \x01(\x04\x12\x17\n\x0f\x65mbedding_width\x18\x03 \x01(\r\x12\x13\n\x0bscale_block\x18\x04 \x01(\r\x12$\n\x07weights\x18\x05 \x01(\x0b\x32\x13.flare.runtime.Span\x12#\n\x06scales\x18\x06 \x01(\x0b\x32\x13.flare.runtime.Span\x12\'\n\x04hash\x18\x07 \x01(\x0b\x32\x19.flare.runtime.EngramHash\x12\x15\n\rweight_buffer\x18\x08 \x01(\t\x12\x14\n\x0cscale_buffer\x18\t \x01(\t\x12\x13\n\x0bhash_buffer\x18\n \x01(\t\x12\x13\n\x0bready_event\x18\x0b \x01(\t\x12\x35\n\x08\x65ncoding\x18\x0c \x01(\x0e\x32#.flare.runtime.EngramTable.Encoding\x12\x16\n\x0erequest_buffer\x18\r \x01(\t\x12\x14\n\x0cglobal_scale\x18\x0e \x01(\x02\x12/\n\x06shards\x18\x0f \x03(\x0b\x32\x1f.flare.runtime.EngramTableShard\"E\n\x08\x45ncoding\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x11\n\rFP8_E4M3_E8M0\x10\x01\x12\x15\n\x11NVFP4_E4M3_GLOBAL\x10\x02\"\x8c\x01\n\x10\x45ngramTableShard\x12\x0c\n\x04rank\x18\x01 \x01(\r\x12\x11\n\tfirst_row\x18\x02 \x01(\x04\x12\x0c\n\x04rows\x18\x03 \x01(\x04\x12$\n\x07weights\x18\x04 \x01(\x0b\x32\x13.flare.runtime.Span\x12#\n\x06scales\x18\x05 \x01(\x0b\x32\x13.flare.runtime.Span\"\xc3\x01\n\nEngramHash\x12\x30\n\x06method\x18\x01 \x01(\x0e\x32 .flare.runtime.EngramHash.Method\x12\x0e\n\x06orders\x18\x02 \x03(\r\x12\x13\n\x0bmultipliers\x18\x03 \x03(\x04\x12\x0e\n\x06primes\x18\x04 \x03(\x04\x12\x0f\n\x07offsets\x18\x05 \x03(\x04\"=\n\x06Method\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x0e\n\nXOR_MODULO\x10\x01\x12\x12\n\x0e\x45OS_XOR_MODULO\x10\x02\"K\n\x05\x41sset\x12\x0c\n\x04name\x18\x01 \x01(\t\x12$\n\x07payload\x18\x02 \x01(\x0b\x32\x13.flare.runtime.Span\x12\x0e\n\x06sha256\x18\x03 \x01(\t\"\x9b\x04\n\x0b\x42undleIndex\x12\x14\n\x0c\x61rchitecture\x18\x01 \x03(\x05\x12.\n\x0b\x61llocations\x18\x02 \x03(\x0b\x32\x19.flare.runtime.Allocation\x12&\n\x07modules\x18\x03 \x03(\x0b\x32\x15.flare.runtime.Module\x12*\n\tfunctions\x18\x04 \x03(\x0b\x32\x17.flare.runtime.Function\x12)\n\x06graphs\x18\x05 \x03(\x0b\x32\x19.flare.runtime.GraphIndex\x12\x30\n\x0creservations\x18\x06 \x03(\x0b\x32\x1a.flare.runtime.Reservation\x12+\n\texecution\x18\x07 \x01(\x0b\x32\x18.flare.runtime.Execution\x12\'\n\x07\x63ontext\x18\x08 \x01(\x0b\x32\x16.flare.runtime.Context\x12<\n\tresources\x18\t \x03(\x0b\x32).flare.runtime.BundleIndex.ResourcesEntry\x12\x0e\n\x06\x65vents\x18\n \x03(\t\x12*\n\x04roce\x18\x0b \x01(\x0b\x32\x1c.flare.runtime.RoceTransport\x1a\x45\n\x0eResourcesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\"\n\x05value\x18\x02 \x01(\x0b\x32\x13.flare.runtime.Span:\x02\x38\x01\"\xf8\x01\n\rRoceTransport\x12\x11\n\tproxy_abi\x18\x01 \x01(\r\x12\r\n\x05world\x18\x02 \x01(\r\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x16\n\x0eregion_address\x18\x04 \x01(\x04\x12\x14\n\x0cregion_bytes\x18\x05 \x01(\x04\x12\x18\n\x10\x63ounters_address\x18\x06 \x01(\x04\x12\x16\n\x0e\x63ounters_bytes\x18\x07 \x01(\x04\x12\x12\n\nslot_bytes\x18\x08 \x01(\x04\x12\x12\n\npipe_bytes\x18\t \x01(\x04\x12\x13\n\x0b\x63trl_offset\x18\n \x01(\x04\x12\x14\n\x0cvarlen_bytes\x18\x10 \x01(\x04J\x04\x08\x0b\x10\x10\"v\n\nGraphIndex\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05\x66lags\x18\x02 \x01(\x04\x12\x10\n\x08resource\x18\x03 \x01(\t\x12\x12\n\nnode_count\x18\x04 \x01(\x04\x12\x12\n\nedge_count\x18\x05 \x01(\x04\x12\x11\n\tfunctions\x18\x06 \x03(\x04\"M\n\nPeerMemory\x12\r\n\x05owner\x18\x01 \x01(\r\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\x04\x12\x0e\n\x06nbytes\x18\x03 \x01(\x04\x12\x0f\n\x07readers\x18\x04 \x03(\r\"M\n\x07\x43ontext\x12\r\n\x05\x66lags\x18\x01 \x01(\r\x12\r\n\x05\x63\x61\x63he\x18\x02 \x01(\x05\x12$\n\x06limits\x18\x03 \x03(\x0b\x32\x14.flare.runtime.Limit\"\"\n\x05Limit\x12\n\n\x02id\x18\x01 \x01(\x04\x12\r\n\x05value\x18\x02 \x01(\x04\".\n\x0bReservation\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\x04\x12\x0e\n\x06nbytes\x18\x02 \x01(\x04\"8\n\x04Span\x12\x0e\n\x06offset\x18\x01 \x01(\x04\x12\x0e\n\x06nbytes\x18\x02 \x01(\x04\x12\x10\n\x08\x66ilename\x18\x03 \x01(\t\"\xa2\x02\n\nAllocation\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06nbytes\x18\x02 \x01(\x04\x12\x11\n\talignment\x18\x03 \x01(\x04\x12\x11\n\x04\x66ile\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\'\n\ndata_spans\x18\x05 \x03(\x0b\x32\x13.flare.runtime.Span\x12.\n\x0brelocations\x18\x06 \x03(\x0b\x32\x19.flare.runtime.Relocation\x12\x14\n\x07\x61\x64\x64ress\x18\x07 \x01(\x04H\x01\x88\x01\x01\x12%\n\x06memory\x18\x08 \x01(\x0e\x32\x15.flare.runtime.Memory\x12%\n\x06sizing\x18\t \x01(\x0b\x32\x15.flare.runtime.SizingB\x07\n\x05_fileB\n\n\x08_address\"X\n\x06Sizing\x12)\n\x08\x63\x61pacity\x18\x01 \x01(\x0e\x32\x17.flare.runtime.Capacity\x12\x12\n\nunit_bytes\x18\x02 \x01(\x04\x12\x0f\n\x07maximum\x18\x03 \x01(\x04\"L\n\x06Module\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\t\x12&\n\x07globals\x18\x03 \x03(\x0b\x32\x15.flare.runtime.Global\"f\n\x06Global\x12\x0e\n\x06symbol\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\t\x12\x0e\n\x06nbytes\x18\x03 \x01(\x04\x12.\n\x0brelocations\x18\x04 \x03(\x0b\x32\x19.flare.runtime.Relocation\"y\n\x08\x46unction\x12\x0e\n\x06module\x18\x01 \x01(\t\x12\x0e\n\x06symbol\x18\x02 \x01(\t\x12\x17\n\x0fparameter_sizes\x18\x03 \x03(\x04\x12\x34\n\nattributes\x18\x04 \x03(\x0b\x32 .flare.runtime.FunctionAttribute\".\n\x11\x46unctionAttribute\x12\n\n\x02id\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x05\"/\n\tReference\x12\x12\n\nallocation\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\"s\n\nRelocation\x12\x0e\n\x06offset\x18\x01 \x01(\x04\x12(\n\x06target\x18\x02 \x01(\x0b\x32\x18.flare.runtime.Reference\x12+\n\x04kind\x18\x03 \x01(\x0e\x32\x1d.flare.runtime.RelocationKind\"D\n\x04\x42lob\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12.\n\x0brelocations\x18\x02 \x03(\x0b\x32\x19.flare.runtime.Relocation\";\n\tAttribute\x12\n\n\x02id\x18\x01 \x01(\x05\x12\"\n\x05value\x18\x02 \x01(\x0b\x32\x13.flare.runtime.Blob\"\x9d\x01\n\x06Kernel\x12\x10\n\x08\x66unction\x18\x01 \x01(\x04\x12\x0c\n\x04grid\x18\x02 \x03(\r\x12\r\n\x05\x62lock\x18\x03 \x03(\r\x12\x0e\n\x06shared\x18\x04 \x01(\r\x12&\n\targuments\x18\x05 \x03(\x0b\x32\x13.flare.runtime.Blob\x12,\n\nattributes\x18\x06 \x03(\x0b\x32\x18.flare.runtime.Attribute\"\x8a\x01\n\x06Memset\x12-\n\x0b\x64\x65stination\x18\x01 \x01(\x0b\x32\x18.flare.runtime.Reference\x12\r\n\x05pitch\x18\x02 \x01(\x04\x12\r\n\x05value\x18\x03 \x01(\r\x12\x14\n\x0c\x65lement_size\x18\x04 \x01(\r\x12\r\n\x05width\x18\x05 \x01(\x04\x12\x0e\n\x06height\x18\x06 \x01(\x04\"o\n\x04\x43opy\x12(\n\x06source\x18\x01 \x01(\x0b\x32\x18.flare.runtime.Reference\x12-\n\x0b\x64\x65stination\x18\x02 \x01(\x0b\x32\x18.flare.runtime.Reference\x12\x0e\n\x06nbytes\x18\x03 \x01(\x04\"\x07\n\x05\x45mpty\"\x1a\n\tEventWait\x12\r\n\x05\x65vent\x18\x01 \x01(\t\"\xe1\x01\n\x04Node\x12\'\n\x06kernel\x18\x01 \x01(\x0b\x32\x15.flare.runtime.KernelH\x00\x12\'\n\x06memset\x18\x02 \x01(\x0b\x32\x15.flare.runtime.MemsetH\x00\x12#\n\x04\x63opy\x18\x03 \x01(\x0b\x32\x13.flare.runtime.CopyH\x00\x12%\n\x05\x65mpty\x18\x04 \x01(\x0b\x32\x14.flare.runtime.EmptyH\x00\x12.\n\nevent_wait\x18\x05 \x01(\x0b\x32\x18.flare.runtime.EventWaitH\x00\x42\x0b\n\toperation\"9\n\x04\x45\x64ge\x12\x0e\n\x06source\x18\x01 \x01(\x04\x12\x13\n\x0b\x64\x65stination\x18\x02 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\"\xa6\x01\n\tExecution\x12\x13\n\x0b\x61\x62i_version\x18\x01 \x01(\r\x12\x12\n\nmax_active\x18\x02 \x01(\x04\x12\x19\n\x11input_frame_bytes\x18\x03 \x01(\x04\x12&\n\x07\x62uffers\x18\x04 \x03(\x0b\x32\x15.flare.runtime.Buffer\x12-\n\x06graphs\x18\x05 \x03(\x0b\x32\x1d.flare.runtime.ExecutionGraph\"\x82\x01\n\x06\x42uffer\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06nbytes\x18\x02 \x01(\x04\x12\r\n\x05\x64type\x18\x03 \x01(\t\x12\r\n\x05shape\x18\x04 \x03(\x04\x12\x0f\n\x07strides\x18\x05 \x03(\x04\x12+\n\treference\x18\x06 \x01(\x0b\x32\x18.flare.runtime.Reference\"\xc6\x03\n\x0e\x45xecutionGraph\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04kind\x18\x02 \x01(\t\x12\x15\n\rsampling_mode\x18\x03 \x01(\t\x12\x16\n\x0e\x62\x61tch_capacity\x18\x04 \x01(\x04\x12\x16\n\x0etoken_capacity\x18\x05 \x01(\x04\x12\x33\n\x0einput_bindings\x18\x06 \x03(\x0b\x32\x1b.flare.runtime.InputBinding\x12\x19\n\x0c\x64raft_tokens\x18\x07 \x01(\rH\x00\x88\x01\x01\x12\x1a\n\rverify_tokens\x18\x08 \x01(\rH\x01\x88\x01\x01\x12\x30\n\x0c\x64raft_source\x18\t \x01(\x0e\x32\x1a.flare.runtime.DraftSource\x12 \n\x13speculation_enabled\x18\n \x01(\x08H\x02\x88\x01\x01\x12\x1d\n\x15\x65stimated_duration_ns\x18\x0b \x01(\x04\x12\x18\n\x10prefill_capacity\x18\x0c \x01(\x04\x12\x1d\n\x15packed_token_capacity\x18\r \x01(\x04\x42\x0f\n\r_draft_tokensB\x10\n\x0e_verify_tokensB\x16\n\x14_speculation_enabled\"H\n\x0cInputBinding\x12\x13\n\x0b\x62uffer_name\x18\x01 \x01(\t\x12\x13\n\x0bhost_offset\x18\x02 \x01(\x04\x12\x0e\n\x06nbytes\x18\x03 \x01(\x04*\x8e\x01\n\x0bHistoryKind\x12\x17\n\x13HISTORY_UNSPECIFIED\x10\x00\x12\x13\n\x0fPAGED_KEY_VALUE\x10\x01\x12\x10\n\x0cPAGED_LATENT\x10\x02\x12\x12\n\x0eSLIDING_WINDOW\x10\x03\x12\x13\n\x0fRECURRENT_STATE\x10\x04\x12\x16\n\x12\x43ONTINUATION_STATE\x10\x05*\x8a\x07\n\x0bValueSource\x12\x15\n\x11VALUE_UNSPECIFIED\x10\x00\x12\x0c\n\x08\x43ONSTANT\x10\x01\x12\x10\n\x0cREQUEST_SLOT\x10\x02\x12\x16\n\x12REQUEST_GENERATION\x10\x03\x12\r\n\tLIVE_ROWS\x10\x04\x12\x10\n\x0cQUERY_LENGTH\x10\x05\x12\x12\n\x0eSAMPLE_ENABLED\x10\x06\x12\x10\n\x0cPROMPT_TOKEN\x10\x07\x12\x11\n\rPENDING_TOKEN\x10\x08\x12\x1c\n\x18PROMPT_AND_PENDING_TOKEN\x10\t\x12\x13\n\x0fPROMPT_POSITION\x10\n\x12\x17\n\x13IMAGE_FEATURE_INDEX\x10\x0b\x12\x16\n\x12IMAGE_LEFT_CONTEXT\x10\x0c\x12\x17\n\x13IMAGE_RIGHT_CONTEXT\x10\r\x12\x0e\n\nPAGE_TABLE\x10\x0e\x12\x13\n\x0fLIVE_STATE_ROWS\x10\x0f\x12\x12\n\x0eLIVE_STATE_ROW\x10\x10\x12\x14\n\x10PREFIX_STATE_ROW\x10\x11\x12\x16\n\x12SNAPSHOT_STATE_ROW\x10\x12\x12\x13\n\x0f\x43ONSUMED_TOKENS\x10\x13\x12\x1c\n\x18SNAPSHOT_CONSUMED_TOKENS\x10\x14\x12\x0f\n\x0bPREFILL_ROW\x10\x15\x12\x11\n\rSAMPLING_SEED\x10\x16\x12\x17\n\x13SAMPLING_PARAMETERS\x10\x17\x12\x12\n\x0eSAMPLING_TOP_K\x10\x18\x12\x12\n\x0eMAX_NEW_TOKENS\x10\x19\x12\x11\n\rEOS_TOKEN_IDS\x10\x1a\x12\r\n\tEOS_COUNT\x10\x1b\x12\x14\n\x10PROMPT_HISTOGRAM\x10\x1c\x12\x10\n\x0cGRAMMAR_MASK\x10\x1d\x12\x13\n\x0fGRAMMAR_ENABLED\x10\x1e\x12\x12\n\x0e\x43OPY_TOKEN_IDS\x10\x1f\x12\x14\n\x10\x43OPY_TOKEN_COUNT\x10 \x12\x18\n\x14\x43OPY_CONSUMED_TOKENS\x10!\x12\x13\n\x0f\x43OPY_GENERATION\x10\"\x12\x15\n\x11\x43OPY_GRAMMAR_MASK\x10#\x12\x16\n\x12\x43OPY_GRAMMAR_COUNT\x10$\x12\x10\n\x0cIMAGE_TENSOR\x10%\x12\x16\n\x12IMAGE_FEATURE_SLOT\x10&\x12\x14\n\x10STEERING_ADDENDS\x10\'\x12\x13\n\x0fSTEERING_PHASES\x10(\x12\x1a\n\x16STEERING_PROMPT_TOKENS\x10)*|\n\rInputIndexing\x12\x18\n\x14INDEXING_UNSPECIFIED\x10\x00\x12\n\n\x06SCALAR\x10\x01\x12\x12\n\x0eSUBMISSION_ROW\x10\x02\x12\x0f\n\x0bREQUEST_ROW\x10\x03\x12\x10\n\x0cPACKED_TOKEN\x10\x04\x12\x0e\n\nACTIVE_ROW\x10\x05*T\n\x0fStateAccessKind\x12\x1c\n\x18STATE_ACCESS_UNSPECIFIED\x10\x00\x12\x08\n\x04READ\x10\x01\x12\t\n\x05WRITE\x10\x02\x12\x0e\n\nREAD_WRITE\x10\x03*\xc3\x01\n\x0eGraphOperation\x12\x1f\n\x1bGRAPH_OPERATION_UNSPECIFIED\x10\x00\x12\x08\n\x04INIT\x10\x01\x12\x0b\n\x07RESTORE\x10\x02\x12\x0c\n\x08SNAPSHOT\x10\x03\x12\x0b\n\x07PREFILL\x10\x04\x12\n\n\x06\x44\x45\x43ODE\x10\x05\x12\n\n\x06RESUME\x10\x06\x12\n\n\x06VISION\x10\x07\x12\x0f\n\x0bSPECULATIVE\x10\x08\x12\t\n\x05MIXED\x10\t\x12\x0c\n\x08PROPOSAL\x10\n\x12\x10\n\x0cVERIFICATION\x10\x0b*h\n\x0eToolParserKind\x12\x1b\n\x17TOOL_PARSER_UNSPECIFIED\x10\x00\x12\x0e\n\nQWEN_CODER\x10\x01\x12\x15\n\x11GLM_ARGUMENT_TAGS\x10\x02\x12\x08\n\x04\x44SML\x10\x03\x12\x08\n\x04XTML\x10\x04*W\n\x13ReasoningParserKind\x12 \n\x1cREASONING_PARSER_UNSPECIFIED\x10\x00\x12\x0e\n\nTHINK_TAGS\x10\x01\x12\x0e\n\nXTML_THINK\x10\x02*\x93\x02\n\x14ImagePreparationKind\x12!\n\x1dIMAGE_PREPARATION_UNSPECIFIED\x10\x00\x12\x1a\n\x16QWEN_IMAGE_PREPARATION\x10\x01\x12\x1a\n\x16MIMO_IMAGE_PREPARATION\x10\x02\x12\x1e\n\x1a\x44\x45\x45PSEEK_IMAGE_PREPARATION\x10\x03\x12\x1d\n\x19MOONVIT_IMAGE_PREPARATION\x10\x04\x12\x1a\n\x16STEP_IMAGE_PREPARATION\x10\x05\x12\x1b\n\x17RADIO_IMAGE_PREPARATION\x10\x06\x12(\n$DEEPSEEK_ROW_MAJOR_IMAGE_PREPARATION\x10\x07*\xe6\x01\n\x0fImageLayoutKind\x12\x1c\n\x18IMAGE_LAYOUT_UNSPECIFIED\x10\x00\x12\x15\n\x11QWEN_IMAGE_LAYOUT\x10\x01\x12\x15\n\x11MIMO_IMAGE_LAYOUT\x10\x02\x12\x19\n\x15\x44\x45\x45PSEEK_IMAGE_LAYOUT\x10\x03\x12\x18\n\x14MOONVIT_IMAGE_LAYOUT\x10\x04\x12\x15\n\x11STEP_IMAGE_LAYOUT\x10\x05\x12\x16\n\x12RADIO_IMAGE_LAYOUT\x10\x06\x12#\n\x1f\x44\x45\x45PSEEK_ROW_MAJOR_IMAGE_LAYOUT\x10\x07*D\n\rPromptEncoder\x12\x10\n\x0cPROMPT_JINJA\x10\x00\x12\x0f\n\x0b\x44\x45\x45PSEEK_V4\x10\x01\x12\x10\n\x0c\x44\x45\x45PSEEK_V41\x10\x02*B\n\x10TemplateEncoding\x12\x11\n\rTEMPLATE_TEXT\x10\x00\x12\x1b\n\x17TEMPLATE_TOKEN_SEGMENTS\x10\x01*/\n\x06Memory\x12\n\n\x06\x44\x45VICE\x10\x00\x12\x0f\n\x0bMAPPED_HOST\x10\x01\x12\x08\n\x04PEER\x10\x02*(\n\x08\x43\x61pacity\x12\x0e\n\nSTATE_ROWS\x10\x00\x12\x0c\n\x08KV_PAGES\x10\x01*-\n\x0eRelocationKind\x12\x0b\n\x07POINTER\x10\x00\x12\x0e\n\nTENSOR_MAP\x10\x01*4\n\x0b\x44raftSource\x12\x0c\n\x08NO_DRAFT\x10\x00\x12\x07\n\x03MTP\x10\x01\x12\x0e\n\nCOPY_DRAFT\x10\x02\x62\x06proto3')
+ 
+ _globals = globals()
+ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+@@ -33,36 +33,36 @@ if not _descriptor._USE_C_DESCRIPTORS:
+   DESCRIPTOR._loaded_options = None
+   _globals['_BUNDLEINDEX_RESOURCESENTRY']._loaded_options = None
+   _globals['_BUNDLEINDEX_RESOURCESENTRY']._serialized_options = b'8\001'
+-  _globals['_HISTORYKIND']._serialized_start=12397
+-  _globals['_HISTORYKIND']._serialized_end=12539
+-  _globals['_VALUESOURCE']._serialized_start=12542
+-  _globals['_VALUESOURCE']._serialized_end=13377
+-  _globals['_INPUTINDEXING']._serialized_start=13379
+-  _globals['_INPUTINDEXING']._serialized_end=13503
+-  _globals['_STATEACCESSKIND']._serialized_start=13505
+-  _globals['_STATEACCESSKIND']._serialized_end=13589
+-  _globals['_GRAPHOPERATION']._serialized_start=13592
+-  _globals['_GRAPHOPERATION']._serialized_end=13787
+-  _globals['_TOOLPARSERKIND']._serialized_start=13789
+-  _globals['_TOOLPARSERKIND']._serialized_end=13893
+-  _globals['_REASONINGPARSERKIND']._serialized_start=13895
+-  _globals['_REASONINGPARSERKIND']._serialized_end=13982
+-  _globals['_IMAGEPREPARATIONKIND']._serialized_start=13985
+-  _globals['_IMAGEPREPARATIONKIND']._serialized_end=14260
+-  _globals['_IMAGELAYOUTKIND']._serialized_start=14263
+-  _globals['_IMAGELAYOUTKIND']._serialized_end=14493
+-  _globals['_PROMPTENCODER']._serialized_start=14495
+-  _globals['_PROMPTENCODER']._serialized_end=14563
+-  _globals['_TEMPLATEENCODING']._serialized_start=14565
+-  _globals['_TEMPLATEENCODING']._serialized_end=14631
+-  _globals['_MEMORY']._serialized_start=14633
+-  _globals['_MEMORY']._serialized_end=14680
+-  _globals['_CAPACITY']._serialized_start=14682
+-  _globals['_CAPACITY']._serialized_end=14722
+-  _globals['_RELOCATIONKIND']._serialized_start=14724
+-  _globals['_RELOCATIONKIND']._serialized_end=14769
+-  _globals['_DRAFTSOURCE']._serialized_start=14771
+-  _globals['_DRAFTSOURCE']._serialized_end=14823
++  _globals['_HISTORYKIND']._serialized_start=12576
++  _globals['_HISTORYKIND']._serialized_end=12718
++  _globals['_VALUESOURCE']._serialized_start=12721
++  _globals['_VALUESOURCE']._serialized_end=13627
++  _globals['_INPUTINDEXING']._serialized_start=13629
++  _globals['_INPUTINDEXING']._serialized_end=13753
++  _globals['_STATEACCESSKIND']._serialized_start=13755
++  _globals['_STATEACCESSKIND']._serialized_end=13839
++  _globals['_GRAPHOPERATION']._serialized_start=13842
++  _globals['_GRAPHOPERATION']._serialized_end=14037
++  _globals['_TOOLPARSERKIND']._serialized_start=14039
++  _globals['_TOOLPARSERKIND']._serialized_end=14143
++  _globals['_REASONINGPARSERKIND']._serialized_start=14145
++  _globals['_REASONINGPARSERKIND']._serialized_end=14232
++  _globals['_IMAGEPREPARATIONKIND']._serialized_start=14235
++  _globals['_IMAGEPREPARATIONKIND']._serialized_end=14510
++  _globals['_IMAGELAYOUTKIND']._serialized_start=14513
++  _globals['_IMAGELAYOUTKIND']._serialized_end=14743
++  _globals['_PROMPTENCODER']._serialized_start=14745
++  _globals['_PROMPTENCODER']._serialized_end=14813
++  _globals['_TEMPLATEENCODING']._serialized_start=14815
++  _globals['_TEMPLATEENCODING']._serialized_end=14881
++  _globals['_MEMORY']._serialized_start=14883
++  _globals['_MEMORY']._serialized_end=14930
++  _globals['_CAPACITY']._serialized_start=14932
++  _globals['_CAPACITY']._serialized_end=14972
++  _globals['_RELOCATIONKIND']._serialized_start=14974
++  _globals['_RELOCATIONKIND']._serialized_end=15019
++  _globals['_DRAFTSOURCE']._serialized_start=15021
++  _globals['_DRAFTSOURCE']._serialized_end=15073
+   _globals['_PROTECTEDINDEX']._serialized_start=41
+   _globals['_PROTECTEDINDEX']._serialized_end=197
+   _globals['_SIGNEDGROUP']._serialized_start=199
+@@ -86,133 +86,137 @@ if not _descriptor._USE_C_DESCRIPTORS:
+   _globals['_SERVINGCONTRACT']._serialized_start=1522
+   _globals['_SERVINGCONTRACT']._serialized_end=2365
+   _globals['_MODELCONTRACT']._serialized_start=2368
+-  _globals['_MODELCONTRACT']._serialized_end=2635
+-  _globals['_VISIONCAPACITY']._serialized_start=2638
+-  _globals['_VISIONCAPACITY']._serialized_end=2782
+-  _globals['_CACHECONTRACT']._serialized_start=2785
+-  _globals['_CACHECONTRACT']._serialized_end=2919
+-  _globals['_HISTORYREGION']._serialized_start=2922
+-  _globals['_HISTORYREGION']._serialized_end=3072
+-  _globals['_PAGETABLEVIEW']._serialized_start=3074
+-  _globals['_PAGETABLEVIEW']._serialized_end=3126
+-  _globals['_VALUEBINDING']._serialized_start=3129
+-  _globals['_VALUEBINDING']._serialized_end=3306
+-  _globals['_STATEVIEW']._serialized_start=3308
+-  _globals['_STATEVIEW']._serialized_end=3383
+-  _globals['_STATEACCESS']._serialized_start=3385
+-  _globals['_STATEACCESS']._serialized_end=3486
+-  _globals['_COMPLETIONCURSOR']._serialized_start=3488
+-  _globals['_COMPLETIONCURSOR']._serialized_end=3567
+-  _globals['_GRAPHCONTRACT']._serialized_start=3570
+-  _globals['_GRAPHCONTRACT']._serialized_end=3895
+-  _globals['_TOOLPARSER']._serialized_start=3897
+-  _globals['_TOOLPARSER']._serialized_end=4004
+-  _globals['_REASONINGPARSER']._serialized_start=4007
+-  _globals['_REASONINGPARSER']._serialized_end=4156
+-  _globals['_PREFIXBOUNDARY']._serialized_start=4159
+-  _globals['_PREFIXBOUNDARY']._serialized_end=4361
+-  _globals['_IMAGESPAN']._serialized_start=4363
+-  _globals['_IMAGESPAN']._serialized_end=4484
+-  _globals['_IMAGETOKENLAYOUT']._serialized_start=4486
+-  _globals['_IMAGETOKENLAYOUT']._serialized_end=4567
+-  _globals['_FRONTENDCONTRACT']._serialized_start=4570
+-  _globals['_FRONTENDCONTRACT']._serialized_end=5068
+-  _globals['_CLUSTER']._serialized_start=5070
+-  _globals['_CLUSTER']._serialized_end=5119
+-  _globals['_DEFAULTSAMPLINGPARAMETERS']._serialized_start=5122
+-  _globals['_DEFAULTSAMPLINGPARAMETERS']._serialized_end=5518
+-  _globals['_SAMPLINGFLOATRANGE']._serialized_start=5520
+-  _globals['_SAMPLINGFLOATRANGE']._serialized_end=5592
+-  _globals['_SAMPLINGINTRANGE']._serialized_start=5594
+-  _globals['_SAMPLINGINTRANGE']._serialized_end=5664
+-  _globals['_SAMPLINGRANGES']._serialized_start=5667
+-  _globals['_SAMPLINGRANGES']._serialized_end=6073
+-  _globals['_FRONTENDSETTINGS']._serialized_start=6076
+-  _globals['_FRONTENDSETTINGS']._serialized_end=6401
+-  _globals['_TOKENIZERSETTINGS']._serialized_start=6404
+-  _globals['_TOKENIZERSETTINGS']._serialized_end=6752
+-  _globals['_TOKENLIST']._serialized_start=6754
+-  _globals['_TOKENLIST']._serialized_end=6781
+-  _globals['_IMAGESETTINGS']._serialized_start=6784
+-  _globals['_IMAGESETTINGS']._serialized_end=7147
+-  _globals['_DEEPSEEKROWMAJORIMAGESETTINGS']._serialized_start=7150
+-  _globals['_DEEPSEEKROWMAJORIMAGESETTINGS']._serialized_end=7285
+-  _globals['_QWENIMAGESETTINGS']._serialized_start=7288
+-  _globals['_QWENIMAGESETTINGS']._serialized_end=7418
+-  _globals['_MIMOIMAGESETTINGS']._serialized_start=7420
+-  _globals['_MIMOIMAGESETTINGS']._serialized_end=7518
+-  _globals['_ENGRAM']._serialized_start=7520
+-  _globals['_ENGRAM']._serialized_end=7644
+-  _globals['_ENGRAMTABLE']._serialized_start=7647
+-  _globals['_ENGRAMTABLE']._serialized_end=8159
+-  _globals['_ENGRAMTABLE_ENCODING']._serialized_start=8090
+-  _globals['_ENGRAMTABLE_ENCODING']._serialized_end=8159
+-  _globals['_ENGRAMTABLESHARD']._serialized_start=8162
+-  _globals['_ENGRAMTABLESHARD']._serialized_end=8302
+-  _globals['_ENGRAMHASH']._serialized_start=8305
+-  _globals['_ENGRAMHASH']._serialized_end=8500
+-  _globals['_ENGRAMHASH_METHOD']._serialized_start=8439
+-  _globals['_ENGRAMHASH_METHOD']._serialized_end=8500
+-  _globals['_ASSET']._serialized_start=8502
+-  _globals['_ASSET']._serialized_end=8577
+-  _globals['_BUNDLEINDEX']._serialized_start=8580
+-  _globals['_BUNDLEINDEX']._serialized_end=9119
+-  _globals['_BUNDLEINDEX_RESOURCESENTRY']._serialized_start=9050
+-  _globals['_BUNDLEINDEX_RESOURCESENTRY']._serialized_end=9119
+-  _globals['_ROCETRANSPORT']._serialized_start=9122
+-  _globals['_ROCETRANSPORT']._serialized_end=9370
+-  _globals['_GRAPHINDEX']._serialized_start=9372
+-  _globals['_GRAPHINDEX']._serialized_end=9490
+-  _globals['_PEERMEMORY']._serialized_start=9492
+-  _globals['_PEERMEMORY']._serialized_end=9569
+-  _globals['_CONTEXT']._serialized_start=9571
+-  _globals['_CONTEXT']._serialized_end=9648
+-  _globals['_LIMIT']._serialized_start=9650
+-  _globals['_LIMIT']._serialized_end=9684
+-  _globals['_RESERVATION']._serialized_start=9686
+-  _globals['_RESERVATION']._serialized_end=9732
+-  _globals['_SPAN']._serialized_start=9734
+-  _globals['_SPAN']._serialized_end=9790
+-  _globals['_ALLOCATION']._serialized_start=9793
+-  _globals['_ALLOCATION']._serialized_end=10083
+-  _globals['_SIZING']._serialized_start=10085
+-  _globals['_SIZING']._serialized_end=10173
+-  _globals['_MODULE']._serialized_start=10175
+-  _globals['_MODULE']._serialized_end=10251
+-  _globals['_GLOBAL']._serialized_start=10253
+-  _globals['_GLOBAL']._serialized_end=10355
+-  _globals['_FUNCTION']._serialized_start=10357
+-  _globals['_FUNCTION']._serialized_end=10478
+-  _globals['_FUNCTIONATTRIBUTE']._serialized_start=10480
+-  _globals['_FUNCTIONATTRIBUTE']._serialized_end=10526
+-  _globals['_REFERENCE']._serialized_start=10528
+-  _globals['_REFERENCE']._serialized_end=10575
+-  _globals['_RELOCATION']._serialized_start=10577
+-  _globals['_RELOCATION']._serialized_end=10692
+-  _globals['_BLOB']._serialized_start=10694
+-  _globals['_BLOB']._serialized_end=10762
+-  _globals['_ATTRIBUTE']._serialized_start=10764
+-  _globals['_ATTRIBUTE']._serialized_end=10823
+-  _globals['_KERNEL']._serialized_start=10826
+-  _globals['_KERNEL']._serialized_end=10983
+-  _globals['_MEMSET']._serialized_start=10986
+-  _globals['_MEMSET']._serialized_end=11124
+-  _globals['_COPY']._serialized_start=11126
+-  _globals['_COPY']._serialized_end=11237
+-  _globals['_EMPTY']._serialized_start=11239
+-  _globals['_EMPTY']._serialized_end=11246
+-  _globals['_EVENTWAIT']._serialized_start=11248
+-  _globals['_EVENTWAIT']._serialized_end=11274
+-  _globals['_NODE']._serialized_start=11277
+-  _globals['_NODE']._serialized_end=11502
+-  _globals['_EDGE']._serialized_start=11504
+-  _globals['_EDGE']._serialized_end=11561
+-  _globals['_EXECUTION']._serialized_start=11564
+-  _globals['_EXECUTION']._serialized_end=11730
+-  _globals['_BUFFER']._serialized_start=11733
+-  _globals['_BUFFER']._serialized_end=11863
+-  _globals['_EXECUTIONGRAPH']._serialized_start=11866
+-  _globals['_EXECUTIONGRAPH']._serialized_end=12320
+-  _globals['_INPUTBINDING']._serialized_start=12322
+-  _globals['_INPUTBINDING']._serialized_end=12394
++  _globals['_MODELCONTRACT']._serialized_end=2686
++  _globals['_STEERINGSITE']._serialized_start=2688
++  _globals['_STEERINGSITE']._serialized_end=2731
++  _globals['_STEERINGCONTRACT']._serialized_start=2733
++  _globals['_STEERINGCONTRACT']._serialized_end=2814
++  _globals['_VISIONCAPACITY']._serialized_start=2817
++  _globals['_VISIONCAPACITY']._serialized_end=2961
++  _globals['_CACHECONTRACT']._serialized_start=2964
++  _globals['_CACHECONTRACT']._serialized_end=3098
++  _globals['_HISTORYREGION']._serialized_start=3101
++  _globals['_HISTORYREGION']._serialized_end=3251
++  _globals['_PAGETABLEVIEW']._serialized_start=3253
++  _globals['_PAGETABLEVIEW']._serialized_end=3305
++  _globals['_VALUEBINDING']._serialized_start=3308
++  _globals['_VALUEBINDING']._serialized_end=3485
++  _globals['_STATEVIEW']._serialized_start=3487
++  _globals['_STATEVIEW']._serialized_end=3562
++  _globals['_STATEACCESS']._serialized_start=3564
++  _globals['_STATEACCESS']._serialized_end=3665
++  _globals['_COMPLETIONCURSOR']._serialized_start=3667
++  _globals['_COMPLETIONCURSOR']._serialized_end=3746
++  _globals['_GRAPHCONTRACT']._serialized_start=3749
++  _globals['_GRAPHCONTRACT']._serialized_end=4074
++  _globals['_TOOLPARSER']._serialized_start=4076
++  _globals['_TOOLPARSER']._serialized_end=4183
++  _globals['_REASONINGPARSER']._serialized_start=4186
++  _globals['_REASONINGPARSER']._serialized_end=4335
++  _globals['_PREFIXBOUNDARY']._serialized_start=4338
++  _globals['_PREFIXBOUNDARY']._serialized_end=4540
++  _globals['_IMAGESPAN']._serialized_start=4542
++  _globals['_IMAGESPAN']._serialized_end=4663
++  _globals['_IMAGETOKENLAYOUT']._serialized_start=4665
++  _globals['_IMAGETOKENLAYOUT']._serialized_end=4746
++  _globals['_FRONTENDCONTRACT']._serialized_start=4749
++  _globals['_FRONTENDCONTRACT']._serialized_end=5247
++  _globals['_CLUSTER']._serialized_start=5249
++  _globals['_CLUSTER']._serialized_end=5298
++  _globals['_DEFAULTSAMPLINGPARAMETERS']._serialized_start=5301
++  _globals['_DEFAULTSAMPLINGPARAMETERS']._serialized_end=5697
++  _globals['_SAMPLINGFLOATRANGE']._serialized_start=5699
++  _globals['_SAMPLINGFLOATRANGE']._serialized_end=5771
++  _globals['_SAMPLINGINTRANGE']._serialized_start=5773
++  _globals['_SAMPLINGINTRANGE']._serialized_end=5843
++  _globals['_SAMPLINGRANGES']._serialized_start=5846
++  _globals['_SAMPLINGRANGES']._serialized_end=6252
++  _globals['_FRONTENDSETTINGS']._serialized_start=6255
++  _globals['_FRONTENDSETTINGS']._serialized_end=6580
++  _globals['_TOKENIZERSETTINGS']._serialized_start=6583
++  _globals['_TOKENIZERSETTINGS']._serialized_end=6931
++  _globals['_TOKENLIST']._serialized_start=6933
++  _globals['_TOKENLIST']._serialized_end=6960
++  _globals['_IMAGESETTINGS']._serialized_start=6963
++  _globals['_IMAGESETTINGS']._serialized_end=7326
++  _globals['_DEEPSEEKROWMAJORIMAGESETTINGS']._serialized_start=7329
++  _globals['_DEEPSEEKROWMAJORIMAGESETTINGS']._serialized_end=7464
++  _globals['_QWENIMAGESETTINGS']._serialized_start=7467
++  _globals['_QWENIMAGESETTINGS']._serialized_end=7597
++  _globals['_MIMOIMAGESETTINGS']._serialized_start=7599
++  _globals['_MIMOIMAGESETTINGS']._serialized_end=7697
++  _globals['_ENGRAM']._serialized_start=7699
++  _globals['_ENGRAM']._serialized_end=7823
++  _globals['_ENGRAMTABLE']._serialized_start=7826
++  _globals['_ENGRAMTABLE']._serialized_end=8338
++  _globals['_ENGRAMTABLE_ENCODING']._serialized_start=8269
++  _globals['_ENGRAMTABLE_ENCODING']._serialized_end=8338
++  _globals['_ENGRAMTABLESHARD']._serialized_start=8341
++  _globals['_ENGRAMTABLESHARD']._serialized_end=8481
++  _globals['_ENGRAMHASH']._serialized_start=8484
++  _globals['_ENGRAMHASH']._serialized_end=8679
++  _globals['_ENGRAMHASH_METHOD']._serialized_start=8618
++  _globals['_ENGRAMHASH_METHOD']._serialized_end=8679
++  _globals['_ASSET']._serialized_start=8681
++  _globals['_ASSET']._serialized_end=8756
++  _globals['_BUNDLEINDEX']._serialized_start=8759
++  _globals['_BUNDLEINDEX']._serialized_end=9298
++  _globals['_BUNDLEINDEX_RESOURCESENTRY']._serialized_start=9229
++  _globals['_BUNDLEINDEX_RESOURCESENTRY']._serialized_end=9298
++  _globals['_ROCETRANSPORT']._serialized_start=9301
++  _globals['_ROCETRANSPORT']._serialized_end=9549
++  _globals['_GRAPHINDEX']._serialized_start=9551
++  _globals['_GRAPHINDEX']._serialized_end=9669
++  _globals['_PEERMEMORY']._serialized_start=9671
++  _globals['_PEERMEMORY']._serialized_end=9748
++  _globals['_CONTEXT']._serialized_start=9750
++  _globals['_CONTEXT']._serialized_end=9827
++  _globals['_LIMIT']._serialized_start=9829
++  _globals['_LIMIT']._serialized_end=9863
++  _globals['_RESERVATION']._serialized_start=9865
++  _globals['_RESERVATION']._serialized_end=9911
++  _globals['_SPAN']._serialized_start=9913
++  _globals['_SPAN']._serialized_end=9969
++  _globals['_ALLOCATION']._serialized_start=9972
++  _globals['_ALLOCATION']._serialized_end=10262
++  _globals['_SIZING']._serialized_start=10264
++  _globals['_SIZING']._serialized_end=10352
++  _globals['_MODULE']._serialized_start=10354
++  _globals['_MODULE']._serialized_end=10430
++  _globals['_GLOBAL']._serialized_start=10432
++  _globals['_GLOBAL']._serialized_end=10534
++  _globals['_FUNCTION']._serialized_start=10536
++  _globals['_FUNCTION']._serialized_end=10657
++  _globals['_FUNCTIONATTRIBUTE']._serialized_start=10659
++  _globals['_FUNCTIONATTRIBUTE']._serialized_end=10705
++  _globals['_REFERENCE']._serialized_start=10707
++  _globals['_REFERENCE']._serialized_end=10754
++  _globals['_RELOCATION']._serialized_start=10756
++  _globals['_RELOCATION']._serialized_end=10871
++  _globals['_BLOB']._serialized_start=10873
++  _globals['_BLOB']._serialized_end=10941
++  _globals['_ATTRIBUTE']._serialized_start=10943
++  _globals['_ATTRIBUTE']._serialized_end=11002
++  _globals['_KERNEL']._serialized_start=11005
++  _globals['_KERNEL']._serialized_end=11162
++  _globals['_MEMSET']._serialized_start=11165
++  _globals['_MEMSET']._serialized_end=11303
++  _globals['_COPY']._serialized_start=11305
++  _globals['_COPY']._serialized_end=11416
++  _globals['_EMPTY']._serialized_start=11418
++  _globals['_EMPTY']._serialized_end=11425
++  _globals['_EVENTWAIT']._serialized_start=11427
++  _globals['_EVENTWAIT']._serialized_end=11453
++  _globals['_NODE']._serialized_start=11456
++  _globals['_NODE']._serialized_end=11681
++  _globals['_EDGE']._serialized_start=11683
++  _globals['_EDGE']._serialized_end=11740
++  _globals['_EXECUTION']._serialized_start=11743
++  _globals['_EXECUTION']._serialized_end=11909
++  _globals['_BUFFER']._serialized_start=11912
++  _globals['_BUFFER']._serialized_end=12042
++  _globals['_EXECUTIONGRAPH']._serialized_start=12045
++  _globals['_EXECUTIONGRAPH']._serialized_end=12499
++  _globals['_INPUTBINDING']._serialized_start=12501
++  _globals['_INPUTBINDING']._serialized_end=12573
+ # @@protoc_insertion_point(module_scope)
+diff --git a/ignition/recipes/qwen38_dense/bootstrap.py b/ignition/recipes/qwen38_dense/bootstrap.py
+index 4e8b3243..52c2fe2e 100644
+--- a/ignition/recipes/qwen38_dense/bootstrap.py
++++ b/ignition/recipes/qwen38_dense/bootstrap.py
+@@ -51,12 +51,18 @@ class PreparationConfig:
+     retain_graphs: bool = False
+     kernel_cache: Path | None = None
+     cutlass_include: Path | None = None
++    capture_activations: bool = False
++    steering_max_sites: int = 0
+     mtp: bool = False
+     speculative_widths: tuple[int, ...] = (1, 2, 3, 4)
+     speculative_fixed_width: int | None = None
+     preparation_pages: int | None = None
+ 
+     def __post_init__(self):
++        if type(self.steering_max_sites) is not int or not 0 <= self.steering_max_sites <= 256:
++            raise ValueError("steering max sites must be an integer in [0,256]")
++        if self.capture_activations and not self.retain_graphs:
++            raise ValueError("activation capture requires retained diagnostic graphs")
+         request_capacity(self.max_active)
+         if not PAGE_TOKENS <= self.context <= 262144 or self.context % PAGE_TOKENS:
+             raise ValueError("Qwen dense context must be 128-aligned in [128,262144]")
+@@ -110,6 +116,8 @@ def prepare(snapshot, config, *, progress=None, package_storage):
+         transient.close()
+         transient.enter_context(package_storage.transient())
+     from ignition.components.sm70_projection import is_sm70
++    if config.capture_activations and not is_sm70(device):
++        raise ValueError("activation capture is prepared only by the SM70 dense recipe")
+     dtype, element_bytes = (torch.float32, 2) if is_sm70(device) else (torch.bfloat16, 1)
+     layout = continuation_layout(weights.config, dtype=dtype, element_bytes=element_bytes,
+                                  draft_tokens=config.draft_tokens)
+@@ -137,6 +145,13 @@ def prepare(snapshot, config, *, progress=None, package_storage):
+         requests = DeviceRequestState.allocate(device, vocab_size=vocabulary, capacity=slots)
+         inputs = BatchInputs.allocate(max(config.prefill_chunk_size, decode_tokens), blocks, device, capacity=slots)
+         admission = AdmissionBuffers.allocate(device, vocab_size=vocabulary, capacity=slots)
++        steering = None
++        if config.steering_max_sites:
++            if not is_sm70(device):
++                raise ValueError("additive steering is prepared only by the SM70 dense recipe")
++            from ignition.components.steering import SteeringBuffers
++            steering = SteeringBuffers.allocate(len(weights.config.layers), weights.config.hidden, slots,
++                config.steering_max_sites, device, intermediate=weights.config.text["intermediate_size"])
+         commands = StateCommands.allocate(device, capacity=slots)
+         frame = torch.zeros(1, dtype=torch.int32, device=device)
+         sequence = torch.zeros(1, dtype=torch.int64, device=device)
+@@ -146,6 +161,9 @@ def prepare(snapshot, config, *, progress=None, package_storage):
+             "config": weights.config.text, "headers": [s.header_sha256 for s in manifest.shards],
+             "contract": "qwen38-dense.graph-inputs.v2", "draft_tokens": config.draft_tokens},
+             sort_keys=True).encode()).hexdigest()
++        if steering is not None:
++            identity = hashlib.sha256((identity + json.dumps(steering.contract(), sort_keys=True)
++                + "additive-bf16-sites-v1").encode()).hexdigest()
+         session = RecordedPreparationSession(
+             compile_workers=config.compile_workers, tuning_replica=config.tuning_replica,
+             device=device, checkpoint=identity,
+@@ -159,18 +177,25 @@ def prepare(snapshot, config, *, progress=None, package_storage):
+         session.register_scratch(arena)
+         prefill_storage = Scratch.allocate(config.prefill_chunk_size, 1, weights.config, device)
+         decode_storage = Scratch.allocate(decode_tokens, decode_tokens, weights.config, device)
++        activation_capture = None
++        if config.capture_activations:
++            from ignition.components.activation_capture import ActivationCapture
++            activation_capture = ActivationCapture.allocate(len(weights.config.layers), config.prefill_chunk_size,
++                weights.config.hidden, device, intermediate=weights.config.text["intermediate_size"])
+         buffers = dict(inputs.buffers(), **commands.buffers(),
+             **{name: getattr(admission, name) for name in admission.__dataclass_fields__},
+             state_pool=pool.backing, memory_capacity=pool.memory_capacity,
+             request_pending_token=requests.pending_token,
+             sampling_grammar_mask=requests.grammar_mask, frame_index=frame,
+             submission_sequence=sequence, **completion.buffers())
++        if steering is not None:
++            buffers.update(steering.buffers())
+         speculation = None
+         if config.mtp:
+             from .speculative import SpeculativePreparation
+             speculation = SpeculativePreparation(weights, mtp_weights, pool, requests, inputs, decode_storage,
+                 width=config.draft_tokens + 1, session=session, workspace=arena,
+-                completion=completion, frame=frame, sequence=sequence)
++                completion=completion, frame=frame, sequence=sequence, steering=steering)
+             buffers["draft_page_tables"] = speculation.draft_tables
+     forwards, signatures, metadata = {}, {}, {}
+     prefill_sizes, batch_sizes = prefill_capacities(config.prefill_chunk_size), batch_capacities(config.max_active)
+@@ -196,7 +221,10 @@ def prepare(snapshot, config, *, progress=None, package_storage):
+                     decoder = PreparedDecoder(weights, scratch, m, pool, mode=mode,
+                         vocabulary_runtime=None, coordinator=coordinator, session=session, name=name, workspace=arena,
+                         row_invariant=config.mtp and mode == "decode",
+-                        prefill_errors=(requests, inputs.row_slot_ids) if mode == "prefill" else None)
++                        prefill_errors=(requests, inputs.row_slot_ids) if mode == "prefill" else None,
++                        steering=None if steering is None else steering.bind(inputs, requests, m),
++                        activation_capture=activation_capture.rows(capacity)
++                            if activation_capture is not None and mode == "prefill" else None)
+                     batch = PreparedBatch(inputs, requests, m, mode=mode, shard=weights.shard, pool=pool)
+                     forward = PreparedGeneration(decoder, batch, completion, frame, sequence, runtime=None,
+                         coordinator=coordinator, session=session, name=name + ".generation", workspace=arena)
+@@ -223,6 +251,8 @@ def prepare(snapshot, config, *, progress=None, package_storage):
+                         runtime=None, coordinator=coordinator, session=session, name=name, capacity=capacity,
+                         admission_buffers=admission, draft_state=enabled, **options)
+                     fields = row_inputs if mode == "snapshot" else ("request_state_rows", *admission.__dataclass_fields__)
++                    if mode != "snapshot" and steering is not None:
++                        fields = (*fields, *steering.buffers())
+                     add(name, forward, mode, capacity, 1,
+                         (*fields, "page_tables", *commands.buffers(), *(("draft_page_tables",) if enabled else ())), enabled)
+         if speculation is not None:
+@@ -280,7 +310,7 @@ def prepare(snapshot, config, *, progress=None, package_storage):
+         prefill_chunk_size=config.prefill_chunk_size, pages=pages, state_rows=state_rows, snapshots=snapshots,
+         page_tokens=PAGE_TOKENS, frontend=prepare_frontend(snapshot, eos_token_ids=eos_ids),
+         sampling_defaults=RECIPE.sampling_defaults.as_dict(), assets=assets,
+-        model_contract=prepare_contract(signatures, buffers, pool, vocabulary=vocabulary))
++        model_contract=prepare_contract(signatures, buffers, pool, vocabulary=vocabulary, steering=steering))
+     if speculation is not None:
+         server_config.update(speculative_widths=config.speculative_widths,
+             speculative_token_capacity=decode_tokens, speculative_proposal_source="mtp",
+@@ -301,7 +331,8 @@ def prepare(snapshot, config, *, progress=None, package_storage):
+     return PreparedModel(device=config.device, graphs=graphs, buffers=buffers, signatures=signatures,
+         max_active=config.max_active, session=session, server_config=server_config, memory_report=memory,
+         export_zero_ranges=(*storage_ranges([prefill_storage, decode_storage, arena.tensor, metadata,
++                                             None if steering is None else steering.buffers(),
+                                              None if speculation is None else speculation.replay_operands]),
+                             *completion.zero_ranges()),
+-        resources=(weights, mtp_weights, speculation, pool, requests, inputs, admission, commands, arena, forwards, prefill_storage,
++        resources=(weights, mtp_weights, speculation, steering, pool, requests, inputs, admission, commands, arena, forwards, prefill_storage,
+                    decode_storage, metadata, compiled, stream, graph_pool, session, coordinator))
+diff --git a/ignition/recipes/qwen38_dense/contract.py b/ignition/recipes/qwen38_dense/contract.py
+index 49f8ea0f..30ad336a 100644
+--- a/ignition/recipes/qwen38_dense/contract.py
++++ b/ignition/recipes/qwen38_dense/contract.py
+@@ -12,11 +12,16 @@ FRONTEND = c.frontend(tools=p.QWEN_CODER, wrapping_newlines=1, terminal_markers=
+         required_start="<|im_start|>system\n", required_marker="<|im_end|>"))
+ 
+ 
+-def prepare(signatures, buffers, pool, *, vocabulary):
++def prepare(signatures, buffers, pool, *, vocabulary, steering=None):
+     inputs = {kind: c.text_inputs(kind) for kind in {s.kind for s in signatures.values()}}
+     inputs["decode"].pop("token_ids", None)
+     if "speculative" in inputs:
+         inputs["speculative"].pop("token_ids", None)
++    if steering is not None:
++        for kind in ("init", "restore"):
++            inputs[kind].update({name: c.binding(name, source, p.REQUEST_ROW) for name, source in (
++                ("steering_addends", p.STEERING_ADDENDS), ("steering_phases", p.STEERING_PHASES),
++                ("steering_prompt_tokens", p.STEERING_PROMPT_TOKENS))})
+     continuation = c.state_view("state_pool", pool.layout.row_bytes)
+     pending = c.state_view("request_pending_token", 8)
+     regions = [c.history_region(buffers, f"cache.{name}", tensor, p.PAGED_KEY_VALUE)
+@@ -25,7 +30,7 @@ def prepare(signatures, buffers, pool, *, vocabulary):
+     cursor = (dict(state=c.state_view("state_pool", pool.layout.row_bytes,
+         offset=consumed.offset, nbytes=consumed.nbytes), lag_tokens=1)
+         if "draft_page_tables" in buffers else None)
+-    return c.model_contract(vocabulary=vocabulary, page_tokens=PAGE_TOKENS,
++    contract = c.model_contract(vocabulary=vocabulary, page_tokens=PAGE_TOKENS,
+         page_tables=[dict(buffer="page_tables", page_offset=0),
+             *([dict(buffer="draft_page_tables", page_offset=1)] if cursor is not None else [])],
+         regions=[dict(kind=p.CONTINUATION_STATE, storage=continuation, tokens_per_record=1, window_tokens=0),
+@@ -35,3 +40,10 @@ def prepare(signatures, buffers, pool, *, vocabulary):
+         graphs=c.graph_contracts(signatures, inputs, continuation=continuation, pending=pending,
+                                 cursor=cursor, rows=1),
+         frontend=FRONTEND)
++    if steering is not None:
++        contract["steering"] = steering.contract()
++        for graph in contract["graphs"]:
++            if graph["kind"] in (p.PREFILL, p.DECODE, p.SPECULATIVE):
++                graph["state"].extend(dict(view=c.state_view(name, tensor[0].numel() * tensor.element_size()),
++                                           access=p.READ) for name, tensor in steering.buffers().items())
++    return contract
+diff --git a/ignition/recipes/qwen38_dense/decoder.py b/ignition/recipes/qwen38_dense/decoder.py
+index 90451cb8..fb216d9b 100644
+--- a/ignition/recipes/qwen38_dense/decoder.py
++++ b/ignition/recipes/qwen38_dense/decoder.py
+@@ -69,13 +69,16 @@ class RecurrentAttention(torch.nn.Module):
+ class SM70DecoderLayer(torch.nn.Module):
+     """Canonical Qwen layer arithmetic with BF16 values stored as FP32."""
+ 
+-    def __init__(self, layer, norms=None, swiglu=False):
++    def __init__(self, layer, norms=None, swiglu=False, steering=None, layer_index=0, capture=None):
+         super().__init__()
++        if swiglu and (steering is not None or capture is not None):
++            raise ValueError("pre-down steering and capture require the explicit SwiGLU product")
+         self.layer = layer
+         self.norms = norms
+         # astra-21 (SM70 prefill graphs): the down projection reads the gate|up output and applies the BF16 SwiGLU in
+         # its producer (input_transform="swiglu_bf16"), bit-identical to the pointwise path below.
+         self.swiglu = swiglu
++        self.steering, self.layer_index, self.capture = steering, layer_index, capture
+ 
+     def forward(self, hidden_states, position_embeddings):
+         layer = self.layer
+@@ -93,8 +96,11 @@ class SM70DecoderLayer(torch.nn.Module):
+         norm = layer.post_attention_layernorm
+         hidden_states = (self.norms[1](hidden_states) if self.norms is not None
+                          else rms_norm(hidden_states, norm.weight, norm.eps))
++        if self.capture is not None:
++            self.capture.record_pre_mlp(hidden_states, self.layer_index)
+         if self.swiglu:
+-            return round_bf16(residual + round_bf16(layer.mlp.down_proj(layer.mlp.gate_up_proj(hidden_states))))
++            output = round_bf16(layer.mlp.down_proj(layer.mlp.gate_up_proj(hidden_states)))
++            return self.finish(residual, output)
+         if hasattr(layer.mlp, 'gate_up_proj'):
+             gate, up = layer.mlp.gate_up_proj(hidden_states).chunk(2, dim=-1)
+             gate, up = round_bf16(gate), round_bf16(up)
+@@ -103,8 +109,22 @@ class SM70DecoderLayer(torch.nn.Module):
+             up = round_bf16(layer.mlp.up_proj(hidden_states))
+         activated = round_bf16(layer.mlp.act_fn(gate))
+         product = round_bf16(activated * up)
++        if self.steering is not None:
++            product = self.steering(product, 3 * self.layer_index + 2)
++        if self.capture is not None:
++            self.capture.record_mlp_input(product, self.layer_index)
+         hidden_states = round_bf16(layer.mlp.down_proj(product))
+-        return round_bf16(residual + hidden_states)
++        return self.finish(residual, hidden_states)
++
++    def finish(self, residual, output):
++        if self.steering is not None:
++            output = self.steering(output, 3 * self.layer_index)
++        hidden = round_bf16(residual + output)
++        if self.steering is not None:
++            hidden = self.steering(hidden, 3 * self.layer_index + 1)
++        if self.capture is not None:
++            self.capture.record_residual(hidden, self.layer_index)
++        return hidden
+ 
+ 
+ class FullAttention(torch.nn.Module):
+@@ -239,7 +259,7 @@ class PreparedDecoder:
+ 
+     def __init__(self, weights, scratch, metadata, pool, *, mode, vocabulary_runtime,
+                  coordinator, session, name, workspace, delta=None, feedback_output=None, row_invariant=False,
+-                 prefill_errors=None, replay=None):
++                 prefill_errors=None, replay=None, steering=None, activation_capture=None):
+         self.weights, self.scratch, self.metadata, self.pool = weights, scratch, metadata, pool
+         if replay is not None and (delta is None or mode != "decode"):
+             raise ValueError("replay-commit operand storage belongs to an SM70 verification decoder with external delta metadata")
+@@ -276,6 +296,9 @@ class PreparedDecoder:
+         self.external_delta = delta is not None
+         self.feedback_output = feedback_output
+         config, source = weights.config, scratch.activations
++        self.activation_capture = activation_capture
++        if activation_capture is not None and (not self.sm70 or mode != "prefill"):
++            raise ValueError("activation capture requires an SM70 prefill decoder")
+         attention_buffers = {}
+         fused_projections = "layers.0.mlp.gate_up_proj" in weights.projections
+         # SM70 prefill graphs: every quantized projection reads the device live-row count; padded rows are +0.0.
+@@ -291,7 +314,9 @@ class PreparedDecoder:
+                 dtype=source.dtype, device=source.device)
+         # astra-21: SM70 prefill graphs fuse the SwiGLU into the down projection's producer (sm70_prefill.cu
+         # atlas_produce_swiglu); its source is the gate|up parent output and no FP32 product buffer exists.
+-        swiglu = self.sm70 and mode == "prefill" and fused_projections
++        # A prepared neuron site must remain visible before down-projection input quantization.
++        swiglu = (self.sm70 and mode == "prefill" and fused_projections
++                  and steering is None and activation_capture is None)
+         mlp_input = None if swiglu else torch.zeros_like(mlp_buffers["gate_proj"])
+         norm_buffers = [torch.zeros_like(source) for _ in range(2)] if self.sm70 and row_invariant else None
+         self.layers, ordinal = [], 0
+@@ -328,7 +353,8 @@ class PreparedDecoder:
+                     session=session, name=name + "." + prefix + field) for norm, output, field in zip(
+                         (layer.input_layernorm, layer.post_attention_layernorm), norm_buffers,
+                         ("input_norm", "post_attention_norm"), strict=True))
+-            self.layers.append(SM70DecoderLayer(layer, norms, swiglu=swiglu) if self.sm70 else layer)
++            self.layers.append(SM70DecoderLayer(layer, norms, swiglu=swiglu, steering=steering,
++                                               layer_index=index, capture=self.activation_capture) if self.sm70 else layer)
+         rotary = config.text["rope_parameters"]
+         dim = int(config.text["head_dim"] * rotary["partial_rotary_factor"])
+         self.inverse_frequency = 1.0 / (rotary["rope_theta"] ** (
+@@ -380,6 +406,8 @@ class PreparedDecoder:
+         if self.decode_agents is not None:
+             self.decode_agents.pack(m.lengths, m.starts, m.query_start_loc, m.page_table)
+         hidden = self.embedding()
++        if self.activation_capture is not None:
++            self.activation_capture.begin(m)
+         for layer in self.layers:
+             hidden = layer(hidden, position_embeddings=position_embeddings)
+         if self.prefill_status is not None:
+diff --git a/ignition/recipes/qwen38_dense/speculative.py b/ignition/recipes/qwen38_dense/speculative.py
+index 777780e1..d187e803 100644
+--- a/ignition/recipes/qwen38_dense/speculative.py
++++ b/ignition/recipes/qwen38_dense/speculative.py
+@@ -158,8 +158,9 @@ class DenseMaintenance(PreparedMaintenance):
+ 
+ class SpeculativePreparation:
+     def __init__(self, weights, mtp_weights, pool, requests, inputs, scratch, *, width,
+-                 session, workspace, completion, frame, sequence):
++                 session, workspace, completion, frame, sequence, steering=None):
+         self.weights, self.mtp_weights, self.pool = weights, mtp_weights, pool
++        self.steering = steering
+         self.requests, self.inputs, self.scratch = requests, inputs, scratch
+         self.width, self.session, self.workspace = width, session, workspace
+         self.completion, self.frame, self.sequence = completion, frame, sequence
+@@ -258,7 +259,8 @@ class PreparedRound:
+         self.decoder = PreparedDecoder(o.weights, o.scratch.rows(b * w, b * w), self.metadata,
+             o.pool, mode="decode", delta=self.delta, vocabulary_runtime=None, coordinator=None,
+             session=o.session, name=name + ".target", workspace=o.workspace, row_invariant=True,
+-            replay=self.replay_operands)
++            replay=self.replay_operands,
++            steering=None if o.steering is None else o.steering.bind(o.inputs, o.requests, self.metadata))
+         self.before = torch.zeros(b, dtype=torch.int64, device=device)
+         self.active = torch.zeros(b, dtype=torch.bool, device=device)
+         self.previous = torch.zeros((b, o.weights.config.hidden), dtype=torch.float32, device=device)
+diff --git a/tests/recipes/test_qwen38_dense_speculation.py b/tests/recipes/test_qwen38_dense_speculation.py
+index 9a1259e6..e9405145 100644
+--- a/tests/recipes/test_qwen38_dense_speculation.py
++++ b/tests/recipes/test_qwen38_dense_speculation.py
+@@ -72,3 +72,36 @@ def test_native_contract_requires_all_state_columns_and_trailing_draft_pages():
+             assert graph['draft_cursor'] is None
+     assert RECIPE.max_draft_tokens == 4
+     assert RECIPE.verification_rows == 0 and RECIPE.live_rows(4, RECIPE.speculation) == 1 + 4
++
++
++def test_steering_catalog_declares_admission_inputs_and_forward_state():
++    from ignition.components.steering import SteeringBuffers
++    model = config()
++    layout = continuation_layout(model, dtype=torch.float32, element_bytes=2, draft_tokens=0)
++    pool = SimpleNamespace(layout=layout, pages={})
++    steering = SteeringBuffers.allocate(64, 4, 4, 2, "cpu", intermediate=7)
++    fields = ('request_state_rows', 'row_slot_ids', 'row_generations', 'live_rows')
++    signatures = {kind: GraphSignature(kind, 4 if kind != 'prefill' else 1,
++        128 if kind == 'prefill' else 1,
++        (*fields, *steering.buffers()) if kind in ('init', 'restore') else fields)
++        for kind in ('init', 'restore', 'prefill', 'decode', 'resume', 'snapshot')}
++    contract = prepare(signatures, steering.buffers(), pool, vocabulary=248320, steering=steering)
++    assert contract['steering'] == steering.contract()
++    for graph in contract['graphs']:
++        sources = {binding['source'] for binding in graph['inputs']}
++        if graph['kind'] in (p.INIT, p.RESTORE):
++            assert {p.STEERING_ADDENDS, p.STEERING_PHASES, p.STEERING_PROMPT_TOKENS} <= sources
++        else:
++            assert not {p.STEERING_ADDENDS, p.STEERING_PHASES, p.STEERING_PROMPT_TOKENS} & sources
++        reads = {state['view']['buffer'] for state in graph['state'] if state['access'] == p.READ}
++        if graph['kind'] in (p.PREFILL, p.DECODE):
++            assert set(steering.buffers()) <= reads
++        else:
++            assert not set(steering.buffers()) & reads
++    from google.protobuf.json_format import ParseDict
++    decoded = ParseDict(contract, p.ModelContract())
++    restored = p.ModelContract.FromString(decoded.SerializeToString())
++    assert restored.steering.max_sites == 2
++    assert restored.steering.sites[0].name == 'layers.0.mlp_out'
++    assert restored.steering.sites[2].name == 'layers.0.mlp_input'
++    assert restored.steering.sites[2].width == 7
+diff --git a/tools/prepare_replay.py b/tools/prepare_replay.py
+index 0441ba54..f22a79d5 100644
+--- a/tools/prepare_replay.py
++++ b/tools/prepare_replay.py
+@@ -67,6 +67,10 @@ def build_parser():
+     parser.add_argument('--context', type=int, default=32768)
+     parser.add_argument('--concurrency', type=int, default=4)
+     parser.add_argument('--chunk', type=int, default=128)
++    parser.add_argument('--capture-activations', action='store_true',
++        help='retain per-layer prefill observations for diagnostics; cannot export or measure')
++    parser.add_argument('--steering-max-sites', type=int, default=0,
++        help='prepare additive mlp_out/residual inputs with this per-request site limit; zero disables')
+     parser.add_argument('--compile-workers', type=int, required=True)
+     parser.add_argument('--compiler-context-mib', type=int, default=400,
+         help='measured SM70 metadata-only forward compiler context budget')
+@@ -109,7 +113,7 @@ def main():
+     except ValueError as error: parser.error(str(error))
+     if args.legacy_dense and args.output:
+         parser.error('legacy dense A/B is diagnostic and cannot export')
+-    if (args.diagnostic_uncompiled or args.diagnose_rows or args.diagnose_long) and (
++    if (args.diagnostic_uncompiled or args.diagnose_rows or args.diagnose_long or args.capture_activations) and (
+             args.output or args.measure or args.measure_components):
+         parser.error('arithmetic diagnostic modes cannot export or produce performance measurements')
+     if args.diagnose_long_widths and not args.diagnose_long:
+@@ -156,7 +160,8 @@ def main():
+         config = PreparationConfig(context=args.context, max_active=args.concurrency,
+             prefill_chunk_size=args.chunk, compile_workers=args.compile_workers,
+             snapshot_budget_bytes=172 << 20, headroom_bytes=lease_headroom,
+-            preparation_pages=args.pages,
++            preparation_pages=args.pages, steering_max_sites=args.steering_max_sites,
++            capture_activations=args.capture_activations,
+             compile_decoder=not args.diagnostic_uncompiled,
+             mtp=True, speculative_widths=tuple(range(1, args.depth + 2)),
+             retain_graphs=True, kernel_cache=args.kernel_cache, cutlass_include=args.cutlass_include)
+@@ -167,6 +172,8 @@ def main():
+                 prepared = prepare(args.checkpoint, config, progress=progress, package_storage=storage)
+         from ignition.components.sm70_projection_tc import ADMISSIONS
+         result.update(status='prepared', memory=prepared.memory_report, projection_admissions=ADMISSIONS,
++            prepared_identity=prepared.server_config['identity'],
++            steering=prepared.server_config['model_contract'].get('steering'),
+             preparation_free_bytes=torch.cuda.mem_get_info()[0], preparation_total_bytes=torch.cuda.mem_get_info()[1],
+             default_draft='checkpoint-selected; no checkpoint overlay applied by this harness')
+         with prepared:
+diff --git a/helios/src/model/steering.rs b/helios/src/model/steering.rs
+new file mode 100644
+index 00000000..fbd0d614
+--- /dev/null
++++ b/helios/src/model/steering.rs
+@@ -0,0 +1,286 @@
++//! Immutable request-local additive activation vectors and their cache identity.
++
++use super::contract::SteeringContract;
++use crate::Result;
++
++#[derive(Clone, Debug, Default)]
++pub struct SteeringData {
++    pub vectors: Vec<(usize, Vec<f32>)>,
++    pub phase: i32,
++    pub prompt_tokens: usize,
++    pub identity: Option<[u8; 32]>,
++}
++
++impl SteeringData {
++    pub fn validate(&self, catalog: Option<&SteeringContract>) -> Result<()> {
++        if self.vectors.is_empty() {
++            if self.identity.is_some() || self.phase != 0 || self.prompt_tokens != 0 {
++                return Err("empty steering must have no phase or identity".into());
++            }
++            return Ok(());
++        }
++        let catalog = catalog.ok_or("steering is not available in this model package")?;
++        if !(1..=3).contains(&self.phase)
++            || self.identity.is_none()
++            || self.prompt_tokens == 0
++            || self.vectors.len() > catalog.max_sites
++            || self.vectors.windows(2).any(|pair| pair[0].0 >= pair[1].0)
++            || self.vectors.iter().any(|(site, vector)| {
++                catalog
++                    .sites
++                    .get(*site)
++                    .is_none_or(|s| s.width != vector.len())
++                    || vector.iter().any(|v| !v.is_finite())
++            })
++        {
++            return Err("steering vectors violate the prepared site catalog".into());
++        }
++        Ok(())
++    }
++}
++
++#[cfg(feature = "server")]
++#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct SteeringRequest {
++    #[serde(default)]
++    pub phase: SteeringPhase,
++    pub sites: Vec<SteeringVector>,
++}
++
++#[cfg(feature = "server")]
++#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum SteeringPhase {
++    Prefill,
++    Decode,
++    #[default]
++    All,
++}
++
++#[cfg(feature = "server")]
++#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct SteeringVector {
++    pub site: String,
++    pub vector: Vec<f32>,
++}
++
++#[cfg(feature = "server")]
++impl SteeringRequest {
++    pub fn prepare(
++        &self,
++        catalog: Option<&SteeringContract>,
++        prompt_tokens: usize,
++    ) -> Result<SteeringData> {
++        use blake2::{Blake2b, Digest, digest::consts::U32};
++        if self.sites.is_empty() {
++            return Ok(SteeringData::default());
++        }
++        let catalog = catalog.ok_or("steering is not available in this model package")?;
++        if self.sites.len() > catalog.max_sites {
++            return Err(format!(
++                "steering exceeds this package's maximum of {} sites",
++                catalog.max_sites
++            )
++            .into());
++        }
++        let phase: i32 = match self.phase {
++            SteeringPhase::Prefill => 1,
++            SteeringPhase::Decode => 2,
++            SteeringPhase::All => 3,
++        };
++        let mut vectors = Vec::new();
++        let mut seen = std::collections::HashSet::new();
++        for entry in &self.sites {
++            let (index, site) = catalog
++                .sites
++                .iter()
++                .enumerate()
++                .find(|(_, s)| s.name == entry.site)
++                .ok_or_else(|| format!("unknown steering site {:?}", entry.site))?;
++            if !seen.insert(index)
++                || entry.vector.len() != site.width
++                || entry.vector.iter().any(|v| !v.is_finite())
++            {
++                return Err(
++                    "steering sites must be unique with finite vectors of their declared width"
++                        .into(),
++                );
++            }
++            if entry.vector.iter().any(|v| *v != 0.0) {
++                // Signed zero is the same disabled coordinate, and must hash identically.
++                vectors.push((
++                    index,
++                    entry
++                        .vector
++                        .iter()
++                        .map(|v| if *v == 0.0 { 0.0 } else { *v })
++                        .collect::<Vec<_>>(),
++                ));
++            }
++        }
++        if vectors.is_empty() {
++            return Ok(SteeringData::default());
++        }
++        vectors.sort_by_key(|(site, _)| *site);
++        let mut hash = Blake2b::<U32>::new();
++        hash.update(b"flare-additive-bf16-sites-v1\0");
++        hash.update(phase.to_le_bytes());
++        // The boundary is semantic, independent of graph chunking and prefix-cache hits.
++        if phase != 3 {
++            hash.update((prompt_tokens as u64).to_le_bytes());
++        }
++        for (index, vector) in &vectors {
++            let site = &catalog.sites[*index];
++            hash.update((site.name.len() as u64).to_le_bytes());
++            hash.update(site.name.as_bytes());
++            hash.update((site.width as u64).to_le_bytes());
++            for value in vector {
++                hash.update(value.to_bits().to_le_bytes());
++            }
++        }
++        let result = SteeringData {
++            vectors,
++            phase,
++            prompt_tokens,
++            identity: Some(hash.finalize().into()),
++        };
++        result.validate(Some(catalog))?;
++        Ok(result)
++    }
++}
++
++#[cfg(all(test, feature = "server"))]
++mod tests {
++    use super::*;
++    use crate::cache::{ConditioningEvent, PrefixHistory};
++    use crate::model::contract::SteeringSite;
++    use serde_json::json;
++
++    fn catalog() -> SteeringContract {
++        SteeringContract {
++            max_sites: 2,
++            sites: vec![
++                SteeringSite {
++                    name: "layers.0.mlp_out".into(),
++                    width: 2,
++                },
++                SteeringSite {
++                    name: "layers.1.residual".into(),
++                    width: 2,
++                },
++                SteeringSite {
++                    name: "layers.0.mlp_input".into(),
++                    width: 3,
++                },
++            ],
++        }
++    }
++
++    fn request(phase: &str, value: f32) -> SteeringRequest {
++        serde_json::from_value(json!({"phase":phase,"sites":[
++            {"site":"layers.0.mlp_out","vector":[value,0.0]}]}))
++        .unwrap()
++    }
++
++    #[test]
++    fn unsupported_packages_reject_nonempty_programs_and_zero_is_neutral() {
++        assert!(request("all", 0.0).prepare(None, 4).is_err());
++        let empty: SteeringRequest = serde_json::from_value(json!({"sites":[]})).unwrap();
++        assert!(empty.prepare(None, 4).unwrap().identity.is_none());
++        let zero = request("all", -0.0).prepare(Some(&catalog()), 4).unwrap();
++        assert!(zero.vectors.is_empty());
++        assert!(zero.identity.is_none());
++        assert_eq!(zero.phase, 0);
++    }
++
++    #[test]
++    fn vectors_validate_names_width_capacity_duplicates_and_finiteness() {
++        for sites in [
++            json!([{"site":"unknown","vector":[1,2]}]),
++            json!([{"site":"layers.0.mlp_out","vector":[1]}]),
++            json!([{"site":"layers.0.mlp_out","vector":[1,2]},
++                   {"site":"layers.0.mlp_out","vector":[1,2]}]),
++        ] {
++            let r: SteeringRequest = serde_json::from_value(json!({"sites":sites})).unwrap();
++            assert!(r.prepare(Some(&catalog()), 4).is_err());
++        }
++        let mut r = request("all", 1.0);
++        r.sites[0].vector[0] = f32::INFINITY;
++        assert!(r.prepare(Some(&catalog()), 4).is_err());
++        assert!(
++            serde_json::from_value::<SteeringRequest>(json!({"phase":"later","sites":[]})).is_err()
++        );
++        assert!(
++            serde_json::from_value::<SteeringRequest>(json!({"sites":[],"callback":"anything"}))
++                .is_err()
++        );
++    }
++
++    #[test]
++    fn neuron_site_uses_its_intermediate_width_and_distinct_cache_identity() {
++        let c = catalog();
++        let neuron: SteeringRequest = serde_json::from_value(json!({"sites":[
++            {"site":"layers.0.mlp_input","vector":[1.0,0.0,-0.5]}]})).unwrap();
++        let prepared = neuron.prepare(Some(&c), 4).unwrap();
++        assert_eq!(prepared.vectors, vec![(2, vec![1.0, 0.0, -0.5])]);
++        assert_ne!(prepared.identity, request("all", 1.0).prepare(Some(&c), 4).unwrap().identity);
++        let mut wrong_width = neuron.clone();
++        wrong_width.sites[0].vector.pop();
++        assert!(wrong_width.prepare(Some(&c), 4).is_err());
++        let old = SteeringContract { sites: c.sites[..2].to_vec(), max_sites: 2 };
++        assert!(neuron.prepare(Some(&old), 4).is_err());
++    }
++
++    #[test]
++    fn cache_identity_is_canonical_and_separates_dose_phase_and_boundary() {
++        let c = catalog();
++        let base = request("all", 1.0).prepare(Some(&c), 4).unwrap();
++        assert_eq!(
++            base.identity,
++            request("all", 1.0).prepare(Some(&c), 8).unwrap().identity
++        );
++        for other in [
++            request("all", 2.0),
++            request("prefill", 1.0),
++            request("decode", 1.0),
++        ] {
++            assert_ne!(base.identity, other.prepare(Some(&c), 4).unwrap().identity);
++        }
++        assert_ne!(
++            request("decode", 1.0)
++                .prepare(Some(&c), 4)
++                .unwrap()
++                .identity,
++            request("decode", 1.0)
++                .prepare(Some(&c), 8)
++                .unwrap()
++                .identity
++        );
++        let mut r = request("all", 1.0);
++        r.sites.push(SteeringVector {
++            site: "layers.1.residual".into(),
++            vector: vec![0.0, 3.0],
++        });
++        let ordered = r.prepare(Some(&c), 4).unwrap();
++        r.sites.reverse();
++        assert_eq!(ordered.identity, r.prepare(Some(&c), 4).unwrap().identity);
++        let tokens = [7; 65];
++        let mut ordinary = PrefixHistory::new([1; 32]);
++        ordinary.append(&tokens, &[]).unwrap();
++        let mut steered = PrefixHistory::new([1; 32]);
++        steered
++            .append(
++                &tokens,
++                &[ConditioningEvent {
++                    position: 0,
++                    identity: base.identity.unwrap(),
++                }],
++            )
++            .unwrap();
++        for boundary in [1, 64, 65] {
++            assert_ne!(ordinary.key_at(boundary), steered.key_at(boundary));
++        }
++    }
++}
+diff --git a/ignition/components/steering.py b/ignition/components/steering.py
+new file mode 100644
+index 00000000..5e65d66e
+--- /dev/null
++++ b/ignition/components/steering.py
+@@ -0,0 +1,66 @@
++"""Request-owned additive interventions captured inside existing model forwards."""
++
++from dataclasses import dataclass
++
++import torch
++
++from ignition.components.sm70_precision import round_bf16
++
++
++@dataclass(frozen=True)
++class SteeringBuffers:
++    addends: torch.Tensor
++    phases: torch.Tensor
++    prompt_tokens: torch.Tensor
++    sites: tuple
++    offsets: tuple
++    max_sites: int
++
++    @classmethod
++    def allocate(cls, layers, hidden, capacity, max_sites, device, *, intermediate):
++        sites = tuple(dict(name=f"layers.{layer}.{kind}", width=width)
++                      for layer in range(layers)
++                      for kind, width in (("mlp_out", hidden), ("residual", hidden), ("mlp_input", intermediate)))
++        if type(max_sites) is not int or not 1 <= max_sites <= len(sites):
++            raise ValueError("steering max sites must fit the prepared activation site catalog")
++        offsets = [0]
++        for site in sites:
++            if type(site["width"]) is not int or not 1 <= site["width"] <= 65536:
++                raise ValueError("steering site widths must be positive bounded integers")
++            offsets.append(offsets[-1] + site["width"])
++        return cls(torch.zeros((capacity, offsets[-1]), dtype=torch.float32, device=device),
++                   torch.zeros((capacity, len(sites)), dtype=torch.int32, device=device),
++                   torch.zeros(capacity, dtype=torch.int64, device=device), sites, tuple(offsets), max_sites)
++
++    def site_addends(self, site):
++        """Physical-request rows for one site, aliasing the ragged persistent buffer."""
++        return self.addends[:, self.offsets[site]:self.offsets[site + 1]]
++
++    def buffers(self):
++        return dict(steering_addends=self.addends, steering_phases=self.phases,
++                    steering_prompt_tokens=self.prompt_tokens)
++
++    def contract(self):
++        return dict(sites=list(self.sites), max_sites=self.max_sites)
++
++    def bind(self, inputs, requests, metadata):
++        return PreparedSteering(self, inputs, requests, metadata)
++
++
++class PreparedSteering:
++    def __init__(self, buffers, inputs, requests, metadata):
++        self.buffers, self.inputs, self.requests, self.metadata = buffers, inputs, requests, metadata
++
++    def __call__(self, value, site):
++        b, m, inputs = self.buffers, self.metadata, self.inputs
++        packed = m.requests
++        slots = inputs.row_slot_ids[packed].long()
++        safe = slots.clamp(0, b.addends.shape[0] - 1)
++        live = ((m.positions >= 0) & (slots >= 0) & (slots < b.addends.shape[0])
++                & (inputs.row_generations[packed] == self.requests.generation[safe]))
++        prompt = m.positions < b.prompt_tokens[safe]
++        phase = torch.where(prompt, 1, 2)
++        enabled = live & ((b.phases[safe, site] & phase) != 0)
++        delta = b.site_addends(site)[safe]
++        # Select original bits for disabled sites and zero coordinates, including signed zero.
++        return torch.where(enabled[:, None] & (delta != 0), round_bf16(value + delta), value)
+diff --git a/ignition/components/activation_capture.py b/ignition/components/activation_capture.py
+new file mode 100644
+index 00000000..f05ec6ec
+--- /dev/null
++++ b/ignition/components/activation_capture.py
+@@ -0,0 +1,45 @@
++"""Bounded diagnostic observations copied by retained prefill graphs."""
++
++from dataclasses import dataclass
++
++import torch
++
++
++@dataclass(frozen=True)
++class ActivationCapture:
++    residual_last: torch.Tensor
++    pre_mlp_last: torch.Tensor
++    mlp_input_last: torch.Tensor
++    residual_l2: torch.Tensor
++    positions: torch.Tensor
++    last_index: torch.Tensor
++    live: torch.Tensor
++
++    @classmethod
++    def allocate(cls, layers, tokens, hidden, device, *, intermediate):
++        return cls(torch.zeros((layers, hidden), dtype=torch.float32, device=device),
++                   torch.zeros((layers, hidden), dtype=torch.float32, device=device),
++                   torch.zeros((layers, intermediate), dtype=torch.float32, device=device),
++                   torch.zeros((layers, tokens), dtype=torch.float32, device=device),
++                   torch.full((tokens,), -1, dtype=torch.int64, device=device),
++                   torch.zeros(1, dtype=torch.int64, device=device),
++                   torch.zeros(1, dtype=torch.bool, device=device))
++
++    def rows(self, tokens):
++        return type(self)(self.residual_last, self.pre_mlp_last, self.mlp_input_last, self.residual_l2[:, :tokens],
++                          self.positions[:tokens], self.last_index, self.live)
++
++    def begin(self, metadata):
++        self.positions.copy_(metadata.positions)
++        self.last_index.copy_((metadata.live_counts[:1] - 1).clamp(0, self.positions.numel() - 1))
++        self.live.copy_(metadata.live_counts[:1] > 0)
++
++    def record_pre_mlp(self, value, layer):
++        self.pre_mlp_last[layer].copy_(torch.where(self.live, value[self.last_index].reshape(-1), 0))
++
++    def record_mlp_input(self, value, layer):
++        self.mlp_input_last[layer].copy_(torch.where(self.live, value[self.last_index].reshape(-1), 0))
++
++    def record_residual(self, value, layer):
++        self.residual_last[layer].copy_(torch.where(self.live, value[self.last_index].reshape(-1), 0))
++        self.residual_l2[layer].copy_(torch.where(self.positions >= 0, value.square().sum(-1).sqrt(), 0))
+diff --git a/tests/components/test_steering.py b/tests/components/test_steering.py
+new file mode 100644
+index 00000000..e28353a5
+--- /dev/null
++++ b/tests/components/test_steering.py
+@@ -0,0 +1,253 @@
++"""Additive-site semantics, slot ownership, and replay without recapture."""
++
++import os
++from types import SimpleNamespace
++
++import pytest
++import torch
++
++from ignition.components.steering import SteeringBuffers
++from ignition.components.sm70_precision import round_bf16
++
++
++def fixture(device="cpu"):
++    buffers = SteeringBuffers.allocate(2, 4, 4, 2, device, intermediate=7)
++    inputs = SimpleNamespace(row_slot_ids=torch.tensor([3, 1], device=device),
++                             row_generations=torch.tensor([44, 22], device=device))
++    requests = SimpleNamespace(generation=torch.tensor([11, 22, 33, 44], device=device))
++    metadata = SimpleNamespace(requests=torch.tensor([0, 0, 1, 1, 1], device=device),
++                               positions=torch.tensor([1, 2, 0, 3, -1], device=device))
++    buffers.prompt_tokens.fill_(2)
++    return buffers, inputs, requests, metadata
++
++
++def test_disabled_and_zero_coordinates_preserve_every_original_bit():
++    buffers, inputs, requests, metadata = fixture()
++    bits = torch.tensor([0, -2147483648, 0x7FC01234, 0x7F800000], dtype=torch.int32)
++    source = bits.view(torch.float32).repeat(5, 1)
++    apply = buffers.bind(inputs, requests, metadata)
++    assert torch.equal(apply(source, 0).view(torch.int32), source.view(torch.int32))
++    buffers.phases.fill_(3)
++    assert torch.equal(apply(source, 0).view(torch.int32), source.view(torch.int32))
++
++
++def test_physical_slots_phase_boundary_padding_and_generation():
++    buffers, inputs, requests, metadata = fixture()
++    source = torch.arange(20, dtype=torch.float32).view(5, 4)
++    buffers.site_addends(0)[3] = torch.tensor([1.25, 0, -2.5, 0])
++    buffers.site_addends(0)[1] = 8
++    buffers.phases[3, 0] = 1
++    buffers.phases[1, 0] = 2
++    apply = buffers.bind(inputs, requests, metadata)
++    expected = source.clone()
++    expected[0] = round_bf16(source[0] + buffers.site_addends(0)[3])
++    expected[3] = round_bf16(source[3] + 8)
++    assert torch.equal(apply(source, 0), expected)
++    assert torch.equal(apply(source, 1), source)
++    inputs.row_generations[0] = 43
++    expected[0] = source[0]
++    assert torch.equal(apply(source, 0), expected)
++    inputs.row_slot_ids[1] = -1
++    assert torch.equal(apply(source, 0), source)
++
++
++def test_site_catalog_and_capacity_are_explicit():
++    buffers, *_ = fixture()
++    assert buffers.contract() == {"max_sites": 2, "sites": [
++        {"name": f"layers.{layer}.{kind}", "width": width}
++        for layer in range(2) for kind, width in (("mlp_out", 4), ("residual", 4), ("mlp_input", 7))]}
++    assert buffers.addends.shape == (4, 30)
++    assert buffers.offsets == (0, 4, 8, 15, 19, 23, 30)
++    buffers.site_addends(2)[3].fill_(1.5)
++    assert torch.equal(buffers.addends[3, 8:15], torch.full((7,), 1.5))
++    assert torch.count_nonzero(buffers.addends[:, 15:]) == 0
++    for limit in (0, 7, True):
++        with pytest.raises(ValueError):
++            SteeringBuffers.allocate(2, 4, 4, limit, "cpu", intermediate=7)
++
++
++@pytest.mark.parametrize("gate_up", [False, True])
++def test_neuron_site_changes_rounded_product_before_down_projection(gate_up):
++    from ignition.recipes.qwen38_dense.decoder import SM70DecoderLayer
++    from ignition.components.activation_capture import ActivationCapture
++    buffers, inputs, requests, metadata = fixture()
++    source = torch.arange(20, dtype=torch.float32).view(5, 4) / 8
++    raw_gate = torch.arange(35, dtype=torch.float32).view(5, 7) / 19 - 1
++    raw_up = torch.arange(35, dtype=torch.float32).view(5, 7) / 11 + 0.3
++    matrix = torch.arange(28, dtype=torch.float32).view(4, 7) / 31 - 0.25
++    observed = []
++
++    def down(value):
++        observed.append(value.clone())
++        return value @ matrix.T
++
++    mlp = SimpleNamespace(act_fn=torch.nn.functional.silu, down_proj=down)
++    if gate_up:
++        mlp.gate_up_proj = lambda hidden: torch.cat((raw_gate, raw_up), dim=-1)
++    else:
++        mlp.gate_proj, mlp.up_proj = lambda hidden: raw_gate, lambda hidden: raw_up
++    layer = SimpleNamespace(block_type="linear_attention", mlp=mlp,
++        linear_attn=lambda *, hidden_states: torch.zeros_like(hidden_states),
++        input_layernorm=None, post_attention_layernorm=None)
++    norms = (torch.nn.Identity(), torch.nn.Identity())
++    baseline = SM70DecoderLayer(layer, norms)(source, None)
++    product = (torch.nn.functional.silu(raw_gate.bfloat16().float()).bfloat16().float()
++               * raw_up.bfloat16().float()).bfloat16().float()
++    assert torch.equal(observed[-1], product)
++    apply = buffers.bind(inputs, requests, metadata)
++    capture = ActivationCapture.allocate(2, 5, 4, "cpu", intermediate=7)
++    # Observe the final token of the first physical request while exercising all packed rows.
++    capture.begin(SimpleNamespace(positions=metadata.positions, live_counts=torch.tensor([2])))
++    operation = SM70DecoderLayer(layer, norms, steering=apply, layer_index=1, capture=capture)
++    assert torch.equal(operation(source, None).view(torch.int32), baseline.view(torch.int32))
++    delta = torch.tensor([0., 0.25, -0.5, -0., 4., -2., 0.])
++    buffers.phases[3, 5] = 3
++    for sign in (1, -1):
++        buffers.site_addends(5)[3].copy_(sign * delta)
++        expected = product.clone()
++        expected[:2] = torch.where(delta != 0,
++            (product[:2] + sign * delta).bfloat16().float(), product[:2])
++        actual = operation(source, None)
++        assert torch.equal(observed[-1].view(torch.int32), expected.view(torch.int32))
++        assert torch.equal(capture.mlp_input_last[1], expected[1])
++        expected_output = (source + (expected @ matrix.T).bfloat16().float()).bfloat16().float()
++        assert torch.equal(actual, expected_output)
++        assert not torch.equal(actual[:2], baseline[:2])
++        assert torch.equal(actual[2:], baseline[2:])
++    buffers.phases.zero_()
++    assert torch.equal(operation(source, None).view(torch.int32), baseline.view(torch.int32))
++    # The deployed unfused source has no fused-producer option to reject.
++    from inspect import signature
++    if "swiglu" in signature(SM70DecoderLayer).parameters:
++        with pytest.raises(ValueError, match="explicit SwiGLU product"):
++            SM70DecoderLayer(layer, norms, steering=apply, swiglu=True)
++
++
++@pytest.mark.skipif(os.environ.get("FLARE_RUN_CUDA_TESTS") != "1", reason="explicit CUDA opt-in required")
++def test_compiled_captured_steering_reads_updated_request_inputs():
++    if torch.cuda.get_device_capability() != (7, 0):
++        pytest.skip("SM70 arithmetic qualification")
++    buffers, inputs, requests, metadata = fixture("cuda")
++    original = torch.arange(20, dtype=torch.float32).view(5, 4) + 0.001
++    source = original.cuda()
++    output = torch.empty((2, *source.shape), device="cuda")
++    product = torch.arange(35, dtype=torch.float32).view(5, 7) / 9
++    product_input, product_output = product.cuda(), torch.empty_like(product, device="cuda")
++    apply = buffers.bind(inputs, requests, metadata)
++
++    def forward():
++        output[0].copy_(apply(source, 0))
++        output[1].copy_(apply(source, 1))
++        product_output.copy_(apply(product_input, 2))
++
++    compiled = torch.compile(forward, fullgraph=True)
++    stream = torch.cuda.Stream()
++    stream.wait_stream(torch.cuda.current_stream())
++    with torch.cuda.stream(stream):
++        for _ in range(3):
++            compiled()
++    torch.cuda.current_stream().wait_stream(stream)
++    graph = torch.cuda.CUDAGraph()
++    with torch.cuda.graph(graph):
++        compiled()
++
++    def check(expected, expected_product=product):
++        graph.replay()
++        assert torch.equal(output.cpu().view(torch.int32), expected.view(torch.int32))
++        assert torch.equal(product_output.cpu().view(torch.int32), expected_product.view(torch.int32))
++
++    baseline = original.repeat(2, 1, 1)
++    check(baseline)
++    buffers.phases.fill_(3)
++    check(baseline)  # Active sites with zero vectors preserve non-BF16 input bits.
++    special = torch.tensor([0, -2147483648, 0x7FC01234, 0x7F800000], dtype=torch.int32)
++    special = special.view(torch.float32).repeat(5, 1)
++    source.copy_(special)
++    check(special.repeat(2, 1, 1))
++    source.copy_(original)
++
++    positive = torch.tensor([1.25, 0., -2.5, -0.])
++    negative = torch.tensor([-4., 1., 0., 0.])
++    buffers.site_addends(0)[3].copy_(positive)
++    buffers.site_addends(0)[1].fill_(-8)
++    buffers.site_addends(1)[3].copy_(negative)
++    buffers.site_addends(1)[1].fill_(0.5)
++    buffers.phases[3, 0], buffers.phases[1, 0] = 1, 2
++    buffers.phases[3, 1], buffers.phases[1, 1] = 3, 1
++
++    def changed(row, delta):
++        # Reference arithmetic runs on CPU; zero coordinates retain their source bits.
++        return torch.where(delta != 0, round_bf16(original[row] + delta), original[row])
++
++    expected = baseline.clone()
++    expected[0, 0] = changed(0, positive)
++    expected[0, 3] = round_bf16(original[3] - 8)
++    expected[1, 0], expected[1, 1] = changed(0, negative), changed(1, negative)
++    expected[1, 2] = round_bf16(original[2] + 0.5)
++    check(expected)
++
++    buffers.prompt_tokens[3] = 3
++    expected[0, 1] = changed(1, positive)
++    check(expected)
++
++    # Reuse the same captured graph after packed rows exchange physical request slots.
++    inputs.row_slot_ids.copy_(torch.tensor([1, 3]))
++    inputs.row_generations.copy_(torch.tensor([22, 44]))
++    expected = baseline.clone()
++    expected[0, 1] = round_bf16(original[1] - 8)
++    expected[0, 2] = changed(2, positive)
++    expected[1, 0] = round_bf16(original[0] + 0.5)
++    expected[1, 2], expected[1, 3] = changed(2, negative), changed(3, negative)
++    check(expected)
++
++    inputs.row_generations[1] = 43
++    expected[:, 2:] = baseline[:, 2:]
++    check(expected)
++    inputs.row_slot_ids[0] = -1
++    check(baseline)
++
++    inputs.row_slot_ids.copy_(torch.tensor([3, 1]))
++    inputs.row_generations.copy_(torch.tensor([44, 22]))
++    buffers.phases.zero_()
++    check(baseline)  # Disable nonzero programs without clearing or recapturing them.
++    buffers.phases[3, 2] = 3
++    delta = torch.tensor([0., 0.25, -0.5, -0., 4., -2., 0.])
++    for sign in (1, -1, 0):
++        buffers.site_addends(2)[3].copy_(sign * delta)
++        expected_product = product.clone()
++        expected_product[:2] = torch.where(sign * delta != 0,
++            round_bf16(product[:2] + sign * delta), product[:2])
++        check(baseline, expected_product)
++
++
++def test_diagnostic_capture_tracks_last_live_row_and_reuses_capacity_storage():
++    from ignition.components.activation_capture import ActivationCapture
++    capture = ActivationCapture.allocate(2, 8, 4, "cpu", intermediate=7)
++    short = capture.rows(4)
++    assert short.residual_last.data_ptr() == capture.residual_last.data_ptr()
++    assert short.residual_l2.data_ptr() == capture.residual_l2.data_ptr()
++    assert short.mlp_input_last.data_ptr() == capture.mlp_input_last.data_ptr()
++    metadata = SimpleNamespace(positions=torch.tensor([127, 128, 129, -1]),
++                               live_counts=torch.tensor([3, 1]))
++    source = torch.tensor([[3., 4., 0., 0.], [0., 0., 0., 2.], [1., 2., 2., 0.], [9., 9., 9., 9.]])
++    original = source.clone()
++    short.begin(metadata)
++    short.record_pre_mlp(source, 1)
++    product = torch.cat((source, source[:, :3]), dim=-1)
++    short.record_mlp_input(product, 1)
++    short.record_residual(source, 1)
++    assert torch.equal(short.positions, metadata.positions)
++    assert torch.equal(short.residual_l2[1], torch.tensor([5., 2., 3., 0.]))
++    assert torch.equal(short.residual_last[1], source[2])
++    assert torch.equal(short.pre_mlp_last[1], source[2])
++    assert torch.equal(short.mlp_input_last[1], product[2])
++    assert torch.equal(source, original)
++    metadata.positions.fill_(-1)
++    metadata.live_counts.zero_()
++    short.begin(metadata)
++    short.record_pre_mlp(source, 1)
++    short.record_mlp_input(product, 1)
++    short.record_residual(source, 1)
++    assert torch.count_nonzero(short.residual_last[1]) == 0
++    assert torch.count_nonzero(short.residual_l2[1]) == 0
++    assert torch.count_nonzero(short.mlp_input_last[1]) == 0

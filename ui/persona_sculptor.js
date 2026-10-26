@@ -16,6 +16,7 @@
     promptOffset: 0, promptTotal: 0, searchSerial: 0, campaignSerial: 0, loadingCampaign: null, jobs: null, session: null, preset: null, pendingPreset: null};
   const refs = {};
   let searchTimer, pollTimer;
+  const presetCompare = {selected: new Set(), busy: false, batch: null, serial: 0, timer: null, history: new Map()};
   const clone = value => JSON.parse(JSON.stringify(value));
   const signed = value => `${Number(value) < 0 ? '−' : '+'}${Math.abs(Number(value) || 0).toFixed(2)}`;
   const count = value => Number.isFinite(value) ? value.toLocaleString() : '—';
@@ -125,7 +126,10 @@
     strengthHead.children[0].htmlFor = refs.strength.id; refs.strengthValue = strengthHead.children[1]; refs.strengthValue.htmlFor = refs.strength.id;
     refs.strength.oninput = dirty;
     dialPanel.append(strengthHead, refs.strength, hint('A shared normalized intervention budget across the selected layers and traits.'),
-      button('Reset dials to neutral', () => {for (const [key] of TRAITS) {app.dials[key] = 0; refs.dials[key].value = '0';} dirty();}, 'ps-link-button'));
+      refs.neutralReset = button('Reset dials to neutral', () => {for (const [key] of TRAITS) {app.dials[key] = 0; refs.dials[key].value = '0';} dirty();}, 'ps-link-button'));
+    refs.conceptControls = node('section', undefined, 'ps-concept-controls'); dialPanel.append(refs.conceptControls);
+    if (window.PersonaConceptControls) window.PersonaConceptControls.mount(refs.conceptControls, dirty);
+    else refs.conceptControls.append(hint('Concept controls are unavailable in this page build.'));
     refs.sculpt.append(briefPanel, visual, dialPanel);
     const buildBar = node('div', undefined, 'ps-build-bar'); refs.buildStatus = hint('Choose your settings, then build the candidate recipes.');
     refs.buildButton = button('Build candidate recipes', buildCandidates, 'ps-primary ps-build-button'); buildBar.append(refs.buildStatus, refs.buildButton);
@@ -136,6 +140,17 @@
     refs.galleryNote = hint('Your generated recipes will appear here. No responses have been run.'); galleryHead.children[0].append(refs.galleryNote);
     galleryHead.children[1].append(button('Select all', () => {app.selected = new Set((app.build?.candidates || []).map(item => item.id)); renderGallery(); updateControls();}, 'ps-link-button'));
     galleryHead.classList.add('ps-spread'); refs.gallery = node('div', undefined, 'ps-gallery'); refs.gallerySection.append(galleryHead, refs.gallery);
+    refs.castCompare = node('form', undefined, 'ps-cast-compare'); refs.castCompare.hidden = true;
+    refs.castPrompt = node('textarea'); refs.castPrompt.rows = 4; refs.castPrompt.maxLength = 20000; refs.castPrompt.required = true;
+    refs.castPrompt.value = 'A friend is excited about a plan that has an obvious flaw. Explain the problem and help them decide what to do next.';
+    refs.castPrompt.oninput = updateControls;
+    refs.castSeed = input('number', 7035); Object.assign(refs.castSeed, {min: '0', max: '4294967295', step: '1', required: true});
+    refs.castBudget = select([['2048', '2,048 tokens'], ['3072', '3,072 tokens'], ['4096', '4,096 tokens']], 'Cast comparison answer budget');
+    refs.castRun = node('button', 'Compare this cast', 'ps-primary'); refs.castRun.type = 'submit'; refs.castHint = hint('');
+    refs.castCompare.append(node('h3', 'Give this cast a prompt'), field('One prompt for the baseline and every selected candidate', refs.castPrompt), row(field('Shared seed', refs.castSeed), field('Answer budget', refs.castBudget), refs.castRun), refs.castHint,
+      button('Advanced: compare a shared prompt battery ↓', () => scroll(refs.batterySection), 'ps-link-button'));
+    refs.castCompare.onsubmit = event => {event.preventDefault(); runCampaign([{prompt: refs.castPrompt.value}], {seed: Number(refs.castSeed.value), max_tokens: Number(refs.castBudget.value)});};
+    refs.gallerySection.append(refs.castCompare);
 
     refs.batterySection = node('section', undefined, 'ps-section ps-panel'); refs.batterySection.id = 'ps-battery';
     refs.batterySection.append(node('p', '04 / SHARED PROMPT BATTERY', 'ps-eyebrow'), node('h3', 'Give every voice the same moment'),
@@ -149,15 +164,9 @@
     refs.custom = node('textarea'); refs.custom.rows = 4; refs.custom.placeholder = 'One prompt…\n\nA second prompt…'; refs.custom.setAttribute('aria-label', 'Custom prompts separated by blank lines');
     custom.append(hint('Separate prompts with a blank line. Each complete prompt is shared across the baseline and candidates.'), refs.custom, button('Add custom prompts', addCustom, 'ps-secondary')); selectedPanel.append(custom);
     const library = node('details', undefined, 'ps-library'); library.open = true; library.append(node('summary', 'Browse registered prompts'));
-    refs.corpus = select([['big_five', 'Big Five'], ['scotus', 'SCOTUS'], ['skippy', 'Skippy books'], ['', 'All corpora']], 'Corpus');
-    refs.split = select([['discovery', 'Discovery'], ['heldout', 'Held-out validation'], ['all', 'Both splits']], 'Prompt split');
-    refs.search = input('search', ''); refs.search.placeholder = 'Find a scenario, category or source…'; refs.search.setAttribute('aria-label', 'Search prompt bank');
-    for (const control of [refs.corpus, refs.split]) control.onchange = () => {app.promptOffset = 0; searchPrompts();};
-    refs.search.oninput = () => {clearTimeout(searchTimer); searchTimer = setTimeout(() => {app.promptOffset = 0; searchPrompts();}, 280);};
-    refs.promptResults = node('div', undefined, 'ps-prompt-results'); refs.promptPage = node('span', '', 'ps-hint');
-    refs.prev = button('←', () => {app.promptOffset = Math.max(0, app.promptOffset - 6); searchPrompts();}); refs.prev.setAttribute('aria-label', 'Previous prompt page');
-    refs.next = button('→', () => {app.promptOffset += 6; searchPrompts();}); refs.next.setAttribute('aria-label', 'Next prompt page');
-    library.append(row(refs.corpus, refs.split), refs.search, refs.promptResults, row(refs.prev, refs.promptPage, refs.next)); sourcePanel.append(library);
+    refs.promptBrowser = window.PersonaPromptBrowser.mount(library, {onSelect: addPrompt});
+    const conceptButton = button('Find a concept in measured neurons ↗', () => tab('concepts'), 'ps-link-button');
+    library.append(conceptButton); sourcePanel.append(library);
     batteryLayout.append(selectedPanel, sourcePanel); refs.batterySection.append(batteryLayout);
     refs.seed = input('number', 7035); refs.seed.min = '0'; refs.seed.max = '4294967295'; refs.seed.step = '1';
     refs.budget = select([['2048', '2,048 tokens'], ['3072', '3,072 tokens'], ['4096', '4,096 tokens']], 'Per-response token budget');
@@ -176,8 +185,135 @@
     refs.promptTabs = node('div', undefined, 'ps-prompt-tabs'); refs.comparison = node('div', undefined, 'ps-comparison');
     refs.resultsSection.append(resultsHead, refs.progress, refs.promptTabs, refs.comparison,
       hint('Ratings and preferences are yours. They are not automatic evaluations or evidence that a human personality has been reproduced.'));
-    root.append(header, refs.fleet, refs.startupHint, refs.notice, refs.presets, refs.sculpt, buildBar, refs.gallerySection, refs.batterySection, refs.resultsSection);
+    buildPresetComparison();
+    root.append(header, refs.fleet, refs.startupHint, refs.notice, refs.presets, refs.presetCompare, refs.sculpt, buildBar, refs.gallerySection, refs.batterySection, refs.resultsSection);
     renderPresets(); renderProfile(); renderGallery(); renderBattery(); renderResults(); updateControls(); return true;
+  }
+  function buildPresetComparison() {
+    const section = refs.presetCompare = node('section', undefined, 'ps-preset-comparison');
+    section.append(node('p', 'ONE PROMPT / SEVERAL VOICES', 'ps-eyebrow'), node('h3', 'Compare presets'),
+      hint('Choose 2–5 preset recipes. The unsteered baseline is included automatically; every response uses the same prompt and seed. These are inspired settings, not validated character reproductions.'));
+    refs.presetAvailability = hint('Checking workers for preset comparisons…'); refs.presetAvailability.setAttribute('role', 'status');
+    refs.presetWorkerLink = button('Open Live activation search to start workers', () => {const change = typeof tab === 'function' ? tab : window.tab; if (typeof change === 'function') change('activation-search');}, 'ps-secondary'); refs.presetWorkerLink.hidden = true;
+    section.append(refs.presetAvailability, refs.presetWorkerLink);
+    refs.presetChoices = node('div', undefined, 'ps-preset-choices'); section.append(refs.presetChoices);
+    const scenarios = [
+      ['A flawed plan', 'A friend is excited about a plan that has an obvious flaw. Explain the problem and help them decide what to do next.'],
+      ['Under pressure', 'Our spaceship has lost power and we have ten minutes of oxygen. Tell the crew what to do first, and explain your reasoning.'],
+      ['A hard disagreement', 'I think your advice is wrong, and I am frustrated that you keep insisting. How do you respond?'],
+      ['Explain an idea', 'Explain how a wormhole might work to a curious person without a physics background. Be clear about what is known and what is speculative.'],
+      ['Creative invitation', 'Invent an unusual weekend adventure for two friends with very different interests and a small budget.']
+    ];
+    refs.presetScenario = select([['', 'Choose a scenario…'], ...scenarios.map(([label], i) => [String(i), label])], 'Preset comparison scenario');
+    refs.presetPrompt = node('textarea'); refs.presetPrompt.rows = 4; refs.presetPrompt.maxLength = 20000; refs.presetPrompt.required = true; refs.presetPrompt.value = scenarios[0][1];
+    refs.presetScenario.onchange = () => {if (refs.presetScenario.value !== '') refs.presetPrompt.value = scenarios[Number(refs.presetScenario.value)][1];};
+    refs.presetPrompt.oninput = () => {refs.presetScenario.value = '';};
+    const form = node('form'); form.append(field('Start with a scenario', refs.presetScenario), field('Shared editable prompt for the next comparison', refs.presetPrompt));
+    refs.presetSeed = input('number', 7035); Object.assign(refs.presetSeed, {min: '0', max: '4294967295', step: '1', required: true});
+    refs.presetBudget = select([['2048', '2,048 tokens'], ['3072', '3,072 tokens'], ['4096', '4,096 tokens']], 'Preset comparison answer budget');
+    refs.presetRun = node('button', 'Run baseline + presets', 'ps-primary'); refs.presetRun.type = 'submit'; refs.presetRun.disabled = true;
+    refs.presetSelection = hint('Choose 2–5 presets.');
+    const controls = row(field('Shared seed', refs.presetSeed), field('Answer budget', refs.presetBudget), refs.presetRun, button('Clear & try again', clearPresetComparison, 'ps-secondary'), refs.presetSelection); controls.classList.add('ps-preset-compare-controls');
+    form.append(controls, hint('Prompt and answer must fit the worker context. Incomplete answers and errors stay visible. Nothing is generated until you run the comparison.'));
+    form.onsubmit = event => {event.preventDefault(); runPresetComparison();}; section.append(form);
+    refs.presetHistory = select([['', 'Saved preset comparisons…']], 'Saved preset comparisons'); refs.presetHistory.onchange = () => {
+      const id = refs.presetHistory.value; if (!id) return;
+      const saved = presetCompare.history.get(id)?.input;
+      if (saved) {
+        presetCompare.selected = new Set(saved.preset_ids || []); refs.presetScenario.value = '';
+        if (typeof saved.prompt === 'string') refs.presetPrompt.value = saved.prompt;
+        if (Number.isInteger(saved.seed)) refs.presetSeed.value = String(saved.seed);
+        if (Number.isInteger(saved.max_tokens)) {
+          if (![...refs.presetBudget.children].some(option => Number(option.value) === saved.max_tokens)) {const option = node('option', `${saved.max_tokens.toLocaleString()} tokens`); option.value = String(saved.max_tokens); refs.presetBudget.append(option);}
+          refs.presetBudget.value = String(saved.max_tokens);
+        }
+        renderPresetChoices();
+      }
+      return loadPresetComparison(id);
+    };
+    const saved = row(field('Review a saved comparison', refs.presetHistory), button('Refresh history', loadPresetComparisonHistory, 'ps-secondary')); saved.classList.add('ps-preset-compare-controls'); section.append(saved);
+    refs.presetCompareStatus = node('p', undefined, 'ps-hint'); refs.presetCompareStatus.setAttribute('role', 'status');
+    refs.presetComparisonEvidence = node('div'); refs.presetAnswers = node('div', undefined, 'ps-preset-answers'); section.append(refs.presetCompareStatus, refs.presetComparisonEvidence, refs.presetAnswers);
+  }
+  function renderPresetChoices() {
+    if (!refs.presetChoices) return;
+    refs.presetChoices.replaceChildren();
+    const catalog = app.meta?.presets || [];
+    for (const id of presetCompare.selected) if (!catalog.some(preset => preset.id === id)) presetCompare.selected.delete(id);
+    for (const preset of catalog) {
+      const check = input('checkbox', preset.id); check.checked = presetCompare.selected.has(preset.id);
+      check.disabled = presetCompare.busy || (!check.checked && presetCompare.selected.size >= 5);
+      check.onchange = () => {if (check.checked) presetCompare.selected.add(preset.id); else presetCompare.selected.delete(preset.id); renderPresetChoices();};
+      const label = node('label', undefined, 'ps-preset-choice'); label.append(check, node('span', preset.name)); if (preset.description) label.title = preset.description; refs.presetChoices.append(label);
+    }
+    if (!catalog.length) refs.presetChoices.append(hint('Preset choices will appear when the catalog is available.'));
+    refs.presetSelection.textContent = `${presetCompare.selected.size} / 5 selected · baseline included`;
+    refs.presetRun.disabled = presetCompare.busy || presetCompare.selected.size < 2 || presetCompare.selected.size > 5;
+    refs.presetRun.textContent = presetCompare.busy ? 'Submitting comparison…' : 'Run baseline + presets';
+  }
+  function clearPresetComparison() {
+    clearTimeout(presetCompare.timer); presetCompare.serial++; presetCompare.draftSerial = (presetCompare.draftSerial || 0) + 1;
+    presetCompare.selected.clear(); presetCompare.batch = null; refs.presetPrompt.value = ''; refs.presetScenario.value = ''; refs.presetHistory.value = '';
+    refs.presetAnswers.replaceChildren(); refs.presetComparisonEvidence.replaceChildren(); refs.presetCompareStatus.textContent = 'Draft cleared. Saved comparisons remain in history.';
+    renderPresetChoices(); refs.presetPrompt.focus();
+  }
+  async function runPresetComparison() {
+    if (presetCompare.busy) return;
+    if (presetCompare.selected.size < 2 || presetCompare.selected.size > 5 || !refs.presetPrompt.value.trim()) {refs.presetCompareStatus.textContent = 'Choose 2–5 presets and enter a shared prompt.'; return;}
+    presetCompare.busy = true; const draftSerial = presetCompare.draftSerial || 0; renderPresetChoices();
+    try {
+      const result = await request('/api/sculptor/preset-comparisons', {preset_ids: [...presetCompare.selected], prompt: refs.presetPrompt.value, seed: Number(refs.presetSeed.value), max_tokens: Number(refs.presetBudget.value)});
+      if ((presetCompare.draftSerial || 0) === draftSerial) await loadPresetComparison(result.id); await loadPresetComparisonHistory();
+    } catch (error) {refs.presetCompareStatus.textContent = error.message;}
+    finally {presetCompare.busy = false; renderPresetChoices();}
+  }
+  async function loadPresetComparisonHistory() {
+    try {
+      const data = await request('/api/sculptor/preset-comparisons');
+      presetCompare.history = new Map((data.comparisons || []).map(comparison => [comparison.id, comparison]));
+      refs.presetHistory.replaceChildren(); const first = node('option', 'Saved preset comparisons…'); first.value = ''; refs.presetHistory.append(first);
+      for (const comparison of data.comparisons || []) {
+        const option = node('option', `${displayDate(comparison.created)} · ${human(comparison.state)} · ${(comparison.preset_names || []).join(' / ')} · ${String(comparison.prompt || '').slice(0, 70)}`);
+        option.value = comparison.id; refs.presetHistory.append(option);
+      }
+      if (presetCompare.batch) refs.presetHistory.value = presetCompare.batch.id;
+    } catch (error) {refs.presetCompareStatus.textContent = `Saved comparisons: ${error.message}`;}
+  }
+  async function refreshPresetAvailability() {
+    const ordinary = Number.isFinite(app.capacity?.available) ? app.capacity.available : null;
+    try {
+      const status = await request('/api/activation-status'), search = Number.isFinite(status.ready) ? status.ready : null;
+      if (search === null) throw Error('Search-worker readiness was not reported.');
+      const total = search + (ordinary || 0);
+      presetCompare.available = total; updateControls();
+      refs.presetAvailability.textContent = `${ordinary === null ? 'At least ' : ''}${total} workers ready for preset comparisons · ${search} activation-search + ${ordinary ?? 'unknown'} studio workers. Readiness does not mean idle capacity.`;
+      refs.presetWorkerLink.hidden = total > 0;
+    } catch (error) {
+      presetCompare.available = ordinary; updateControls();
+      refs.presetAvailability.textContent = `${ordinary ?? 'Unknown'} studio workers ready for preset comparisons; activation-search availability could not be checked: ${error.message}`;
+      refs.presetWorkerLink.hidden = ordinary > 0;
+    }
+  }
+  async function loadPresetComparison(id) {
+    clearTimeout(presetCompare.timer); const serial = ++presetCompare.serial;
+    try {
+      const batch = await request('/api/batch?' + new URLSearchParams({id})); if (serial !== presetCompare.serial) return;
+      presetCompare.batch = batch; refs.presetHistory.value = id;
+      const cells = batch.cells || [], input = batch.input || {};
+      refs.presetCompareStatus.textContent = `${human(batch.state)} · ${cells.filter(cell => terminal.has(cell.state)).length} / ${cells.length} responses finished · ${displayDate(batch.created)}`;
+      refs.presetComparisonEvidence.replaceChildren(node('h4', 'Saved comparison results'), node('strong', `Recorded shared seed ${input.seed ?? 'not reported'} · ${input.max_tokens ?? 'unknown'} answer tokens per response`));
+      const prompt = cells[0]?.prompt; refs.presetComparisonEvidence.append(node('p', typeof prompt === 'string' ? prompt : prompt?.text || prompt?.prompt || 'Shared prompt unavailable.', 'ps-preset-shared-prompt'));
+      const link = node('a', 'Open complete comparison record ↗'); link.href = '/api/batch?' + new URLSearchParams({id}); link.target = '_blank'; link.rel = 'noopener'; refs.presetComparisonEvidence.append(link);
+      refs.presetAnswers.replaceChildren();
+      for (const cell of cells) {
+        const baseline = Array.isArray(cell.recipe?.pushes) && !cell.recipe.pushes.length;
+        const panel = outputPane({...cell, batch_id: id}, cell.label || cell.recipe?.name || 'Preset', baseline ? 'ps-baseline' : 'ps-variant');
+        const details = node('details', undefined, 'ps-provenance'); details.append(node('summary', 'Exact prompt, recipe & provenance'), node('pre', JSON.stringify({prompt: cell.prompt, recipe: cell.recipe, seed: input.seed, max_tokens: input.max_tokens, provenance: cell.output?.provenance}, null, 2))); panel.append(details); refs.presetAnswers.append(panel);
+      }
+      if (!terminal.has(batch.state) || cells.some(cell => ['queued', 'running', 'pending', 'waiting'].includes(cell.state))) presetCompare.timer = setTimeout(() => loadPresetComparison(id), document.hidden ? 5000 : 2000);
+    } catch (error) {
+      if (serial === presetCompare.serial) {refs.presetCompareStatus.textContent = `Could not load comparison: ${error.message}`; refs.presetCompareStatus.append(button('Retry', () => loadPresetComparison(id), 'ps-link-button'));}
+    }
   }
   function safeLink(source) {
     const url = typeof source === 'string' ? source : source.url;
@@ -188,6 +324,7 @@
   }
   function notes(value) {return Array.isArray(value) ? value : value ? [value] : [];}
   function renderPresets() {
+    renderPresetChoices();
     refs.presetGrid.replaceChildren(); refs.presetPreview.replaceChildren();
     const presets = app.meta?.presets || [], query = refs.presetSearch.value.toLowerCase().trim();
     if (!presets.length) {refs.presetGrid.append(hint('Preset recipes will appear when the catalog is available.')); return;}
@@ -196,14 +333,16 @@
       if (query && ![preset.name, preset.description, preset.brief].filter(Boolean).join(' ').toLowerCase().includes(query)) continue;
       const card = button('', () => {app.preset = preset.id; renderPresets();}, 'ps-preset-card');
       card.classList.toggle('ps-featured', index < 2); card.classList.toggle('ps-active', preset.id === app.preset); card.setAttribute('aria-pressed', String(preset.id === app.preset));
-      card.append(node('strong', preset.name), node('small', index < 2 ? 'Inspired approximation' : 'Editable archetype')); refs.presetGrid.append(card);
+      card.append(node('strong', preset.name), node('small', preset.fixed_recipe ? 'Exact experimental recipe' : preset.model_identity ? 'Experimental voice' : index < 2 ? 'Inspired approximation' : 'Editable archetype')); refs.presetGrid.append(card);
     }
     if (!refs.presetGrid.children.length) refs.presetGrid.append(hint('No matching preset.'));
     const selected = presets.find(preset => preset.id === app.preset);
     refs.presetPreview.append(node('h4', selected.name), hint(selected.description || 'An editable starting profile to test against the baseline.'));
     if (selected.brief) refs.presetPreview.append(node('blockquote', selected.brief));
     const values = node('div', undefined, 'ps-candidate-values');
-    for (const [key, label, , , letter] of TRAITS) {const value = node('span', `${letter} ${signed(selected.dials?.[key])}`); value.title = label; values.append(value);}
+    if (selected.fixed_recipe) {
+      for (const push of selected.fixed_recipe.pushes) values.append(node('span', `L${push.layer} · N${push.neuron} · ${signed(push.dose)} · ${selected.fixed_recipe.phase}`));
+    } else for (const [key, label, , , letter] of TRAITS) {const value = node('span', `${letter} ${signed(selected.dials?.[key])}`); value.title = label; values.append(value);}
     refs.presetPreview.append(values, node('p', 'Inspired settings, not a replication of a person, fictional character or another model’s weights.', 'ps-caution'));
     refs.presetLoad = button(app.busy.has('preset') ? 'Loading recipe…' : 'Load preset & build candidates', () => loadPreset(selected.id), 'ps-primary');
     refs.presetLoad.disabled = app.busy.has('preset') || app.busy.has('build') || app.busy.has('plan'); refs.presetPreview.append(refs.presetLoad);
@@ -211,20 +350,24 @@
     for (const text of [...notes(selected.evidence_basis), ...notes(selected.notes), ...notes(selected.unsupported_traits)]) details.append(node('p', typeof text === 'string' ? text : text.description || text.name || JSON.stringify(text)));
     const sources = node('ul'); for (const source of selected.sources || []) {const link = safeLink(source); if (link) {const item = node('li'); item.append(link); sources.append(item);}}
     if (sources.children.length) details.append(sources);
-    details.append(hint('Loading a preset builds model-bound recipes without asking John or generating evaluation responses. Every dial remains editable.'));
+    details.append(hint(selected.fixed_recipe ? 'This is an exact experimental neuron recipe. Its dose and phase are preserved; edit a copy explicitly in Lab.' : 'Loading a preset builds model-bound recipes without asking John or generating evaluation responses. Every dial remains editable.'));
     refs.presetPreview.append(details);
   }
   function applyPreset(value) {
     if (!value?.build?.candidates?.length || !value.plan?.dials) throw Error('The preset did not return a valid recipe build.');
+    refs.strength.max = value.build.fixed_recipe ? String(Math.max(.5, value.build.dose_budget)) : '.5';
     applyPlan(value.plan); app.pendingPreset = null; app.build = value.build;
+    window.PersonaConceptControls?.restore(value.build.concept_controls || []);
     refs.layers.value = (value.build.layers || []).join(', '); refs.phase.value = value.build.phase || 'all'; refs.strength.value = String(value.build.dose_budget ?? .35);
     refs.variantCount.value = String(value.build.candidates.length); app.selected = new Set(value.build.candidates.map(candidate => candidate.id));
     app.builtRevision = app.revision; renderProfile(); renderGallery(); updateControls();
-    notice(`Loaded ${value.preset?.name || value.plan.name || 'preset'} and built ${value.build.candidates.length} candidates. The center recipe is saved; review the battery before generating answers.`);
+    notice(`Loaded ${value.preset?.name || value.plan.name || 'preset'} and built ${value.build.candidates.length} candidates. Enter a shared prompt to compare this cast.`);
+    offerCastComparison();
   }
   function loadPreset(id) {return action('preset', async () => {
     renderPresets(); const revision = app.revision;
-    const value = await request('/api/sculptor/preset', {id, count: Number(refs.variantCount.value), seed: Number(refs.seed.value)});
+    const preset = (app.meta?.presets || []).find(preset => preset.id === id);
+    const value = await request('/api/sculptor/preset', {id, count: preset?.fixed_recipe || preset?.variation === 0 ? 1 : Number(refs.variantCount.value), seed: Number(refs.seed.value)});
     if (revision !== app.revision) {app.pendingPreset = value; app.pendingPlan = null; refs.applyPlan.textContent = 'Apply returned preset'; refs.applyPlan.hidden = false; notice('The preset is ready. Your draft changed while it was loading; apply it when ready.');}
     else applyPreset(value);
     renderPresets();
@@ -252,6 +395,10 @@
     refs.strengthValue.textContent = Number(refs.strength.value).toFixed(2);
     refs.profileLabel.textContent = app.plan ? (app.plan.method?.startsWith('john') ? 'John’s proposed profile' : app.plan.method === 'preset_heuristic' ? 'Inspired preset profile' : 'Manual dial profile') : 'Your draft profile';
     refs.profileScope.textContent = `${refs.layers.value ? refs.layers.value.split(',').filter(Boolean).length + ' selected layers' : 'Awaiting calibrated layers'} · ${refs.phase.options?.[refs.phase.selectedIndex]?.text || human(refs.phase.value)}`;
+    if (app.fixedPreset) {
+      refs.profileLabel.textContent = 'Exact model-bound neuron recipe';
+      refs.profileScope.textContent = `Actual strength ${Number(refs.strength.value).toFixed(2)} · ${refs.phase.value} · Big Five dials are not used`;
+    }
   }
   function layerValues() {
     const values = refs.layers.value.split(',').map(value => value.trim()).filter(Boolean).map(Number);
@@ -259,20 +406,23 @@
     if (!values.length || values.some(value => !Number.isInteger(value) || value < 0 || !available.includes(value)) || new Set(values).size !== values.length) throw Error('Choose distinct available calibrated layer IDs, separated by commas.');
     return values;
   }
-  function settings() {return {brief: refs.brief.value.trim(), dials: {...app.dials}, count: Number(refs.variantCount.value), layers: layerValues(), dose_budget: Number(refs.strength.value), phase: refs.phase.value};}
+  function settings() {const controls = window.PersonaConceptControls?.values() || []; return {brief: refs.brief.value.trim(), dials: {...app.dials}, count: Number(refs.variantCount.value), layers: layerValues(), dose_budget: Number(refs.strength.value), phase: refs.phase.value, ...(controls.length ? {concept_controls: controls} : {})};}
   function applyPlan(plan) {
     if (!plan?.dials || TRAITS.some(([key]) => !Number.isFinite(plan.dials[key]) || Math.abs(plan.dials[key]) > 1)) throw Error('The plan did not return a valid five-trait profile.');
+    app.fixedPreset = Boolean(plan.preset?.fixed_recipe);
+    if (!app.fixedPreset) refs.strength.max = '.5';
     app.plan = plan; app.pendingPlan = null; app.pendingPreset = null; refs.applyPlan.hidden = true; refs.brief.value = plan.brief || refs.brief.value;
     for (const [key] of TRAITS) {app.dials[key] = plan.dials[key]; refs.dials[key].value = String(plan.dials[key]);}
-    dirty(); renderPlanEvidence(); notice('Interpretation applied. You can edit every dial before building candidates.');
+    dirty(); renderPlanEvidence(); notice(app.fixedPreset ? 'Exact model-bound recipe applied. Edit a copy in Lab; the dose and phase are preserved.' : 'Interpretation applied. You can edit every dial before building candidates.');
   }
   function renderPlanEvidence() {
     refs.planEvidence.replaceChildren();
     if (!app.plan) {refs.planStatus.textContent = 'Your brief becomes a proposed dial profile. It is kept out of the response prompts.'; return;}
     refs.planStatus.textContent = app.plan.method?.startsWith('john') ? 'Interpreted by the local John model. These are proposed settings, not validated effects.' : app.plan.method === 'preset_heuristic' ? 'Preset approximation. Edit the dials and test its effects against the baseline.' : 'Manual plan from your dials. No model interpretation is claimed.';
+    if (app.fixedPreset) refs.planStatus.textContent = 'Exact model-bound experimental neuron recipe. Dose and phase are immutable here; edit a copy in Lab.';
     if (app.plan.rationale) refs.planEvidence.append(hint(app.plan.rationale));
     const unsupported = app.plan.unsupported_traits || [];
-    if (unsupported.length) refs.planEvidence.append(node('p', 'Not represented by these five directions: ' + unsupported.map(value => typeof value === 'string' ? value : value.description || value.name || human(value.trait)).join('; '), 'ps-caution'));
+    if (unsupported.length) refs.planEvidence.append(node('p', (app.fixedPreset ? 'Known limitations: ' : 'Not represented by these five directions: ') + unsupported.map(value => typeof value === 'string' ? value : value.description || value.name || human(value.trait)).join('; '), 'ps-caution'));
   }
   function interpret() {return action('plan', async () => {
     if (!refs.brief.value.trim()) throw Error('Describe the persona you want to explore.');
@@ -290,8 +440,10 @@
     app.build = build; app.builtRevision = revision; app.selected = new Set(build.candidates.map(candidate => candidate.id));
     if (revision === app.revision) {app.plan = plan; renderPlanEvidence(); renderProfile();}
     renderGallery(); updateControls();
-    notice(revision === app.revision ? `${build.candidates.length} recipes built. Review the shared battery, then run the comparison.` : 'Recipes were built from the earlier settings. Your draft has changed; rebuild to apply the new dials.');
+    notice(revision === app.revision ? `${build.candidates.length} recipes built. Enter a prompt to compare this cast.` : 'Recipes were built from the earlier settings. Your draft has changed; rebuild to apply the new dials.');
+    if (revision === app.revision) offerCastComparison();
   });}
+  function offerCastComparison() {refs.castCompare.hidden = false; scroll(refs.castCompare); refs.castPrompt.focus({preventScroll: true});}
   function reviewFor(id) {
     if (app.campaign?.build?.id !== app.build?.id) return {};
     const records = app.campaign?.manual_reviews || {};
@@ -327,6 +479,12 @@
     }
   }
   function useCandidate(candidate) {
+    if (app.build?.fixed_recipe) {
+      notice('This exact recipe is saved in the recipe library. Edit its neuron dose and phase explicitly in Lab.');
+      window.PersonaLab?.useCurrentRecipe({name: candidate.name, pushes: candidate.pushes, phase: candidate.phase});
+      return;
+    }
+    window.PersonaConceptControls?.restore(candidate.concept_controls || app.build.concept_controls || []);
     for (const [key] of TRAITS) {app.dials[key] = Number(candidate.dials?.[key]) || 0; refs.dials[key].value = String(app.dials[key]);}
     refs.strength.value = String(candidate.dose_budget ?? app.build.dose_budget); refs.layers.value = (candidate.layers || app.build.layers || []).join(', ');
     refs.phase.value = candidate.phase || app.build.phase || 'all'; app.plan = null; renderPlanEvidence(); dirty();
@@ -371,24 +529,7 @@
     if (!app.battery.length) refs.batteryList.append(hint('Add a registered prompt or write your own.'));
     if (app.battery.some(item => item.split === 'heldout')) refs.batteryList.append(node('p', 'Held-out prompts are for fixed validation. Using their responses to select or tune a persona consumes that holdout; no independent validation claim remains.', 'ps-caution'));
   }
-  async function searchPrompts() {
-    if (!app.meta) return;
-    const serial = ++app.searchSerial;
-    try {
-      const query = new URLSearchParams({corpus: refs.corpus.value, split: refs.split.value, q: refs.search.value.trim(), offset: app.promptOffset, limit: 6});
-      const value = await request('/api/prompts?' + query); if (serial !== app.searchSerial) return;
-      refs.promptResults.replaceChildren(); app.promptTotal = value.total;
-      for (const prompt of value.rows) {
-        const item = node('div', undefined, 'ps-bank-prompt'), add = button('+', () => {try {addPrompt(prompt);} catch (error) {notice(error.message, true);}});
-        add.setAttribute('aria-label', `Add ${promptLabel(prompt)} to shared battery`);
-        const description = node('div'); description.append(node('strong', promptLabel(prompt)), node('small', `${human(prompt.corpus)} · ${human(prompt.split)}`), node('p', prompt.preview || promptText(prompt).slice(0, 180)));
-        item.append(description, add); refs.promptResults.append(item);
-      }
-      if (!value.rows.length) refs.promptResults.append(hint('No prompts match these filters.'));
-      refs.promptPage.textContent = `${value.total ? app.promptOffset + 1 : 0}–${Math.min(app.promptOffset + value.rows.length, value.total)} / ${count(value.total)}`;
-      refs.prev.disabled = app.promptOffset === 0; refs.next.disabled = app.promptOffset + value.rows.length >= value.total;
-    } catch (error) {if (serial === app.searchSerial) refs.promptResults.replaceChildren(node('p', error.message, 'ps-error-text'));}
-  }
+  async function searchPrompts() { await refs.promptBrowser?.refresh(); }
   function updateControls() {
     if (!app.ready) return;
     const ready = Boolean(app.meta), dirtyBuild = app.build && app.builtRevision !== app.revision;
@@ -396,12 +537,24 @@
     refs.interpret.disabled = !ready || mutating; refs.interpret.textContent = app.busy.has('plan') ? 'John is interpreting…' : 'Ask John to interpret';
     refs.buildButton.disabled = !ready || mutating; refs.buildButton.textContent = app.busy.has('build') ? 'Building recipes…' : `Build ${refs.variantCount.value} candidate recipes`;
     if (refs.presetLoad) {refs.presetLoad.disabled = !ready || mutating; refs.presetLoad.textContent = app.busy.has('preset') ? 'Loading recipe…' : 'Load preset & build candidates';}
-    refs.buildStatus.textContent = dirtyBuild ? 'Settings changed. Rebuild before running this draft.' : app.build ? 'Recipes are ready. Select candidates and review the shared battery.' : 'Build uses your dials. Asking John to interpret a brief is optional.';
+    refs.buildStatus.textContent = dirtyBuild ? 'Settings changed. Rebuild before running this draft.' : app.build ? 'Recipes are ready. Enter a prompt below to compare this cast.' : 'Build uses your dials. Asking John to interpret a brief is optional.';
     refs.buildStatus.classList.toggle('ps-dirty', Boolean(dirtyBuild));
+    const fixed = Boolean(app.fixedPreset);
+    for (const control of [...Object.values(refs.dials), refs.strength, refs.layers, refs.phase, refs.variantCount, refs.brief, refs.neutralReset]) control.disabled = fixed;
+    refs.conceptControls.hidden = fixed;
+    if (fixed) {
+      refs.interpret.disabled = true; refs.buildButton.disabled = true;
+      refs.buildStatus.textContent = `Exact experimental recipe · actual strength ${app.build?.dose_budget ?? refs.strength.value} · ${app.build?.phase || refs.phase.value}. Edit a copy in Lab; no hidden clamp or Big Five substitution.`;
+    }
     const n = app.selected.size, p = app.battery.length;
     refs.runCount.textContent = `${n} candidates × ${p} prompts + ${p} baselines = ${(n + 1) * p} responses`;
-    refs.runHint.textContent = `${app.capacity?.available || 0} reachable workers · up to 6 concurrent · busy / idle unknown`;
-    refs.runButton.disabled = !ready || !app.build || dirtyBuild || !n || !p || !app.capacity?.available || app.busy.has('run') || mutating;
+    const available = presetCompare.available ?? app.capacity?.available;
+    refs.runHint.textContent = `${available ?? 'Unknown'} reachable comparison workers · up to 6 concurrent · busy / idle unknown`;
+    refs.runButton.disabled = !ready || !app.build || dirtyBuild || !n || !p || !available || app.busy.has('run') || mutating;
+    refs.castCompare.hidden = !app.build;
+    refs.castRun.disabled = !ready || !app.build || dirtyBuild || !n || !refs.castPrompt.value.trim() || !available || app.busy.has('run') || mutating;
+    refs.castRun.textContent = app.busy.has('run') ? 'Starting comparison…' : 'Compare this cast';
+    refs.castHint.textContent = `${n} selected candidates + one unsteered baseline · ${available ?? 'unknown'} ready comparison workers. The advanced battery below is kept separately.`;
     refs.runButton.textContent = app.busy.has('run') ? 'Starting comparison…' : 'Run shared battery';
     refs.startSession.disabled = !app.jobs?.enabled || Boolean(app.session) || app.busy.has('session');
     refs.startSession.textContent = app.busy.has('session') ? 'Requesting session…' : app.session ? 'Session already requested' : 'Start studio session';
@@ -410,14 +563,15 @@
     refs.cancel.hidden = !app.campaign || terminal.has(app.campaign.state);
     refs.cancel.disabled = app.busy.has('cancel');
   }
-  function runCampaign() {return action('run', async () => {
+  function runCampaign(promptsOverride, settings) {return action('run', async () => {
     if (!app.build || app.builtRevision !== app.revision) throw Error('Build the current settings before starting the battery.');
-    const seed = Number(refs.seed.value);
-    if (!refs.seed.value.trim() || !Number.isInteger(seed) || seed < 0 || seed > 4294967295) throw Error('Seed must be a whole number from 0 to 4294967295.');
+    const seed = settings ? settings.seed : Number(refs.seed.value);
+    if ((!settings && !refs.seed.value.trim()) || !Number.isInteger(seed) || seed < 0 || seed > 4294967295) throw Error('Seed must be a whole number from 0 to 4294967295.');
     const candidates = app.build.candidates.filter(candidate => app.selected.has(candidate.id));
-    if (!candidates.length || !app.battery.length) throw Error('Select at least one candidate and one prompt.');
+    const prompts = Array.isArray(promptsOverride) ? promptsOverride : app.battery.map(prompt => prompt.id ? {prompt_id: prompt.id} : {prompt: promptText(prompt),...(prompt.authored_battery_sha256?{authored_battery_sha256:prompt.authored_battery_sha256}:{})});
+    if (!candidates.length || !prompts.length) throw Error('Select at least one candidate and one prompt.');
     const result = await request('/api/sculptor/campaigns', {build_id: app.build.id, candidate_ids: candidates.map(candidate => candidate.id),
-      prompts: app.battery.map(prompt => prompt.id ? {prompt_id: prompt.id} : {prompt: promptText(prompt),...(prompt.authored_battery_sha256?{authored_battery_sha256:prompt.authored_battery_sha256}:{})}), seed, max_tokens: Number(refs.budget.value), smoke: false});
+      prompts, seed, max_tokens: settings?.max_tokens ?? Number(refs.budget.value), smoke: false});
     if (!result.id) throw Error('No saved campaign ID was returned.');
     app.pinned = candidates[0].id; app.promptIndex = 0; app.campaign = result;
     await loadCampaign(result.id); await loadHistory(); renderGallery(); renderResults(); scroll(refs.resultsSection); schedulePoll();
@@ -441,6 +595,9 @@
       if (historyOption) historyOption.textContent = `${displayDate(value.created)} · ${human(value.state)} · ${id.slice(0, 8)}`;
       if (choose && value.build) {
         app.build = value.build; app.plan = null; refs.brief.value = value.build.brief || '';
+        app.fixedPreset = Boolean(value.build.fixed_recipe);
+        refs.strength.max = app.fixedPreset ? String(Math.max(.5, value.build.dose_budget)) : '.5';
+        window.PersonaConceptControls?.restore(value.build.concept_controls || []);
         for (const [key] of TRAITS) {app.dials[key] = Number(value.build.dials?.[key]) || 0; refs.dials[key].value = String(app.dials[key]);}
         refs.layers.value = (value.build.layers || []).join(', '); refs.strength.value = String(value.build.dose_budget ?? .35); refs.phase.value = value.build.phase || 'all';
         refs.variantCount.value = String(value.build.candidates.length); dirty(); app.builtRevision = app.revision;
@@ -567,6 +724,7 @@
     clearTimeout(pollTimer); pollTimer = setTimeout(async () => {
       if (!document.hidden && !refs.root.classList.contains('hidden')) {
         await refreshFleet();
+        await refreshPresetAvailability();
         if (app.campaign && !app.loadingCampaign && !terminal.has(app.campaign.state)) await loadCampaign(app.campaign.id);
       }
       schedulePoll();
@@ -575,7 +733,14 @@
   async function open() {
     if (!ensure()) return;
     if (!app.meta) await loadMeta();
-    await refreshFleet(); schedulePoll();
+    await Promise.all([refreshFleet(), loadPresetComparisonHistory()]); await refreshPresetAvailability(); schedulePoll();
+    if (!presetCompare.deepLinkHandled) {
+      presetCompare.deepLinkHandled = true;
+      const id = new URL(window.location.href).searchParams.get('preset_comparison');
+      if (id && presetCompare.history.has(id)) {refs.presetHistory.value = id; await refs.presetHistory.onchange(); scroll(refs.presetCompare);}
+      else if (id) refs.presetCompareStatus.textContent = 'The linked comparison is not present in saved preset history.';
+    }
   }
-  window.PersonaSculptor = {open};
+  async function preloadPresetPrompt(text) {presetCompare.deepLinkHandled = true; await open(); refs.presetPrompt.value = String(text); refs.presetScenario.value = ''; scroll(refs.presetCompare); refs.presetPrompt.focus({preventScroll: true});}
+  window.PersonaSculptor = {open, preloadPresetPrompt};
 })();

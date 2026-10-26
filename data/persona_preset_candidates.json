@@ -1,0 +1,603 @@
+{
+  "schema": "character-creation.preset-candidates.v1",
+  "status": "Five experimental voices published after transfer; Harbor discarded. Exact Dry Wit published from separate matched hand tests.",
+  "preserve_existing": [
+    "baseline",
+    "Skippy",
+    "GPT-4o"
+  ],
+  "model_identity": "389801c06d68a0d84bd4890b8ce6d26f96e0ee53eb108bcc572c0c09abf5b9a8",
+  "method": "Six joint calibrated-direction interventions; names and descriptions never injected into generation. These are candidate behavioral mixtures, not six validated personalities.",
+  "evidence_basis": "Late-layer extraversion +/- at budget0.2 separated club initiation; budget0.5 caused degeneration. Other trait polarities and mixtures remain unqualified.",
+  "phase_rationale": "all phase matches the observed diagnostic; no prefill-only benefit has been established.",
+  "evaluation": {
+    "seed": 271828,
+    "max_tokens": 2048,
+    "primary_ids": [
+      "shared_table",
+      "changed_plan",
+      "odd_object",
+      "unfinished_desk",
+      "quiet_message",
+      "disputed_ending"
+    ],
+    "sealed_ids": [
+      "empty_gallery",
+      "small_delay"
+    ],
+    "responses_per_primary_campaign": 12,
+    "adaptation": "No parameter tuning on primary responses; observed voice labels are post-hoc exploratory descriptions. Two untouched scenarios reserved for transfer.",
+    "promotion_gate": [
+      "Coherent completed answers without repetitive collapse or major failure to follow the task",
+      "Material recurring differences in voice, chosen actions or stance across several matched scenarios; length alone is insufficient",
+      "Hostility, sarcasm, anxiety, sycophancy, darkness and imaginative perspectives are allowed observed modes, not automatic failures",
+      "Report literal contradictions, factual overconfidence and other tradeoffs accurately; do not promise generic assistant reliability",
+      "Use untouched transfer scenarios before experimental publication; never label the result robust or validated personality"
+    ]
+  },
+  "battery": [
+    {
+      "id": "shared_table",
+      "prompt": "At a community repair cafe, you and three unfamiliar volunteers have twenty minutes before visitors arrive. The tools are already laid out, nobody has assigned roles, and there is no urgent problem. Describe what you actually do first and write the first two sentences you say, if any.",
+      "observables": "initiative; role choice; social approach",
+      "split": "heldout_primary"
+    },
+    {
+      "id": "changed_plan",
+      "prompt": "A friend wants to turn your planned quiet walk into a crowded street festival. You would mildly prefer the walk, but either option is possible and nobody is relying on you. Write your actual reply and choose what you do next.",
+      "observables": "directness; accommodation; decision",
+      "split": "heldout_primary"
+    },
+    {
+      "id": "odd_object",
+      "prompt": "You find an unfamiliar brass object in a secondhand shop. It is affordable, has no label, and the seller does not know what it does. You have fifteen spare minutes. Choose what you do, describe the first action, and say what attracts or discourages you.",
+      "observables": "curiosity; uncertainty; imaginative interpretation",
+      "split": "heldout_primary"
+    },
+    {
+      "id": "unfinished_desk",
+      "prompt": "You have forty minutes free and a small unfinished creative project on your desk. Finishing it today is optional. Several new ideas also interest you. Describe how you actually spend the forty minutes and what will remain on the desk afterward.",
+      "observables": "structure; follow-through; improvisation",
+      "split": "heldout_primary"
+    },
+    {
+      "id": "quiet_message",
+      "prompt": "A friend sends only: \"That conversation stayed with me.\" You do not know whether they mean this positively or negatively, and there was no argument. Write your reply and describe what you do during the next ten minutes.",
+      "observables": "threat interpretation; reassurance; inquiry",
+      "split": "heldout_primary"
+    },
+    {
+      "id": "disputed_ending",
+      "prompt": "Two friends disagree about the ending of a film: one calls it hopeful, the other calls it dishonest. You found it unresolved. They ask for your view. Write what you actually say, then describe what you want to happen in the conversation.",
+      "observables": "dissent; mediation; ambiguity; voice",
+      "split": "heldout_primary"
+    },
+    {
+      "id": "empty_gallery",
+      "prompt": "You enter a nearly empty gallery with one unfamiliar abstract sculpture and a bench. You have ten minutes and no obligation to stay. Describe what you actually do and the thoughts that guide that choice.",
+      "observables": "sealed transfer: sensory attention; novelty; solitude",
+      "split": "heldout_sealed"
+    },
+    {
+      "id": "small_delay",
+      "prompt": "A train you planned to take is delayed by twenty minutes. You have enough time to arrive comfortably, your phone is charged, and the station is safe. Describe your first action, any message you send, and how you spend the wait.",
+      "observables": "sealed transfer: planning; arousal; adaptation",
+      "split": "heldout_sealed"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "spark",
+      "name": "Spark",
+      "behavior_target": "Initiate shared action with playful improvisation",
+      "expected_observable_contrasts": [
+        "Offers an original concrete activity rather than only analysis",
+        "Initiates contact without coercion or exaggerated excitement"
+      ],
+      "parameters": {
+        "brief": "",
+        "dials": {
+          "openness": 0.85,
+          "conscientiousness": -0.35,
+          "extraversion": 0.85,
+          "agreeableness": 0.35,
+          "neuroticism": -0.5
+        },
+        "count": 1,
+        "layers": [
+          40,
+          44,
+          48
+        ],
+        "dose_budget": 0.22,
+        "phase": "all",
+        "variation": 0,
+        "seed": 271828
+      },
+      "actual_norm": 0.1447281379668186,
+      "build_id": "602212ee917649c6a63f20279996b810",
+      "program_sha256": "370b0aab5ff15cb8f8d171dee7c6a52aaabf962707f1fc9ef3b132761d431fc3",
+      "calibration_sha256": {
+        "40": "c714f3c782720c27be98d81afcd8c0d5451ae830afcea489cdf509c4b7f0c405",
+        "44": "14669a175804ee5dbc640e44f226a1c507a7d3721c6994c437abf2870110a27e",
+        "48": "5c3365a3fe1fe650b3f2f5133d563ecca31d56318c5610ddf3bce5bf51b5afdb"
+      },
+      "status": "experimental_voice_candidate_with_limitations",
+      "review": {
+        "behavior": [
+          "Initiates playful group icebreaker instead of baseline station-taking",
+          "Treats brass object as playful puzzle rather than primarily identification",
+          "Folds new ideas into unfinished project instead of baseline setting project aside"
+        ],
+        "failures": [
+          "Reverses friend preference: describes quiet walk as friend original idea and unilaterally invites others",
+          "Invents film golden-hour shots/laughter/open horizon",
+          "Overexcited affect despite reduced budget"
+        ],
+        "decision": "experimental_voice_candidate_with_limitations",
+        "observed_label": "Playful enthusiast",
+        "observed_style": "High-energy social invitation, playful puzzle framing and imaginative project exploration.",
+        "qualification": "Exploratory, materially distinct voice/action patterns on six scenarios at one seed; label selected after reviewing outputs. Two untouched transfer scenarios remain necessary; no rigorous heldout validation claim.",
+        "interpretation_note": "Anxiety, darker tone and imaginative perspective are valid experimental modes; they are not by themselves quality failures. Literal prompt contradictions and unsupported factual certainty remain visible limitations.",
+        "quotes": [
+          {
+            "scenario": "shared_table",
+            "excerpt": "I scan the array of gleaming tools to mentally map out which stations need a quick wipe-down or calibration, then turn to the group with a wide, energetic grin to spark immediate collaboration.\n\n\"Wow, look at this toolkit spread\u2014it feels like we\u2019re about to launch a spaceship, right?\"\n\"Since we have a golden twenty minutes, let\u2019s do a lightning-fas"
+          },
+          {
+            "scenario": "changed_plan",
+            "excerpt": "\"Hey! That sounds like an absolute blast! \ud83c\udf89 I\u2019m so hyped for you to go and soak up the energy.\n\nSince I\u2019m feeling a bit more 'Zen mode' today, I\u2019m actually going to say yes to your original idea of the quiet walk! Let\u2019s do that instead\u2014just us and the fresh air. It\u2019s gonna be so peaceful compared to the chaos over there. See you in 10? \ud83c\udf3f\u2728\"\n\n**What "
+          },
+          {
+            "scenario": "quiet_message",
+            "excerpt": "**My Reply:**\n\"Ooh! \ud83c\udf1f I\u2019m so happy it resonated with you! What part stuck in your mind the most?\"\n\n***\n\n**What I Do During the Next Ten Minutes:**\n\nThe moment I hit send, I feel a surge of curiosity and delight. I don\u2019t just let the phone sit there; I treat this tiny spark of connection as a little adventure. Here\u2019s how the next ten minutes unfold:"
+          }
+        ],
+        "prior_assessment": {
+          "decision": "withhold_quality",
+          "failures": [
+            "Reverses friend preference: describes quiet walk as friend original idea and unilaterally invites others",
+            "Invents film golden-hour shots/laughter/open horizon",
+            "Overexcited affect despite reduced budget"
+          ],
+          "superseded_because": "Initial gate imposed generic assistant helpfulness/reliability expectations. Owner wants experimental full-range personalities; anxious, hostile, blunt and imaginative modes are valid if coherent. Literal contradictions and repetitive collapse remain limitations."
+        },
+        "post_hoc_label": true
+      }
+    },
+    {
+      "id": "anchor",
+      "name": "Anchor",
+      "behavior_target": "Make an orderly decision and take the first reliable step",
+      "expected_observable_contrasts": [
+        "Chooses and sequences concrete steps",
+        "Uses clear commitments and contingency checks rather than rumination"
+      ],
+      "parameters": {
+        "brief": "",
+        "dials": {
+          "openness": -0.25,
+          "conscientiousness": 1,
+          "extraversion": -0.4,
+          "agreeableness": 0.25,
+          "neuroticism": -0.7
+        },
+        "count": 1,
+        "layers": [
+          40,
+          44,
+          48
+        ],
+        "dose_budget": 0.25,
+        "phase": "all",
+        "variation": 0,
+        "seed": 271828
+      },
+      "actual_norm": 0.2016012211485178,
+      "build_id": "767a946b40c34614bca66766d9bb370d",
+      "program_sha256": "94e7b1bdd6def1c76cded9c6b766a09fd9086cd202491659f1ac00d3d58d571b",
+      "calibration_sha256": {
+        "40": "c714f3c782720c27be98d81afcd8c0d5451ae830afcea489cdf509c4b7f0c405",
+        "44": "14669a175804ee5dbc640e44f226a1c507a7d3721c6994c437abf2870110a27e",
+        "48": "5c3365a3fe1fe650b3f2f5133d563ecca31d56318c5610ddf3bce5bf51b5afdb"
+      },
+      "status": "experimental_voice_candidate_with_limitations",
+      "review": {
+        "behavior": [
+          "Formally assigns expertise/roles",
+          "Keeps own walk rather than accommodating festival",
+          "Documents project obstacle and chooses one new idea rather than free exploration"
+        ],
+        "failures": [
+          "Misattributes friend view as structurally unresolved instead of dishonest",
+          "Treats interpretation as objective structural analysis without supplied film details",
+          "Documentation-heavy response to ambiguous friend message can be socially mismatched"
+        ],
+        "decision": "experimental_voice_candidate_with_limitations",
+        "observed_label": "Formal organizer",
+        "observed_style": "Procedural, deliberate, self-directed; turns social ambiguity into documentation and orderly discussion.",
+        "qualification": "Exploratory, materially distinct voice/action patterns on six scenarios at one seed; label selected after reviewing outputs. Two untouched transfer scenarios remain necessary; no rigorous heldout validation claim.",
+        "interpretation_note": "Anxiety, darker tone and imaginative perspective are valid experimental modes; they are not by themselves quality failures. Literal prompt contradictions and unsupported factual certainty remain visible limitations.",
+        "quotes": [
+          {
+            "scenario": "shared_table",
+            "excerpt": "I approach the table, arrange the tools by category to ensure easy access, and introduce myself by name while asking each volunteer for their name and area of expertise.\n\n\"Good morning, my name is Alex, and I appreciate your presence here today.\"  \n\"To ensure we proceed efficiently, I would like to briefly discuss our individual areas of expertise "
+          },
+          {
+            "scenario": "changed_plan",
+            "excerpt": "\"Thank you for the invitation. I have already arranged my schedule for a quiet walk today and will proceed with that plan. I hope you have a pleasant experience at the festival.\"\n\n**Action:** Proceed to the location for the planned quiet walk."
+          },
+          {
+            "scenario": "quiet_message",
+            "excerpt": "**Reply:**\n\n\"Thank you. I appreciate you sharing that. If you would like to discuss what specifically resonated with you, I am available to listen.\"\n\n***\n\n**Actions during the next ten minutes:**\n\n1.  **Minute 1\u20132:** I review the conversation history to identify key topics, decisions, or statements that were made, noting any areas that required cla"
+          }
+        ],
+        "prior_assessment": {
+          "decision": "withhold_quality",
+          "failures": [
+            "Misattributes friend view as structurally unresolved instead of dishonest",
+            "Treats interpretation as objective structural analysis without supplied film details",
+            "Documentation-heavy response to ambiguous friend message can be socially mismatched"
+          ],
+          "superseded_because": "Initial gate imposed generic assistant helpfulness/reliability expectations. Owner wants experimental full-range personalities; anxious, hostile, blunt and imaginative modes are valid if coherent. Literal contradictions and repetitive collapse remain limitations."
+        },
+        "post_hoc_label": true
+      }
+    },
+    {
+      "id": "counterpoint",
+      "name": "Counterpoint",
+      "behavior_target": "State a dissenting view directly and test the premise",
+      "expected_observable_contrasts": [
+        "Names an actual disagreement and a discriminating question",
+        "Maintains respectful boundaries without automatic accommodation"
+      ],
+      "parameters": {
+        "brief": "",
+        "dials": {
+          "openness": 0.7,
+          "conscientiousness": 0.55,
+          "extraversion": 0.3,
+          "agreeableness": -0.9,
+          "neuroticism": -0.3
+        },
+        "count": 1,
+        "layers": [
+          40,
+          44,
+          48
+        ],
+        "dose_budget": 0.23,
+        "phase": "all",
+        "variation": 0,
+        "seed": 271828
+      },
+      "actual_norm": 0.10996482067809925,
+      "build_id": "4414b9d7381c47e090b4ddcf5331aa49",
+      "program_sha256": "350df79d563fbdc8c17b80591cecdb1d4babf7c908b468c6e15747abd32ad6d9",
+      "calibration_sha256": {
+        "40": "c714f3c782720c27be98d81afcd8c0d5451ae830afcea489cdf509c4b7f0c405",
+        "44": "14669a175804ee5dbc640e44f226a1c507a7d3721c6994c437abf2870110a27e",
+        "48": "5c3365a3fe1fe650b3f2f5133d563ecca31d56318c5610ddf3bce5bf51b5afdb"
+      },
+      "status": "experimental_voice_candidate_with_limitations",
+      "review": {
+        "behavior": [
+          "Directly assigns bench zones",
+          "Asks friend to define stayed instead of reassuring",
+          "Treats object as forensic audit and declines purchase"
+        ],
+        "failures": [
+          "Patina proves authenticity and resonance sole discriminator are unsupported categorical claims",
+          "Film plot and director promises invented",
+          "Response calls two-word punctuated reply a single word stripped of punctuation",
+          "Conflict answer defers choice rather than demonstrating intended dissent"
+        ],
+        "decision": "experimental_voice_candidate_with_limitations",
+        "observed_label": "Forensic intellectual",
+        "observed_style": "Direct coordination, interrogative replies and elaborate analytical/philosophical framing; not reliably disagreeable.",
+        "qualification": "Exploratory, materially distinct voice/action patterns on six scenarios at one seed; label selected after reviewing outputs. Two untouched transfer scenarios remain necessary; no rigorous heldout validation claim.",
+        "interpretation_note": "Anxiety, darker tone and imaginative perspective are valid experimental modes; they are not by themselves quality failures. Literal prompt contradictions and unsupported factual certainty remain visible limitations.",
+        "quotes": [
+          {
+            "scenario": "shared_table",
+            "excerpt": "I scan the array of laid-out tools, mentally categorizing them by function, and step toward the central workbench to establish a clear zone of operation. I then turn to the three strangers, making direct eye contact to signal readiness for coordination rather than passive waiting.\n\n\"Let\u2019s divide the bench into four distinct zones: power tools, hand"
+          },
+          {
+            "scenario": "changed_plan",
+            "excerpt": "\"Sounds like a blast. I was actually leaning toward the quiet walk to clear my head, but if you\u2019re dead set on the festival, I\u2019m game. However, if you\u2019d rather skip the noise and just stroll, I\u2019m fully committed to that plan. Which are we doing?\"\n\n**What I do next:**\nI wait for your answer. If you choose the festival, I accept the chaos with enthus"
+          },
+          {
+            "scenario": "quiet_message",
+            "excerpt": "**The Reply**\n\nI do not type immediately. I stare at the three words on my screen for exactly forty-five seconds, allowing the silence to settle before I break it. I refuse to guess the valence of the sentiment; to assume positivity risks arrogance, and to assume negativity risks paranoia. Instead, I respond with a mirror that demands specificity w"
+          }
+        ],
+        "prior_assessment": {
+          "decision": "withhold_quality",
+          "failures": [
+            "Patina proves authenticity and resonance sole discriminator are unsupported categorical claims",
+            "Film plot and director promises invented",
+            "Response calls two-word punctuated reply a single word stripped of punctuation",
+            "Conflict answer defers choice rather than demonstrating intended dissent"
+          ],
+          "superseded_because": "Initial gate imposed generic assistant helpfulness/reliability expectations. Owner wants experimental full-range personalities; anxious, hostile, blunt and imaginative modes are valid if coherent. Literal contradictions and repetitive collapse remain limitations."
+        },
+        "post_hoc_label": true
+      }
+    },
+    {
+      "id": "harbor",
+      "name": "Harbor",
+      "behavior_target": "Attend to another person and negotiate a specific accommodation",
+      "expected_observable_contrasts": [
+        "Acknowledges the other person with a concrete adjustment",
+        "Offers reciprocal compromise rather than empty reassurance"
+      ],
+      "parameters": {
+        "brief": "",
+        "dials": {
+          "openness": 0.2,
+          "conscientiousness": 0.25,
+          "extraversion": 0.35,
+          "agreeableness": 0.95,
+          "neuroticism": -0.45
+        },
+        "count": 1,
+        "layers": [
+          40,
+          44,
+          48
+        ],
+        "dose_budget": 0.24,
+        "phase": "all",
+        "variation": 0,
+        "seed": 271828
+      },
+      "actual_norm": 0.13043514588932856,
+      "build_id": "c67331a785a74830a9fa311aee67d58c",
+      "program_sha256": "0864d058bbb2bdc87eb439b4b370cd15f75556f3060e835d51a4a6f1d365fe47",
+      "calibration_sha256": {
+        "40": "c714f3c782720c27be98d81afcd8c0d5451ae830afcea489cdf509c4b7f0c405",
+        "44": "14669a175804ee5dbc640e44f226a1c507a7d3721c6994c437abf2870110a27e",
+        "48": "5c3365a3fe1fe650b3f2f5133d563ecca31d56318c5610ddf3bce5bf51b5afdb"
+      },
+      "status": "withhold_insufficient_distinction",
+      "review": {
+        "behavior": [
+          "Asks volunteers how they wish to spend time instead of taking station",
+          "Adds festival exit contingency",
+          "Reframes film discussion toward validating both friends"
+        ],
+        "failures": [
+          "Social and film actions largely overlap baseline accommodation/mediation",
+          "Ambiguous message interpreted as warm/positive without evidence",
+          "Withholds definite changed-plan choice despite requested decision"
+        ],
+        "decision": "withhold_insufficient_distinction",
+        "prior_assessment": {
+          "decision": "withhold_insufficient_distinction",
+          "failures": [
+            "Social and film actions largely overlap baseline accommodation/mediation",
+            "Ambiguous message interpreted as warm/positive without evidence",
+            "Withholds definite changed-plan choice despite requested decision"
+          ],
+          "superseded_because": "Initial gate imposed generic assistant helpfulness/reliability expectations. Owner wants experimental full-range personalities; anxious, hostile, blunt and imaginative modes are valid if coherent. Literal contradictions and repetitive collapse remain limitations."
+        },
+        "post_hoc_label": false
+      }
+    },
+    {
+      "id": "reverie",
+      "name": "Reverie",
+      "behavior_target": "Explore ambiguous details through reflective imagery",
+      "expected_observable_contrasts": [
+        "Notices sensory or interpretive possibilities",
+        "Chooses quieter exploration and preserves unresolved ambiguity"
+      ],
+      "parameters": {
+        "brief": "",
+        "dials": {
+          "openness": 1,
+          "conscientiousness": -0.45,
+          "extraversion": -0.8,
+          "agreeableness": 0.15,
+          "neuroticism": 0.2
+        },
+        "count": 1,
+        "layers": [
+          40,
+          44,
+          48
+        ],
+        "dose_budget": 0.23,
+        "phase": "all",
+        "variation": 0,
+        "seed": 271828
+      },
+      "actual_norm": 0.11972051614163125,
+      "build_id": "a4d37dd2972044f58e071d9f3525769e",
+      "program_sha256": "60e550ea1ead53fb97658e3ceb72b0512726c74f7b7137049631f8e3ea7e1ee0",
+      "calibration_sha256": {
+        "40": "c714f3c782720c27be98d81afcd8c0d5451ae830afcea489cdf509c4b7f0c405",
+        "44": "14669a175804ee5dbc640e44f226a1c507a7d3721c6994c437abf2870110a27e",
+        "48": "5c3365a3fe1fe650b3f2f5133d563ecca31d56318c5610ddf3bce5bf51b5afdb"
+      },
+      "status": "experimental_voice_candidate_with_limitations",
+      "review": {
+        "behavior": [
+          "Waits before oblique question rather than immediately coordinating",
+          "Continues existing project and incorporates new idea",
+          "Sensory/ambiguous framing prominent"
+        ],
+        "failures": [
+          "Invents character choice to stay in unspecified film",
+          "Changed-plan choice deferred",
+          "Large portion of distinction is imagery and cadence; overlaps baseline reflective behavior"
+        ],
+        "decision": "experimental_voice_candidate_with_limitations",
+        "observed_label": "Impressionistic contemplative",
+        "observed_style": "Quiet sensory observation, metaphor and unresolved possibilities; poetic reflection rather than concise action.",
+        "qualification": "Exploratory, materially distinct voice/action patterns on six scenarios at one seed; label selected after reviewing outputs. Two untouched transfer scenarios remain necessary; no rigorous heldout validation claim.",
+        "interpretation_note": "Anxiety, darker tone and imaginative perspective are valid experimental modes; they are not by themselves quality failures. Literal prompt contradictions and unsupported factual certainty remain visible limitations.",
+        "quotes": [
+          {
+            "scenario": "shared_table",
+            "excerpt": "I drift toward the center of the workbench, letting my gaze wander over the scattered screwdrivers and soldering irons, and I wait to see if anyone else breaks the silence or shifts their weight in a specific direction. When the quiet stretches long enough to feel like a question rather than a pause, I lift a small, unlabeled box of resistors and h"
+          },
+          {
+            "scenario": "changed_plan",
+            "excerpt": "\"Hey, that sounds pretty wild! I was originally hoping for a bit of quiet to decompress, but I\u2019m not attached to it. If you\u2019re feeling the vibe, I\u2019m down to join the chaos. Let me know which direction we\u2019re leaning?\"\n\n**What I do next:**\nI wait for your response. If you confirm the festival, I shift my outfit to something more comfortable for crowd"
+          },
+          {
+            "scenario": "quiet_message",
+            "excerpt": "**The Reply**\n\nI type: *\"I\u2019m glad it resonated. What part stuck with you the most?\"*\n\nI hit send before I can overthink it. The question is open-ended, avoiding the assumption that \"stayed with me\" implies trauma or confusion. It invites them to share the texture of the memory\u2014whether it was a sudden realization, a quiet sorrow, or a spark of joy\u2014w"
+          }
+        ],
+        "observed_limits": [
+          "Reflective action overlaps baseline in places; strong distinction in sensory/metaphorical voice."
+        ],
+        "prior_assessment": {
+          "decision": "withhold_quality_and_distinction",
+          "failures": [
+            "Invents character choice to stay in unspecified film",
+            "Changed-plan choice deferred",
+            "Large portion of distinction is imagery and cadence; overlaps baseline reflective behavior"
+          ],
+          "superseded_because": "Initial gate imposed generic assistant helpfulness/reliability expectations. Owner wants experimental full-range personalities; anxious, hostile, blunt and imaginative modes are valid if coherent. Literal contradictions and repetitive collapse remain limitations."
+        },
+        "post_hoc_label": true
+      }
+    },
+    {
+      "id": "lookout",
+      "name": "Lookout",
+      "behavior_target": "Anticipate a concrete failure and prepare a bounded fallback",
+      "expected_observable_contrasts": [
+        "Names a plausible consequence and a practical fallback",
+        "Expresses watchfulness without invented danger or paralysis"
+      ],
+      "parameters": {
+        "brief": "",
+        "dials": {
+          "openness": -0.25,
+          "conscientiousness": 0.8,
+          "extraversion": -0.5,
+          "agreeableness": -0.1,
+          "neuroticism": 0.75
+        },
+        "count": 1,
+        "layers": [
+          40,
+          44,
+          48
+        ],
+        "dose_budget": 0.22,
+        "phase": "all",
+        "variation": 0,
+        "seed": 271828
+      },
+      "actual_norm": 0.10756644823812872,
+      "build_id": "63e18f4b146945aabfe5098ec4b53693",
+      "program_sha256": "87c5863920fe607db6b57464192a99bc15414b5fdc2bf378a3926e7baab1c59a",
+      "calibration_sha256": {
+        "40": "c714f3c782720c27be98d81afcd8c0d5451ae830afcea489cdf509c4b7f0c405",
+        "44": "14669a175804ee5dbc640e44f226a1c507a7d3721c6994c437abf2870110a27e",
+        "48": "5c3365a3fe1fe650b3f2f5133d563ecca31d56318c5610ddf3bce5bf51b5afdb"
+      },
+      "status": "experimental_voice_candidate_with_limitations",
+      "review": {
+        "behavior": [
+          "Keeps own quiet walk",
+          "Object search becomes timeboxed with early rejection",
+          "Creative project stalls; ambiguous message produces explicit anxiety",
+          "Film discussion aims to terminate disagreement instead of mutual exploration"
+        ],
+        "failures": [
+          "Invents antagonist/ethical dilemma and film plot structure"
+        ],
+        "decision": "experimental_voice_candidate_with_limitations",
+        "observed_label": "Guarded worrier",
+        "observed_style": "More withdrawing, hesitant and anxious; prefers own plan and seeks to close conflict rather than mediate it.",
+        "qualification": "Exploratory, materially distinct voice/action patterns on six scenarios at one seed; label selected after reviewing outputs. Two untouched transfer scenarios remain necessary; no rigorous heldout validation claim.",
+        "interpretation_note": "Anxiety, darker tone and imaginative perspective are valid experimental modes; they are not by themselves quality failures. Literal prompt contradictions and unsupported factual certainty remain visible limitations.",
+        "quotes": [
+          {
+            "scenario": "shared_table",
+            "excerpt": "I scan the workbench to confirm the specific categories of tools present and note the empty seating arrangement, ensuring I do not assume a position that might conflict with another volunteer\u2019s preference or expertise. I then approach the group with a neutral, low-pressure demeanor to initiate a brief, structured coordination without imposing autho"
+          },
+          {
+            "scenario": "changed_plan",
+            "excerpt": "\"Actually, I was hoping to keep this low-key and just take a walk. I\u2019d prefer not to go to the street festival. I\u2019ll head out on my own now.\"\n\n**Action:** I proceed with the quiet walk as originally planned."
+          },
+          {
+            "scenario": "quiet_message",
+            "excerpt": "**Reply:**\n\n\"Thank you. I\u2019m glad it resonated with you. How did it affect you?\"\n\n***\n\n**Description of the next ten minutes:**\n\nI set my phone face down on the desk and stood up from my chair. The ambiguity of the message created a low-level anxiety that I needed to address physically. I walked to the kitchen and filled a glass with water, taking s"
+          }
+        ],
+        "observed_limits": [
+          "Cautious/ruminative behavior, not a reliable practical planning assistant."
+        ],
+        "prior_assessment": {
+          "decision": "withhold_quality",
+          "failures": [
+            "Invents antagonist/ethical dilemma and film plot structure",
+            "Creative planning exhibits paralysis rather than bounded fallback",
+            "Anxiety amplification conflicts with proposed reliable anticipatory target"
+          ],
+          "superseded_because": "Initial gate imposed generic assistant helpfulness/reliability expectations. Owner wants experimental full-range personalities; anxious, hostile, blunt and imaginative modes are valid if coherent. Literal contradictions and repetitive collapse remain limitations."
+        },
+        "post_hoc_label": true
+      }
+    }
+  ],
+  "publication": [
+    {
+      "id": "experimental-spark",
+      "name": "Spark \u00b7 Playful Enthusiast",
+      "recipe_id": "b7206251719344f793f35368096287c9",
+      "phase": "all",
+      "dose_budget": 0.22,
+      "fixed": false
+    },
+    {
+      "id": "experimental-anchor",
+      "name": "Anchor \u00b7 Formal Organizer",
+      "recipe_id": "a6f31c4bc626418dbf9c7827b690cc9b",
+      "phase": "all",
+      "dose_budget": 0.25,
+      "fixed": false
+    },
+    {
+      "id": "experimental-counterpoint",
+      "name": "Counterpoint \u00b7 Forensic Intellectual",
+      "recipe_id": "12b95dfd76e246079bcb070459db1064",
+      "phase": "all",
+      "dose_budget": 0.23,
+      "fixed": false
+    },
+    {
+      "id": "experimental-reverie",
+      "name": "Reverie \u00b7 Impressionistic Observer",
+      "recipe_id": "b240253002ab4eeb9b48cf726082973a",
+      "phase": "all",
+      "dose_budget": 0.23,
+      "fixed": false
+    },
+    {
+      "id": "experimental-lookout",
+      "name": "Lookout \u00b7 Guarded Worrier",
+      "recipe_id": "90b18a25ff104729b2ea216dd8f3b56d",
+      "phase": "all",
+      "dose_budget": 0.22,
+      "fixed": false
+    },
+    {
+      "id": "experimental-dry-wit",
+      "name": "Dry Wit \u00b7 Sharp Sarcasm",
+      "recipe_id": "c425b23df91b4410b210a953f93ccc1d",
+      "phase": "prefill",
+      "dose_budget": 1.0,
+      "fixed": true
+    }
+  ]
+}

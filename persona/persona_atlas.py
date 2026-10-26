@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import signal
+import re
 from pathlib import Path
 import threading
 import zipfile
@@ -278,13 +279,15 @@ class WeightAtlas:
         return {'available':True,'source_id':self.source_id,'semantics':SEMANTICS,'missing_layers':sorted(missing),'pooled_tokens':pooled,'topology_semantics':'Three nontrivial normalized-Laplacian coordinates of the retained absolute-weight graph. Signs remain on edges. This is a sparse graph embedding, not physical geometry or a full-weight causal map.',
             'graph':{'nodes':list(nodes.values()),'edges':list(edges.values()),'directed':True,'layout':SEMANTICS['layout']}}
 
-    def search(self,text,limit=40):
+    def search(self,text,limit=40,word_start=False):
         if not isinstance(text,str) or not 1<=len(text)<=100:raise ValueError('Search needs 1–100 characters')
         matches=[];missing=[];token_ids=None
         for l in range(self.model.layers):
             try:data=self.layer(l);tokens=self.vocabulary()
             except FileNotFoundError:missing.append(l);continue
-            if token_ids is None:token_ids=np.array([i for i,t in enumerate(tokens) if text.casefold() in t.casefold()],dtype=np.int32)
+            if token_ids is None:
+                pattern = re.compile(r'(?<!\w)' + re.escape(text.casefold())) if word_start else None
+                token_ids=np.array([i for i,t in enumerate(tokens) if (pattern.search(t.casefold()) if pattern else text.casefold() in t.casefold())],dtype=np.int32)
             for direction in ('positive','negative'):
                 rows,cols=np.where(np.isin(data[direction+'_ids'],token_ids))
                 strongest=np.argsort(-data[direction+'_scores'][rows,cols],kind='stable')[:limit]

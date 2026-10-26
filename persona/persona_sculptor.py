@@ -84,6 +84,7 @@ class Sculptor:
                     PRIMARY KEY(campaign_id,wave));
                 CREATE TABLE IF NOT EXISTS sculptor_reviews(campaign_id TEXT,candidate_id TEXT,updated REAL,body TEXT,
                     PRIMARY KEY(campaign_id,candidate_id));
+                CREATE TABLE IF NOT EXISTS sculptor_preset_comparisons(batch_id TEXT PRIMARY KEY,created REAL,input TEXT);
                 CREATE TABLE IF NOT EXISTS sculptor_preset_recipes(preset_id TEXT,model_identity TEXT,recipe_id TEXT,catalog_sha256 TEXT,
                     PRIMARY KEY(preset_id,model_identity));
             ''')
@@ -187,7 +188,7 @@ class Sculptor:
             raise ValueError(f'Interpretation {identity} failed: {error}; raw attempt retained; no silent fallback') from error
 
     def build(self, value):
-        keys(value, set(), {'plan_id', 'brief', 'dials', 'count', 'layers', 'dose_budget', 'phase', 'variation', 'seed'})
+        keys(value, set(), {'plan_id', 'brief', 'dials', 'count', 'layers', 'dose_budget', 'phase', 'variation', 'seed', 'concept_controls'})
         plan = None
         if 'plan_id' in value:
             identifier(value['plan_id'], 'Plan ID')
@@ -195,6 +196,10 @@ class Sculptor:
             if row is None: raise ValueError('Unknown completed persona interpretation')
             plan = json.loads(row[0])
             if plan['model_identity'] != self.app.model.identity: raise ValueError('Interpretation belongs to another model')
+        if plan and plan.get('preset', {}).get('fixed_recipe'):
+            if set(value) - {'plan_id', 'count', 'seed'}:
+                raise ValueError('Fixed experimental recipe is immutable here; edit it explicitly in Lab')
+            return self.fixed_build(plan, value.get('count', 1), value.get('seed', 7035))
         controls = dials(value.get('dials', plan['dials'] if plan else None))
         brief = value.get('brief', plan['brief'] if plan else '')
         if not isinstance(brief, str) or len(brief) > 4000: raise ValueError('Invalid persona brief')
@@ -203,7 +208,7 @@ class Sculptor:
         count = uint(value.get('count', max(1, len(self.app.endpoints))), 1, 6, 'Candidate count')
         available = self.layers(); default = [layer for layer in available if 10 <= layer <= 18]
         if self.app.model.layers <= 10: default = available[:9]
-        layers = value.get('layers', default)
+        layers = value.get('layers', plan.get('preset', {}).get('layers', default) if plan else default)
         if (not isinstance(layers, list) or not 1 <= len(layers) <= 64
                 or any(type(layer) is not int or layer not in available for layer in layers) or len(set(layers)) != len(layers)):
             raise ValueError('Select unique layers with all five calibrated trait directions')
@@ -214,6 +219,7 @@ class Sculptor:
         seed = uint(value.get('seed', plan.get('variant_seed', 7035) if plan else 7035), 0, 2**32 - 1, 'Variant seed')
         if type(budget) not in (int, float) or not math.isfinite(budget) or not 0 <= budget <= .5: raise ValueError('Aggregate dose budget must be between 0 and 0.5')
         if phase not in ('all', 'prefill', 'decode'): raise ValueError('Unknown steering phase')
+        concept_pushes, concept_snapshots = self.app.concept_controls.expand(value.get('concept_controls', []), budget)
         hashes = {str(layer): file_hash(self.app.root / 'results' / f'layer_{layer:02d}.npz') for layer in layers}
         candidates = []
         axes = list(TRAITS)
@@ -224,7 +230,7 @@ class Sculptor:
                 changed = axes[index - 1]; delta = -variation if variant[changed] > 1 - variation else variation
                 variant[changed] = max(-1., min(1., variant[changed] + delta))
             pushes = [{'kind': 'trait', 'layer': layer, 'trait': trait, 'dose': budget * variant[trait] / math.sqrt(len(layers) * len(TRAITS))}
-                      for layer in sorted(layers) for trait in TRAITS if variant[trait] and budget]
+                      for layer in sorted(layers) for trait in TRAITS if variant[trait] and budget] + deepcopy(concept_pushes)
             with self.app.bank_lock:
                 _, initial = self.app.bank.program(pushes, phase, aggregate_limit=budget if budget else None)
                 for push in pushes: push['dose'] *= initial['aggregate_scale']
@@ -232,14 +238,14 @@ class Sculptor:
             if provenance['aggregate_relative_norm'] > budget + 1e-9: raise ValueError('Aggregate recipe normalization exceeded its bound')
             name = 'Base persona controls' if index == 0 else changed.capitalize() + ' variation'
             candidates.append({'id': 'candidate-' + str(index + 1), 'name': name, 'dials': variant, 'pushes': pushes,
-                'phase': phase, 'layers': sorted(layers), 'dose_budget': budget,
+                'phase': phase, 'layers': sorted(layers), 'dose_budget': budget, 'concept_controls': deepcopy(concept_snapshots),
                 'aggregate_relative_norm': provenance['aggregate_relative_norm'], 'normalization_scale': initial['aggregate_scale'],
                 'changed_trait': changed, 'program_sha256': provenance['program_sha256'],
                 'direction_status': 'Measured contrast direction; behavioral effect and polarity require comparison'})
         result = {'id': uuid.uuid4().hex, 'created': time.time(), 'plan_id': plan['id'] if plan else None,
             'model_identity': self.app.model.identity, 'brief': brief, 'dials': controls, 'count': count, 'layers': sorted(layers),
             'dose_budget': budget, 'phase': phase, 'candidates': candidates, 'calibration_sha256': hashes,
-            'variation': variation, 'seed': seed,
+            'variation': variation, 'seed': seed, 'concept_controls': concept_snapshots,
             'method': plan['method'] if plan else 'manual_heuristic', 'manually_edited': bool(plan and controls != plan['dials']),
             'rationale': plan['rationale'] if plan else 'Manual heuristic controls; John was not consulted.',
             'unsupported_traits': plan['unsupported_traits'] if plan else ['Free-text qualities are not interpreted by manual controls.'],
@@ -247,6 +253,37 @@ class Sculptor:
         if plan and 'preset' in plan: result['preset'] = plan['preset']
         if any(file_hash(self.app.root / 'results' / f'layer_{int(layer):02d}.npz') != sha for layer, sha in hashes.items()):
             raise ValueError('Calibration changed while building recipes')
+        with self.app.connect() as db: db.execute('INSERT INTO sculptor_builds VALUES(?,?,?)', (result['id'], result['created'], encoded(result)))
+        return result
+
+    def fixed_build(self, plan, count, seed):
+        """Replay an allowlisted measured recipe without heuristic rescaling."""
+        count = uint(count, 1, 1, 'Fixed preset candidate count')
+        seed = uint(seed, 0, 2**32 - 1, 'Seed')
+        preset = plan['preset']; fixed = preset['fixed_recipe']
+        if fixed['model_identity'] != self.app.model.identity or preset['model_identity'] != self.app.model.identity:
+            raise ValueError('Fixed preset belongs to another model')
+        layers = sorted({p['layer'] for p in fixed['pushes']})
+        hashes = {str(layer): file_hash(self.app.root / 'results' / f'layer_{layer:02d}.npz') for layer in layers}
+        recipe, _, provenance = self.app.validate_recipe({'name': preset['name'], 'pushes': fixed['pushes'], 'phase': fixed['phase']})
+        if fixed.get('program_sha256') and provenance['program_sha256'] != fixed['program_sha256']:
+            raise ValueError('Fixed preset program differs from observed evidence')
+        if provenance['aggregate_relative_norm'] > preset['dose_budget'] + 1e-9:
+            raise ValueError('Exact preset exceeds its disclosed budget; it was not clamped')
+        candidate = {'id': 'candidate-1', 'name': preset['name'], 'dials': deepcopy(preset['dials']),
+            'pushes': recipe['pushes'], 'phase': recipe['phase'], 'layers': layers, 'dose_budget': preset['dose_budget'],
+            'aggregate_relative_norm': provenance['aggregate_relative_norm'], 'normalization_scale': 1.,
+            'concept_controls': [], 'changed_trait': None, 'program_sha256': provenance['program_sha256'],
+            'direction_status': 'Exact observed experimental recipe; no validated personality or general capability claim'}
+        result = {'id': uuid.uuid4().hex, 'created': time.time(), 'plan_id': plan['id'],
+            'model_identity': self.app.model.identity, 'brief': plan['brief'], 'dials': deepcopy(preset['dials']),
+            'count': 1, 'layers': layers, 'dose_budget': preset['dose_budget'], 'phase': fixed['phase'],
+            'candidates': [candidate], 'calibration_sha256': hashes, 'variation': 0., 'seed': seed,
+            'concept_controls': [], 'method': 'fixed_experimental_recipe', 'fixed_recipe': True,
+            'manually_edited': False, 'rationale': preset['evidence_basis'], 'unsupported_traits': preset['unsupported_traits'],
+            'evidence': EVIDENCE, 'preset': deepcopy(preset)}
+        if any(file_hash(self.app.root / 'results' / f'layer_{int(layer):02d}.npz') != sha for layer, sha in hashes.items()):
+            raise ValueError('Calibration changed while binding exact recipe')
         with self.app.connect() as db: db.execute('INSERT INTO sculptor_builds VALUES(?,?,?)', (result['id'], result['created'], encoded(result)))
         return result
 
@@ -268,16 +305,48 @@ class Sculptor:
         seen = set()
         for item in catalog['presets']:
             keys(item, {'id', 'name', 'brief', 'description', 'dials', 'dose_budget', 'variation', 'phase',
-                        'evidence_basis', 'unsupported_traits', 'sources', 'notes'})
+                        'evidence_basis', 'unsupported_traits', 'sources', 'notes'}, {'layers', 'model_identity', 'fixed_recipe', 'calibration_sha256'})
             if not isinstance(item['id'], str) or re.fullmatch('[a-z][a-z0-9_-]{0,79}', item['id']) is None or item['id'] in seen:
                 raise ValueError('Preset IDs must be unique fixed identifiers')
             seen.add(item['id']); dials(item['dials'])
             for field, maximum in (('name', 120), ('brief', 4000), ('description', 4000), ('evidence_basis', 4000)):
                 if not isinstance(item[field], str) or not 1 <= len(item[field]) <= maximum: raise ValueError('Invalid preset text: ' + field)
-            for field, maximum in (('dose_budget', .5), ('variation', .5)):
+            if ('layers' in item or 'fixed_recipe' in item) and item.get('model_identity') != self.app.model.identity:
+                raise ValueError('Experimental preset requires this exact model identity')
+            if 'model_identity' in item and item['model_identity'] != self.app.model.identity:
+                raise ValueError('Preset belongs to another model')
+            if 'layers' in item:
+                layers = item['layers']
+                if not isinstance(layers, list) or not layers or len(set(layers)) != len(layers) or any(type(l) is not int or not 0 <= l < self.app.model.layers for l in layers):
+                    raise ValueError('Invalid bound preset layers')
+            fixed = item.get('fixed_recipe')
+            if fixed is not None:
+                keys(fixed, {'model_identity', 'pushes', 'phase'}, {'program_sha256'})
+                if fixed['model_identity'] != self.app.model.identity or fixed['phase'] != item['phase'] or item['variation'] != 0:
+                    raise ValueError('Fixed preset model/phase/variation differs')
+                if not isinstance(fixed['pushes'], list) or not 1 <= len(fixed['pushes']) <= 16:
+                    raise ValueError('Fixed preset requires bounded exact neuron pushes')
+                for push in fixed['pushes']:
+                    keys(push, {'kind', 'layer', 'neuron', 'dose'})
+                    if push['kind'] != 'neuron' or type(push['layer']) is not int or not 0 <= push['layer'] < self.app.model.layers or type(push['neuron']) is not int or not 0 <= push['neuron'] < self.app.model.intermediate:
+                        raise ValueError('Invalid exact neuron coordinate')
+                    if type(push['dose']) not in (int, float) or not math.isfinite(push['dose']) or abs(push['dose']) > 4:
+                        raise ValueError('Invalid exact neuron dose')
+                if fixed.get('program_sha256') and re.fullmatch('[0-9a-f]{64}', fixed['program_sha256']) is None:
+                    raise ValueError('Invalid exact program binding')
+            if 'calibration_sha256' in item:
+                expected = item['calibration_sha256']
+                selected = sorted({p['layer'] for p in fixed['pushes']}) if fixed else item.get('layers', [])
+                if not isinstance(expected, dict) or set(expected) != {str(layer) for layer in selected}:
+                    raise ValueError('Preset calibration binding does not cover its layers')
+                for layer, sha in expected.items():
+                    if not isinstance(sha, str) or re.fullmatch('[0-9a-f]{64}', sha) is None or file_hash(self.app.root / 'results' / f'layer_{int(layer):02d}.npz') != sha:
+                        raise ValueError('Preset calibration changed since its observed comparison')
+            for field, maximum in (('dose_budget', 4. if fixed else .5), ('variation', .5)):
                 if type(item[field]) not in (int, float) or not math.isfinite(item[field]) or not 0 <= item[field] <= maximum:
                     raise ValueError('Invalid bounded preset ' + field)
-            if item['phase'] != 'all': raise ValueError('Preset recipes require the reviewed all-phase default')
+            if item['phase'] not in (('all', 'prefill', 'decode') if fixed else ('all',)):
+                raise ValueError('Unsupported preset phase')
             for field in ('unsupported_traits', 'notes'):
                 if not isinstance(item[field], list) or len(item[field]) > 32 or any(not isinstance(text, str) or not 1 <= len(text) <= 4000 for text in item[field]):
                     raise ValueError('Invalid preset explanatory list')
@@ -295,7 +364,7 @@ class Sculptor:
         catalog = self.presets()
         preset = next((item for item in catalog['presets'] if item['id'] == value['id']), None)
         if preset is None: raise ValueError('Preset is not in the fixed allowlisted catalog')
-        count = uint(value.get('count', max(1, len(self.app.endpoints))), 1, 6, 'Candidate count')
+        count = uint(value.get('count', 1 if preset.get('fixed_recipe') or preset['variation'] == 0 else max(1, len(self.app.endpoints))), 1, 6, 'Candidate count')
         seed = uint(value.get('seed', 7035), 0, 2**32 - 1, 'Variant seed')
         plan = {'id': uuid.uuid4().hex, 'created': time.time(), 'brief': preset['brief'], 'dials': preset['dials'],
             'rationale': preset['evidence_basis'], 'unsupported_traits': preset['unsupported_traits'], 'method': 'preset_heuristic',
@@ -306,7 +375,8 @@ class Sculptor:
             db.execute('INSERT INTO sculptor_plans VALUES(?,?,?,?,?,?,?,?,?)',
                 (plan['id'], plan['created'], 'complete', encoded({'preset_id': preset['id'], 'catalog_sha256': catalog['catalog_sha256'], 'count': count, 'seed': seed}),
                  encoded(plan), None, None, None, None))
-        build = self.build({'plan_id': plan['id'], 'count': count, 'dose_budget': preset['dose_budget'],
+        build = self.build({'plan_id': plan['id'], 'count': count, 'seed': seed} if preset.get('fixed_recipe') else
+                           {'plan_id': plan['id'], 'count': count, 'dose_budget': preset['dose_budget'],
                             'variation': preset['variation'], 'seed': seed, 'phase': preset['phase']})
         center = build['candidates'][0]
         recipe = {'name': preset['name'], 'model_identity': self.app.model.identity, 'pushes': center['pushes'], 'phase': center['phase']}
@@ -321,15 +391,65 @@ class Sculptor:
                            (preset['id'], self.app.model.identity, saved['id'], catalog['catalog_sha256']))
         return {'preset': plan['preset'], 'plan': plan, 'build': build, 'saved_recipe': saved}
 
+    def compare_presets(self, value):
+        keys(value, {'preset_ids', 'prompt', 'seed', 'max_tokens'})
+        ids = value['preset_ids']
+        if (not isinstance(ids, list) or not 2 <= len(ids) <= 5
+                or any(not isinstance(key, str) for key in ids) or len(set(ids)) != len(ids)):
+            raise ValueError('Choose two to five distinct presets')
+        if not isinstance(value['prompt'], str) or not value['prompt'].strip() or len(value['prompt']) > 20000:
+            raise ValueError('Supply a shared prompt of 1–20,000 characters')
+        uint(value['seed'], 0, 2**32 - 1, 'Comparison seed')
+        uint(value['max_tokens'], 2048, 4096, 'Answer token budget')
+        catalog = self.presets()
+        allowed = {item['id'] for item in catalog['presets']}
+        if any(key not in allowed for key in ids): raise ValueError('Unknown allowlisted preset')
+        endpoints = list(getattr(self.app, 'activation_endpoints', [])) + self.app.endpoints
+        if self.app.closed or not endpoints: raise ValueError('Start a serving session before comparing presets')
+        cells = [{'label': 'Unsteered baseline', 'prompt': value['prompt'],
+                  'recipe': {'name': 'Unsteered baseline', 'pushes': [], 'phase': 'all'}}]
+        snapshots = []
+        for key in ids:
+            built = self.preset({'id': key, 'count': 1, 'seed': value['seed']})
+            if built['preset']['catalog_sha256'] != catalog['catalog_sha256']:
+                raise ValueError('Preset catalog changed while preparing the comparison')
+            recipe = {field: built['saved_recipe'][field] for field in ('name', 'pushes', 'phase')}
+            cells.append({'label': recipe['name'], 'prompt': value['prompt'], 'recipe': recipe})
+            snapshots.append({'preset': built['preset'], 'build_id': built['build']['id'],
+                              'calibration_sha256': built['build']['calibration_sha256'], 'recipe': recipe})
+        batch_id = self.app.submit_batch({'model_identity': self.app.model.identity,
+            'seed': value['seed'], 'max_tokens': value['max_tokens'], 'thinking': False, 'smoke': False,
+            'cells': cells}, endpoints=endpoints)
+        with self.app.connect() as db:
+            db.execute('INSERT INTO sculptor_preset_comparisons VALUES(?,?,?)',
+                (batch_id, time.time(), encoded({**deepcopy(value), 'presets': snapshots,
+                 'model_identity': self.app.model.identity, 'catalog_sha256': catalog['catalog_sha256']})))
+        return {'id': batch_id}
+
+    def preset_comparisons(self):
+        with self.app.connect() as db:
+            rows = db.execute('SELECT p.batch_id,p.created,p.input,b.state FROM sculptor_preset_comparisons p '
+                              'JOIN batches b ON b.id=p.batch_id ORDER BY p.created DESC LIMIT 100').fetchall()
+        results = []
+        for key, created, raw, state in rows:
+            snapshot = json.loads(raw)
+            results.append({'id': key, 'created': created, 'state': state,
+                'preset_names': [item['preset']['name'] for item in snapshot['presets']],
+                'prompt': snapshot['prompt'], 'input': snapshot})
+        return {'comparisons': results}
+
+    def comparison_endpoints(self):
+        return list(getattr(self.app, 'activation_endpoints', [])) + self.app.endpoints
+
     def endpoint_binding(self):
         return [{key: endpoint.get(key) for key in ('url', 'model_identity', 'prepared_identity', 'runtime_identity')}
-                for endpoint in self.app.endpoints]
+                for endpoint in self.comparison_endpoints()]
 
     def submit(self, value):
         from persona_explorer import check_generation_settings, prompt_label
         keys(value, {'build_id', 'prompts'}, {'candidate_ids', 'seed', 'max_tokens', 'smoke'})
         identifier(value['build_id'], 'Build ID')
-        if self.app.closed or not self.app.endpoints: raise ValueError('Start an owned studio session before submitting a campaign')
+        if self.app.closed or not self.comparison_endpoints(): raise ValueError('Start a serving session before submitting a campaign')
         with self.app.connect() as db: row = db.execute('SELECT body FROM sculptor_builds WHERE id=?', (value['build_id'],)).fetchone()
         if row is None: raise ValueError('Unknown immutable recipe build')
         build = json.loads(row[0])
@@ -387,7 +507,7 @@ class Sculptor:
             if provenance['program_sha256'] != candidate['program_sha256']: raise ValueError('Candidate vector program changed after construction')
             programs.append(program)
         reachable = []
-        for endpoint in self.app.endpoints:
+        for endpoint in self.comparison_endpoints():
             try: descriptor = fetch(endpoint['url'] + '/v1/models', timeout=2)['data'][0]
             except OSError: continue
             for program in programs: self.app.check_program(descriptor, endpoint, program)
@@ -449,7 +569,7 @@ class Sculptor:
                     db.execute('INSERT INTO sculptor_waves VALUES(?,?,?,?,?,?)', (identity, wave, 'submitting', encoded(payload), None, None))
                     db.executemany("UPDATE sculptor_cells SET state='submitting' WHERE campaign_id=? AND ordinal=?", [(identity, item[0]) for item in pending])
                 try:
-                    batch_id = self.app.submit_batch(payload)
+                    batch_id = self.app.submit_batch(payload, endpoints=self.comparison_endpoints())
                 except Exception as exc:
                     with self.app.connect() as db:
                         db.execute("UPDATE sculptor_waves SET state='failed',error=? WHERE campaign_id=? AND wave=?", (str(exc), identity, wave))
