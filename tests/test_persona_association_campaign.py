@@ -1,0 +1,121 @@
+from copy import deepcopy
+import hashlib
+import json
+from pathlib import Path
+import pytest
+import persona_association_campaign as campaign
+
+
+def test_six_matching_calibrated_search_workers_required():
+    model={'data':[{'flare':{'model_identity':'m','runtime_identity':'r','prepared_identity':'p',
+        'activation_search':{'supported':True},'calibration_equivalence':{'passed':True},
+        'kv_control':{'layout_sha256':'l'}}}]}
+    models=[deepcopy(model) for _ in range(6)]
+    assert campaign.matching_binding(models,'m')['runtime_identity']=='r'
+    with pytest.raises(ValueError):campaign.matching_binding(models[:5],'m')
+    for field,value in [('runtime_identity','different'),('model_identity','different'),
+                        ('activation_search',{'supported':False}),('calibration_equivalence',{'passed':False})]:
+        bad=deepcopy(models);bad[-1]['data'][0]['flare'][field]=value
+        with pytest.raises(ValueError):campaign.matching_binding(bad,'m')
+
+
+def test_uncertain_post_is_recorded_and_never_retried(tmp_path):
+    run=campaign.Campaign.__new__(campaign.Campaign)
+    run.path=tmp_path/'state.json';record={};run.plan={'record':record};calls=[]
+    def fail(url,value):calls.append((url,value));raise TimeoutError('uncertain')
+    run.request=fail
+    with pytest.raises(TimeoutError):run.submit(record,'/api/activation-searches',{'text':'scene','top_k':16})
+    assert len(calls)==1
+    assert json.loads(run.path.read_text())['record']['submission']['state']=='failed_or_uncertain'
+
+
+@pytest.mark.parametrize('failed', [False, True])
+def test_comparisons_keep_bounded_queue_and_report_failed_cells(tmp_path, monkeypatch, failed):
+    run=campaign.Campaign.__new__(campaign.Campaign)
+    run.path=tmp_path/'state.json'
+    run.plan={'binding':BINDING,'queries':[{'kind':'whole_prompt','text':'scene','search_id':str(i),
+        'starter_recipes':[{'id':'single','neurons':[{'layer':1,'neuron':2}]}]}
+        for i in range(24)]}
+    run.guard=lambda:None
+    pending=set();submitted=[]
+    def submit(record,route,value):
+        key=str(len(submitted));submitted.append(value);pending.add(key);record['submission']={'request':deepcopy(value)}
+        assert len(pending)<=8
+        return key
+    def read(route):
+        key=route.split('=')[1];pending.remove(key)
+        result=batch(submitted[int(key)],key)
+        if failed and key=='0':
+            result['state']='failed'
+            for cell in result['cells']:cell['state']='failed';cell.pop('output')
+        return result
+    run.submit=submit;run.request=read
+    monkeypatch.setattr(campaign.time,'sleep',lambda _:None)
+    run.comparisons()
+    assert len(submitted)==24 and not pending
+    assert run.plan['state']==('complete_with_failed_comparisons' if failed else 'complete')
+
+
+BINDING=dict(model_identity='m',runtime_identity='r',prepared_identity='p',layout_sha256='l')
+
+def batch(request,key='batch'):
+    raw=[];cells=[]
+    for index,(label,sign) in enumerate(zip(('Baseline','Positive','Negative'),(0,1,-1))):
+        recipe={'name':label,'phase':'all','pushes':[] if not sign else [{'kind':'neuron',**n,'dose':sign*request['dose']/len(request['neurons'])} for n in request['neurons']]}
+        raw.append({'label':label,'prompt':request['prompt'],'recipe':deepcopy(recipe)})
+        cells.append({'index':index,'label':label,'state':'complete','prompt':{'text':request['prompt']},'recipe':recipe,'output':{**BINDING,'answer':'Response','complete':True,'finish_reason':'stop'}})
+    return {'id':key,'state':'complete','input':{'model_identity':'m','seed':request['seed'],'max_tokens':request['max_tokens'],'thinking':False,'smoke':False,'cells':raw,'admitted_endpoints':[BINDING]},'cells':cells}
+
+
+def test_frozen_actual_plan_and_mutations(tmp_path):
+    root=Path(__file__).resolve().parents[1]
+    plan=json.loads((root/'results/persona_association_research.json').read_text())
+    launch={'input_plan_sha256':campaign.input_plan_digest(plan)}
+    path=root/'data/persona_phantom_pairs.json'
+    assert campaign.validate_plan(plan,launch,path)==launch['input_plan_sha256']
+    for field,value in [('top_k',32),('expected_searches',59),('automatic_default_promotion',True)]:
+        changed=deepcopy(plan);changed[field]=value
+        with pytest.raises(ValueError):campaign.validate_plan(changed,launch,path)
+    changed=deepcopy(plan);changed['queries'][0]['text']='changed'
+    with pytest.raises(ValueError):campaign.validate_plan(changed,launch,path)
+    launch['input_plan_sha256']=campaign.input_plan_digest(changed)
+    with pytest.raises(ValueError):campaign.validate_plan(changed,launch,path)
+    changed=deepcopy(plan);changed['queries'][0]['split']='heldout';launch['input_plan_sha256']=campaign.input_plan_digest(changed)
+    with pytest.raises(ValueError):campaign.validate_plan(changed,launch,path)
+    wrong=tmp_path/'pairs.json';wrong.write_text(path.read_text()+' ')
+    with pytest.raises(ValueError):campaign.validate_plan(plan,{'input_plan_sha256':campaign.input_plan_digest(plan)},wrong)
+
+
+def test_activation_only_reads_config_and_verifies_manual_binding(tmp_path):
+    run=campaign.Campaign.__new__(campaign.Campaign);run.root=tmp_path;run.guard=lambda:None;run.save=lambda:None
+    run.launch={'observed_binding':BINDING};run.plan={}
+    config={'endpoints':[{'url':url,**BINDING} for url in campaign.URLS]};path=tmp_path/'persona_explorer.local.json';path.write_text(json.dumps(config));before=path.read_bytes()
+    calls=[]
+    def request(url,timeout):
+        calls.append(url);return {'data':[{'flare':{**BINDING,'activation_search':{'supported':True},'calibration_equivalence':{'passed':True},'kv_control':{'layout_sha256':'l'}}}]}
+    run.request=request;run.activate();assert path.read_bytes()==before;assert len(calls)==6;assert run.plan['binding']==BINDING
+    run.launch={'observed_binding':{**BINDING,'runtime_identity':'wrong'}}
+    with pytest.raises(ValueError):run.activate()
+    run.launch={'observed_binding':BINDING};config['endpoints'][0]['runtime_identity']='wrong';path.write_text(json.dumps(config))
+    with pytest.raises(ValueError):run.activate()
+
+
+def test_batch_snapshots_fail_closed_on_changed_arm_or_binding():
+    request={'prompt':'exact scene','neurons':[{'layer':1,'neuron':2}],'dose':.1,'seed':7035,'max_tokens':2048}
+    record={'batch_id':'batch','submission':{'request':request}};good=batch(request)
+    campaign.check_batch(good,record,BINDING)
+    for mutate in (lambda b:b['input'].update(seed=1),lambda b:b['cells'][0]['prompt'].update(text='changed'),
+                   lambda b:b['cells'][1]['recipe'].update(phase='prefill'),lambda b:b['cells'][2]['recipe']['pushes'][0].update(dose=.1),
+                   lambda b:b['cells'][0]['output'].update(runtime_identity='different'),lambda b:b['cells'].pop()):
+        bad=deepcopy(good);mutate(bad)
+        with pytest.raises(ValueError):campaign.check_batch(bad,record,BINDING)
+
+
+def test_search_exact_input_and_source_binding():
+    query={'search_id':'search','text':'exact'};plan={'top_k':16,'binding':BINDING}
+    output={**BINDING,'request_sha256':'request','activation_artifact':{**BINDING,'request_sha256':'request'},'profile_artifact':BINDING,'candidates':[{'layer':1,'neuron':2}]}
+    result={'id':'search','input':{'text':'exact','top_k':16,'model_identity':'m'},'output':output,'starter_recipes':[{'id':'single','neurons':[{'layer':1,'neuron':2}],'dose':.1,'status':'untested','evidence':'current_input_activity'}]}
+    campaign.check_search(result,query,plan)
+    for mutate in (lambda b:b['input'].update(text='changed'),lambda b:b['input'].update(top_k=32),lambda b:b['output'].update(runtime_identity='other'),lambda b:b['starter_recipes'][0].update(neurons=[{'layer':2,'neuron':3}])):
+        bad=deepcopy(result);mutate(bad)
+        with pytest.raises(ValueError):campaign.check_search(bad,query,plan)

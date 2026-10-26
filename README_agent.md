@@ -187,6 +187,57 @@ confirmation; a heldout failure must not tune a replacement on that same holdout
 operates between full responses, not a proven live-token controller. Interaction tests are
 exploratory until independently confirmed.
 
+## Arbitrary-input activation and matched scene workflow
+
+The existing Live activation search accepts whole/partial prompts, phrases, ideas,
+feelings and thoughts. Highlighting a span makes that span the next input. A compatible
+`capture_search` request summarizes all 64 × 17,408 = **1,114,112** neuron coordinates
+across rendered prompt positions, then a second prefill supplies top-candidate token
+profiles. Template/system positions are included; this is not user-text-only evidence.
+The internal observation token is not an answer continuation. Coverage is reported
+from validated artifacts, never inferred merely from a successful HTTP response.
+
+`GET /api/activation-search?id=...` exposes `starter_recipes`: up to three untested
+current-input-activity proposals (leading single neuron, a distinct-layer single
+neuron, and a three-distinct-layer group when available), at total dose 0.1. Selection
+fills the existing comparison form without inference. Users retain manual selection,
+editable shared scene text, seed/budget, and baseline/positive/negative arms through
+`POST /api/activation-comparisons`. Group dose is shared among selected neurons;
+negative additive steering is not ablation. Reset preserves durable records and
+invalidates stale UI polling/submission responses. Qualified labels, if present,
+require matching model identity and remain separate probe-conditioned evidence.
+
+The updated architecture adds `capture_search` to the canonical six interactive
+endpoints (8930–8935). The flat `activation_capture.py` override loads before decoder
+imports without editing the shared Flare source tree. Its SHA joins runtime source
+bindings and the forward-cache namespace; spawned compiler workers resolve the same
+override. `persona/persona_activation_lab.py` dispatches through up to six executor
+workers, bounded by configured endpoints, with a 64-active-or-queued search limit.
+This permits cross-card concurrency, not multiple simultaneous prepared B1 requests
+on one card. **Rollout is in progress; fresh runtime validation is pending.** Prior
+qualification reports remain bound to their original runtime/preparation and must not
+be silently transferred to a changed capture runtime.
+
+Activity-based candidate ranking is not calibrated concept confidence or a predictor
+of useful behavior. A future recipe predictor needs context, neuron set, dose and
+observed outcomes with independent evaluation. Learned KV is another intervention,
+not an automatic substitute for those data or validation.
+
+The completed association-depth record is `results/persona_association_depth.json`,
+with analysis in `results/persona_association_depth_summary.json`: six source neurons
+× six contexts × six arms = 216 captures (36 campaigns). Arms are baseline, zero,
++0.1, -0.1, +0.2 and -0.2. Baseline/zero equality passed 36/36; upstream and unaffected
+same-layer selected-panel invariance passed 144/144 nonzero arms, as did source sign.
+Invariance covers saved consumed prompt positions and selected SwiGLU traces; an
+absent upstream panel is a vacuous check, not a measurement. Zero checks also include
+all-layer residual norms. Six fixed contexts comprise three discovery and three
+held-out examples; they do not establish population confidence. Weak-association
+controls are active interventions, not causal nulls. Downstream responses vary with
+context/dose and include intervening layers and recurrence, not direct wiring.
+One sampled token per arm cannot grade prose, personality, coherence or refusal.
+The summary validates saved bindings/alignment/finite traces; it does not claim a new
+full download/hash audit of every remote NPZ or vocabulary-logit array.
+
 ## Literary KV interventions: first adapter and remaining work
 
 Owner requested Phantom-KV after the current sweep/viewer integration, for contrastive
@@ -282,11 +333,26 @@ on eight untouched held-out families. Seven held-out target NLLs were slightly l
 and one higher; this does not demonstrate prose quality, genre control, refusal
 reduction or coherence recovery. Candidate SHA-256:
 `06a33bf4a67c81e90ae3fad8939dbfd3b8fbb08aeb65a02b221fe7777f1e1a8f`.
-Native qualification is pending; training success does not promote a serving control.
+Native qualification passed 72 requests across all six workers. Exact report:
+`results/phantom-qualification-b9f343fa60104d578b5c90b4febb12db.json`.
+This qualifies the recorded native runtime/artifact combination, not behavior quality
+or the new search-runtime rollout. Training and qualification do not automatically
+promote a default control.
 The candidate's `admission_validation` links the hashed successful validation report;
 its redundant `gradient_validation` field is null in this first training export.
 Validation consumers must verify the linked report and its precision/source/dataset
 bindings. Only approved benign literary pairs were used, not upstream harmful prompts.
+
+The learned-control pilot in `results/persona_phantom_literary_pilot.json` retains
+four matched arms on four discovery prompts from two scene families: 15 complete,
+one incomplete (Lisey original, neuron-only, length stop during self-revision).
+Pre-output criteria and `assistant_review` are retained separately from human review.
+No model refusal was observed by the assistant. Learned-KV-only responses showed no
+consistent improvement over baseline. Combined control completed the formerly
+truncating response, retained a different task nonanswer, and in one uncertain-intent
+scene replaced established source facts with contradictory car/location details.
+This is mixed integration evidence, not efficacy or coherence-recovery validation;
+benign fictional additions are not automatically treated as factual errors.
 
 Prototype implementation and admission gates:
 
@@ -315,8 +381,8 @@ Prototype implementation and admission gates:
   requests across all six workers (greedy, sampled and combined neuron cases),
   including exact rebuild/reuse and off-state restoration. A marker alone is
   insufficient: artifact discovery verifies its linked report hash and runtime
-  binding. The learned native path remains unavailable until this qualification
-  passes; code and CPU tests are not a serving qualification.
+  binding. The recorded six-worker qualification passed; changed runtime bindings
+  require fresh validation. Code and CPU tests alone are not serving qualification.
 
 Preserved requirements for completing learned-graft integration:
 

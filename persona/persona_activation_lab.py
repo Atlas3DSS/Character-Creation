@@ -86,8 +86,30 @@ class ActivationLab:
             db.execute("UPDATE activation_searches SET state='interrupted',error='Explorer restarted; remote outcome unknown; no automatic retry' WHERE state IN ('queued','running')")
             db.execute('CREATE TABLE IF NOT EXISTS activation_comparisons(search_id TEXT,batch_id TEXT PRIMARY KEY,input TEXT)')
         self.executor=ThreadPoolExecutor(max_workers=max(1,min(6,len(self.endpoints))))
+        self.eligibility_lock=threading.Lock()
+        self.eligible_cache=[]
+        self.eligible_updated=0.
         self.session_lock=threading.Lock()
         self.session={"state":"idle"}
+
+    def eligible_endpoints(self):
+        # Admission discovery is cached briefly; each actual request rechecks
+        # model/runtime identities before inference. Never route to idle aliases.
+        with self.eligibility_lock:
+            if self.eligible_cache and time.monotonic()-self.eligible_updated<5:
+                return deepcopy(self.eligible_cache)
+            eligible=[];seen=set()
+            for endpoint in self.endpoints:
+                card=endpoint.get('gpu_uuid') or endpoint['url']
+                if card in seen:continue
+                try:
+                    descriptor=fetch(endpoint['url']+'/v1/models',timeout=3)['data'][0]
+                    flare=self.app.check_program(descriptor,endpoint,{'phase':'all','sites':[]})
+                    if flare.get('activation_search',{}).get('supported') is True:
+                        eligible.append(deepcopy(endpoint));seen.add(card)
+                except (OSError,RuntimeError,ValueError,KeyError):continue
+            self.eligible_cache=eligible;self.eligible_updated=time.monotonic()
+            return deepcopy(eligible)
 
     def status(self):
         def check(endpoint):
@@ -97,9 +119,14 @@ class ActivationLab:
                 ready=flare.get('activation_search',{}).get('supported') is True
                 return {'label':endpoint.get('label',endpoint['url']),'ready':ready,'reason':None if ready else 'Worker does not advertise all-neuron activation search'}
             except Exception as error:return {'label':endpoint.get('label',endpoint['url']),'ready':False,'reason':str(error)}
-        with ThreadPoolExecutor(max_workers=max(1,len(self.endpoints))) as pool:cards=list(pool.map(check,self.endpoints))
+        with ThreadPoolExecutor(max_workers=max(1,len(self.endpoints))) as pool:aliases=list(pool.map(check,self.endpoints))
+        physical={}
+        for endpoint,card in zip(self.endpoints,aliases):
+            key=endpoint.get('gpu_uuid') or endpoint['url']
+            if key not in physical or card['ready']:physical[key]=card
+        cards=list(physical.values())
         with self.session_lock:session=deepcopy(self.session)
-        return {'ready':sum(c['ready'] for c in cards),'configured':len(cards),'cards':cards,'session':session,
+        return {'ready':sum(c['ready'] for c in cards),'configured':len(cards),'cards':cards,'endpoint_aliases':len(aliases),'session':session,
                 'isolated_configured':bool(getattr(self.app,'activation_endpoints',[])),'ablation':False}
 
     def start_session(self,value):
@@ -141,12 +168,7 @@ class ActivationLab:
         text=value['text'];top=value['top_k']
         if not isinstance(text,str) or not text.strip() or len(text)>20000:raise ValueError('Supply 1–20,000 characters; input is never silently truncated')
         if type(top) is not int or not 1<=top<=32:raise ValueError('Select 1–32 candidates')
-        eligible=[]
-        for endpoint in self.endpoints:
-            try:descriptor=fetch(endpoint['url']+'/v1/models',timeout=3)['data'][0]
-            except (OSError,RuntimeError):continue
-            flare=self.app.check_program(descriptor,endpoint,{'phase':'all','sites':[]})
-            if flare.get('activation_search',{}).get('supported') is True:eligible.append(endpoint['url'])
+        eligible=[endpoint['url'] for endpoint in self.eligible_endpoints()]
         if not eligible:raise ValueError('No identity-verified worker supports all-neuron activation search yet. Start a session with the upgraded diagnostic runtime.')
         key=uuid.uuid4().hex
         value=deepcopy(value)|{'model_identity':self.app.model.identity}
@@ -210,6 +232,8 @@ class ActivationLab:
         for label,sign in [('Baseline',0),('Positive',1),('Negative',-1)]:
             pushes=[] if not sign else [{'kind':'neuron',**row,'dose':sign*dose/len(neurons)} for row in neurons]
             cells.append({'label':label,'prompt':value['prompt'],'recipe':{'name':label,'pushes':pushes,'phase':'all'}})
-        batch=self.app.submit_batch({'model_identity':self.app.model.identity,'seed':value['seed'],'max_tokens':value['max_tokens'],'thinking':False,'smoke':False,'cells':cells}, endpoints=self.endpoints)
+        endpoints=self.eligible_endpoints()
+        if not endpoints:raise ValueError('No ready compatible search worker is available for comparison')
+        batch=self.app.submit_batch({'model_identity':self.app.model.identity,'seed':value['seed'],'max_tokens':value['max_tokens'],'thinking':False,'smoke':False,'cells':cells}, endpoints=endpoints)
         with self.app.connect() as db:db.execute('INSERT INTO activation_comparisons VALUES(?,?,?)',(value['search_id'],batch,json.dumps(value,allow_nan=False)))
         return {'id':batch,'dose_semantics':'Total relative dose divided equally across selected neurons','ablation':False}

@@ -55,7 +55,9 @@ class LabTests(unittest.TestCase):
             ('a'*32,1,state,json.dumps({'text':'source','top_k':1,'model_identity':'model'}),json.dumps(result()),None,None))
     def test_compare_binds_candidates_and_divides_collection_dose(self):
         self.insert();value={'search_id':'a'*32,'neurons':[{'layer':1,'neuron':2}],'prompt':'new scenario','seed':7035,'dose':.5,'max_tokens':2048}
-        response=self.lab.compare(value);self.assertEqual(response['id'],'b'*32)
+        with patch('persona_activation_lab.fetch',return_value={'data':[{'id':'model'}]}):
+            response=self.lab.compare(value)
+        self.assertEqual(response['id'],'b'*32)
         cells=self.app.submit_batch.call_args.args[0]['cells']
         self.assertEqual(cells[0]['recipe']['pushes'],[])
         self.assertEqual(cells[1]['recipe']['pushes'][0]['dose'],.5)
@@ -91,9 +93,26 @@ class LabTests(unittest.TestCase):
         self.insert()
         self.assertEqual(other.get('a'*32)['starter_recipes'][0]['neurons'],[{'layer':1,'neuron':2}])
 
+    def test_status_counts_physical_cards_not_runtime_aliases(self):
+        self.endpoint['gpu_uuid']='card'
+        self.lab.endpoints=[self.endpoint,{**self.endpoint,'url':'http://127.0.0.1:2'}]
+        with patch('persona_activation_lab.fetch',side_effect=lambda url,**kwargs:
+                   {'data':[{'id':'model'}]} if ':1/' in url else (_ for _ in ()).throw(OSError('offline'))):
+            status=self.lab.status()
+        self.assertEqual((status['ready'],status['configured'],status['endpoint_aliases']),(1,1,2))
+
     def test_search_queue_can_fill_six_cards_and_has_a_finite_bound(self):
         self.lab.executor.submit=Mock()
         with patch('persona_activation_lab.fetch',return_value={'data':[{'id':'model'}]}):
             for i in range(64):self.lab.submit({'text':f'scene {i}','top_k':1})
             self.assertEqual(self.lab.executor.submit.call_count,64)
             with self.assertRaisesRegex(ValueError,'queue is full'):self.lab.submit({'text':'overflow','top_k':1})
+
+    def test_unavailable_aliases_are_not_comparison_slots(self):
+        self.endpoint['gpu_uuid']='one-gpu'
+        other={**self.endpoint,'url':'http://127.0.0.1:2'}
+        self.lab.endpoints=[self.endpoint,other]
+        with patch('persona_activation_lab.fetch',return_value={'data':[{'id':'model'}]}) as fetch:
+            self.assertEqual(self.lab.eligible_endpoints(),[self.endpoint])
+            self.assertEqual(self.lab.eligible_endpoints(),[self.endpoint])
+            self.assertEqual(fetch.call_count,1)
