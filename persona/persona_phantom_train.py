@@ -204,7 +204,19 @@ class FunctionalDecoder(nn.Module):
         return torch.stack(losses).sum()
 
 
-def load_frozen_model(checkpoint_path, devices, guard=None):
+def precision_settings(weight_dtype):
+    if weight_dtype not in ('float16','float32'):raise ValueError('Unsupported frozen weight dtype')
+    return {'weight_dtype':weight_dtype,'training_backend':'decoded-'+('fp32' if weight_dtype=='float32' else 'fp16')+'-hf-surrogate',
+            'gradient_protocol':{'epsilons':[.1,.2] if weight_dtype=='float32' else [.01],
+                                 'max_relative_error':.12,'require_positive_direction':True}}
+
+
+def frozen_weight_dtype(name,weight_dtype):
+    precision_settings(weight_dtype)
+    return torch.float32 if weight_dtype=='float32' or any(s in name for s in ('norm.weight','A_log','dt_bias')) else torch.float16
+
+
+def load_frozen_model(checkpoint_path, devices, guard=None, weight_dtype='float16'):
     """Expand one tensor at a time into a frozen model shard; never write weights."""
     os.environ['HF_HUB_OFFLINE']='1';os.environ['TRANSFORMERS_OFFLINE']='1'
     from persona_phantom_weights import PackedCheckpoint
@@ -222,7 +234,7 @@ def load_frozen_model(checkpoint_path, devices, guard=None):
         return devices[0] if name.startswith('model.embed_tokens.') else devices[-1]
     for name,parameter in list(model.named_parameters()):
         if guard:guard()
-        dtype=torch.float32 if any(s in name for s in ('norm.weight','A_log','dt_bias')) else torch.float16
+        dtype=frozen_weight_dtype(name,weight_dtype)
         value=reader.tensor(name,device=destination(name),dtype=dtype)
         if value.shape!=parameter.shape:raise ValueError('Decoded weight shape differs: '+name)
         parent=model.get_submodule(name.rsplit('.',1)[0]);setattr(parent,name.rsplit('.',1)[1],nn.Parameter(value,requires_grad=False))
@@ -257,7 +269,7 @@ def encode_pair(tokenizer,row,max_tokens):
     return torch.tensor([prompt+target],dtype=torch.long),len(prompt)
 
 
-def gradient_check(decoder,ids,target_start,*,epsilon=1e-2,tolerance=.12):
+def gradient_check(decoder,ids,target_start,*,epsilon=1e-2,tolerance=.12,raise_on_failure=True):
     """Directional central difference, evaluated without optimizer updates."""
     parameters=list(decoder.bank.parameters());decoder.bank.zero_grad(set_to_none=True)
     loss=decoder.loss(ids,target_start,kl_weight=0);loss.backward()
@@ -276,18 +288,33 @@ def gradient_check(decoder,ids,target_start,*,epsilon=1e-2,tolerance=.12):
         with torch.no_grad():
             for p,base in zip(parameters,original):p.copy_(base)
     relative=abs(numerical-norm)/max(abs(numerical),norm,1e-12)
-    if relative>tolerance:raise ValueError(f'Gradient check failed: analytic={norm}, numerical={numerical}, relative={relative}')
-    return {'analytic_directional_derivative':norm,'numerical_directional_derivative':numerical,'relative_error':relative,'epsilon':epsilon,'passed':True}
+    passed=math.isfinite(relative) and numerical>0 and relative<=tolerance
+    result={'analytic_directional_derivative':norm,'numerical_directional_derivative':numerical,'relative_error':relative,
+            'epsilon':epsilon,'positive_direction':numerical>0,'passed':passed,'loss_plus':values[0],'loss_minus':values[1]}
+    if not passed and raise_on_failure:raise ValueError(f'Gradient check failed: {result}')
+    return result
+
+
+def precision_gradient_check(decoder,ids,target_start,weight_dtype):
+    protocol=precision_settings(weight_dtype)['gradient_protocol'];measurements=[]
+    for epsilon in protocol['epsilons']:
+        try:result=gradient_check(decoder,ids,target_start,epsilon=epsilon,tolerance=protocol['max_relative_error'],raise_on_failure=False)
+        except ValueError as error:result={'epsilon':epsilon,'passed':False,'error':str(error)}
+        measurements.append(result)
+    return {'passed':all(row['passed'] for row in measurements),'protocol':protocol,'measurements':measurements}
+
 
 
 def write_candidate(path,bank,metadata):
     if metadata.get('optimizer_steps',0)<1 or metadata.get('native_flare_qualified') is not False:
         raise ValueError('Only an actually updated, explicitly unqualified learned candidate can be exported')
+    settings=precision_settings(metadata.get('weight_dtype'))
+    if any(metadata.get(k)!=v for k,v in settings.items()):raise ValueError('Candidate precision/backend binding differs')
     keys=torch.stack([bank.keys[str(i)].detach().float().cpu() for i in bank.layers]).numpy()
     values=torch.stack([bank.values[str(i)].detach().float().cpu() for i in bank.layers]).numpy()
     if not np.isfinite(keys).all() or not np.isfinite(values).all():raise ValueError('Nonfinite learned candidate')
     metadata={**metadata,'schema':SCHEMA,'key_space':'post_norm_post_rope','prompt_position_start':bank.slots,
-              'recurrent_initial_state':'fresh_zero','training_backend':'decoded-fp16-hf-surrogate',
+              'recurrent_initial_state':'fresh_zero',
               'claim':'Learned candidate only; native inference compatibility, genre efficacy and coherence recovery unqualified.'}
     with Path(path).open('xb') as stream:
         np.savez(stream,keys=keys,values=values,attention_layers=np.asarray(bank.layers,dtype=np.int64),metadata=np.asarray(json.dumps(metadata,sort_keys=True,allow_nan=False)))
@@ -361,8 +388,16 @@ def require_validation(path,metadata,manifest,native_reference):
     if (report.get('state')!='validation_passed' or report.get('validation',{}).get('passed') is not True
             or report.get('native_forward',{}).get('passed') is not True or report.get('checkpoint')!=manifest
             or report['native_forward'].get('native_reference_sha256')!=native_reference['sha256']
-            or any(report.get(k)!=metadata[k] for k in ('model_identity','dataset_sha256','trainer_sha256','reader_sha256','seed','slots','max_tokens'))):
+            or any(report.get(k)!=metadata[k] for k in ('model_identity','dataset_sha256','trainer_sha256','reader_sha256','seed','slots','max_tokens','weight_dtype','training_backend','gradient_protocol'))):
         raise ValueError('Training requires a successful, unchanged full-model native-forward and gradient validation report')
+    settings=precision_settings(metadata['weight_dtype']);validation=report['validation']
+    rows=validation.get('measurements',[]);protocol=settings['gradient_protocol']
+    if (any(metadata.get(k)!=v for k,v in settings.items()) or validation.get('protocol')!=protocol
+            or [row.get('epsilon') for row in rows]!=protocol['epsilons']
+            or any(row.get('passed') is not True or row.get('positive_direction') is not True
+                   or not isinstance(row.get('relative_error'),(int,float)) or not 0<=row['relative_error']<=.12
+                   or not row.get('numerical_directional_derivative',0)>0 for row in rows)):
+        raise ValueError('Gradient precision protocol or recorded measurements differ')
     return {'path':str(Path(path).resolve()),'sha256':file_digest(path)}
 
 def write_interrupted(path,bank,optimizer,metadata):
@@ -390,8 +425,8 @@ def write_interrupted(path,bank,optimizer,metadata):
 PREFLIGHT_TOLERANCES={'rtol':.02,'atol':.002}
 
 
-def device_preflight(device):
-    """Tiny synthetic FP16 forward/backward test; no checkpoint weights involved."""
+def device_preflight(device,weight_dtype='float16'):
+    """Tiny synthetic selected-precision test; no checkpoint weights involved."""
     generator=torch.Generator(device='cpu').manual_seed(1907)
     def sample(shape):return (torch.randn(shape,generator=generator)*.125).half().float()
     cases=[('linear',sample((2,17,32)),sample((48,32))),
@@ -405,8 +440,8 @@ def device_preflight(device):
         reference=operation(reference_input,reference_weight)
         probe=torch.linspace(-.5,.5,reference.numel(),dtype=torch.float32).reshape(reference.shape)
         reference_grads=torch.autograd.grad((reference*probe).sum(),(reference_input,reference_weight))
-        x=input_cpu.to(device=device,dtype=torch.float16).detach().requires_grad_(True)
-        w=weight_cpu.to(device=device,dtype=torch.float16).detach().requires_grad_(True)
+        x=input_cpu.to(device=device,dtype=getattr(torch,weight_dtype)).detach().requires_grad_(True)
+        w=weight_cpu.to(device=device,dtype=getattr(torch,weight_dtype)).detach().requires_grad_(True)
         observed=operation(x,w)
         grads=torch.autograd.grad((observed.float()*probe.to(device)).sum(),(x,w))
         tensors=[('output',observed,reference),('input_gradient',grads[0],reference_grads[0]),('weight_gradient',grads[1],reference_grads[1])]
@@ -416,18 +451,18 @@ def device_preflight(device):
             passed=finite and torch.allclose(actual,expected,**PREFLIGHT_TOLERANCES)
             metrics.append({'operation':name,'field':field,'finite':finite,'passed':passed,
                             'max_absolute_error':float((actual-expected).abs().max()) if finite else None})
-    return {'device':str(device),'dtype':'float16','reference':'CPU float32 with identically rounded inputs',
+    return {'device':str(device),'dtype':weight_dtype,'reference':'CPU float32 with identically rounded inputs',
             'cudnn_enabled':torch.backends.cudnn.enabled,'tolerances':PREFLIGHT_TOLERANCES,
             'passed':all(row['passed'] for row in metrics),'metrics':metrics}
 
 
-def hardware_preflight(devices,guard):
+def hardware_preflight(devices,guard,weight_dtype='float16'):
     report={'passed':False,'backend':'ATen convolution; cuDNN explicitly disabled for SM70 compatibility',
             'torch_version':torch.__version__,'cudnn_enabled':torch.backends.cudnn.enabled,
             'tolerances':PREFLIGHT_TOLERANCES,'devices':[]}
     for device in devices:
         guard()
-        try:result=device_preflight(device)
+        try:result=device_preflight(device,weight_dtype)
         except TrainingInterrupted:raise
         except Exception as error:result={'device':str(device),'passed':False,'error':str(error)}
         report['devices'].append(result)
@@ -436,6 +471,8 @@ def hardware_preflight(devices,guard):
 
 def run(args):
     if args.output.exists() or args.partial_output.exists():raise ValueError('Output/partial path exists; explicit fresh paths required')
+    settings=precision_settings(args.weight_dtype)
+    if not math.isfinite(args.max_gpu_gib) or not 0<args.max_gpu_gib<=31:raise ValueError('GPU allocator cap must be at most 31 GiB; no offload')
     data=load_pairs(args.dataset);discovery=[r for r in data['rows'] if r['split']=='discovery'];heldout=[r for r in data['rows'] if r['split']=='heldout']
     os.environ['HF_HUB_OFFLINE']='1';os.environ['TRANSFORMERS_OFFLINE']='1'
     from transformers import AutoTokenizer
@@ -454,7 +491,7 @@ def run(args):
     bank=optimizer=None;manifest=None;history=[];validation=None;stage='hardware_preflight'
     previous_cudnn=torch.backends.cudnn.enabled
     torch.backends.cudnn.enabled=False
-    metadata={'model_identity':args.model_identity,'dataset_sha256':data['sha256'],'seed':args.seed,'optimizer_steps':0,
+    metadata={**settings,'model_identity':args.model_identity,'dataset_sha256':data['sha256'],'seed':args.seed,'optimizer_steps':0,
               'trainer_sha256':file_digest(__file__),'reader_sha256':file_digest(Path(__file__).with_name('persona_phantom_weights.py')),
               'learning_rate':args.learning_rate,'kl_weight':args.kl_weight,'max_gpu_gib':args.max_gpu_gib,'slots':args.slots,'max_tokens':args.max_tokens}
     try:
@@ -466,21 +503,20 @@ def run(args):
             total=torch.cuda.get_device_properties(device).total_memory
             if cap>=total:raise ValueError('Declared allocator cap must fit each physical GPU')
             torch.cuda.set_per_process_memory_fraction(cap/total,device)
-        metadata['hardware_preflight']=hardware_preflight(args.devices,guard)
+        metadata['hardware_preflight']=hardware_preflight(args.devices,guard,args.weight_dtype)
         if not metadata['hardware_preflight']['passed']:
             result={**metadata,'state':'validation_failed','stage':'hardware_preflight','native_flare_qualified':False}
             with args.output.open('x') as stream:json.dump(result,stream,indent=2)
             print(json.dumps({'report':str(args.output),'state':result['state'],'stage':'hardware_preflight'}));return result
         stage='loading';torch.manual_seed(args.seed)
-        model,manifest=load_frozen_model(args.checkpoint,args.devices,guard=guard)
+        model,manifest=load_frozen_model(args.checkpoint,args.devices,guard=guard,weight_dtype=args.weight_dtype)
         device_map={i:next(model.model.layers[i].parameters()).device for i in ATTENTION_LAYERS}
         bank=GraftBank(ATTENTION_LAYERS,4,args.slots,256,devices=device_map,seed=args.seed)
         decoder=FunctionalDecoder(model,bank,guard=guard)
         if args.command=='validate':
             stage='native_forward';native_result=native_forward_check(decoder,native) if native else {'passed':False,'reason':'No native reference supplied'}
             stage='gradient_validation'
-            try:validation=gradient_check(decoder,*encoded[discovery[0]['id']])
-            except ValueError as error:validation={'passed':False,'error':str(error)}
+            validation=precision_gradient_check(decoder,*encoded[discovery[0]['id']],args.weight_dtype)
             guard();passed=native_result['passed'] and validation['passed']
             result={**metadata,'state':'validation_passed' if passed else 'validation_failed','native_flare_qualified':False,
                     'validation':validation,'native_forward':native_result,'checkpoint':manifest}
@@ -525,6 +561,7 @@ def main():
     parser.add_argument('--checkpoint',type=Path,required=True);parser.add_argument('--dataset',type=Path,required=True)
     parser.add_argument('--model-identity',required=True);parser.add_argument('--devices',nargs=6,required=True)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--partial-output',type=Path,required=True)
+    parser.add_argument('--weight-dtype',choices=('float16','float32'),default='float16')
     parser.add_argument('--native-reference',type=Path);parser.add_argument('--validation-report',type=Path)
     parser.add_argument('--max-gpu-gib',type=float,required=True,help='Per-device allocator cap from fleet admission; not an admission bypass')
     parser.add_argument('--steps',type=int,default=10);parser.add_argument('--slots',type=int,default=64);parser.add_argument('--max-tokens',type=int,default=512)
@@ -533,7 +570,7 @@ def main():
     if (not valid_sha(args.model_identity) or len(set(args.devices))!=6 or any(not d.startswith('cuda:') or not d[5:].isdigit() for d in args.devices)
             or not 0<=args.seed<2**32 or not 1<=args.steps<=1000 or not 1<=args.slots<=128 or not 16<=args.max_tokens<=2048
             or not math.isfinite(args.learning_rate) or not 0<args.learning_rate<=.01 or not 0<=args.kl_weight<=1
-            or not math.isfinite(args.max_gpu_gib) or args.max_gpu_gib<=0 or args.output.resolve()==args.partial_output.resolve()):parser.error('Invalid bounded training settings')
+            or not math.isfinite(args.max_gpu_gib) or not 0<args.max_gpu_gib<=31 or args.output.resolve()==args.partial_output.resolve()):parser.error('Invalid bounded training settings')
     result=run(args)
     if result.get('state')=='interrupted':raise SystemExit(75)
     if result.get('state')=='validation_failed':raise SystemExit(2)

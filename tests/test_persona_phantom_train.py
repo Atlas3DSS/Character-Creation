@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from torch import nn
 from persona_phantom_train import (GraftBank,FunctionalDecoder,attention_with_graft,causal_prefix_mask,
-                                  gradient_check,load_pairs,digest,write_candidate,DATA_SCHEMA)
+                                  gradient_check,precision_settings,precision_gradient_check,frozen_weight_dtype,load_pairs,digest,write_candidate,DATA_SCHEMA)
 
 class Rotary(nn.Module):
  def forward(self,hidden,positions):
@@ -67,6 +67,28 @@ class FunctionalTests(unittest.TestCase):
   with torch.no_grad():
    for p in self.bank.parameters():p.add_(3)
   torch.testing.assert_close(self.decoder.hidden(self.ids,enabled=False),before)
+ def test_fp32_both_steps_restore_bank_and_frozen_model(self):
+  bank_before=[p.detach().clone() for p in self.bank.parameters()]
+  frozen_before=[p.detach().clone() for p in self.decoder.model.parameters()]
+  result=precision_gradient_check(self.decoder,self.ids,3,'float32')
+  self.assertTrue(result['passed'],result);self.assertEqual([r['epsilon'] for r in result['measurements']],[.1,.2])
+  for a,b in zip(bank_before,self.bank.parameters()):self.assertTrue(torch.equal(a,b))
+  for a,b in zip(frozen_before,self.decoder.model.parameters()):self.assertTrue(torch.equal(a,b));self.assertIsNone(b.grad)
+ def test_fp32_hardware_preflight_cpu_reference(self):
+  from persona_phantom_train import device_preflight
+  report=device_preflight('cpu','float32')
+  self.assertTrue(report['passed']);self.assertEqual(report['dtype'],'float32')
+ def test_failed_first_step_still_retains_second_measurement(self):
+  from unittest.mock import patch
+  with patch('persona_phantom_train.gradient_check',side_effect=[{'passed':False,'epsilon':.1},{'passed':True,'epsilon':.2}]) as check:
+   result=precision_gradient_check(self.decoder,self.ids,3,'float32')
+  self.assertFalse(result['passed']);self.assertEqual(len(result['measurements']),2);self.assertEqual(check.call_count,2)
+ def test_precision_weight_policy_and_artifact_mismatch(self):
+  for name in ('model.layers.0.mlp.up_proj.weight','lm_head.weight','model.layers.0.norm.weight','model.layers.0.A_log'):
+   self.assertEqual(frozen_weight_dtype(name,'float32'),torch.float32)
+  self.assertEqual(frozen_weight_dtype('lm_head.weight','float16'),torch.float16)
+  with tempfile.TemporaryDirectory() as directory:
+   with self.assertRaises(ValueError):write_candidate(Path(directory)/'bad.npz',self.bank,{**precision_settings('float32'),'training_backend':'decoded-fp16-hf-surrogate','optimizer_steps':1,'native_flare_qualified':False})
  def test_actual_update_and_export_is_explicit_unqualified_candidate(self):
   initial=[p.detach().clone() for p in self.bank.parameters()];optimizer=torch.optim.Adam(self.bank.parameters(),lr=.001)
   self.decoder.loss(self.ids,3).backward();optimizer.step()
@@ -74,7 +96,7 @@ class FunctionalTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as directory:
    path=Path(directory)/'graft.npz'
    with self.assertRaises(ValueError):write_candidate(path,self.bank,{'optimizer_steps':0,'native_flare_qualified':False})
-   write_candidate(path,self.bank,{'optimizer_steps':1,'native_flare_qualified':False})
+   write_candidate(path,self.bank,{**precision_settings('float32'),'optimizer_steps':1,'native_flare_qualified':False})
    with np.load(path,allow_pickle=False) as data:
     self.assertEqual(data['keys'].shape,(2,1,3,4));self.assertEqual(data['values'].shape,(2,1,3,4));meta=json.loads(str(data['metadata']));self.assertFalse(meta['native_flare_qualified']);self.assertEqual(meta['recurrent_initial_state'],'fresh_zero');self.assertEqual(meta['prompt_position_start'],3)
 
@@ -124,12 +146,12 @@ class AdmissionTests(unittest.TestCase):
   decoder.factor=1.;reference['records'][0]['generated']=2;self.assertFalse(native_forward_check(decoder,reference)['passed'])
  def test_training_report_cannot_bypass_failed_or_changed_validation(self):
   from persona_phantom_train import require_validation
-  metadata={k:'a'*64 for k in ('model_identity','dataset_sha256','trainer_sha256','reader_sha256')};metadata.update(seed=1,slots=2,max_tokens=32)
+  metadata={k:'a'*64 for k in ('model_identity','dataset_sha256','trainer_sha256','reader_sha256')};metadata.update(seed=1,slots=2,max_tokens=32,**precision_settings('float32'))
   native={'sha256':'b'*64};manifest={'config_sha256':'c'*64}
-  report={**metadata,'state':'validation_passed','validation':{'passed':True},'native_forward':{'passed':True,'native_reference_sha256':native['sha256']},'checkpoint':manifest}
+  report={**metadata,'state':'validation_passed','validation':{'passed':True,'protocol':metadata['gradient_protocol'],'measurements':[{'epsilon':e,'passed':True,'positive_direction':True,'relative_error':.01,'numerical_directional_derivative':.2} for e in (.1,.2)]},'native_forward':{'passed':True,'native_reference_sha256':native['sha256']},'checkpoint':manifest}
   with tempfile.TemporaryDirectory() as directory:
    path=Path(directory)/'validation.json';path.write_text(json.dumps(report));self.assertEqual(require_validation(path,metadata,manifest,native)['sha256'],__import__('hashlib').sha256(path.read_bytes()).hexdigest())
-   for field,value in [('state','validation_failed'),('reader_sha256','d'*64),('slots',3)]:
+   for field,value in [('state','validation_failed'),('reader_sha256','d'*64),('slots',3),('weight_dtype','float16'),('training_backend','decoded-fp16-hf-surrogate'),('checkpoint',{'changed':True})]:
     path.write_text(json.dumps({**report,field:value}))
     with self.assertRaises(ValueError):require_validation(path,metadata,manifest,native)
  def test_backward_can_stop_and_partial_checkpoint_is_not_trained(self):
@@ -153,7 +175,7 @@ class SignalTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as directory:
    root=Path(directory);dataset=root/'pairs.json'
    dataset.write_text(json.dumps({'schema':DATA_SCHEMA,'approval':{'scope':'benign_literary','approved':True},'rows':[DataTests().row('a','discovery'),DataTests().row('b','heldout')]}))
-   args=SimpleNamespace(output=root/'report.json',partial_output=root/'partial.npz',dataset=dataset,checkpoint=root,model_identity='a'*64,command='validate',native_reference=None,validation_report=None,devices=['cuda:'+str(i) for i in range(6)],max_gpu_gib=1.,seed=7,learning_rate=.001,kl_weight=.1,slots=2,max_tokens=32)
+   args=SimpleNamespace(output=root/'report.json',partial_output=root/'partial.npz',dataset=dataset,checkpoint=root,model_identity='a'*64,command='validate',weight_dtype='float32',native_reference=None,validation_report=None,devices=['cuda:'+str(i) for i in range(6)],max_gpu_gib=1.,seed=7,learning_rate=.001,kl_weight=.1,slots=2,max_tokens=32)
    tokenizer=SimpleNamespace(apply_chat_template=lambda *a,**k:[1,2],encode=lambda *a,**k:[3,4],eos_token_id=5)
    def stopped_loader(*a,**kw):signal.raise_signal(signal.SIGTERM);kw['guard']();raise AssertionError('Stop was not honored')
    original=signal.getsignal(signal.SIGTERM)
@@ -161,7 +183,7 @@ class SignalTests(unittest.TestCase):
     result=run(args)
    self.assertEqual(result['state'],'interrupted');self.assertFalse(args.output.exists());self.assertEqual(signal.getsignal(signal.SIGTERM),original)
    with np.load(args.partial_output,allow_pickle=False) as data:
-    metadata=json.loads(str(data['metadata']));self.assertFalse(metadata['bank_initialized']);self.assertFalse(metadata['training_complete']);self.assertEqual(metadata['stage'],'loading')
+    metadata=json.loads(str(data['metadata']));self.assertFalse(metadata['bank_initialized']);self.assertFalse(metadata['training_complete']);self.assertEqual(metadata['stage'],'loading');self.assertEqual(metadata['weight_dtype'],'float32');self.assertEqual(metadata['gradient_protocol']['epsilons'],[.1,.2])
 
 class TokenizerContainerTests(unittest.TestCase):
  def test_batchencoding_flat_batched_and_tensor_preserve_exact_ids(self):
