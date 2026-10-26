@@ -244,7 +244,12 @@ contexts and six sources (L0 N719/N9436, L24 N952/N9228, L48 N221/N7784), six sh
 baselines and 144 interventions at -0.2, -0.1, +0.1 and +0.2. All 150 responses
 completed. This changes phase from the earlier prefill-only study to all-token
 steering; its previously observed heldout contexts are repeated confirmation, not
-a fresh holdout. No KV, uncertain-POST retry or automatic preset promotion.
+a fresh holdout. No KV, uncertain-POST retry or automatic preset promotion. The Hub
+export `persona_recipe_depth_public.json` includes its frozen design, answers and
+separate assistant review. Review records 13 clear narrow contract/source issues
+and five ambiguous concerns, with exact evidence; these are not an exhaustive
+semantic error rate. No general monotonic dose–harm relationship or repeatable
+coherence improvement was established.
 
 Activity-based candidate ranking is not calibrated concept confidence or a predictor
 of useful behavior. A future recipe predictor needs context, neuron set, dose and
