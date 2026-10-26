@@ -71,7 +71,7 @@ Build a candidate recipe, then compare it against baseline using the same prompt
 
 In **Literary passages**, compile a scene prompt and open **Experimental neuron × cached-prefix comparison**. With a qualified runtime, it compares baseline, neuron steering, cached literary context, and both together. The same passage, seed and answer budget are used in all four arms, and the source record stays attached to the results. You can review whether an output answered or refused separately from its coherence checks.
 
-This first cache control reuses the model's complete state for an ordinary text prefix. It is groundwork for [Phantom-KV](https://github.com/lordx64/phantom-kv), not a trained refusal-removal graft. It supports exact off/on settings; learned 27B grafts, continuous strength control and automatic coherence recovery remain unvalidated. Learning a new 27B graft still requires a separate six-card forward-and-gradient validation path that keeps expanded weights in memory rather than writing checkpoint copies; that training has not started.
+This first cache control reuses the model's complete state for an ordinary text prefix. It is groundwork for [Phantom-KV](https://github.com/lordx64/phantom-kv), not a trained refusal-removal graft. It supports exact off/on settings; learned 27B grafts, continuous strength control and automatic coherence recovery remain unvalidated. The test prefixes can introduce their own scene details into a response, so passing the cache tests does not establish a useful persona effect. Learned-control training has not started: our hybrid 27B model needs its own training adapter.
 
 ## Read results with the right limits
 

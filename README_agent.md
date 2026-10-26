@@ -212,6 +212,25 @@ preparation/layout; the deployment must verify the linked report and its SHA bef
 publishing the local `results/persona_kv_artifacts.json` registry. A successful cache
 qualification does not establish refusal reduction, persona quality or coherence repair.
 
+Live qualification on 2026-10-26 passed 102 executed requests across all six V100
+workers (17 each). The final report is
+`results/kv-qualification-d466654c1e1e48328170763e5427b75c.json`, SHA256
+`02d62ac6423fbdafc8db5fab8b8d275a555103ed696e4923d6502ccf9542bf89`.
+The last worker exceeded the first readiness wait; `persona_kv_resume.py` revalidated
+the other 85 saved responses without repeating their POSTs, then tested the previously
+unstarted worker. This is 102 executions, not 187 independent replications.
+
+The private discovery integration pilot retained 15 complete responses and one
+neuron-only response truncated during repeated self-revision. The text prefixes
+introduced observatory-scene facts into unrelated source scenes. A six-cell follow-up
+with neuron doses 0.5, 0.25 and 0 on two prompt variants completed without that loop;
+both zero-dose answers exactly matched their original baselines. Assistant review
+still found invented details and missed instructions. These are local observations,
+not a validated default or coherence-repair result. Full source-bound batches and the
+bounded follow-up are indexed by `results/persona_kv_literary_pilot.json`; book-derived
+prompts and responses remain private. The surface scorer caught truncation but missed
+semantic self-revision, so its passing results must not stand in for prose evaluation.
+
 `persona/persona_literary_eval.py` preserves compiled book/workgroup/scene/split hashes,
 builds four matched arms and reports conservative refusal evidence separately from
 surface coherence. Unclassified responses remain uncertain until manual review; a

@@ -142,7 +142,7 @@ def catalog(app):
     for row in app.batches()['batches']:
         batch=app.batch(row['id'])
         if batch['input'].get('cells') and all(cell.get('literature_prompt_id') for cell in batch['input']['cells']):history.append(row)
-    return {'kv':{'available':bool(artifacts),'artifacts':artifacts,'reason':'; '.join(errors) or ('Qualified compatible prefix artifact available' if artifacts else 'No qualified compatible KV artifact and endpoint available')},
+    return {'kv':{'available':bool(artifacts),'artifacts':artifacts,'reason':'; '.join(errors) or ('Cache reuse qualified; behavior and coherence benefits unvalidated' if artifacts else 'No qualified compatible KV artifact and endpoint available')},
             'plan':offline_plan(),'recipes':app.saved_recipes()['recipes'],'history':history}
 
 
