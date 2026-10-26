@@ -103,3 +103,22 @@ class SnapshotTests(unittest.TestCase):
    self.assertEqual(batch['cells'][0]['prompt']['split'],'heldout')
    value['cells'][0]['prompt']='Substituted scene'
    with self.assertRaisesRegex(ValueError,'text differs'):fixture.app.submit_batch(value)
+
+
+class CatalogLabelTests(unittest.TestCase):
+ def test_named_prefix_fallback_and_invalid_labels(self):
+  from persona_literary_eval import catalog
+  control=LiteraryTests().control();artifact=control['artifact']
+  endpoint={k:artifact[k] for k in ('model_identity','runtime_identity','prepared_identity')};endpoint['url']='http://qualified'
+  descriptor={'flare':{'kv_control':dict(supported=True,kinds=['hybrid_text_prefix'],doses=[0,1],layout_sha256=artifact['layout_sha256'],qualified_artifacts=[artifact['sha256']])}}
+  with tempfile.TemporaryDirectory() as directory:
+   root=Path(directory);(root/'results').mkdir();path=root/'results/persona_kv_artifacts.json'
+   app=SimpleNamespace(root=root,model=SimpleNamespace(identity=artifact['model_identity']),endpoints=[endpoint],activation_endpoints=[],check_program=Mock(),batches=lambda:{'batches':[]},saved_recipes=lambda:{'recipes':[]})
+   with patch('persona_fleet.fetch',return_value={'data':[descriptor]}):
+    path.write_text(json.dumps({'artifacts':[artifact],'labels':{artifact['sha256']:'Horror'}}))
+    self.assertEqual(catalog(app)['kv']['artifacts'][0]['label'],'Horror')
+    path.write_text(json.dumps({'artifacts':[artifact]}))
+    self.assertEqual(catalog(app)['kv']['artifacts'][0]['label'],artifact['prefix_text'])
+    for label in ['', 'x'*81, 'line\nbreak']:
+     path.write_text(json.dumps({'artifacts':[artifact],'labels':{artifact['sha256']:label}}))
+     result=catalog(app);self.assertFalse(result['kv']['available']);self.assertIn('labels',result['kv']['reason'])

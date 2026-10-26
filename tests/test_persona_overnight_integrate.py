@@ -46,6 +46,9 @@ def test_intervention_and_unknown_split_rejected(tmp_path):
     bad = list(row); request = json.loads(bad[3]); request['steering'] = {}; bad[3] = json.dumps(request)
     with pytest.raises(ValueError, match='unsteered'):
         m.extract(bad, frozen, tmp_path, coordinates, 'model')
+    bad = list(row); request = json.loads(bad[3]); request['kv_control'] = {'dose': 1}; bad[3] = json.dumps(request)
+    with pytest.raises(ValueError, match='unsteered'):
+        m.extract(bad, frozen, tmp_path, coordinates, 'model')
     source = dict(frozen['one'], split='unknown'); bad = list(row); bad[2] = json.dumps(source)
     with pytest.raises(ValueError, match='discovery/heldout tiers'):
         m.extract(bad, {'one': source}, tmp_path, coordinates, 'model')

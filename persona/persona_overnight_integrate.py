@@ -156,7 +156,7 @@ def extract(row, frozen, root, coordinates, model_identity):
     if source.get('split') not in ('discovery', 'heldout') or source.get('tier') not in TIERS:
         raise ValueError('Only declared discovery/heldout tiers may enter the viewer')
     if (request.get('messages') != source['messages'] or request.get('observation_only') is not True
-            or request.get('max_tokens') != 1 or 'steering' in request):
+            or request.get('max_tokens') != 1 or 'steering' in request or 'kv_control' in request):
         raise ValueError('Capture is not its exact unsteered source prompt')
     if identities['model_identity'] != model_identity:
         raise ValueError('Capture model differs from displayed map')
@@ -316,6 +316,13 @@ def integrate(args):
     binding = {'input_sha256': source_binding['input_sha256'], 'map_sha256': map_sha,
                'extractor_sha256': file_hash(__file__)}
     db = cache_database(output / 'persona_overnight_viewer.sqlite', binding, args.previous_extractor, inputs)
+    def publish_current():
+        # Validation can outlast the capture run. Publish current source counts,
+        # not the counts from when a long extraction pass first started.
+        latest_binding, latest_counts, _ = source_rows(args.database)
+        if latest_binding['input_sha256'] != binding['input_sha256']:
+            raise ValueError('Source inputs changed before viewer publication')
+        return publish(db, output, chart, map_sha, binding, latest_counts)
     cpus = sorted(os.sched_getaffinity(0)); slots = queue.Queue()
     for cpu in cpus: slots.put(cpu)
     workers = min(args.workers or len(cpus), len(cpus))
@@ -345,11 +352,11 @@ def integrate(args):
                 imported = len(prior) + start + len(batch)
                 print(json.dumps({'event': 'imported', 'captures': imported, 'total_complete': len(rows)}), flush=True)
                 if imported - last_published >= 1000 and time.monotonic() - last_time > 120:
-                    publish(db, output, chart, map_sha, binding, counts)
+                    publish_current()
                     last_published, last_time = imported, time.monotonic()
         count = db.execute('SELECT count(*) FROM captures').fetchone()[0]
         if count != last_published:
-            publish(db, output, chart, map_sha, binding, counts); last_published = count; last_time = time.monotonic()
+            publish_current(); last_published = count; last_time = time.monotonic()
         if not args.watch: break
         time.sleep(60)
         slots = queue.Queue()

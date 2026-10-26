@@ -88,6 +88,10 @@ class ResearchTests(unittest.TestCase):
   value=r.approved_source(row,{'approved':item},{});self.assertEqual(value['prompt'],'Public prompt');row['messages'][0]['content']='PRIVATE BOOK'
   with self.assertRaises(ValueError):r.approved_source(row,{'approved':item},{})
   self.assertIsNone(r.approved_source({'tier':'book_diverse','messages':[{'content':'PRIVATE BOOK'}]}, {}, {}))
+ def test_kv_conditioning_cannot_enter_unsteered_public_captures(self):
+  request={'messages':[{'role':'user','content':'Public prompt'}],'observation_only':True,'kv_control':{'dose':1}}
+  with self.assertRaisesRegex(ValueError,'intervention'):
+   r.public_capture({'prompt':'Public prompt'},request,{'model_identity':'m'},{},self.policy)
  def test_authored_hash_guard(self):
   policy={'authored_emotion_source_sha256':'graph'};row={'id':'probe','tier':'authored_emotion_contrast','source_sha256':'graph','messages':[{'role':'user','content':'Original authored text'}],'provenance':{'authored_graph_sha256':'graph','raw_text_sha256':r.sha(b'Original authored text'),'feature':'joy','frame':'feeling','arm':'positive','pair_family':'pair'}}
   self.assertEqual(r.approved_source(row,{},policy)['tier'],'authored_emotion_contrast');row['provenance']['raw_text_sha256']='wrong'

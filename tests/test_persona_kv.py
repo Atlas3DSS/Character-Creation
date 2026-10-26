@@ -106,3 +106,57 @@ def test_qualification_rejects_noop_or_changed_suffix(tmp_path):
         prove_prefix_effect(baseline, dict(grafted, mlp_input_last=np.array([0.])), response)
     with pytest.raises(ValueError, match='unchanged'):
         prove_prefix_effect(baseline, dict(grafted, prompt_token_ids=np.array([3, 1, 4])), response)
+
+
+def test_resume_rejects_partial_or_uncertain_attempts(tmp_path):
+    from persona_kv_resume import saved_responses
+    rows = []
+    for i in range(17):
+        request = {'n': i}
+        rows.extend([dict(attempt=str(i), state='started', request=request),
+                     dict(attempt=str(i), state='response_received', request=request, response={'answer': i}),
+                     dict(attempt=str(i), state='validated')])
+    path = tmp_path/'attempts.jsonl'
+    path.write_text('\n'.join(map(json.dumps, rows)))
+    assert len(saved_responses(path)) == 17
+    path.write_text('\n'.join(map(json.dumps, rows[:-1])))
+    with pytest.raises(ValueError, match='Partial'): saved_responses(path)
+    rows[-1]['state'] = 'failed'
+    path.write_text('\n'.join(map(json.dumps, rows)))
+    with pytest.raises(ValueError, match='incomplete'): saved_responses(path)
+
+
+def test_resume_replays_without_posting_completed_cases(tmp_path, monkeypatch):
+    import persona_kv_resume as resume
+    import persona_kv_qualify as q
+    first, fresh = 'http://127.0.0.1:8930', 'http://127.0.0.1:8935'
+    old = tmp_path/'kv-attempt-old-8930.jsonl'; missing = tmp_path/'kv-attempt-old-8935.jsonl'
+    rows = []
+    for i in range(17):
+        rows.extend([dict(state='started', attempt=str(i), request={'n': i}),
+                     dict(state='response_received', attempt=str(i), request={'n': i}, response={'answer': i}),
+                     dict(state='validated', attempt=str(i))])
+    old.write_text('\n'.join(map(json.dumps, rows)) + '\n')
+    previous = tmp_path/'previous.json'
+    previous.write_text(json.dumps({'passed': False, 'error': 'URLError(readiness)',
+        'driver_sha256': resume.file_sha(q.__file__), 'attempt_files': [str(old), str(missing)]}))
+    actual_posts = []
+    def transport(url, value=None):
+        if value is not None:
+            actual_posts.append(url); return {'answer': value['n']}
+        return {'ready': True}
+    def qualify(endpoint, *args):
+        q.fetch(endpoint + '/v1/models')
+        for i in range(17):
+            assert q.fetch(endpoint + '/v1/chat/completions', {'n': i}) == {'answer': i}
+        return {'binding': {'test': 'same'}, 'artifacts': [{'sha256': 'a'*64}]}
+    monkeypatch.setattr(q, 'fetch', transport)
+    monkeypatch.setattr(q, 'qualify_endpoint', qualify)
+    monkeypatch.setattr('sys.argv', ['resume', '--previous-report', str(previous), '--output', str(tmp_path),
+                                    '--endpoint', first, '--endpoint', fresh])
+    resume.main()
+    assert actual_posts == [fresh + '/v1/chat/completions'] * 17
+    proof = json.loads((tmp_path/'kv-qualification.json').read_text())
+    report = json.loads(__import__('pathlib').Path(proof['report']['path']).read_text())
+    assert report['execution'][first] == 'saved_response_revalidation_not_independent_replication'
+    assert report['execution'][fresh] == 'fresh_requests_after_readiness'

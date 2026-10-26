@@ -121,6 +121,9 @@ def catalog(app):
     if path.exists():
         try:
             registry=json.loads(path.read_text())
+            labels=registry.get('labels',{})
+            if not isinstance(labels,dict) or any(not isinstance(k,str) or not re.fullmatch('[a-f0-9]{64}',k) or not isinstance(v,str) or not 1<=len(v.strip())<=80 or any(ord(c)<32 for c in v) for k,v in labels.items()):
+                raise ValueError('KV registry labels must map artifact hashes to 1–80 character single-line names')
             for artifact in registry['artifacts']:
                 control=validate_control({'artifact':artifact,'dose':1,'cache_policy':'reuse'},app.model.identity)
                 endpoints=[]
@@ -130,7 +133,10 @@ def catalog(app):
                         app.check_program(descriptor,endpoint,{'sites':[]})
                         check_control(control,descriptor,endpoint);endpoints.append(deepcopy(endpoint))
                     except (OSError,ValueError,KeyError,TypeError):continue
-                if endpoints:artifacts.append({'artifact':artifact,'endpoints':endpoints,'label':'Experimental cached literary text prefix · not learned Phantom-KV'})
+                if endpoints:
+                    first_line=next((line.strip() for line in artifact['prefix_text'].splitlines() if line.strip()),'Cached literary prefix')
+                    label=labels.get(artifact['sha256'],first_line[:80]).strip()
+                    artifacts.append({'artifact':artifact,'endpoints':endpoints,'label':label})
         except (OSError,ValueError,KeyError,TypeError) as error:errors.append(str(error))
     history=[]
     for row in app.batches()['batches']:

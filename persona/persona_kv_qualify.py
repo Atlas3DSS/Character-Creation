@@ -88,7 +88,15 @@ def prove_prefix_effect(baseline, grafted, response):
 
 
 def qualify_endpoint(endpoint, output=None, run_id=None):
-    model = fetch(endpoint + '/v1/models')['data'][0]; flare = model['flare']
+    deadline = time.monotonic() + 600
+    while True:
+        try:
+            model = fetch(endpoint + '/v1/models')['data'][0]
+            break
+        except (OSError, ValueError):
+            if time.monotonic() >= deadline: raise
+            time.sleep(5)
+    flare = model['flare']
     binding = {k: flare[k] for k in BINDINGS if k != 'layout_sha256'}
     binding['layout_sha256'] = flare['kv_control']['layout_sha256']
     if flare['kv_control']['kinds'] != ['hybrid_text_prefix']:
@@ -163,6 +171,7 @@ def main():
     args = p.parse_args()
     if not 1 <= len(args.endpoint) <= 6 or len(set(args.endpoint)) != len(args.endpoint): p.error('Use 1..6 unique already-leased endpoints')
     identity = uuid.uuid4().hex; report = {'id': identity, 'started': time.time(), 'passed': False,
+        'schema': 'character-creation.kv-qualification.v1', 'driver_sha256': file_sha(__file__),
         'attempt_files': [str(args.output / ('kv-attempt-' + identity + '-' + e.rsplit(':', 1)[-1] + '.jsonl')) for e in args.endpoint]}
     try:
         with ThreadPoolExecutor(max_workers=len(args.endpoint)) as pool:

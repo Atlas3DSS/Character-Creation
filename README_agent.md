@@ -228,6 +228,36 @@ dense per-layer K/V training are not adapters for this runtime. Our checkpoint h
 four KV heads of width 256. SM70 attention cache storage contains BF16 bit patterns
 in uint16 buffers; recurrent state and convolution history are separate.
 
+Read-only feasibility check on V100, 2026-10-26: the local 27B checkpoint is mixed
+ModelOpt NVFP4/FP8 (21.92 GB stored), not a directly trainable Transformers checkpoint.
+The installed environment has Torch `2.14.1+cu126`, Transformers `5.21.0.dev0` and
+Accelerate `1.14.0`; ModelOpt, `kernels`, FlashAttention and FLA are absent. Its
+Transformers quantizer mapping does not recognize `modelopt`. The separate NVFP4
+loader rejects pre-quantized checkpoints, multi-device placement and SM70 hardware,
+and declares `is_trainable=False`. Installing ModelOpt alone would not resolve these
+loader, hardware and backward-path constraints.
+
+Flare's SM70 packed projections use mutable output/workspace custom operations without
+a registered backward implementation, and the probe runs in inference mode. Also,
+installed Transformers gradient checkpointing clears `past_key_values` for these
+layers: enabling it around a cache-injected graft would discard that intervention.
+A training implementation needs functional attention-KV injection and cache-safe
+checkpointing, with explicit rotary positions and attention masks; the 48 recurrent
+layers must still propagate gradients even though only the 16 attention layers own
+trainable grafts.
+
+The next validation step is a separate, memory-only six-card prototype, not a new
+checkpoint export: read the existing packed weights, decode frozen layers into memory,
+and shard approximately 50.10 GiB of FP16 language weights (about 8.35 GiB per card
+before activations and workspaces). Validate a small hybrid block's forward agreement
+and finite-difference gradients before attempting the full model, retaining FP32 where
+recurrence/norm numerics require it. A 64–128-slot graft has about 2.1–4.2 million
+parameters; FP32 parameters, gradients and Adam moments need roughly 32–64 MiB.
+Activation memory and backward correctness remain the main uncertainties. Existing
+serving allocations must be coordinated before this separate training phase; no learned
+27B training has started. Use only approved benign literary pairs, with discovery
+selection and untouched held-out book families, not the upstream harmful-prompt suite.
+
 Preserved requirements for completing learned-graft integration:
 
 1. Preserve the frozen capture runtime and ledger. Add a separately bound interactive
