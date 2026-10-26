@@ -57,6 +57,34 @@ class VectorBank:
         self._checkpoint_hashes = None
         self.column_provider = None
 
+    def direction(self, push: dict, layer: int) -> tuple[np.ndarray, dict]:
+        """Load a locally registered, content-addressed response contrast."""
+        filename, expected, name = (push.get(k) for k in ('artifact', 'sha256', 'direction'))
+        if (not isinstance(filename, str) or not re.fullmatch(r'[A-Za-z0-9_-]+\.npz', filename)
+                or not isinstance(expected, str) or not re.fullmatch(r'[0-9a-f]{64}', expected)
+                or not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', name)):
+            raise ValueError('A direction needs a flat artifact filename, SHA256 and direction name')
+        path = self.root / filename
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > 64 * 1024**2:
+            raise ValueError('Direction artifact is absent, linked or too large')
+        # Hash and decode the same bytes to avoid a replacement race.
+        import io
+        raw = path.read_bytes()
+        if hashlib.sha256(raw).hexdigest() != expected:
+            raise ValueError('Direction artifact hash differs')
+        with np.load(io.BytesIO(raw), allow_pickle=False) as source:
+            metadata = json.loads(str(source['metadata']))
+            vector = np.asarray(source['direction_' + name], dtype=np.float64)
+        if (metadata.get('schema') != 'character-creation.response-directions.v1'
+                or metadata.get('model_identity') != self.model.identity
+                or metadata.get('split') != 'development'
+                or not metadata.get('sources')
+                or any(not re.fullmatch(r'[0-9a-f]{64}', str(metadata.get(k, '')))
+                       for k in ('runtime_identity', 'prepared_identity'))
+                or vector.shape != (self.model.layers, self.model.hidden)):
+            raise ValueError('Direction source, model or dimensions differ')
+        return vector[layer], {k: metadata[k] for k in ('model_identity', 'runtime_identity', 'prepared_identity')}
+
     def column(self, bank: dict, layer: int, neuron: int) -> np.ndarray:
         indices = np.flatnonzero(bank["neuron_ids"] == neuron)
         if len(indices) == 1:
@@ -107,6 +135,7 @@ class VectorBank:
         vectors: dict[tuple[int, str], np.ndarray] = {}
         output_equivalents: dict[tuple[int, str], np.ndarray] = {}
         medians: dict[int, float] = {}
+        direction_binding = None
         for push in pushes:
             if "dose" not in push:
                 raise ValueError("Every intervention requires an explicit dose")
@@ -132,6 +161,11 @@ class VectorBank:
                 if key not in bank:
                     raise ValueError(f"Trait {name!r} has no extracted direction at layer {layer}")
                 direction = np.asarray(bank[key], dtype=np.float64)
+            elif kind == 'direction':
+                direction, binding = self.direction(push, layer)
+                if direction_binding is not None and direction_binding != binding:
+                    raise ValueError('Response directions have different runtime bindings')
+                direction_binding = binding
             elif kind == "random":
                 seed = push.get("seed")
                 if type(seed) is not int or not 0 <= seed < 2**32:
@@ -178,4 +212,6 @@ class VectorBank:
                    "norm_semantics": "decoded output-space equivalent before activation and projection rounding; measured effects may differ",
                    "relative_norms": relative_norms, "aggregate_relative_norm": aggregate,
                    "aggregate_scale": factor, "program_sha256": canonical_digest(program)}
+        if direction_binding is not None:
+            details['direction_binding'] = direction_binding
         return program, details

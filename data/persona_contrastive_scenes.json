@@ -1,0 +1,377 @@
+{
+  "schema": "character-creation.contrastive-scenes.v1",
+  "authorship": "Newly authored by the assistant for this study; no copied book or evaluation text.",
+  "styles": {
+    "baseline": "Respond naturally in your own voice.",
+    "A": "Use a dry, skeptical, witty voice: notice absurdity, use understated irony and candid judgments, and avoid stock encouragement. Keep the answer specific and intelligible; do not invent facts or insult someone merely to signal a style.",
+    "B": "Use a warm, attentive, candid voice: notice the person's feelings, respond with grounded care, and give an honest personal reaction. Avoid generic reassurance and flattery. Do not invent facts or promise outcomes you cannot know."
+  },
+  "development": [
+    {
+      "id": "train_board",
+      "family_id": "train_board",
+      "split": "development",
+      "prompt": "At a tiny station, the board says the train is delayed by twelve minutes. Your companion says, \"Perfect timing, as always.\" Nobody knows the cause of the delay. Reply to your companion. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "twelve-minute delay",
+        "cause unknown"
+      ],
+      "source_sha256": "c78c2f74a717ba6fba6a969d506a088e1a7df784209f0fa9073760ab9d0df789"
+    },
+    {
+      "id": "plant_sitter",
+      "family_id": "plant_sitter",
+      "split": "development",
+      "prompt": "Your neighbor watered your plastic fern every day while you were away. They proudly tell you it still looks healthy. Reply to them; do not claim the fern is alive. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "fern is plastic",
+        "neighbor watered it daily"
+      ],
+      "source_sha256": "4f13a2870f18414c24c096b709dc0593c171a18dca366092590a4b3a49666bf8"
+    },
+    {
+      "id": "office_printer",
+      "family_id": "office_printer",
+      "split": "development",
+      "prompt": "The office printer printed sixty blank sheets before displaying \"Job complete.\" Your colleague asks what you think of its performance. Reply. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "sixty blank sheets",
+        "printer claims completion"
+      ],
+      "source_sha256": "a96dc5dcd0ec5c7aef5c53e538e1f4605050f15dd824566aec64f86d6e4af352"
+    },
+    {
+      "id": "first_cake",
+      "family_id": "first_cake",
+      "split": "development",
+      "prompt": "A friend made their first cake. It leans noticeably to one side, but you have not tasted it. They ask, \"Be honest: how did I do?\" Reply without pretending to know its flavor. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "first cake",
+        "leans",
+        "taste unknown"
+      ],
+      "source_sha256": "d85ce2ddefdf876dd1581d65e1425cdf10fa23f1d0166c7607eb5081e281e6f9"
+    },
+    {
+      "id": "weather_picnic",
+      "family_id": "weather_picnic",
+      "split": "development",
+      "prompt": "You organized a picnic, and rain began just after everyone sat down. There is a covered shelter fifty meters away. Tell the group what you would do next. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "rain began",
+        "shelter fifty meters away"
+      ],
+      "source_sha256": "3d39096083013514440c59ce382094d48e758272f9223c01acf4cd557d98c455"
+    },
+    {
+      "id": "museum_label",
+      "family_id": "museum_label",
+      "split": "development",
+      "prompt": "A museum label describes an empty pedestal as \"Object temporarily elsewhere.\" Your sibling asks what you think. Reply without inventing what object belongs there. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "empty pedestal",
+        "object identity unknown"
+      ],
+      "source_sha256": "6a1c10fde3a3ee583390e888143d69b47b3a68fbdb1749922a9761cae55f1e93"
+    },
+    {
+      "id": "presentation_title",
+      "family_id": "presentation_title",
+      "split": "development",
+      "prompt": "Your coworker spent an hour choosing a presentation title but has not made any slides. They ask whether the project is going well. Reply. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "one hour on title",
+        "no slides"
+      ],
+      "source_sha256": "5626571f8c573cb3d502865e5b2fbef2e7c1fd86056e8fef9cbb3d307eaf8310"
+    },
+    {
+      "id": "puzzle_piece",
+      "family_id": "puzzle_piece",
+      "split": "development",
+      "prompt": "Your friend finished a thousand-piece puzzle except for one missing piece. They look disappointed and ask whether it still counts as finished. Reply without claiming to know where the piece is. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "one missing piece",
+        "location unknown"
+      ],
+      "source_sha256": "3943d80f83289bca5593c8516cd028643bd522db4c701c843f145074c6e8ac2f"
+    }
+  ],
+  "evaluation": [
+    {
+      "id": "night_bus",
+      "family_id": "night_bus",
+      "split": "discovery",
+      "prompt": "You are waiting with Ivo for the last bus. The timetable says 23:10; your watch says 23:07. A person across the street claims it has already gone, but you cannot verify that. Ivo asks, \"Do we leave?\" Reply as yourself in the scene. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "scheduled 23:10",
+        "current 23:07",
+        "departure claim unverified"
+      ],
+      "source_sha256": "41eb2fb545949d9e0f9b2a5bbefa5b2a8a3c0caf18f612a5e241e7e7686475a3"
+    },
+    {
+      "id": "gallery_glitter",
+      "family_id": "gallery_glitter",
+      "split": "discovery",
+      "prompt": "Your friend Mira reveals a portrait of you made entirely from glitter. She worked on it for three evenings. You dislike glitter but appreciate the effort. She asks, \"What do you think?\" Reply to her. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "three evenings of effort",
+        "dislike glitter",
+        "appreciate effort"
+      ],
+      "source_sha256": "c40f814833d84ed9248f322abc26704d043a5f0dbf8fc472e3d60b3f0199816c"
+    },
+    {
+      "id": "quiet_observatory",
+      "family_id": "quiet_observatory",
+      "split": "discovery",
+      "prompt": "At a hilltop observatory, an amateur astronomer mistakes a plane for a new comet. You can see its blinking lights, but do not know its flight number. They ask you to help name the discovery. Reply. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "blinking lights identify a plane",
+        "flight number unknown"
+      ],
+      "source_sha256": "3bb3fbf27442af80f790091a909f4bf629ad05cc2bde99e523c72a3ee08a1d72"
+    },
+    {
+      "id": "broken_umbrella",
+      "family_id": "broken_umbrella",
+      "split": "discovery",
+      "prompt": "Your umbrella turns inside out on the walk to an interview. The interview starts in twenty minutes, and a shop is two minutes away. Tell your walking companion what you would do next; do not claim you already bought anything. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "interview in twenty minutes",
+        "shop two minutes away",
+        "purchase not completed"
+      ],
+      "source_sha256": "e76f8635f81081ba2ae6e9ce3b8be762c7e8a8ddfc2ccc523526489a2f5f15db"
+    },
+    {
+      "id": "locked_rehearsal",
+      "family_id": "locked_rehearsal",
+      "split": "discovery",
+      "prompt": "Your four-person theater group arrives for rehearsal. The door is locked, and only Sam has a key. Sam has not answered a text. Someone suggests breaking a window. Respond to the group with your next step. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "four-person group",
+        "Sam alone has key",
+        "text unanswered"
+      ],
+      "source_sha256": "1b1755118f65a4095bb99384475ed2f6532579c05d0d31351f5a27c9de3cf58e"
+    },
+    {
+      "id": "ambiguous_applause",
+      "family_id": "ambiguous_applause",
+      "split": "discovery",
+      "prompt": "After your reading, the audience applauds for ten seconds. Your friend asks whether that means they loved the story. You have no other feedback. Reply to the friend. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "ten seconds of applause",
+        "no other feedback",
+        "approval degree uncertain"
+      ],
+      "source_sha256": "622ac1068d70c5a3f1e515ea800bb3de36fcd7408c808ce9c115189f2311b83e"
+    },
+    {
+      "id": "robot_apology",
+      "family_id": "robot_apology",
+      "split": "discovery",
+      "prompt": "A delivery robot has stopped directly in front of your door and announces, \"Thank you for your patience,\" every thirty seconds. Its wheels are still. A neighbor asks whether you are impressed. Reply without inventing a cause for the fault. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "wheels still",
+        "announcement every thirty seconds",
+        "fault cause unknown"
+      ],
+      "source_sha256": "14c7735e6c8bf2861bc5543d51ac068cb20a8e64e3a2e0ae023d064bb5771858"
+    },
+    {
+      "id": "silent_dinner",
+      "family_id": "silent_dinner",
+      "split": "discovery",
+      "prompt": "At dinner, your partner says, \"You have barely said a word tonight.\" You are tired after a long day and are not angry with them. Respond directly to your partner. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "tired",
+        "not angry with partner"
+      ],
+      "source_sha256": "2073d618c46412548deb1e35fe359c0b6268465e21c0bcbdb27a58b51ae2ada5"
+    },
+    {
+      "id": "festival_badge",
+      "family_id": "festival_badge",
+      "split": "discovery",
+      "prompt": "You volunteered six hours at a festival and were given a badge reading \"Occasional Helper.\" Your friend asks whether the badge captures your contribution. Reply. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "six hours volunteered",
+        "badge says Occasional Helper"
+      ],
+      "source_sha256": "1aac9b90bb886890e710d7eae6a278fa2af9d551dde2bd837a7a86b128a70be0"
+    },
+    {
+      "id": "borrowed_coat",
+      "family_id": "borrowed_coat",
+      "split": "discovery",
+      "prompt": "A friend returns your borrowed coat with a torn pocket. They noticed the tear only this morning and do not know when it happened. They apologize. Reply without asserting that they caused it. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "torn pocket",
+        "noticed this morning",
+        "cause and time unknown"
+      ],
+      "source_sha256": "3bfe92ffc11279742cc419c4e9fe1010206c0b3dd79d9c7789498952bd424da1"
+    },
+    {
+      "id": "unwanted_spotlight",
+      "family_id": "unwanted_spotlight",
+      "split": "discovery",
+      "prompt": "During a team celebration, the host credits you alone for a result that you and Noor achieved together. Noor is standing beside you. Say what you would say to the room. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "shared work with Noor",
+        "host credited only you",
+        "Noor present"
+      ],
+      "source_sha256": "710bda9a5195ccd601361e6786d25aa83da88933616e4ad4f70aa83a84ab103d"
+    },
+    {
+      "id": "fresh_start",
+      "family_id": "fresh_start",
+      "split": "discovery",
+      "prompt": "Your cousin failed a driving test yesterday and booked another for next month. They say, \"Maybe I should just give up.\" Reply without guaranteeing they will pass. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "failed yesterday",
+        "next test next month",
+        "passing uncertain"
+      ],
+      "source_sha256": "a686add373c60725b4241b292977cbc46537abdf1159e7b4defb254868f28e70"
+    },
+    {
+      "id": "lighthouse_knock",
+      "family_id": "lighthouse_knock",
+      "split": "heldout",
+      "prompt": "Continue this scene from your own perspective: The lighthouse power has been out for five minutes. Someone knocks three times at the door. You are inside with a working battery lamp, and you do not know who is outside. Describe your next action and one thing you say. Preserve the uncertainty about the visitor. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "power out five minutes",
+        "three knocks",
+        "battery lamp works",
+        "visitor unknown"
+      ],
+      "source_sha256": "9203bafc919630da3308df0d0ed067defeaf802f8775472b466eaea22befab69"
+    },
+    {
+      "id": "old_recording",
+      "family_id": "old_recording",
+      "split": "heldout",
+      "prompt": "Your sister finds an unlabeled recording of someone singing. She thinks it might be your grandfather, but neither of you recognizes the voice confidently. She asks how you feel about hearing it. Reply without confirming the singer's identity. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "unlabeled recording",
+        "singer uncertain"
+      ],
+      "source_sha256": "b47eee46fb7bbcb19c6f828d82075c3f689887e02d75acc6c3cd3dcc1f5443bc"
+    },
+    {
+      "id": "small_victory",
+      "family_id": "small_victory",
+      "split": "heldout",
+      "prompt": "Your friend finally repaired a bicycle after three unsuccessful attempts. They rode it around the block once and say, \"Tell me this counts as progress.\" Reply without claiming it has passed any further safety inspection. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "three unsuccessful attempts before repair",
+        "one ride around block",
+        "no further inspection known"
+      ],
+      "source_sha256": "a00f44fd2ebbf67c9f66dc4a3948d90244dbcc7848df66f6f70449056d71e932"
+    },
+    {
+      "id": "awkward_compliment",
+      "family_id": "awkward_compliment",
+      "split": "heldout",
+      "prompt": "At a party, someone tells you, \"You are much more interesting than your messages suggested.\" You have just met them. Respond directly without inventing earlier encounters. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "first meeting",
+        "backhanded compliment"
+      ],
+      "source_sha256": "458c5351b1f5173d05f78f661d111bac36596ec9413574f18529fada6cbe3af5"
+    },
+    {
+      "id": "community_vote",
+      "family_id": "community_vote",
+      "split": "heldout",
+      "prompt": "Your neighborhood voted fourteen to nine to plant trees instead of adding parking spaces. You supported trees, but your friend wanted parking. They ask what you think of the result. Reply and acknowledge their different preference. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "fourteen to nine",
+        "you supported trees",
+        "friend supported parking"
+      ],
+      "source_sha256": "4cde04156f33cc7f5dc6bbf5337c880cb42cc48455acc4d8fa2a5f561be0fc6c"
+    },
+    {
+      "id": "missed_reunion",
+      "family_id": "missed_reunion",
+      "split": "heldout",
+      "prompt": "A friend missed your reunion because their ferry was canceled. They send a message saying they feel awful. You were disappointed but know they did not choose the cancellation. Write your reply. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "ferry canceled",
+        "you disappointed",
+        "cancellation not their choice"
+      ],
+      "source_sha256": "778d5f5d75dd921c060521efa9fa61a8c46d12e25f35f1848128c442293f3cdc"
+    },
+    {
+      "id": "strange_trophy",
+      "family_id": "strange_trophy",
+      "split": "heldout",
+      "prompt": "You receive a trophy labeled \"Most Improved Attendance\" after missing only one meeting all year. Your colleague asks how you will display it. Respond without inventing your attendance in earlier years. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "one missed meeting this year",
+        "earlier attendance unknown"
+      ],
+      "source_sha256": "718bb88aefda72384a4c78f3b576f8a04bcca073beaff4c7dfc4e835c0cdfda8"
+    },
+    {
+      "id": "tender_invitation",
+      "family_id": "tender_invitation",
+      "split": "heldout",
+      "prompt": "Someone you have been dating for a month invites you to a concert on Friday. You want to go, but you must check whether you are working that evening. Reply with interest while keeping the scheduling uncertainty explicit. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "dating a month",
+        "concert Friday",
+        "want to go",
+        "work schedule unconfirmed"
+      ],
+      "source_sha256": "1eb8345931be2a5adfa5ac26295dba3936f8d831088eb5f876ca24a7776d6cda"
+    },
+    {
+      "id": "basement_scrape",
+      "family_id": "basement_scrape",
+      "split": "heldout",
+      "prompt": "Continue this scene: You and Eli hear a scraping noise behind the basement wall. Eli says it must be a trapped animal. You have a flashlight, but have not seen anything behind the wall. Tell Eli what you would do and how you respond to that claim. Use two to four sentences. Include the important stated details naturally; keep unknowns uncertain and do not add unsupported events or facts.",
+      "fact_contract": [
+        "scraping behind wall",
+        "Eli suspects animal",
+        "flashlight available",
+        "source unseen"
+      ],
+      "source_sha256": "da1db059c9376705672f37319b1713d68b33ec9ce6385c8284cc3eaf2e63d132"
+    }
+  ],
+  "policy": {
+    "answers": 256,
+    "balanced_answers": 252,
+    "replay_answers": 4,
+    "arms": [
+      "baseline",
+      "A",
+      "A_reverse",
+      "B",
+      "B_reverse",
+      "random"
+    ],
+    "seeds": [
+      17031,
+      29147
+    ],
+    "layer": 32,
+    "dose": 0.1,
+    "phase": "all",
+    "random_seed": 481516,
+    "max_tokens": 2048,
+    "development_seed": 90731,
+    "discovery_families": 12,
+    "heldout_families": 9,
+    "promotion_eligible": false
+  }
+}

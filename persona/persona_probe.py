@@ -26,7 +26,7 @@ import uuid
 import zipfile
 from urllib.parse import urlparse, parse_qs
 from copy import deepcopy
-from persona_trace import normalize_trace, TokenTrace
+from persona_trace import normalize_trace, TokenTrace, normalize_response_capture, ResponseCapture, normalize_prefill_capture, plan_prefill, PrefillCapture
 from persona_kv import validate_control, HybridPrefixCache
 from persona_phantom import LearnedKVCache
 from persona_activation_search import normalize_search, ActivationSearch, attach_profiles
@@ -90,11 +90,18 @@ def save_activation_npz(destination, **arrays):
                 np.lib.format.write_array(member, np.asanyarray(value), allow_pickle=False)
 
 
+def configure_pulse_span(addends, phases, position, start, stop, apply_steering):
+    """Only the isolated source-token chunk receives the prepared intervention."""
+    addends.zero_(); phases.zero_()
+    if start == position and stop == position + 1:
+        apply_steering()
+
+
 def normalize_request(payload: dict, model_id: str) -> dict:
     """Validate the supported API subset without importing CUDA libraries."""
     supported = {"model", "messages", "seed", "max_tokens", "temperature", "top_p", "top_k", "min_p",
                  "repetition_penalty", "presence_penalty", "frequency_penalty", "stream", "n",
-                 "chat_template_kwargs", "steering", "metadata", "observation_only", "capture_trace", "kv_control", "capture_search"}
+                 "chat_template_kwargs", "steering", "metadata", "observation_only", "capture_trace", "kv_control", "capture_search", "capture_response", "steering_pulse", "capture_prefill", "prefill_stop"}
     if not isinstance(payload, dict) or set(payload) - supported:
         raise ValueError("Unsupported chat-completion fields")
     if payload.get("model") != model_id or payload.get("stream", False) is not False or payload.get("n", 1) != 1:
@@ -133,16 +140,39 @@ def normalize_request(payload: dict, model_id: str) -> dict:
     metadata = payload.get("metadata", {})
     if not isinstance(metadata, dict) or ("job_id" in metadata and (not isinstance(metadata["job_id"], str) or len(metadata["job_id"]) > 256)):
         raise ValueError("Metadata must be an object with a bounded string job_id")
+    prefill_capture_spec = normalize_prefill_capture(payload.get("capture_prefill"))
+    pulse = payload.get("steering_pulse")
+    if pulse is not None:
+        if (not isinstance(pulse, dict) or set(pulse) != {"position"}
+                or type(pulse["position"]) is not int or pulse["position"] < 0):
+            raise ValueError("steering_pulse requires one nonnegative encoded position")
+        supplied = payload.get("steering")
+        if supplied is not None and (not isinstance(supplied, dict) or supplied.get("phase") != "prefill"):
+            raise ValueError("One-position pulses require a prefill steering program")
+    prefill_stop = payload.get("prefill_stop")
+    if prefill_stop is not None and (type(prefill_stop) is not int or prefill_stop < 1 or not observation_only):
+        raise ValueError("prefill_stop requires a positive exclusive token count and observation_only=true")
+    if any(v is not None for v in (prefill_capture_spec, pulse, prefill_stop)) and (payload.get("kv_control") is not None or payload.get("capture_search") is not None):
+        raise ValueError("Fixed-input prefill instrumentation cannot combine with KV or activation search")
+    response_capture = normalize_response_capture(payload.get("capture_response"))
+    if response_capture and (observation_only or budget > 4096 or payload.get("capture_search") is not None or payload.get("kv_control") is not None):
+        raise ValueError("capture_response requires ordinary generation, max_tokens<=4096, and no capture_search or kv_control")
+    if response_capture and isinstance(payload.get("capture_trace"), dict) and payload["capture_trace"].get("id") == response_capture["id"]:
+        raise ValueError("Response capture and token trace require distinct ids")
     search = normalize_search(payload.get("capture_search"))
     if search and (not observation_only or payload.get("capture_trace") is not None or payload.get("kv_control") is not None):
         raise ValueError("capture_search requires observation_only=true,max_tokens=1 and no capture_trace or kv_control")
     kv_control = validate_control(payload.get("kv_control"))
     if kv_control is not None and payload.get("capture_trace") is not None:
         raise ValueError("KV prefix caching and live token traces require separate requests")
+    capture_ids = [v.get("id") for v in (response_capture, prefill_capture_spec, payload.get("capture_trace")) if isinstance(v, dict)]
+    if len(set(capture_ids)) != len(capture_ids):
+        raise ValueError("Each capture type requires a distinct id")
     canonical_digest(payload)  # Reject NaN/Infinity anywhere, including metadata.
     return {"messages": messages, "seed": seed, "max_tokens": budget,
             "sampling": sampling, "requested_sampling": requested, "metadata": metadata,
-            "capture_trace": normalize_trace(payload.get("capture_trace")), "kv_control": kv_control, "capture_search": search,
+            "capture_trace": normalize_trace(payload.get("capture_trace")), "kv_control": kv_control, "capture_search": search, "capture_response": response_capture, "capture_prefill": prefill_capture_spec,
+            "steering_pulse": pulse, "prefill_stop": prefill_stop,
             "steering": payload.get("steering"), "thinking": False, "observation_only": observation_only}
 
 
@@ -362,6 +392,13 @@ class ProbeEngine:
                         "all_neurons": True, "all_prompt_positions": True, "passes": 2,
                         "required_observation_only": True, "required_max_tokens": 1,
                         "interpretation": "Context-dependent activation ranking, not concept probability or causal attribution"},
+                    "prefill_instrumentation": {"supported": True, "experimental": True,
+                        "one_position_pulse": True, "pulse_phase": "prefill", "encoded_prefix_stop": True,
+                        "max_snapshot_layers": 4, "max_snapshot_positions": 128,
+                        "control_requirement": "Identical pulse position, snapshots and prefix stop on zero/baseline arms"},
+                    "response_capture": {"supported": True, "all_layers": True, "max_tokens": 4096,
+                        "max_selected_layers": 4, "max_selected_positions": 128,
+                        "semantics": "Consumed generated-token residual means; final sampled token excluded; opt-in only"},
                     "activation_capture": "final_prefill", "token_trace": {"supported": True, "max_neurons": 64, "max_per_layer": 32, "decode": True}, "thinking_enabled_supported": False}}
 
     def complete(self, payload):
@@ -421,6 +458,12 @@ class ProbeEngine:
             ids = prefix_ids + tokenize_messages(self.tokenizer, spec["messages"])
             if not isinstance(ids, list) or any(type(token) is not int or not 0 <= token < self.vocabulary for token in ids):
                 raise ValueError("Tokenizer returned invalid prompt token IDs")
+            prefill_spans, prefill_execution = None, None
+            if any(spec[k] is not None for k in ("steering_pulse", "capture_prefill", "prefill_stop")):
+                ids, prefill_spans, prefill_execution = plan_prefill(ids, self.batch.tokens,
+                    stop=spec["prefill_stop"], pulse=spec["steering_pulse"]["position"] if spec["steering_pulse"] else None,
+                    capture=spec["capture_prefill"])
+                prefill_execution["pulse_program_active"] = bool(spec["steering_pulse"] and program["sites"])
             logical_prompt_tokens = virtual_slots + len(ids)
             pages = validate_capacity(logical_prompt_tokens, spec["max_tokens"], physical_pages=self.capacity[1], page_tokens=self.page_tokens,
                 logical_context=int(self.prepared.server_config["max_sequence_tokens"]), table_pages=self.inputs.page_tables.shape[1])
@@ -448,6 +491,8 @@ class ProbeEngine:
             response = None
             search = ActivationSearch(self, spec["capture_search"], ids, request_hash) if spec["capture_search"] else None
             token_trace = TokenTrace(self, spec["capture_trace"], ids, request_hash) if spec["capture_trace"] else None
+            response_capture = ResponseCapture(self, spec["capture_response"], len(ids), request_hash) if spec["capture_response"] else None
+            prefill_snapshots = PrefillCapture(self, spec["capture_prefill"], ids, request_hash) if spec["capture_prefill"] else None
 
             def replay(kind, consumed, count, sampled):
                 if self.stop_event.is_set():
@@ -526,13 +571,19 @@ class ProbeEngine:
                                  for start in range(0, len(prefix_ids), self.batch.tokens))
                 spans.extend((start, min(len(ids), start + self.batch.tokens))
                              for start in range(len(prefix_ids), len(ids), self.batch.tokens))
+                if prefill_spans is not None:
+                    spans = prefill_spans
                 for start, stop in spans:
+                    if spec["steering_pulse"] is not None:
+                        configure_pulse_span(addends, self.buffers["steering_phases"],
+                            spec["steering_pulse"]["position"], start, stop, apply_steering)
                     last = stop == len(ids)
                     inputs.query_lengths[0] = stop - start
                     inputs.token_ids.zero_()
                     inputs.token_ids[:stop - start].copy_(torch.tensor(ids[start:stop], dtype=torch.int64))
                     inputs.sample_enabled[0] = int(last)
                     result = replay("prefill", virtual_slots + stop, int(last), last)
+                    if prefill_snapshots: prefill_snapshots.observe(stop - 1)
                     if search: search.observe(list(range(start, stop)))
                     if token_trace: token_trace.observe("prefill", list(range(start, stop)), ids[start:stop], last=last)
                     positions = self.capture.positions.cpu().numpy().copy()
@@ -554,12 +605,15 @@ class ProbeEngine:
                             raise ProtocolError("Final-prefill observations are nonfinite")
                         prefill_capture["final_chunk_positions"] = positions
                         generated.append(result["token"])
+                if spec["steering_pulse"] is not None:
+                    addends.zero_(); self.buffers["steering_phases"].zero_()
                 inputs.query_lengths[0] = 1
                 inputs.sample_enabled[0] = 1
                 while not spec["observation_only"] and not result["finished"]:
                     # The decoder reads the device-owned pending token. Never
                     # sample on CPU or replace it with a teacher-forced token.
                     result = replay("decode", logical_prompt_tokens + len(generated), len(generated) + 1, True)
+                    if response_capture: response_capture.observe(len(ids)+len(generated)-1, generated[-1])
                     if token_trace: token_trace.observe("decode", [len(ids)+len(generated)-1], [generated[-1]])
                     generated.append(result["token"])
                 finish_reason = result["finish_reason"]
@@ -580,6 +634,9 @@ class ProbeEngine:
                         prompt_token_ids=np.asarray(ids, dtype=np.int64), generated_token_ids=np.asarray(generated, dtype=np.int64),
                         virtual_prefix_slots=np.int64(virtual_slots),
                         **(search.arrays() if search else {}),
+                        **(response_capture.arrays(generated) if response_capture else {}),
+                        **(prefill_snapshots.arrays() if prefill_snapshots else {}),
+                        **({"prefill_execution_json": np.asarray(json.dumps(prefill_execution, sort_keys=True))} if prefill_execution else {}),
                         completion_trace=np.asarray(trace, dtype=np.int64), completion_graph_kind=np.asarray(graph_kinds),
                         completion_trace_columns=np.asarray(["epoch", "sequence", "consumed", "generated", "token", "status", "error", "rng_counter"]),
                         model_identity=self.model.identity, prepared_identity=self.prepared.server_config["identity"],
@@ -589,7 +646,7 @@ class ProbeEngine:
                               "runtime_identity": self.manifest["runtime_identity"],
                               "operation": outcome["operation"],
                               "prepared_identity": self.prepared.server_config["identity"], "request_sha256": request_hash,
-                              "stage": "all_prefill_search" if search else "final_prefill", "fields": ["mlp_input_last", "residual_last", "pre_mlp_last"] + (list(search.arrays()) if search else []),
+                              "stage": "all_prefill_search" if search else "final_prefill", "fields": ["mlp_input_last", "residual_last", "pre_mlp_last"] + (list(search.arrays()) if search else []) + (list(response_capture.arrays(generated)) if response_capture else []) + (list(prefill_snapshots.arrays()) if prefill_snapshots else []) + (["prefill_execution_json"] if prefill_execution else []),
                               "semantics": "continuous SwiGLU product after optional pre-down steering; post-residual output; normalized MLP input; no firing threshold"}
                 response = {"id": "chatcmpl-" + identity, "object": "chat.completion", "created": int(started), "model": self.model_id,
                     "operation": outcome["operation"],
@@ -610,6 +667,12 @@ class ProbeEngine:
                     response["diagnostics"]["virtual_prefix_slots"] = virtual_slots
                     response["diagnostics"]["prefill_source"] = ("live tokens with learned attention KV and fresh recurrence" if virtual_slots else
                         "cached hybrid prefix plus live suffix" if prefix_hit else "live prefill")
+                if prefill_execution:
+                    response["prefill_execution"] = prefill_execution
+                if prefill_snapshots:
+                    response["prefill_capture"] = prefill_snapshots.result(activation)
+                if response_capture:
+                    response["response_capture"] = response_capture.result(generated, activation, outcome["diagnostics"]["complete_final_answer"])
                 if token_trace:
                     response["token_trace"] = token_trace.result()
                     token_trace.finish("complete")
@@ -618,6 +681,8 @@ class ProbeEngine:
                     elapsed_seconds=time.time() - started, activation_artifact=activation,
                     final_completion=trace[-1], completion_count=len(trace))
             except Exception as error:
+                if prefill_snapshots: prefill_snapshots.finish_failed(error)
+                if response_capture: response_capture.finish_failed(error)
                 if search: search.finish("failed", str(error))
                 if token_trace: token_trace.finish("failed", str(error))
                 report.update(status="failed", error=f"{type(error).__name__}: {error}", generated_tokens=len(generated))

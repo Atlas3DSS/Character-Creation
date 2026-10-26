@@ -383,13 +383,13 @@ class Explorer:
         if not isinstance(pushes, list) or len(pushes) > 512:
             raise ValueError('Pushes must be a bounded list of interventions')
         for push in pushes:
-            object_fields(push, ('layer', 'dose'), ('kind', 'neuron', 'trait', 'seed', 'site'))
+            object_fields(push, ('layer', 'dose'), ('kind', 'neuron', 'trait', 'seed', 'site', 'artifact', 'sha256', 'direction'))
             bounded_int(push['layer'], 0, self.model.layers - 1, 'Layer')
             if type(push['dose']) not in (int, float) or not math.isfinite(push['dose']):
                 raise ValueError('Every dose must be a finite number')
             kind = push.get('kind', 'neuron')
-            if kind not in ('neuron', 'column', 'trait', 'random'): raise ValueError('Unknown intervention kind')
-            allowed = {'neuron'} if kind in ('neuron', 'column') else {'trait'} if kind == 'trait' else {'seed', 'site'}
+            if kind not in ('neuron', 'column', 'trait', 'random', 'direction'): raise ValueError('Unknown intervention kind')
+            allowed = {'neuron'} if kind in ('neuron', 'column') else {'trait'} if kind == 'trait' else {'artifact', 'sha256', 'direction'} if kind == 'direction' else {'seed', 'site'}
             if push.keys() - {'layer', 'dose', 'kind'} - allowed: raise ValueError('Intervention fields do not match its kind')
             if kind in ('neuron', 'column'): bounded_int(push.get('neuron'), 0, self.model.intermediate - 1, 'Neuron')
             if kind == 'trait' and not isinstance(push.get('trait'), str): raise ValueError('Trait name is required')
@@ -468,7 +468,7 @@ class Explorer:
             raise ValueError('A batch requires one to six cells')
         snapshots = []
         for index, cell in enumerate(value['cells']):
-            object_fields(cell, (), ('label', 'prompt_id', 'prompt', 'recipe_id', 'recipe', 'literature_prompt_id', 'kv_control'))
+            object_fields(cell, (), ('label', 'prompt_id', 'prompt', 'recipe_id', 'recipe', 'literature_prompt_id', 'kv_control', 'capture_response'))
             if ('prompt_id' in cell) == ('prompt' in cell) or ('recipe_id' in cell) == ('recipe' in cell):
                 raise ValueError('Each cell requires exactly one prompt and one recipe reference or value')
             label = cell.get('label', f'Cell {index + 1}')
@@ -488,6 +488,9 @@ class Explorer:
                 if prompt['text'] != compiled['prompt']: raise ValueError('Compiled literature prompt text differs')
                 binding = {'literature_prompt_id': compiled['id'], **compiled['provenance']}
                 prompt.update(id=compiled['id'], split=compiled['provenance']['split'])
+            from persona_trace import normalize_response_capture
+            response_capture = normalize_response_capture(cell.get('capture_response'))
+            if response_capture and 'kv_control' in cell: raise ValueError('Response capture with KV is not qualified')
             control = literary_eval.validate_control(cell['kv_control'], self.model.identity) if 'kv_control' in cell else None
             recipe_value = cell.get('recipe')
             saved = None
@@ -503,7 +506,7 @@ class Explorer:
             budget.update(smoke=value['smoke'], promotion_eligible=False,
                           promotion_eligible_budget=budget['promotion_eligible_budget'] and not value['smoke'])
             snapshots.append({'label': label.strip(), 'prompt': prompt, 'recipe': recipe, 'source_record': source,
-                'source_binding': binding, 'saved_recipe': saved, 'program': program, 'kv_control': control,
+                'source_binding': binding, 'saved_recipe': saved, 'program': program, 'kv_control': control, 'capture_response': response_capture,
                 'provenance': provenance, 'budget': budget, 'model': self.model.__dict__})
         # Transport failures may reduce capacity. A reachable identity/capability
         # mismatch is a configuration error and rejects the complete batch.
@@ -515,6 +518,9 @@ class Explorer:
                 continue
             for snapshot in snapshots:
                 self.check_program(descriptor, endpoint, snapshot['program'])
+                self.check_direction_binding(descriptor['flare'], snapshot['provenance'])
+                if snapshot.get('capture_response') and descriptor['flare'].get('response_capture', {}).get('supported') is not True:
+                    raise ValueError('Worker lacks response-token capture')
                 if snapshot.get('kv_control'): literary_eval.check_control(snapshot['kv_control'], descriptor, endpoint)
             capabilities = check_generation_settings(descriptor['flare'], value)
             admitted.append({**deepcopy(endpoint), 'capabilities': capabilities})
@@ -547,15 +553,25 @@ class Explorer:
                 raise ValueError('Recipe site or vector width is absent from the prepared package')
         return flare
 
+    @staticmethod
+    def check_direction_binding(flare, provenance):
+        binding = provenance.get('direction_binding')
+        if binding and any(flare.get(k) != v for k, v in binding.items()):
+            raise ValueError('Response direction belongs to a different native runtime')
+
     def infer(self, endpoint, prompt, settings, program, provenance, *, system='', extra=None, persist=None):
         descriptor = fetch(endpoint['url'] + '/v1/models', timeout=5)['data'][0]
         flare = self.check_program(descriptor, endpoint, program)
+        self.check_direction_binding(flare, provenance)
         check_generation_settings(flare, settings)
         messages = ([{'role': 'system', 'content': system}] if system else []) + [{'role': 'user', 'content': prompt}]
         request = {'model': descriptor['id'], 'messages': messages, 'seed': settings['seed'],
                    'temperature': .7, 'top_p': .95, 'top_k': 20, 'max_tokens': settings['max_tokens'],
                    'stream': False, 'chat_template_kwargs': {'enable_thinking': settings['thinking']}}
         if program['sites']: request['steering'] = program
+        if extra and extra.get('capture_response'):
+            from persona_trace import normalize_response_capture
+            request['capture_response'] = normalize_response_capture(extra['capture_response'])
         control = extra.get('kv_control') if extra else None
         if control:
             control = literary_eval.validate_control(control, self.model.identity)
@@ -601,7 +617,7 @@ class Explorer:
                   'usage': response.get('usage'), 'provenance': bound, 'runtime_identity': response.get('runtime_identity'),
                   'model_identity': self.model.identity, 'prepared_identity': endpoint['prepared_identity'],
                   'runtime': response.get('runtime'), 'diagnostics': diagnostics}
-        for key in ('activation_artifact', 'provenance_artifact', 'kv_control'):
+        for key in ('activation_artifact', 'provenance_artifact', 'kv_control', 'response_capture'):
             if key in response: output[key] = response[key]
         raw['complete'] = complete
         return output, raw
@@ -626,6 +642,7 @@ class Explorer:
                              ('id', 'source_id', 'source_sha256', 'source_text_sha256', 'pair_id', 'corpus', 'split', 'mutation') if key in source}},
                          'prompt_sha256': canonical_digest({'prompt': snapshot['prompt']['text'], 'system': source.get('system', '')})}
                 if snapshot.get('kv_control'): extra['kv_control'] = snapshot['kv_control']
+                if snapshot.get('capture_response'): extra['capture_response'] = snapshot['capture_response']
                 output, raw = self.infer(endpoint, snapshot['prompt']['text'], value, snapshot['program'],
                     snapshot['provenance'], system=source.get('system', ''), extra=extra, persist=persist)
                 persist(raw)

@@ -454,6 +454,66 @@ are not a true off state. Report actual cache slots, artifact choice and measure
 effects rather than presenting an uncalibrated alpha as a validated control. Private
 book passages and derived cache artifacts remain outside existing public HF exports.
 
+## Response contrasts and the 256-answer pilot
+
+`persona/persona_contrastive.py` freezes 24 development answers (8 authored scenes ×
+baseline/A/B instructions), then derives equal-scene response-residual mean differences.
+`data/persona_contrastive_scenes.json` fixes 21 separate evaluation families, two seeds,
+L32/all-phase, relative dose ±0.1 and a residual-site Gaussian control with equal norm.
+The evaluation has 252 balanced answers (6 arms × 21 scenes × 2 seeds) and four exact
+request replays. Replays are reproducibility checks, not independent scene evidence.
+Twelve families are discovery and nine are held out. Never use held-out judgments to
+select layers, doses, directions or follow-up recipes.
+
+Opt-in native `capture_response:{id,layers:[],max_positions:0}` records FP64 sums/means
+of FP32 block-output residuals over **consumed generated tokens**. It excludes prompt
+and template positions and the final sampled-but-unconsumed token. Count zero means
+an undefined mean. Selected profiles permit at most four layers and 128 positions;
+means cover all 64 layers. NPZ arrays, token/position hashes, request hash and exact
+model/runtime/prepared identities accompany the answer. Capture does not issue extra
+decode steps. Qualify off/on/off token, activation and request-local RNG equality
+before using a new runtime. Response means can reflect lexical/length/instruction
+effects; intervention outcomes test their usefulness.
+
+A `direction` push references a flat NPZ artifact filename, SHA256, direction name,
+layer and dose. The bank verifies model and development-source provenance; endpoint
+admission also verifies runtime/prepared identity. `persona_response_contrasts.json`
+ranks response differences and alignment to **existing mapped down columns only**.
+Alignment is not an activation measurement, causal influence or label confidence.
+
+`persona/persona_propagation.py` qualifies exact one-position prefill pulses and
+bounded full residual snapshots with fixed input token IDs. Every experimental arm
+uses identical chunk partitions. It reports unsplit/split numerical differences
+separately, tests source-position upstream invariance and uses repeated zero controls.
+Propagation measures ±0.05/±0.1 response at lags 0,1,2,4,8 and layers31,32,48,63.
+Multiple-epsilon agreement, signed context comparisons and BF16 spacing are descriptive;
+they are not exact Jacobians, direct wiring, execution sparsity or prose coherence.
+Future-token earlier layers may change through recurrence.
+
+After source-bound native qualification and explicit six-worker lease admission:
+
+```sh
+python persona/persona_contrastive.py development
+python persona/persona_contrastive.py fit
+python persona/persona_contrastive.py pilot
+python persona/persona_contrastive.py blind
+```
+
+The bounded `campaign` command waits for qualification and runs these four stages.
+Existing attempts are never silently retried. Pilot outputs are ordinary saved
+six-card explorer batches. `persona/persona_blind_eval.py` validates exactly252
+anonymous judgments, computes paired scene-cluster bootstrap contrasts separately
+for discovery and heldout, and proposes follow-up doses from discovery only. Model
+judgments are fallible, intervals are descriptive/unadjusted, and no preset is
+promoted automatically. Original NPZ captures and failed attempts stay auditable.
+Public exports accept only the frozen authored scenes and omit local paths.
+
+Method sources: [self-reward persona study](https://www.lesswrong.com/posts/LBKjnyKDEwEJ45Wjf/self-reward-can-elicit-diverse-model-personas),
+[response-steering code](https://github.com/fjzzq2002/self-reward/blob/main/scripts/persona_steer.py),
+and [Jacobian-lens theory](https://arxiv.org/abs/2610.31955).
+This is response-contrast steering and finite-difference instrumentation, not GRPO,
+self-reward training, weight interpolation or an exact Jacobian-lens implementation.
+
 ## Operating a fork
 
 - CPU dependencies: `python -m pip install -r requirements-persona.txt` (includes optional

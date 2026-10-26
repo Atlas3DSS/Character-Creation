@@ -52,6 +52,7 @@
   function readable(value) {return String(value || '').replaceAll('_', ' ');}
   function phaseName(value) {return phases.find(item => item[0] === value)?.[1] || value;}
   function pushName(push) {
+    if (push.kind === 'direction') return `L${push.layer} · response contrast ${push.direction} · residual`;
     if (push.kind === 'trait') return `L${push.layer} · ${readable(push.trait)}`;
     if (push.kind === 'neuron') return `L${push.layer} · N${push.neuron} input`;
     if (push.kind === 'column') return `L${push.layer} · N${push.neuron} output`;
@@ -301,6 +302,10 @@
     if (!recipe.pushes?.length) details.append(hint('Baseline · no activation intervention'));
     else for (const push of recipe.pushes) details.append(node('div', `${pushName(push)} · dose ${push.dose}`));
     const output = cell.output || {}, provenance = output.provenance || {};
+    if (output.response_capture) {
+      const capture = output.response_capture;
+      details.append(hint(`Response activations: ${capture.consumed_generated_tokens} consumed answer tokens across ${capture.layers} layers. The final sampled token was not consumed.`));
+    }
     const facts = {Runtime: output.runtime_identity, 'Program hash': provenance.program_sha256,
       'Model identity': provenance.model_identity, 'Prepared identity': provenance.prepared_identity};
     for (const [name, value] of Object.entries(facts)) if (typeof value === 'string') details.append(node('p', `${name}: ${value}`, 'lab-hash'));
