@@ -167,6 +167,11 @@ reports the active source and import coverage. Automatic selection prefers a val
 discovery snapshot and explicitly reports a historical fallback when that snapshot is absent
 or fails validation. Numeric historical measurements and calibration banks are preserved.
 
+The importer supports `--watch` on the capture host and `--sync --watch` on the viewer
+host. `--active-read-mib-per-second` limits shared-disk reads while the finite mapper
+is running; that limit lifts automatically when mapping ends. CPU verification workers
+remain available. Set this storage budget from measured capture/import throughput.
+
 Concept qualification freezes candidates on discovery before heldout probes. A compact
 label requires at least 20 distinct predicted-positive heldout families, measured precision,
 a 95% Wilson lower bound **strictly above .70**, balanced accuracy at least .80, recall at
@@ -217,6 +222,8 @@ verified research batches from read-only capture ledgers.
   immutable tar shard directly to HF. It continues draining the backlog after capture ends.
 - Both verify the pinned remote manifest and uploaded file hashes before advancing durable
   checkpoints. An uncertain commit reconciles its immutable intent; it never reruns inference.
+- Publisher HTTP connect/read/write/pool timeouts are 15/120/120/60 seconds, preserving
+  the SDK's redirects and request hooks. This requires `huggingface_hub>=1.27,<2`.
 - Metadata and raw counts are independent. Read `research_raw_manifest.json` for verified
   array coverage even if the dataset card or metadata snapshot has an earlier count.
 - Run without `--publish` to validate policy/source files only. Publication requires an

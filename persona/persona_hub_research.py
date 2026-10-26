@@ -216,9 +216,20 @@ def append_card(card,section):
     return text.encode()
 
 
+def read_guides(root: Path) -> dict[str, bytes]:
+    return {name:(root/name if (root/name).exists() else root/'dataset'/name).read_bytes() for name in ('README_human.md','README_agent.md')}
+
+
 class Hub:
     def __init__(self):
-        from huggingface_hub import HfApi
+        import httpx
+        from huggingface_hub import HfApi, set_client_factory
+        from huggingface_hub.utils._http import default_client_factory
+        def bounded_client() -> httpx.Client:
+            client=default_client_factory()
+            client.timeout=httpx.Timeout(connect=15,read=120,write=120,pool=60)
+            return client
+        set_client_factory(bounded_client)
         self.api=HfApi()
     def head(self):return self.api.repo_info(REPO,repo_type='dataset').sha
     def read(self,path,revision,missing=False):
@@ -350,7 +361,7 @@ def main():
             for row in captured['records']+reviewed_bundles(root,policy):
                 if row['id'] not in known:pending_rows[row['id']]=row
             summary=captured['summary'];raw_manifest=publisher.hub.read('research_raw_manifest.json',revision,missing=True);raw_count=json.loads(raw_manifest)['records'] if raw_manifest else 0;summary['verified_raw_uploaded_records']=raw_count;summary['raw_pending_completed_ledger_rows_upper_bound']=max(0,summary['eligible_completed_prefill_ledger_rows']+sum(r['count'] for r in summary['baseline'] if r['state']=='complete')-raw_count)
-            guides={name:(root/'dataset'/name).read_bytes() for name in ('README_human.md','README_agent.md')};guide_hashes={name:sha(value) for name,value in guides.items()}
+            guides=read_guides(root);guide_hashes={name:sha(value) for name,value in guides.items()}
             due=args.force or len(pending_rows)>=500 or time.time()-publisher.state['last_upload']>=900 or summary['overnight_terminal']
             if due and (pending_rows or summary!=manifest.get('summary') or guide_hashes!=manifest.get('guides')):
                 files={};rows=list(pending_rows.values())

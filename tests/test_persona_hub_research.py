@@ -5,6 +5,18 @@ from unittest.mock import patch
 import numpy as np
 import persona_hub_research as r
 
+class HubTimeoutTests(unittest.TestCase):
+ def test_hub_uses_bounded_sdk_http_client(self):
+  from huggingface_hub.utils._http import hf_request_event_hook
+  with patch('huggingface_hub.set_client_factory') as factory,patch('huggingface_hub.HfApi') as api:
+   hub=r.Hub()
+  factory.assert_called_once();api.assert_called_once_with();self.assertIs(hub.api,api.return_value)
+  client=factory.call_args.args[0]()
+  try:
+   self.assertEqual(client.timeout.as_dict(),{'connect':15,'read':120,'write':120,'pool':60})
+   self.assertTrue(client.follow_redirects);self.assertIn(hf_request_event_hook,client.event_hooks['request'])
+  finally:client.close()
+
 class FakeHub:
  def __init__(self,files):self.revisions={'head0':dict(files)};self.current='head0';self.calls=0;self.uncertain=False;self.corrupt=False
  def head(self):return self.current
@@ -66,6 +78,13 @@ class ResearchTests(unittest.TestCase):
   with self.assertRaises(ValueError):r.inspect_raw(path)
  def test_card_append_is_idempotent_preserves_original(self):
   card=b'---\nconfigs: original\n---\n# Original card\n';once=r.append_card(card,r.card_section(20));self.assertTrue(once.startswith(card));self.assertEqual(once,r.append_card(once,r.card_section(20)));self.assertIn(b'20 records',once.replace(b'**',b''))
+ def test_guides_prefer_canonical_root_and_fall_back_without_staging(self):
+  dataset=self.root/'dataset';dataset.mkdir();fallback={'README_human.md':b'published human','README_agent.md':b'published agent'}
+  for name,body in fallback.items():(dataset/name).write_bytes(body)
+  self.assertEqual(r.read_guides(self.root),fallback)
+  (self.root/'README_human.md').write_bytes(b'canonical human');self.assertEqual(r.read_guides(self.root),{**fallback,'README_human.md':b'canonical human'})
+  (self.root/'README_agent.md').write_bytes(b'canonical agent');self.assertEqual(r.read_guides(self.root),{'README_human.md':b'canonical human','README_agent.md':b'canonical agent'})
+  self.assertEqual({name:(dataset/name).read_bytes() for name in fallback},fallback)
  def test_reviewed_bundle_private_fields_rejected(self):
   for value in ({'payload':{'book_id':'private'}},{'payload':{'path':'/mnt/secret'}},{'payload':'hf_abcdefghijklmno'}):
    with self.assertRaises(ValueError):r.reject_private_keys(value)

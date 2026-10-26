@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
 import fcntl
 import hashlib
 import io
 import json
+import math
 import os
 from pathlib import Path
 import queue
@@ -32,6 +34,48 @@ HELDOUT = 'persona_overnight_viewer_heldout.npz'
 # Mechanical storage benefits from sequential reads; CPU verification/decompression
 # still uses every admitted CPU. Do not interleave 86 streams through the same disk.
 READ_SLOTS = threading.BoundedSemaphore(2)
+
+
+class MappingReadBudget:
+    """Shared disk budget only while the finite source mapper is still running."""
+    def __init__(self, status_path, rate=16 * 1024 * 1024):
+        self.status_path, self.rate = Path(status_path), rate
+        self.lock = threading.Lock()
+        self.checked, self.enabled = float('-inf'), False
+
+    def charge(self, size):
+        with self.lock:
+            now = time.monotonic()
+            if now - self.checked >= 1:
+                try:
+                    status = json.loads(self.status_path.read_text())
+                    self.enabled = (status.get('state') == 'running'
+                                    and status.get('deadline', 0) > time.time()
+                                    and sum(status.get('counts', {}).get(k, 0)
+                                            for k in ('pending', 'running')) > 0)
+                except (OSError, ValueError, TypeError):
+                    self.enabled = False
+                self.checked = now
+            if self.enabled:
+                time.sleep(size / self.rate)
+
+
+READ_BUDGET = None
+
+
+def read_capture(path):
+    # Pace source bytes, not CPU workers, so capture writes retain disk bandwidth.
+    with READ_SLOTS, path.open('rb') as stream:
+        parts = []
+        remaining = os.fstat(stream.fileno()).st_size
+        while remaining:
+            size = min(1024 * 1024, remaining)
+            if READ_BUDGET is not None: READ_BUDGET.charge(size)
+            part = stream.read(size)
+            if not part: raise ValueError('Capture file shortened during read')
+            parts.append(part); remaining -= len(part)
+        if stream.read(1): raise ValueError('Capture file grew during read')
+        return b''.join(parts)
 
 
 def encoded(value):
@@ -64,7 +108,7 @@ def readonly(path):
 
 def source_rows(database):
     """A short SQLite read snapshot; never lock the capture ledger for extraction."""
-    with readonly(database) as db:
+    with closing(readonly(database)) as db:
         db.execute('BEGIN')
         binding = dict(db.execute('SELECT key,value FROM metadata'))
         counts = Counter(dict(db.execute('SELECT state,count(*) FROM tasks GROUP BY state')))
@@ -75,10 +119,13 @@ def source_rows(database):
 def capture_rows(database, ordinals):
     # Parse large response JSON only for new rows, in short bounded transactions.
     if not ordinals: return []
-    with readonly(database) as db:
+    with closing(readonly(database)) as db:
         rows = list(db.execute("""SELECT id,ordinal,row,request,validation,response
           FROM tasks WHERE state='complete' AND ordinal IN (""" + ','.join('?' for _ in ordinals)
           + ') ORDER BY ordinal', ordinals))
+    # Charge materialized SQL bytes only after closing the read transaction.
+    if READ_BUDGET is not None:
+        READ_BUDGET.charge(sum(len(v.encode('utf-8')) for row in rows for v in row if isinstance(v, str)))
     if len(rows) != len(ordinals): raise ValueError('Completed capture changed during bounded read')
     return rows
 
@@ -126,7 +173,7 @@ def extract(row, frozen, root, coordinates, model_identity):
     for pointer in (artifact, provenance):
         path = Path(pointer['path']).resolve()
         if path.parent != root.resolve(): raise ValueError('Capture artifact location changed')
-        with READ_SLOTS: raw = path.read_bytes()
+        raw = read_capture(path)
         if hashlib.sha256(raw).hexdigest() != pointer['sha256']:
             raise ValueError('Capture artifact location or bytes changed')
         contents.append(raw)
@@ -255,7 +302,10 @@ def publish(db, output, chart, map_sha, binding, ledger_counts):
 
 
 def integrate(args):
+    global READ_BUDGET
     root, output = args.root.resolve(), args.output.resolve()
+    READ_BUDGET = MappingReadBudget(root / 'overnight_status.json',
+                                    args.active_read_mib_per_second * 1024 * 1024)
     lock = (output / 'persona_overnight_viewer.lock').open('a'); fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     map_sha = file_hash(args.map); chart = json.loads(args.map.read_text())
     coordinates = np.array(sorted((n['layer'], n['neuron']) for n in chart['neurons']), dtype=np.int64)
@@ -342,12 +392,24 @@ def sync(args):
         time.sleep(60)
 
 
+def active_read_rate(value):
+    try:
+        rate = float(value)
+    except (TypeError, ValueError) as error:
+        raise argparse.ArgumentTypeError('Read rate must be a finite number in (0, 1024] MiB/s') from error
+    if not math.isfinite(rate) or not 0 < rate <= 1024:
+        raise argparse.ArgumentTypeError('Read rate must be a finite number in (0, 1024] MiB/s')
+    return rate
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--root', type=Path, required=True); p.add_argument('--output', type=Path, required=True)
     p.add_argument('--map', type=Path, required=True); p.add_argument('--database', type=Path)
     p.add_argument('--inputs', type=Path); p.add_argument('--workers', type=int)
     p.add_argument('--previous-extractor', help='Explicit reviewed source SHA allowed to upgrade the existing private cache')
+    p.add_argument('--active-read-mib-per-second', type=active_read_rate, default=16,
+                   help='Aggregate source read budget while finite mapping is active (default: 16 MiB/s)')
     p.add_argument('--watch', action='store_true'); p.add_argument('--sync', action='store_true')
     p.add_argument('--remote-host', default='v100'); args = p.parse_args()
     if not args.sync and (args.database is None or args.inputs is None): p.error('Extraction requires --database and --inputs')

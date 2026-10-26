@@ -97,3 +97,58 @@ def test_heldout_never_enters_discovery_matrix(tmp_path):
         assert a['prompt_ids'].tolist() == ['one'] and json.loads(str(a['metadata']))['split'] == 'discovery'
     with np.load(tmp_path / m.HELDOUT, allow_pickle=False) as a:
         assert a['prompt_ids'].tolist() == ['held'] and json.loads(str(a['metadata']))['split'] == 'heldout'
+
+
+def test_mapping_budget_finite_and_shared(tmp_path, monkeypatch):
+    status = tmp_path / 'status.json'
+    clock = [100.0]; sleeps = []
+    monkeypatch.setattr(m.time, 'monotonic', lambda: clock[0])
+    monkeypatch.setattr(m.time, 'time', lambda: clock[0])
+    def sleep(delay):
+        sleeps.append(delay); clock[0] += delay
+    monkeypatch.setattr(m.time, 'sleep', sleep)
+    status.write_text(json.dumps({'state': 'running', 'deadline': 200, 'counts': {'pending': 2}}))
+    budget = m.MappingReadBudget(status, rate=1024)
+    budget.charge(1024); budget.charge(2048)
+    assert sleeps == [1, 2]
+    status.write_text(json.dumps({'state': 'complete', 'deadline': 200, 'counts': {}}))
+    budget.charge(1024)
+    assert sleeps == [1, 2]
+    clock[0] = 201
+    status.write_text(json.dumps({'state': 'running', 'deadline': 200, 'counts': {'pending': 2}}))
+    budget.charge(1024)
+    assert sleeps == [1, 2]
+
+
+def test_capture_read_budget_preserves_bytes(tmp_path, monkeypatch):
+    data = b'abcd' * 700000; path = tmp_path / 'raw'; path.write_bytes(data)
+    charged = []
+    class Budget:
+        def charge(self, size): charged.append(size)
+    monkeypatch.setattr(m, 'READ_BUDGET', Budget())
+    assert m.read_capture(path) == data
+    assert sum(charged) == len(data)
+    assert max(charged) <= 1024 * 1024
+
+
+def test_sql_budget_runs_after_connection_closed(tmp_path, monkeypatch):
+    path = tmp_path / 'ledger.sqlite'
+    with m.sqlite3.connect(path) as db:
+        db.execute('create table tasks(id,ordinal,row,request,validation,response,state)')
+        db.execute('insert into tasks values(?,?,?,?,?,?,?)', ('x', 0, '{}', '{}', '{}', '{}', 'complete'))
+    class Budget:
+        def charge(self, size):
+            assert size == 9
+            db = m.sqlite3.connect(path, timeout=0)
+            db.execute('begin exclusive'); db.rollback(); db.close()
+    monkeypatch.setattr(m, 'READ_BUDGET', Budget())
+    assert len(m.capture_rows(path, [0])) == 1
+
+
+def test_active_read_rate_validation():
+    assert m.active_read_rate('4') == 4
+    assert m.active_read_rate('0.5') == 0.5
+    assert m.active_read_rate('1024') == 1024
+    for value in ('0', '-1', 'nan', 'inf', '-inf', '1025', 'bad', None):
+        with pytest.raises(m.argparse.ArgumentTypeError):
+            m.active_read_rate(value)
