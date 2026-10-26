@@ -65,6 +65,7 @@ def readonly(path):
 def source_rows(database):
     """A short SQLite read snapshot; never lock the capture ledger for extraction."""
     with readonly(database) as db:
+        db.execute('BEGIN')
         binding = dict(db.execute('SELECT key,value FROM metadata'))
         counts = Counter(dict(db.execute('SELECT state,count(*) FROM tasks GROUP BY state')))
         rows = list(db.execute("SELECT id,ordinal FROM tasks WHERE state='complete' ORDER BY ordinal"))
