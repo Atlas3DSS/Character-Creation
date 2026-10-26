@@ -193,7 +193,7 @@ Owner requested Phantom-KV after the current sweep/viewer integration, for contr
 horror/romance prose and persona experiments, with coherence recovery as a separate
 hypothesis. The first implementation accepts checkpoint-bound `hybrid_text_prefix`
 controls: an ordinary text prefix's full recurrent/convolution/attention state, with
-exact off/on semantics. It does not import or train learned Phantom-KV banks.
+exact off/on semantics. This cached-text adapter is distinct from the separate learned attention-KV prototype described below.
 
 `persona/persona_kv.py` validates the artifact definition and cache layout. Prefix
 tokens are independently encoded before the unchanged chat-template IDs. Prefix
@@ -267,21 +267,32 @@ trainable grafts.
 
 The implemented prototype uses six cards and memory-only expansion, not a new
 checkpoint export: it reads the existing packed weights, decodes frozen layers into memory,
-and shard approximately 50.10 GiB of FP16 language weights (about 8.35 GiB per card
-before activations and workspaces). Validate a small hybrid block's forward agreement
-and finite-difference gradients before attempting the full model, retaining FP32 where
-recurrence/norm numerics require it. A 64–128-slot graft has about 2.1–4.2 million
-parameters; FP32 parameters, gradients and Adam moments need roughly 32–64 MiB.
-Activation memory and backward correctness remain the main uncertainties. Existing
-serving allocations must be coordinated before this separate training phase; no learned
-27B optimization has started. Use only approved benign literary pairs, with discovery
-selection and untouched held-out book families, not the upstream harmful-prompt suite.
+and shards approximately 100.2 GiB of FP32 language weights across six GPUs. The
+FP16 surrogate passed native forward comparisons but failed its directional gradient
+check; that failed report is preserved. Explicit `--weight-dtype float32` passed both
+preregistered finite-difference steps: epsilon 0.1 had 2.768% relative error and epsilon
+0.2 had 0.0479%, both positive and below the unchanged 12% limit. All six native
+next-token argmaxes matched; worst residual relative L2 was 0.051943 and minimum
+cosine 0.998652, within the unchanged 0.10 / 0.99 gates. Reports bind precision,
+backend, source and dataset hashes. The allocator cap remains 31 GiB per card, with
+no offload or expanded checkpoint export.
+
+The first candidate completed 16 discovery-family optimization steps and evaluation
+on eight untouched held-out families. Seven held-out target NLLs were slightly lower
+and one higher; this does not demonstrate prose quality, genre control, refusal
+reduction or coherence recovery. Candidate SHA-256:
+`06a33bf4a67c81e90ae3fad8939dbfd3b8fbb08aeb65a02b221fe7777f1e1a8f`.
+Native qualification is pending; training success does not promote a serving control.
+The candidate's `admission_validation` links the hashed successful validation report;
+its redundant `gradient_validation` field is null in this first training export.
+Validation consumers must verify the linked report and its precision/source/dataset
+bindings. Only approved benign literary pairs were used, not upstream harmful prompts.
 
 Prototype implementation and admission gates:
 
 - `persona/persona_phantom_weights.py` reads bounded tensor slices from the existing
   mixed checkpoint. Packed rows and small projections have CPU comparisons against
-  Flare. Decoded FP16 weights remain a surrogate: Flare's FP8 activation rounding and
+  Flare. Decoded dense weights remain a surrogate: Flare's FP8 activation rounding and
   NVFP4 post-dot scaling are not reproduced merely by decoding its weights.
 - `persona/persona_phantom_train.py` uses functional attention-KV injection, fresh
   GDN recurrence and nonreentrant block checkpointing. It disables incompatible
