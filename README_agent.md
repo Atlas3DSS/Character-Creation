@@ -147,6 +147,26 @@ do not imply original model weights, endorsement, or validated character fidelit
 
 ## Evaluation contracts
 
+Local viewer integration uses `persona/persona_overnight_integrate.py`. It reads completed
+rows of the frozen overnight ledger in short transactions, validates source/request/model
+bindings and raw-file hashes, and incrementally caches final-prefill values at the canonical
+map coordinates. It starts no inference. Exact message/template/runtime duplicates count
+once **within each split**; discovery and heldout observations are never pooled.
+
+The private `results/persona_overnight_viewer.json` manifest binds two compact NPZs
+(`persona_overnight_viewer.npz`, discovery; `persona_overnight_viewer_heldout.npz`, heldout)
+and `persona_overnight_viewer_records.jsonl` by SHA-256. It is published last. The NPZs
+use `character-creation.coactivity.v1`, `final_prefill_mlp_input_last`, and the unchanged
+canonical map SHA. `imported_captures` includes duplicates; `unique_observations` is the
+sum of `discovery_observations` and `heldout_observations`. Heldout means reserved source
+observations, not a newly validated causal result. Original all-position reductions remain
+in raw captures. Private book evidence in these files must not enter public Hub exports.
+
+`/api/neighbors` and `/api/neuron-examples` accept explicit dataset selection; `/api/state`
+reports the active source and import coverage. Automatic selection prefers a valid overnight
+discovery snapshot and explicitly reports a historical fallback when that snapshot is absent
+or fails validation. Numeric historical measurements and calibration banks are preserved.
+
 Concept qualification freezes candidates on discovery before heldout probes. A compact
 label requires at least 20 distinct predicted-positive heldout families, measured precision,
 a 95% Wilson lower bound **strictly above .70**, balanced accuracy at least .80, recall at

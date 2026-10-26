@@ -161,12 +161,59 @@ def renewal_command(command, deadline):
     return command
 
 
+def bind_continuation(database, manifest, *, config_sha256, runner_sha256, input_sha256, endpoints, now=None):
+    """Explicit new scheduling window; retain original capture/input bindings."""
+    now = time.time() if now is None else now
+    required = {'schema','id','parent_runner_sha256','runner_sha256','config_sha256','input_sha256',
+                'deadline','initial_counts','prior_endpoints','feature_artifact_sha256','reason'}
+    if not isinstance(manifest,dict) or set(manifest)!=required or manifest['schema']!='character-creation.overnight-continuation.v1':
+        raise ValueError('Invalid explicit continuation manifest')
+    if manifest['id']!=digest({k:v for k,v in manifest.items() if k!='id'}):
+        raise ValueError('Continuation content binding differs')
+    if (manifest['config_sha256']!=config_sha256 or manifest['runner_sha256']!=runner_sha256
+            or manifest['input_sha256']!=input_sha256):
+        raise ValueError('Continuation source/config/input binding differs')
+    if type(manifest['deadline']) not in (int,float) or not now<manifest['deadline']<=now+10*3600+60:
+        raise ValueError('Continuation requires a finite unexpired window')
+    if not isinstance(manifest['reason'],str) or not manifest['reason'].strip():
+        raise ValueError('Continuation requires an explicit reason')
+    with sqlite3.connect(database) as db:
+        db.execute('BEGIN IMMEDIATE')
+        metadata=dict(db.execute('SELECT key,value FROM metadata'))
+        if (metadata.get('config_sha256')!=config_sha256 or metadata.get('runner_sha256')!=manifest['parent_runner_sha256']
+                or metadata.get('input_sha256')!=input_sha256):
+            raise ValueError('Original immutable ledger binding differs')
+        key='continuation:'+manifest['id']
+        encoded=json.dumps(manifest,sort_keys=True,allow_nan=False)
+        if key in metadata:
+            if metadata[key]!=encoded or metadata.get('active_continuation')!=manifest['id']:
+                raise ValueError('A different continuation owns this ledger')
+            return manifest['id']
+        if metadata.get('active_continuation'):
+            raise ValueError('Prior continuation needs explicit separate reconciliation')
+        counts=dict(db.execute('SELECT state,count(*) FROM tasks GROUP BY state'))
+        if counts!=manifest['initial_counts'] or counts.get('running',0):
+            raise ValueError('Continuation ledger snapshot changed or has active tasks')
+        prior=json.loads(metadata.get('renewed_endpoints','{}'))
+        if prior!=manifest['prior_endpoints'] or set(prior)!={e['url'] for e in endpoints}:
+            raise ValueError('Prior endpoint ownership receipts differ')
+        for endpoint in endpoints:
+            state=unit_state(endpoint['unit'])
+            if state.get('ActiveState') not in ('inactive','failed') or state.get('InvocationID') not in ('',prior[endpoint['url']]['invocation_id']):
+                raise ValueError('Prior worker is active or invocation ownership changed')
+        db.execute('INSERT INTO metadata VALUES(?,?)',(key,encoded))
+        db.execute('INSERT INTO metadata VALUES(?,?)',('active_continuation',manifest['id']))
+        db.execute('INSERT INTO events VALUES(?,?,?)',(now,'continuation_authorized',encoded))
+    return manifest['id']
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--inputs', type=Path, required=True)
     parser.add_argument('--input-sha256', required=True)
     parser.add_argument('--database', type=Path, required=True)
+    parser.add_argument('--continuation', type=Path, help='Explicit source-bound continuation of a finished scheduling window')
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
     root = Path(config['artifact_root']).resolve()
@@ -175,18 +222,23 @@ def main():
     for filename, expected in config['runtime_hashes'].items():
         if file_hash(root / filename) != expected:
             raise ValueError('Runtime source changed: ' + filename)
-    deadline = config['deadline']
+    continuation=json.loads(args.continuation.read_text()) if args.continuation else None
+    deadline = continuation['deadline'] if continuation else config['deadline']
     if not time.time() < deadline <= time.time() + 10 * 3600 + 60:
         raise ValueError('Require finite remaining deadline of at most10 hours')
     lock = args.database.with_suffix('.lock').open('a')
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     initialize(args.database, args.inputs, args.input_sha256)
-    with sqlite3.connect(args.database) as db:
-        for key, value in (('config_sha256', file_hash(args.config)), ('runner_sha256', file_hash(__file__))):
-            prior = db.execute('SELECT value FROM metadata WHERE key=?', (key,)).fetchone()
-            if prior and prior[0] != value:
-                raise ValueError('Resume source/config binding changed: ' + key)
-            db.execute('INSERT OR IGNORE INTO metadata VALUES(?,?)', (key, value))
+    if continuation:
+        bind_continuation(args.database,continuation,config_sha256=file_hash(args.config),runner_sha256=file_hash(__file__),
+                          input_sha256=args.input_sha256,endpoints=config['endpoints'])
+    else:
+        with sqlite3.connect(args.database) as db:
+            for key, value in (('config_sha256', file_hash(args.config)), ('runner_sha256', file_hash(__file__))):
+                prior = db.execute('SELECT value FROM metadata WHERE key=?', (key,)).fetchone()
+                if prior and prior[0] != value:
+                    raise ValueError('Resume source/config binding changed: ' + key)
+                db.execute('INSERT OR IGNORE INTO metadata VALUES(?,?)', (key, value))
     stop = threading.Event()
     for number in (signal.SIGTERM, signal.SIGINT):
         signal.signal(number, lambda *_: stop.set())
@@ -197,7 +249,10 @@ def main():
         saved = db.execute("SELECT value FROM metadata WHERE key='renewed_endpoints'").fetchone()
         saved = json.loads(saved[0]) if saved else {}
     for endpoint in config['endpoints']:
-        if endpoint['url'] in saved:
+        if continuation:
+            endpoint.update(continuation['prior_endpoints'][endpoint['url']])
+            endpoint['lease_expires']=0
+        if endpoint['url'] in saved and (not continuation or saved[endpoint['url']]['lease_expires']==deadline):
             endpoint.update(saved[endpoint['url']])
             renewed.add(endpoint['url'])
         current = unit_state(endpoint['unit'])
@@ -209,6 +264,10 @@ def main():
     feature_process = None
     feature_attempted = False
     feature_state = 'waiting_for_authored_captures'
+    if continuation and continuation['feature_artifact_sha256']:
+        if file_hash(root/'overnight_feature_map.json')!=continuation['feature_artifact_sha256']:
+            raise ValueError('Prior completed feature analysis artifact changed')
+        feature_state='complete'
 
     def connect():
         return sqlite3.connect(args.database, timeout=60)
@@ -224,7 +283,7 @@ def main():
         with state_lock:
             body = {'updated': time.time(), 'deadline': deadline, 'paused': paused.exists(),
                     'active': sorted(active), 'counts': counts, 'input_sha256': args.input_sha256,
-                    'feature_analysis': feature_state,
+                    'feature_analysis': feature_state, 'continuation_id':continuation['id'] if continuation else None,
                     'state': terminal_state or ('stopping' if stop.is_set() else 'running')}
         temporary = status_path.with_suffix('.tmp')
         temporary.write_text(json.dumps(body, indent=2) + '\n'); temporary.replace(status_path)
@@ -262,6 +321,8 @@ def main():
 
     def maybe_features():
         nonlocal feature_process, feature_attempted, feature_state
+        if feature_state=='complete' and feature_process is None:
+            return
         if feature_attempted:
             code = feature_process.poll()
             if code is not None and feature_state == 'running':
@@ -341,7 +402,8 @@ def main():
                 with state_lock:
                     active.discard(endpoint['url'])
 
-    event('start', source_sha256=file_hash(__file__), config_sha256=file_hash(args.config), deadline=deadline)
+    event('start', source_sha256=file_hash(__file__), config_sha256=file_hash(args.config), deadline=deadline,
+          continuation_id=continuation['id'] if continuation else None)
     try:
         with ThreadPoolExecutor(max_workers=6) as pool:
             jobs = [pool.submit(worker, endpoint) for endpoint in config['endpoints']]

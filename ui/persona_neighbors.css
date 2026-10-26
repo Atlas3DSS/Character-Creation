@@ -91,3 +91,5 @@
 .pg-canvas{position:relative;inset:auto;max-width:100%}
 
 .pg-scene{overflow:hidden;isolation:isolate;contain:layout paint;box-sizing:border-box}.pg-canvas{z-index:0}.pg-controls,.pg-status{position:relative;z-index:1}
+
+.pn-compact details{overflow-wrap:anywhere}.pn-compact details pre{max-height:320px;overflow:auto;white-space:pre-wrap}

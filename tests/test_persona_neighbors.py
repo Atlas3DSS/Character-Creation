@@ -195,3 +195,73 @@ class CoactivityTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class CohortTests(unittest.TestCase):
+    setUp=CoactivityTests.setUp
+    publish=CoactivityTests.publish
+    def overnight(self):
+        from persona_neighbors import CoactivityCohorts
+        self.chart['neurons']=self.chart['neurons'][:-1];self.map_path.write_text(json.dumps(self.chart));self.metadata['map_sha256']=hashlib.sha256(self.map_path.read_bytes()).hexdigest();self.publish()
+        meta={**self.metadata,'runtime_identity':'c'*64,'prepared_identity':'d'*64,'runtime_identities':['c'*64],'prepared_identities':['d'*64]}
+        arrays={k:v.copy() for k,v in self.arrays.items()};arrays['values']=arrays['values'].astype(np.float32);arrays['values'][:,1]*=-1;arrays['corpora']=np.array(['authored_emotion_contrast']*8+['book_diverse']*8)
+        path=self.root/'results/persona_overnight_viewer.npz';np.savez_compressed(path,metadata=np.array(json.dumps(meta)),**arrays)
+        records=[{'split':'discovery','id':str(identity),'tier':str(tier),'artifact_sha256':str(artifact),'messages':[{'role':'user','content':'Source '+str(i)}],'identities':{k:meta[k] for k in ('model_identity','runtime_identity','prepared_identity')},'duplicate_count':1} for i,(identity,tier,artifact) in enumerate(zip(arrays['prompt_ids'],arrays['corpora'],arrays['source_hashes']))]
+        rec=path.with_name('persona_overnight_viewer_records.jsonl');rec.write_text(''.join(json.dumps(row)+'\n' for row in records))
+        summary={k:meta[k] for k in ('model_identity','runtime_identity','prepared_identity','map_sha256')};summary.update(state='ready',unique_observations=16,discovery_observations=16,heldout_observations=0,imported_captures=16,pending_captures=4,total_tasks=20,completed_captures=16,npz_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),records_sha256=hashlib.sha256(rec.read_bytes()).hexdigest());path.with_suffix('.json').write_text(json.dumps(summary))
+        return CoactivityCohorts(self.root,self.model),path,rec
+    def test_default_and_historical_never_pool(self):
+        index,_,_=self.overnight();new=index.query(0,0);old=index.query(0,0,cohort='historical')
+        self.assertEqual(new['source']['cohort'],'overnight');self.assertEqual(old['source']['cohort'],'historical');self.assertEqual(new['source']['n_samples'],16);self.assertEqual(old['source']['n_samples'],16)
+        self.assertIn((0,1),[(x['layer'],x['neuron']) for x in new['groups']['negative']]);self.assertIn((0,1),[(x['layer'],x['neuron']) for x in old['groups']['positive']])
+    def test_tampered_records_fallback_and_explicit_failure(self):
+        index,_,records=self.overnight();self.assertEqual(index.status()['active_cohort'],'overnight');records.write_text(records.read_text()+' ')
+        self.assertEqual(index.status()['active_cohort'],'historical')
+        with self.assertRaises(ValueError):index.query(0,0,cohort='overnight')
+    def test_examples_bound_sorted_filtered_and_limited(self):
+        index,_,_=self.overnight();result=index.examples(0,0,corpus='authored_emotion_contrast',limit=2)
+        self.assertEqual(len(result['groups']['positive']),2);self.assertEqual(result['groups']['positive'][0]['messages'][0]['content'],'Source 7');self.assertTrue(all(r['tier']=='authored_emotion_contrast' for group in result['groups'].values() for r in group))
+        with self.assertRaises(ValueError):index.examples(0,0,limit=9)
+    def test_missing_overnight_uses_historical(self):
+        from persona_neighbors import CoactivityCohorts
+        index=CoactivityCohorts(self.root,self.model);self.assertEqual(index.query(0,0)['source']['cohort'],'historical');self.assertFalse(index.examples(0,0)['available'])
+
+    def test_heldout_is_explicit_and_never_pooled(self):
+        index,path,records=self.overnight()
+        with np.load(path,allow_pickle=False) as archive:
+            arrays={k:archive[k].copy() for k in archive.files if k!='metadata'}
+            meta=json.loads(str(archive['metadata']))
+        meta['split']='heldout';arrays['values'][:,1]*=-1
+        arrays['prompt_ids']=np.array(['heldout-'+str(i) for i in range(16)])
+        heldout=path.with_name('persona_overnight_viewer_heldout.npz')
+        np.savez_compressed(heldout,metadata=np.array(json.dumps(meta)),**arrays)
+        rows=[json.loads(line) for line in records.read_text().splitlines()]
+        extra=[{**row,'split':'heldout','id':'heldout-'+str(i),'messages':[{'role':'user','content':'Heldout '+str(i)}]} for i,row in enumerate(rows)]
+        records.write_text(''.join(json.dumps(row)+'\n' for row in rows+extra))
+        summary=json.loads(path.with_suffix('.json').read_text());summary.update(unique_observations=32,heldout_observations=16,heldout_npz_sha256=hashlib.sha256(heldout.read_bytes()).hexdigest(),records_sha256=hashlib.sha256(records.read_bytes()).hexdigest());path.with_suffix('.json').write_text(json.dumps(summary))
+        discovery=index.query(0,0);evaluation=index.query(0,0,cohort='overnight_heldout')
+        self.assertEqual(discovery['source']['split'],'discovery');self.assertEqual(evaluation['source']['split'],'heldout')
+        self.assertIn('filtered heldout prompts',evaluation['graph']['semantics']);self.assertNotIn('discovery',str(evaluation['source']['limitations']))
+        self.assertEqual(discovery['source']['n_samples'],16);self.assertEqual(evaluation['source']['n_samples'],16)
+        self.assertIn((0,1),[(r['layer'],r['neuron']) for r in evaluation['groups']['positive']])
+        self.assertIn((0,1),[(r['layer'],r['neuron']) for r in discovery['groups']['negative']])
+        for cohort,split in [('overnight','discovery'),('overnight_heldout','heldout')]:
+            examples=index.examples(0,0,cohort=cohort)
+            self.assertTrue(all(row['split']==split for group in examples['groups'].values() for row in group))
+        # A held-out matrix mislabeled discovery must fail closed, never become the default.
+        meta['split']='discovery';np.savez_compressed(heldout,metadata=np.array(json.dumps(meta)),**arrays)
+        with self.assertRaises(ValueError):index.query(0,0,cohort='overnight_heldout')
+        self.assertEqual(index.query(0,0)['source']['cohort'],'overnight')
+
+    def test_empty_heldout_is_valid_but_has_no_correlation_evidence(self):
+        index,path,records=self.overnight()
+        with np.load(path,allow_pickle=False) as archive:
+            arrays={k:archive[k].copy() for k in archive.files if k!='metadata'}
+            meta=json.loads(str(archive['metadata']))
+        meta['split']='heldout'
+        for key in ('values','corpora','prompt_ids','source_hashes'):arrays[key]=arrays[key][:0]
+        heldout=path.with_name('persona_overnight_viewer_heldout.npz');np.savez_compressed(heldout,metadata=np.array(json.dumps(meta)),**arrays)
+        summary=json.loads(path.with_suffix('.json').read_text());summary['heldout_npz_sha256']=hashlib.sha256(heldout.read_bytes()).hexdigest();path.with_suffix('.json').write_text(json.dumps(summary))
+        result=index.query(0,0,cohort='overnight_heldout')
+        self.assertFalse(result['available']);self.assertEqual(result['source']['n_samples'],0)
+        self.assertEqual(index.examples(0,0,cohort='overnight_heldout')['groups'],{'positive':[],'negative':[],'near_zero':[]})
+        self.assertEqual(index.query(0,0)['source']['cohort'],'overnight')

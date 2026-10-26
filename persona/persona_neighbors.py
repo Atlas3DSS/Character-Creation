@@ -31,7 +31,7 @@ LIMITATIONS = [
     'Each value is one final-prefill SwiGLU activation; token-by-token trajectories are not observed.',
     'Only measured map candidates are included; unobserved neurons are not ranked.',
     'Strength thresholds are display conventions, not significance tests or multiple-comparison qualification.',
-    'Corpus and task mixture can affect pooled correlations; these discovery results remain exploratory.',
+    'Corpus and task mixture can affect pooled correlations; these cohort-specific results remain exploratory.',
 ]
 
 
@@ -49,6 +49,8 @@ class CoactivityIndex:
 
     def __init__(self, root: Path, model: ModelSpec):
         self.model = model
+        self.corpora = CORPORA
+        self.split = 'discovery'
         self.path = Path(root) / 'results/persona_coactivity.npz'
         self.map_path = Path(root) / 'results/persona_map.json'
         self.lock = threading.RLock()
@@ -104,9 +106,9 @@ class CoactivityIndex:
         metadata = json.loads(encoded.decode('utf-8') if isinstance(encoded, bytes) else encoded)
         if (not isinstance(metadata, dict) or metadata.get('schema') != SCHEMA
                 or metadata.get('model_identity') != self.model.identity
-                or metadata.get('map_sha256') != map_sha or metadata.get('split') != 'discovery'
+                or metadata.get('map_sha256') != map_sha or metadata.get('split') != self.split
                 or metadata.get('measurement') != MEASUREMENT or metadata.get('unsteered') is not True):
-            raise ValueError('Co-activity model/map/discovery/unsteered measurement binding differs')
+            raise ValueError('Co-activity model/map/split/unsteered measurement binding differs')
         if not isinstance(chart, dict) or chart.get('model_identity') != self.model.identity or not isinstance(chart.get('neurons'), list):
             raise ValueError('Measured map belongs to another model or omits candidate coordinates')
         mapped = set()
@@ -130,7 +132,7 @@ class CoactivityIndex:
             array = arrays[name]
             if array.shape != (rows,) or array.dtype.kind != 'U' or any(not value for value in array.tolist()):
                 raise ValueError('Co-activity row labels must be nonempty Unicode vectors matching the row count')
-        if any(name not in CORPORA for name in arrays['corpora'].tolist()):
+        if any(name not in self.corpora for name in arrays['corpora'].tolist()):
             raise ValueError('Co-activity rows contain an unsupported corpus')
         if len(set(arrays['prompt_ids'].tolist())) != rows:
             raise ValueError('Duplicate prompt IDs would overweight repeated baseline observations')
@@ -179,13 +181,13 @@ class CoactivityIndex:
 
     def query(self, layer: int, neuron: int, *, corpus='all', scope='all', limit=12):
         if (type(layer) is not int or not 0 <= layer < self.model.layers or type(neuron) is not int
-                or not 0 <= neuron < self.model.intermediate or corpus not in ('all', *CORPORA)
+                or not 0 <= neuron < self.model.intermediate or corpus not in ('all', *self.corpora)
                 or scope not in ('same_layer', 'cross_layer', 'all') or type(limit) is not int or not 1 <= limit <= 50):
             raise ValueError('Invalid neuron, corpus, scope or neighbor limit')
         result = {'available': False, 'status': 'missing_source', 'message': '', 'target': {'layer': layer, 'neuron': neuron},
                   'groups': {'positive': [], 'negative': [], 'weak': []}, 'source': {
                       'model_identity': self.model.identity, 'n_samples': 0, 'measurement': MEASUREMENT,
-                      'split': 'discovery', 'candidates': 0, 'corpus': corpus, 'scope': scope,
+                      'split': self.split, 'candidates': 0, 'corpus': corpus, 'scope': scope,
                       'min_samples': MIN_SAMPLES, 'statistic': 'Pearson correlation across prompts',
                       'thresholds': {'strong_min_abs_r': STRONG_MIN, 'weak_max_abs_r': WEAK_MAX},
                       'limitations': list(LIMITATIONS)}}
@@ -273,7 +275,101 @@ class CoactivityIndex:
                 'explained_fraction': float(np.maximum(eigenvalues[order[:2]], 0).sum() / len(nodes)),
                 'explained_fraction_3d': float(np.maximum(eigenvalues[order], 0).sum() / len(nodes)),
                 'selection': 'Rank-interleaved positive, negative and weak neighbors; at most 64 nodes.',
-                'semantics': 'Every edge is measured on the same filtered discovery prompts; no causal or temporal direction.'}
+                'semantics': f'Every edge is measured on the same filtered {self.split} prompts; no causal or temporal direction.'}
             result.update(available=True, status='ready' if indices else 'no_eligible_neighbors',
                           message='Measured signed co-activity; strength labels are display conventions.' if indices else 'No varying candidate neighbors match this scope.')
             return result
+
+OVERNIGHT_CORPORA = ('authored_emotion_contrast', 'book_diverse', 'registered_big_five')
+
+class OvernightIndex(CoactivityIndex):
+    def __init__(self, root, model, split='discovery'):
+        super().__init__(root, model)
+        if split not in ('discovery','heldout'):raise ValueError('Invalid overnight split')
+        self.split=split
+        self.cohort='overnight' if split=='discovery' else 'overnight_heldout'
+        self.path=Path(root)/'results/persona_overnight_viewer.npz'
+        self.manifest_path=self.path.with_suffix('.json')
+        if split=='heldout':self.path=self.path.with_name('persona_overnight_viewer_heldout.npz')
+        self.records_path=self.path.with_name('persona_overnight_viewer_records.jsonl')
+        self.corpora=OVERNIGHT_CORPORA
+        self.bundle_signature=None;self.summary=None;self.records={}
+
+    def _load(self):
+        files=(self.path,self.map_path,self.manifest_path,self.records_path)
+        signature=tuple(_signature(p) for p in files)
+        if signature==self.bundle_signature:return self.data
+        manifest=json.loads(self.manifest_path.read_text())
+        if manifest.get('state')!='ready' or manifest.get('model_identity')!=self.model.identity or not all(_digest(manifest.get(k)) for k in ('npz_sha256','records_sha256','map_sha256','runtime_identity','prepared_identity')):
+            raise ValueError('Overnight publication identity bindings missing or invalid')
+        data=super()._load();meta=data['metadata']
+        if (manifest.get('npz_sha256' if self.split=='discovery' else 'heldout_npz_sha256')!=data['artifact_sha256'] or manifest['map_sha256']!=data['map_sha256']
+                or manifest.get(self.split+'_observations')!=data['total_samples']
+                or meta.get('runtime_identities')!=[manifest['runtime_identity']]
+                or meta.get('prepared_identities')!=[manifest['prepared_identity']]
+                or any(meta.get(k)!=manifest[k] for k in ('runtime_identity','prepared_identity'))):
+            raise ValueError('Overnight manifest/NPZ cohort binding differs')
+        mapped={(r['layer'],r['neuron']) for r in json.loads(self.map_path.read_text())['neurons']}
+        if set(data['coordinates'])!=mapped or data['arrays']['values'].dtype!=np.float32:
+            raise ValueError('Overnight matrix must contain exactly the canonical map coordinates as float32')
+        with self.records_path.open('rb') as stream:
+            if hashlib.file_digest(stream,'sha256').hexdigest()!=manifest['records_sha256']:
+                raise ValueError('Overnight passage records digest differs')
+            stream.seek(0);records={};seen=set();split_counts={'discovery':0,'heldout':0}
+            expected=dict(zip(data['arrays']['prompt_ids'],data['arrays']['source_hashes']));tiers=dict(zip(data['arrays']['prompt_ids'],data['arrays']['corpora']))
+            for line in stream:
+                record=json.loads(line);identity=record['id'];split=record.get('split')
+                if split not in split_counts or (split,identity) in seen:raise ValueError('Invalid or duplicate passage split')
+                seen.add((split,identity));split_counts[split]+=1
+                if split!=self.split:continue
+                if identity in records or identity not in expected or record.get('artifact_sha256')!=expected[identity] or record.get('tier')!=tiers.get(identity) or any(record.get('identities',{}).get(k)!=manifest[k] for k in ('model_identity','runtime_identity','prepared_identity')):
+                    raise ValueError('Overnight passage identity/artifact binding differs')
+                if not isinstance(record.get('messages'),list) or any(not isinstance(m.get('content'),str) or m.get('role') not in ('system','user','assistant') for m in record['messages']):
+                    raise ValueError('Invalid source passage messages')
+                records[identity]=record
+        if any(split_counts[k]!=manifest.get(k+'_observations') for k in split_counts):raise ValueError('Passage split counts differ')
+        if len(records)!=data['total_samples'] or signature!=tuple(_signature(p) for p in files):
+            raise ValueError('Overnight publication changed during read or omits passage rows')
+        self.bundle_signature=signature;self.summary=manifest;self.records=records
+        return data
+
+    def examples(self,layer,neuron,corpus='all',limit=8):
+        if type(limit) is not int or not 1<=limit<=8 or corpus not in ('all',*self.corpora):raise ValueError('Invalid example filter/limit')
+        with self.lock:
+            data=self._load();column=data['indices'].get((layer,neuron))
+            if column is None:raise ValueError('Neuron absent from snapshot')
+            arrays=data['arrays'];indices=np.flatnonzero(np.ones(data['total_samples'],bool) if corpus=='all' else arrays['corpora']==corpus)
+            values=arrays['values'][:,column]
+            def selected(order):
+                return [{**deepcopy(self.records[str(arrays['prompt_ids'][i])]),'value':float(values[i])} for i in order[:limit]]
+            return {'available':True,'cohort':self.cohort,'split':self.split,'target':{'layer':layer,'neuron':neuron},'corpus':corpus,'measurement':MEASUREMENT,
+                    'groups':{'positive':selected(sorted((i for i in indices if values[i]>0),key=lambda i:(-values[i],str(arrays['prompt_ids'][i])))),
+                              'negative':selected(sorted((i for i in indices if values[i]<0),key=lambda i:(values[i],str(arrays['prompt_ids'][i])))),
+                              'near_zero':selected(sorted(indices,key=lambda i:(abs(values[i]),str(arrays['prompt_ids'][i]))))},
+                    'source':{'npz_sha256':data['artifact_sha256'],'records_sha256':self.summary['records_sha256'],'runtime_identity':self.summary['runtime_identity']},
+                    'claim':'Descriptive extremes of signed final-prefill activation in this cohort, not causal evidence or whole-passage activation.'}
+
+class CoactivityCohorts:
+    def __init__(self,root,model):
+        self.historical=CoactivityIndex(root,model);self.overnight=OvernightIndex(root,model);self.heldout=OvernightIndex(root,model,'heldout')
+    def choose(self,cohort):
+        if cohort not in ('auto','overnight','overnight_heldout','historical'):raise ValueError('Invalid co-activity cohort')
+        if cohort=='historical':return self.historical,'historical',None
+        selected=self.heldout if cohort=='overnight_heldout' else self.overnight
+        try:
+            with selected.lock:selected._load()
+            return selected,selected.cohort,None
+        except (OSError,ValueError,KeyError,TypeError) as error:
+            if cohort!='auto':raise ValueError('Overnight snapshot unavailable: '+str(error)) from error
+            return self.historical,'historical',str(error)
+    def query(self,layer,neuron,*,cohort='auto',**kwargs):
+        index,name,error=self.choose(cohort);result=index.query(layer,neuron,**kwargs)
+        result['source'].update(cohort=name,requested_cohort=cohort,available_corpora=list(index.corpora),fallback_reason=error)
+        return result
+    def status(self):
+        index,name,error=self.choose('auto')
+        return {'active_cohort':name,'cohorts':['overnight','overnight_heldout','historical'],'overnight_summary':deepcopy(self.overnight.summary) if name=='overnight' else None,'overnight_unavailable_reason':error}
+    def examples(self,layer,neuron,*,cohort='auto',corpus='all',limit=8):
+        index,name,error=self.choose(cohort)
+        if name=='historical':return {'available':False,'cohort':name,'groups':{},'reason':'Passage lookup is available for the separate overnight cohort only.'}
+        return index.examples(layer,neuron,corpus,limit)

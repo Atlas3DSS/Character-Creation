@@ -14,7 +14,7 @@ class GeometryTests(unittest.TestCase):
   self.chart=self.root/'results/persona_map.json';self.chart.write_text(json.dumps({'model_identity':'m','neurons':[{'layer':0,'neuron':1},{'layer':1,'neuron':2}]}))
   self.source=self.root/'results/layer_00.npz';self.source.write_bytes(b'calibration')
   self.geometry={'model_identity':'m','map_sha256':hashlib.sha256(self.chart.read_bytes()).hexdigest(),'source_sha256':{self.source.name:hashlib.sha256(self.source.read_bytes()).hexdigest()},'positions':{'L0N1':[.1,.2]},'semantics':'PCA','explained_fraction':{'0':.5}}
-  self.app=Explorer.__new__(Explorer);self.app.root=self.root;self.app.model=SimpleNamespace(identity='m',layers=2);self.app.endpoints=[]
+  self.app=Explorer.__new__(Explorer);self.app.root=self.root;self.app.model=SimpleNamespace(identity='m',layers=2);self.app.endpoints=[];self.app.neighbors=SimpleNamespace(status=lambda:{})
   db=sqlite3.connect(self.root/'db');db.execute('CREATE TABLE comparisons(id,created,state)');db.close();self.app.connect=lambda:sqlite3.connect(self.root/'db')
  def state(self):
   (self.root/'results/persona_map_geometry.json').write_text(json.dumps(self.geometry));return self.app.state()['map']

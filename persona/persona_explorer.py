@@ -26,7 +26,7 @@ from urllib.parse import parse_qs, urlparse
 import uuid
 
 from persona_fleet import fetch
-from persona_neighbors import CoactivityIndex
+from persona_neighbors import CoactivityCohorts
 from persona_concepts import ConceptSearch
 from persona_concept_controls import Registry
 from persona_activation_lab import ActivationLab
@@ -128,7 +128,7 @@ class Explorer:
     def __init__(self, root: Path, config: dict):
         self.root, self.config = root, config
         self.model = ModelSpec.load(root / "data/persona_model.json")
-        self.neighbors = CoactivityIndex(root, self.model)
+        self.neighbors = CoactivityCohorts(root, self.model)
         self.atlas = WeightAtlas(root, self.model)
         self.bank = VectorBank(root / "results", self.model,
             **({"checkpoint": Path(config["checkpoint"])} if config.get("checkpoint") else {}))
@@ -661,6 +661,7 @@ class Explorer:
             comparisons = [{"id": row[0], "created": row[1], "state": row[2]}
                            for row in db.execute("SELECT id,created,state FROM comparisons ORDER BY created DESC LIMIT 20")]
         return {"model": metadata, "identity": self.model.identity, "map": chart,
+                "coactivity": self.neighbors.status(),
                 "baseline": summary, "comparisons": comparisons, "endpoints": len(self.endpoints),
                 "calibrated_layers": [i for i in range(self.model.layers) if (self.root / "results" / f"layer_{i:02d}.npz").exists()]}
 
@@ -782,7 +783,12 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif path.path == '/api/neighbors':
                     query = parse_qs(path.query)
                     self.send(app.neighbors.query(layer=int(query.get('layer', [''])[0]), neuron=int(query.get('neuron', [''])[0]),
-                        corpus=query.get('corpus', ['all'])[0], scope=query.get('scope', ['all'])[0], limit=int(query.get('limit', ['12'])[0])))
+                        corpus=query.get('corpus', ['all'])[0], scope=query.get('scope', ['all'])[0], limit=int(query.get('limit', ['12'])[0]),
+                        **({'cohort':query['cohort'][0]} if 'cohort' in query else {})))
+                elif path.path == '/api/neuron-examples':
+                    query=parse_qs(path.query)
+                    self.send(app.neighbors.examples(layer=int(query.get('layer',[''])[0]),neuron=int(query.get('neuron',[''])[0]),
+                        cohort=query.get('cohort',['auto'])[0],corpus=query.get('corpus',['all'])[0],limit=int(query.get('limit',['8'])[0])))
                 elif path.path in ('/api/lens', '/api/weight-web', '/api/lens/search'):
                     query=parse_qs(path.query)
                     if path.path=='/api/lens/search': self.send(app.atlas.search(query.get('q',[''])[0], word_start=query.get('word_start',['false'])[0]=='true'))

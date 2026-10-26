@@ -81,3 +81,45 @@ def test_validates_unranked_neurons_not_only_profiles(tmp_path):
     response['activation_artifact'] = save()
     with pytest.raises(ValueError, match='Nonfinite raw'):
         m.validate_result(response, request, endpoint, tmp_path)
+
+
+def continuation_fixture(tmp_path):
+    database=tmp_path/'continuation.sqlite'
+    prior={'http://worker':{'invocation_id':'old-owner','lease_expires':900}}
+    with sqlite3.connect(database) as db:
+        db.executescript('CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT); CREATE TABLE tasks(id TEXT,state TEXT); CREATE TABLE events(time REAL,kind TEXT,body TEXT);')
+        db.executemany('INSERT INTO metadata VALUES(?,?)',[('config_sha256','config'),('runner_sha256','original'),('input_sha256','inputs'),('renewed_endpoints',json.dumps(prior))])
+        db.executemany('INSERT INTO tasks VALUES(?,?)',[('done','complete'),('todo','pending'),('unknown','uncertain')])
+    manifest={'schema':'character-creation.overnight-continuation.v1','parent_runner_sha256':'original','runner_sha256':'new',
+              'config_sha256':'config','input_sha256':'inputs','deadline':4600,'initial_counts':{'complete':1,'pending':1,'uncertain':1},
+              'prior_endpoints':prior,'feature_artifact_sha256':None,'reason':'Explicitly authorized remaining capture window'}
+    manifest['id']=m.digest(manifest)
+    return database,manifest,[{'url':'http://worker','unit':'worker.service'}]
+
+
+def test_continuation_preserves_original_bindings_and_uncertain_rows(tmp_path,monkeypatch):
+    database,manifest,endpoints=continuation_fixture(tmp_path)
+    monkeypatch.setattr(m,'unit_state',lambda unit:{'ActiveState':'inactive','InvocationID':'old-owner'})
+    def bind():return m.bind_continuation(database,manifest,config_sha256='config',runner_sha256='new',input_sha256='inputs',endpoints=endpoints,now=1000)
+    assert bind()==manifest['id']
+    with sqlite3.connect(database) as db:
+        assert dict(db.execute('SELECT key,value FROM metadata'))['runner_sha256']=='original'
+        assert dict(db.execute('SELECT id,state FROM tasks'))=={'done':'complete','todo':'pending','unknown':'uncertain'}
+        db.execute("UPDATE tasks SET state='complete' WHERE id='todo'")
+    assert bind()==manifest['id']  # Same bound window can resume without replaying rows.
+
+
+@pytest.mark.parametrize('change',['source','snapshot','owner','active','deadline'])
+def test_continuation_rejects_binding_or_ownership_drift(tmp_path,monkeypatch,change):
+    database,manifest,endpoints=continuation_fixture(tmp_path)
+    state={'ActiveState':'inactive','InvocationID':'old-owner'}
+    monkeypatch.setattr(m,'unit_state',lambda unit:state)
+    if change=='source':manifest['runner_sha256']='other'
+    elif change=='snapshot':manifest['initial_counts']['pending']=9
+    elif change=='owner':state['InvocationID']='someone-else'
+    elif change=='active':state['ActiveState']='active'
+    elif change=='deadline':manifest['deadline']=999
+    manifest['id']=m.digest({k:v for k,v in manifest.items() if k!='id'})
+    with pytest.raises(ValueError):m.bind_continuation(database,manifest,config_sha256='config',runner_sha256='new',input_sha256='inputs',endpoints=endpoints,now=1000)
+    with sqlite3.connect(database) as db:
+        assert not db.execute("SELECT 1 FROM metadata WHERE key='active_continuation'").fetchone()

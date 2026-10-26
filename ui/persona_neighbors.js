@@ -7,7 +7,7 @@
     {key: 'negative', title: 'Move oppositely', short: 'Negative', detail: 'Negative correlation · r < −0.20'},
     {key: 'weak', title: 'Weak co-activity', short: 'Weak', detail: 'Closest to zero · |r| ≤ 0.20'}
   ];
-  const app = {target: null, corpus: 'all', scope: 'all', data: null, loading: false, error: '', serial: 0, limit: 12, threshold: .2, layout: 'similarity', bundle: 0};
+  const app = {target: null, cohort: 'auto', examples: null, corpus: 'all', scope: 'all', data: null, loading: false, error: '', serial: 0, limit: 12, threshold: .2, layout: 'similarity', bundle: 0};
   const refs = {};
   let controller, returnFocus;
   const coordinate = value => `L${value.layer} · N${value.neuron}`;
@@ -56,7 +56,8 @@
     refs.compact = node('section', undefined, 'pn-compact');
     refs.compact.setAttribute('aria-label', 'Neuron neighborhood');
     const compactHead = node('div', undefined, 'pn-compact-head');
-    compactHead.append(node('h3', 'Neuron neighborhood'), node('span', 'DISCOVERY', 'pn-eyebrow'));
+    refs.splitBadge=node('span', '', 'pn-eyebrow');
+    compactHead.append(node('h3', 'Neuron neighborhood'), refs.splitBadge);
     refs.compactStatus = node('p', undefined, 'pn-small');
     refs.spark = node('div', undefined, 'pn-spark');
     refs.compactBody = node('div', undefined, 'pn-compact-body');
@@ -70,13 +71,15 @@
     const head = node('div', undefined, 'pn-head'), heading = node('div');
     heading.append(node('p', 'MEASURED NEURON NEIGHBORHOOD', 'pn-eyebrow'));
     refs.title = node('h2'); refs.title.id = 'pn-title'; refs.title.tabIndex = -1;
-    const description = node('p', 'Signed co-activity across original, unsteered discovery prompts. Each value is measured at the final prompt token.', 'pn-description');
-    description.id = 'pn-description'; heading.append(refs.title, description);
+    const description = node('p', 'Signed co-activity across original, unsteered prompts in the selected cohort. Each value is measured at the final prompt token.', 'pn-description');
+    refs.description=description; description.id = 'pn-description'; heading.append(refs.title, description);
     refs.close = button('×', close, 'pn-close'); refs.close.setAttribute('aria-label', 'Close neuron neighborhood');
     head.append(heading, refs.close);
     const controls = node('div', undefined, 'pn-controls');
-    controls.append(filter('Corpus', [['all', 'All corpora'], ['big_five', 'Big Five'], ['scotus', 'SCOTUS'], ['skippy', 'Skippy books']], app.corpus,
-      value => {app.corpus = value; load();}),
+    refs.cohort=filter('Cohort', [['auto','Latest validated'],['overnight','Overnight discovery'],['overnight_heldout','Held-out observations · not fit'],['historical','Historical calibration']],app.cohort,setCohort);
+    refs.corpusFilter=filter('Corpus', [['all', 'All corpora']], app.corpus,
+      value => {app.corpus = value; load();});
+    controls.append(refs.cohort,refs.corpusFilter,
     filter('Layers', [['all', 'All layers'], ['same_layer', 'Same layer'], ['cross_layer', 'Other layers']], app.scope,
       value => {app.scope = value; load();}),
     button('Plan adaptive search', () => {
@@ -131,8 +134,8 @@
       throw Error('The neighborhood response does not match the selected neuron.');
     }
     if (value.available) {
-      if (!Number.isInteger(value.source?.n_samples) || value.source.n_samples < 8 || value.source.split !== 'discovery') {
-        throw Error('The neighborhood source lacks the required discovery samples.');
+      if (!Number.isInteger(value.source?.n_samples) || value.source.n_samples < 8 || value.source.split !== (value.source.cohort === 'overnight_heldout' ? 'heldout' : 'discovery')) {
+        throw Error('The neighborhood source lacks the required split-bound samples.');
       }
       const graph=value.graph;
       if (!graph || !Array.isArray(graph.nodes) || !graph.nodes.length || graph.nodes.length>64 ||
@@ -160,16 +163,19 @@
   }
   async function load() {
     if (!app.target) return;
+    if(app.cohort==='auto'&&app.resolvedCohort&&typeof state!=='undefined'&&state?.coactivity?.active_cohort!==app.resolvedCohort)app.corpus='all';
     const serial = ++app.serial, target = {...app.target};
     controller?.abort(); controller = new AbortController();
-    app.data = null; app.error = ''; app.loading = true; render();
-    const query = new URLSearchParams({layer: target.layer, neuron: target.neuron, corpus: app.corpus, scope: app.scope, limit: app.limit});
+    app.data = null; app.examples=null; app.error = ''; app.loading = true; render();
+    const query = new URLSearchParams({layer: target.layer, neuron: target.neuron, corpus: app.corpus, cohort: app.cohort, scope: app.scope, limit: app.limit});
     try {
       const response = await fetch(`/api/neighbors?${query}`, {signal: controller.signal});
       const value = await response.json();
       if (!response.ok) throw Error(value.error || `Neighborhood request failed (${response.status}).`);
       if (serial !== app.serial) return;
-      app.data = validate(value, target);
+      app.data = validate(value, target);app.resolvedCohort=value.source?.cohort;
+      const options=refs.corpusFilter.querySelector('select'),names=value.source?.available_corpora||[];options.replaceChildren(new Option('All corpora','all'));for(const name of names)options.add(new Option(name.replaceAll('_',' '),name));options.value=app.corpus;
+      if(value.available){const response=await fetch(`/api/neuron-examples?${new URLSearchParams({layer:target.layer,neuron:target.neuron,cohort:value.source.cohort||app.cohort,corpus:app.corpus,limit:8})}`,{signal:controller.signal});const examples=await response.json();if(serial===app.serial&&response.ok&&examples.source?.npz_sha256===value.source.artifact_sha256)app.examples=examples;}
     } catch (error) {
       if (serial !== app.serial || error.name === 'AbortError') return;
       app.error = error.message || 'Unable to load the neighborhood.';
@@ -181,11 +187,14 @@
     if (app.loading) return 'Reading measured co-activity…';
     if (app.error) return app.error;
     if (!app.data?.available) return app.data?.message || 'No measured neighborhood is available yet.';
-    return `${count(app.data.source.n_samples)} prompts · ${count(app.data.source.candidates)} measured candidates`;
+    return `${app.data.source.cohort||'historical'} · ${count(app.data.source.n_samples)} prompts · ${count(app.data.source.candidates)} measured candidates`;
   }
   function render() {
     if (!app.target) return;
     const data = app.data, source = data?.source;
+    const heldout=source?.split==='heldout'||(!source&&app.cohort==='overnight_heldout');
+    refs.splitBadge.textContent=heldout?'HELD-OUT · NOT FIT':'DISCOVERY';
+    refs.description.textContent=`Signed co-activity across unsteered ${heldout?'held-out':'discovery'} prompts in this cohort. Each value is measured at the final prompt token.${heldout?' Evaluation evidence only; not calibration or fitting data.':''}`;
     refs.title.textContent = coordinate(app.target);
     refs.compactStatus.textContent = statusText();
     refs.compact.setAttribute('aria-busy', String(app.loading));
@@ -198,20 +207,20 @@
         [Number.isInteger(source.eligible_candidates) ? count(source.eligible_candidates) : '—', 'eligible neighbors']]) {
         const stat = node('div', undefined, 'pn-stat'); stat.append(node('strong', value), node('span', label)); refs.summary.append(stat);
       }
-      renderProvenance(source);
+      renderProvenance(source);refs.summary.append(node('p',`Cohort: ${source.cohort||'historical'} · final prompt-token activation`, 'pn-small'));if(source.fallback_reason)refs.summary.append(node('p','Overnight unavailable; showing historical measurements. '+source.fallback_reason,'pn-small'));
       const warnings = [];
-      if (app.corpus === 'all') warnings.push('Pooled correlations can reflect differences between corpora. Compare within a corpus. Most observations are Skippy book prompts.');
+      if (app.corpus === 'all') warnings.push('Pooled correlations can reflect differences between corpora. Compare within a corpus. The displayed cohorts are never pooled; use the corpus filter for within-tier comparisons.');
       if (Number.isInteger(source.n_samples) && source.n_samples < 30) warnings.push(`Only ${source.n_samples} prompts in this filter: correlations can be unstable and do not establish a general relationship.`);
       if (warnings.length) {refs.warning.hidden = false; refs.warning.textContent = warnings.join(' ');}
     }
     if (app.loading || app.error || !data?.available) {
       const message = node('div', undefined, 'pn-empty');
       message.append(node('strong', app.loading ? 'Reading the candidate set' : 'Neighborhood unavailable'), node('p', statusText()));
-      if (!app.loading) message.append(node('p', 'At least eight varying discovery observations are required. No links are inferred for missing or constant measurements.', 'pn-small'), button('Try again', load));
+      if (!app.loading) message.append(node('p', 'At least eight varying observations in the selected cohort are required. No links are inferred for missing or constant measurements.', 'pn-small'), button('Try again', load));
       refs.content.append(message);
       refs.compactBody.append(node('p', app.loading ? 'A signed view will appear when the measurements are ready.' : 'Open the neighborhood for source details and corpus filters.', 'pn-small'));
     } else {
-      refs.spark.append(network(data, true));
+      refs.spark.append(network(data, true));if(app.examples?.available){const examples=node('details');examples.append(node('summary','Source passages with high, low and near-zero activation'),node('p',app.examples.claim,'pn-small'));for(const [group,rows] of Object.entries(app.examples.groups)){examples.append(node('h3',group.replaceAll('_',' ')));for(const item of rows){const passage=node('details');passage.append(node('summary',`${item.tier} · ${item.value.toFixed(4)} · ${item.duplicate_count||1} source capture(s)`),node('pre',item.messages.map(m=>`${m.role}: ${m.content}`).join('\n\n')),node('p',`ID ${item.id} · artifact ${item.artifact_sha256}`,'pn-small'));examples.append(passage);}}refs.compactBody.append(examples);}
       const chips = node('div', undefined, 'pn-chips');
       for (const definition of definitions) {
         const first = data.groups[definition.key][0];
@@ -260,7 +269,7 @@
   function renderProvenance(source) {
     const facts = node('dl');
     for (const [label, value] of [['Observation', 'Continuous MLP input activation at the final prompt token'],
-      ['Statistic', source.statistic || 'Pearson correlation across prompts'], ['Population', 'Original, unsteered discovery prompts only'],
+      ['Statistic', source.statistic || 'Pearson correlation across prompts'], ['Population', source.split==='heldout'?'Held-out unsteered prompts only; evaluation evidence, not fitting data':'Discovery unsteered prompts only'],
       ['Scope', `${count(source.candidates)} measured candidates; not all model neurons`],
       ['Display thresholds', 'Weak: |r| ≤ 0.20. Strong: |r| ≥ 0.60. Descriptive conventions, not significance tests.'],
       ['Model identity', source.model_identity], ['Map SHA-256', source.map_sha256], ['Activation source SHA-256', source.artifact_sha256]]) {
@@ -272,7 +281,8 @@
       refs.provenanceBody.append(list);
     }
   }
-  window.PersonaNeighbors = {select, open, close};
+  function setCohort(value){app.cohort=value;app.corpus='all';if(refs.cohort)refs.cohort.querySelector('select').value=value;const control=document.getElementById('map-cohort');if(control&&control.value!==value){control.value=value;window.updateCohortCoverage?.();if(typeof loadMapLinks==='function')loadMapLinks(app.target);}load();}
+  window.PersonaNeighbors = {select, open, close, setCohort};
   // Supports a late-loaded script after the map already has a selection.
   if (typeof selectedUnit !== 'undefined' && selectedUnit) select(selectedUnit);
 })();

@@ -44,6 +44,8 @@ There are three important distinctions:
 
 Use coverage and completion fields, not the size of the prompt collection, to describe what was actually measured. Retain failed, interrupted, or truncated outcomes in your analysis instead of quietly counting them as successful answers.
 
+In the local viewer, **Map & controls → View controls → Dataset** selects the overnight discovery captures, held-out captures, or historical measurements. The coverage line distinguishes imported captures from unique prompt observations. Select a neuron to read source passages with high, low, or near-zero final-token activity. Identical prompts count once within each dataset; held-out observations remain separate from discovery. These correlations describe the currently displayed calibrated candidates, not every neuron in the raw archive. New completed captures appear after validation and the next automatic refresh.
+
 ## Run the workbench with your model
 
 Actual steering requires a compatible checkpoint, its calibrated assets, the appropriate Flare environment, and configured inference endpoints. Follow [the Explorer guide](https://github.com/Atlas3DSS/Character-Creation/blob/main/PERSONA_EXPLORER.md) for setup and [the porting guide](https://github.com/Atlas3DSS/Character-Creation/blob/main/fork_agent.md) for another machine. There is no promise that a repository clone alone prepares a model.
