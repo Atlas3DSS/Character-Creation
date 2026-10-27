@@ -208,10 +208,30 @@ SHA, source-span fact contract, unknowns and descriptive behavioral observations
 the validated suite; Persona Studio exposes axis/situation pickers for cast and
 preset comparisons. Selection fills the shared editable prompt; only an explicit
 run submits inference. Registered browsing uses corpus `personality_diagnostics`.
-The suite is newly available, **not measured in the completed 256-answer pilot**.
+The suite was **not measured in the completed 256-answer pilot**; its separate
+288-answer discovery sweep is now complete.
 Report agreement with a false statement as a correctness issue independently of
 whether the response is gentle, blunt, sarcastic or hostile. Do not infer a validated
 neuron label or user-preference score from the authored axis names.
+
+The separate personality sweep uses all 24 authored prompts, six arms (unsteered
+baseline, A, A reversal, B, B reversal and matched random residual steering), and
+seeds 80317/49261: **288 answers**, all discovery. The 12 paired families do not
+constitute 24 independent scenes. Native response captures retain FP64 residual
+means for all 64 layers, covering **136,018 consumed generated tokens**. The local
+Qwen-family blinded review is complete across 48 six-answer groups; it is neither
+human review nor independent scientific truth. Detail issues occurred in baseline
+and steered answers; no default promotion follows.
+
+`persona/persona_personality_release.py` verifies the frozen suite, exact recipes,
+request/program hashes, native artifact/provenance bytes and blinded review receipts.
+Its release files are [persona_personality_public.json](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_personality_public.json)
+and [persona_personality_capture_bundle.npz](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_personality_capture_bundle.npz).
+The bundle joins rows to public answer codes and original artifact hashes and holds
+`response_mean[288,64,5120]` (float64), `response_count[288]` (int64) and metadata.
+It does not include every raw native NPZ or every response-token vector. Counts and
+means exclude prompt/template tokens and the final sampled but unconsumed token.
+This sweep does not alter the earlier 256-answer pilot or its heldout analysis.
 
 The existing Live activation search accepts whole/partial prompts, phrases, ideas,
 feelings and thoughts. Highlighting a span makes that span the next input. A compatible
@@ -640,8 +660,32 @@ omits raw physical completion traces and deployment receipts: **do not claim it 
 independently executable input to the raw validator**. First-decode arrays are retained;
 later logit equality is supported by recorded hashes rather than full logit arrays.
 
-Production B4 HTTP routing and intermediate B4 activation capture remain unqualified.
-The next gate is B4 capture validation, then an explicit production integration decision.
+The separate native capture qualification now passes all **10 checks**, with an
+independent receipt reporting `verified:true, passed:true`. Its 16 run sets cover
+serial/B2/B4 execution, repeats, slot/row permutations, zero controls, one changed
+request, unequal budgets `[1,3,8,32]`, and sampled/permuted execution. Exact checks
+cover all 64 layers and per-request consumed token IDs, positions and generations.
+
+The bounded artifact retains the first decode's three planes (post-residual,
+pre-MLP and MLP input), every consumed step's three-plane hashes, and FP64 residual
+sums/means with counts. It does **not** retain full vectors for every token. Means
+exclude prefill and cover `generated_token_ids[:-1]`: the final sampled token is
+not consumed. The offline validator checks coverage, first-plane hashes,
+sum/count arithmetic and cross-run equality; reconstructing later-token sums from
+hashes alone is impossible. Capture timings include synchronization/host readback
+and must not be treated as kernel-only throughput or compared with the earlier
+uninstrumented speed figure.
+
+Release files: [persona_batch_capture_public.json](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_batch_capture_public.json)
+and [persona_batch_capture_proof.npz](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_batch_capture_proof.npz).
+The failed pre-execution attempt to modify an immutable `MappingProxyType` graph
+registry is preserved with its old plan and failed-worker/source lineage. Explicit
+recovery used a temporary prepared facade; original native graph mappings remained
+untouched, and the original prepared object was restored by identity before
+capture-tensor cleanup.
+
+Production B4 HTTP queueing/routing is still not rolled out. A bounded **24-request
+HTTP/routing qualification** and an explicit integration decision remain next.
 The ordinary five/six B1 worker binding remains separate from the experimental callback
 runtime; checkpoint/prepared identities and exact production-core hashes establish
 which code is shared. No automatic rollout or personality/default promotion follows.

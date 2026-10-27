@@ -12,6 +12,22 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(public_only({'source':'https://huggingface.co/datasets/Atlas3D/character-creation-big-five'}),
                          {'source':'https://huggingface.co/datasets/Atlas3D/character-creation-big-five'})
 
+    def test_prose_colon_newline_and_json_escapes_are_not_paths(self):
+        value={'answers':[{'text':'The answer:\nA second line.\nNotes:\tOrdinary prose.'}],
+               'Heading:\n':'Readable key', 'quoted':'He said: "yes".'}
+        self.assertIs(public_only(value),value)
+
+    def test_actual_paths_in_keys_and_nested_strings_remain_blocked(self):
+        values=[{'C:\\private':'value'}, {'nested':({'text':'Open D:\\notes\\report.txt'},)},
+                {'nested':[{'/var/private':'value'}]}, {'url':'https://localhost:8792/api'},
+                {'text':'Read /Users/private/file or /home/private/file'}]
+        for value in values:
+            with self.subTest(value=value),self.assertRaises(ValueError):public_only(value)
+
+    def test_nonfinite_values_still_rejected(self):
+        for number in (float('nan'),float('inf'),-float('inf')):
+            with self.assertRaises(ValueError):public_only({'value':number})
+
     def test_answer_projection_omits_deployment_fields(self):
         capture=dict(request_sha256='a'*64,generated_token_ids_sha256='b'*64,consumed_generated_tokens=12)
         output=dict(answer='Synthetic answer',complete=True,response_capture=capture,

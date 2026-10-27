@@ -68,7 +68,7 @@ def export(root):
 
 
 
-APPROVED_CAPTURE_PLAN_SHA256='de22690d3d4c09cc09264556f7d908682acf1e2aadf92c6247714cf7f266a91b'
+APPROVED_CAPTURE_PLAN_SHA256='2299100c6ce9cf0bbab209a850ee9dcb5fe809c8133b82b81806be275531aa4d'
 
 
 def project_capture(plan,proof,validation,allowed_prompts):
@@ -99,6 +99,11 @@ def project_capture(plan,proof,validation,allowed_prompts):
         'original_proof':{'public_summary':'persona_batch_public.json','plan_sha256':APPROVED_PLAN_SHA256,'plan_canonical_sha256':plan['original_plan_canonical_sha256']},
         'artifact':{k:proof['artifact'][k] for k in ('filename','sha256','bytes','uncompressed_array_bytes','compression')},
         'checks':validation['checks'],'trace_validation':validation['trace_validation'],'consumed_observations':validation['consumed_observations'],'runs':runs,
+        'prior_events':[{'state':'failed_pre_execution','passed':False,
+            'reason':'Initial capture attempt stopped before any trial replay because the prepared graph registry was immutable. Recovery used a delegated graph view; scientific gates and cases were unchanged.'}
+            for prior in proof.get('prior_attempts',[]) if prior.get('state')=='failed_pre_execution'
+            and prior.get('runs')=={} and not prior.get('artifact')
+            and prior.get('error')==repr(TypeError("'mappingproxy' object does not support item assignment"))],
         'array_semantics':{'count':'Consumed generated input tokens: generated[:-1]; prefill and final sampled-but-unconsumed token excluded.',
             'sum':'FP64 sum of residual_last vectors in consumed-token order, per logical request and layer.',
             'mean':'FP64 sum/count; zero when count=0, with mean_defined=false.',

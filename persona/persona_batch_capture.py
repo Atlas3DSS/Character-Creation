@@ -1,5 +1,7 @@
 """Finite B1/B2/B4 capture qualification; no production HTTP integration."""
 from copy import deepcopy
+from contextlib import contextmanager
+from types import MappingProxyType
 import argparse
 import hashlib
 import json
@@ -86,6 +88,49 @@ def mapping_expected(before,slots,evidence):
     return active
 
 
+class PreparedFacade:
+    """Attribute-compatible prepared view; native graph registry stays untouched."""
+    __slots__=('_original','graphs')
+    def __init__(self,original,replacements):
+        unknown=set(replacements)-set(original.graphs)
+        if unknown:raise ValueError('Cannot wrap unknown prepared graphs')
+        self._original=original
+        self.graphs=MappingProxyType({**original.graphs,**replacements})
+    def __getattr__(self,name):return getattr(self._original,name)
+
+
+@contextmanager
+def wrapped_prepared(engine,replacements):
+    original=engine.prepared
+    engine.prepared=PreparedFacade(original,replacements)
+    try:yield
+    finally:engine.prepared=original
+
+
+KNOWN_UNSTARTED_ERROR=repr(TypeError("'mappingproxy' object does not support item assignment"))
+
+
+def recovery_history(output,artifact,plan,enabled):
+    if artifact.exists():raise FileExistsError('Existing capture arrays must not be overwritten')
+    if not output.exists():
+        if enabled:raise ValueError('Explicit recovery requires preserved failed report')
+        return []
+    old=json.loads(output.read_text());worker=old.get('failed_worker_manifest',{});prior=old.get('failed_plan',{})
+    if (not enabled or old.get('schema')!='character-creation.batch-capture-proof.v1'
+        or old.get('state')!='failed_pre_execution' or old.get('passed') is not False
+        or old.get('runs')!={} or old.get('artifact') or old.get('error')!=KNOWN_UNSTARTED_ERROR
+        or worker.get('status')!='failed' or worker.get('error')!="TypeError: 'mappingproxy' object does not support item assignment"
+        or worker.get('calibration_equivalence',{}).get('passed') is not True):
+        raise FileExistsError('Recovery limited to verified mappingproxy pre-execution failure')
+    digest=hashlib.sha256(json.dumps(prior,indent=2,allow_nan=False).encode()).hexdigest()
+    if digest!=old.get('failed_plan_sha256') or digest!=old.get('policy_sha256'):raise ValueError('Preserved failed plan hash differs')
+    mutable={'adapter_sha256','probe_source_sha256','created'}
+    if {k:v for k,v in prior.items() if k not in mutable}!={k:v for k,v in plan.items() if k not in mutable}:raise ValueError('Recovery changes scientific policy/cases/native core')
+    if (old.get('driver_sha256')!=prior.get('adapter_sha256') or worker.get('experiment_source_sha256')!=prior.get('adapter_sha256')
+        or worker.get('script_sha256')!=prior.get('probe_source_sha256')):raise ValueError('Failed worker/source lineage differs')
+    return [old]
+
+
 class CaptureTrial:
     def __init__(self,engine):
         self.engine=engine;self.base=BatchTrial(engine)
@@ -101,6 +146,7 @@ class CaptureTrial:
         # All new tensors explicitly restored; borrowed native vectors are small, not pools.
         snapshots={name:getattr(self.capture,name).clone() for name in FIELDS}
         legacy={name:getattr(e.capture,name).clone() for name in PLANES}
+        original_prepared=e.prepared
         originals={name:e.prepared.graphs[name] for name in self.base.names.values()}
         class Wrapper:
             def __init__(self,original,width):self.original=original;self.width=width
@@ -128,11 +174,12 @@ class CaptureTrial:
                         if any(np.any(v[:,s,:]) for v in planes.values()):raise ValueError('Inactive slot retains capture data')
         with torch.inference_mode():
             try:
-                for width,name in self.base.names.items():e.prepared.graphs[name]=Wrapper(originals[name],width)
-                result=self.base.execute(cases,**options);result['capture']=accumulator.finish(result);result['capture']['mapping_steps']=mapping_steps
+                replacements={name:Wrapper(originals[name],width) for width,name in self.base.names.items()}
+                with wrapped_prepared(e,replacements):
+                    result=self.base.execute(cases,**options);result['capture']=accumulator.finish(result);result['capture']['mapping_steps']=mapping_steps
                 return result
             finally:
-                for name,value in originals.items():e.prepared.graphs[name]=value
+                if e.prepared is not original_prepared:raise ValueError('Prepared facade not restored')
                 for name,value in snapshots.items():getattr(self.capture,name).copy_(value)
                 for name,value in legacy.items():getattr(e.capture,name).copy_(value)
                 torch.cuda.synchronize(e.prepared.device)
@@ -168,8 +215,8 @@ def make_plan(original):
 
 def experiment(engine,args):
     output=args.output/'persona_batch_capture_proof.json';artifact=args.output/'persona_batch_capture_proof.npz'
-    if output.exists() or artifact.exists():raise FileExistsError('Capture proof exists; no retry')
     plan=json.loads(args.capture_plan.read_text())
+    history=recovery_history(output,artifact,plan,getattr(args,'recover_unstarted',False))
     if plan['schema']!=PLAN_SCHEMA or plan['policy']!=POLICY or plan['batch_trial_source_sha256']!=sha(Path(__file__).with_name('persona_batch_probe.py')):raise ValueError('Frozen capture policy/BatchTrial source differs')
     if engine.manifest['script_sha256']!=plan['probe_source_sha256']:raise ValueError('Probe source differs from frozen plan')
     override=engine.manifest.get('capture_override') or {}
@@ -181,6 +228,7 @@ def experiment(engine,args):
     if plan['model_identity']!=engine.model.identity or sha(args.output/'layer_32.npz')!=plan['calibration_sha256']:raise ValueError('Model/calibration differs')
     report=dict(schema='character-creation.batch-capture-proof.v1',state='running',passed=False,policy=POLICY,policy_sha256=sha(args.capture_plan),driver_sha256=sha(__file__),batch_trial_source_sha256=plan['batch_trial_source_sha256'],
                 binding={k:engine.manifest[k] if k!='prepared_identity' else engine.prepared.server_config['identity'] for k in ('model_identity','runtime_identity','prepared_identity')},runs={},checks={},automatic_rollout=False)
+    report['prior_attempts']=history
     report['limitations']=['Timing includes capture synchronization and host readback, not kernel-only throughput.','Non-first per-token vectors are represented by hashes; sums rely on the source-bound accumulator.','All new B2/B4 graphs include capture; this is not a same-graph capture-off/on speed comparison.']
     report.update(eos_token_ids=list(engine.eos),source_sha256=engine.manifest['source_sha256'],capture_override=engine.manifest.get('capture_override'),heliopause_sha256=engine.manifest['heliopause_sha256'],adapter_sha256=sha(__file__),probe_source_sha256=plan['probe_source_sha256'],legacy_capture_prefix_sha256=plan['legacy_capture_prefix_sha256'])
     atomic(output,report);arrays={};values={};cases=plan['cases']
@@ -236,6 +284,6 @@ def main():
         with a.output.open('x') as stream:json.dump(make_plan(json.loads(a.original_plan.read_text())),stream,indent=2,allow_nan=False)
     else:
         import persona_probe as probe
-        p=probe.argument_parser();p.add_argument('--capture-plan',type=Path,required=True);a=p.parse_args();probe.run(a,experiment=experiment,preparation_adapter=prepare_adapter)
+        p=probe.argument_parser();p.add_argument('--capture-plan',type=Path,required=True);p.add_argument('--recover-unstarted',action='store_true');a=p.parse_args();probe.run(a,experiment=experiment,preparation_adapter=prepare_adapter)
 
 if __name__=='__main__':main()

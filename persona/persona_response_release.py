@@ -16,9 +16,19 @@ from persona_personality_probes import load_suite
 
 
 def public_only(value):
-    text=json.dumps(value,ensure_ascii=False,allow_nan=False)
-    if re.search(r'/(?:home|mnt|tmp|Users|var)/|[A-Za-z]:\\|https?://(?:localhost|127\.0\.0\.1)',text):
-        raise ValueError('Local deployment data in proposed public release')
+    # Validate JSON compatibility/nonfinite numbers without treating JSON escapes
+    # (notably a prose colon followed by "\\n") as literal filesystem paths.
+    json.dumps(value,ensure_ascii=False,allow_nan=False)
+    pending=[value]
+    while pending:
+        item=pending.pop()
+        if isinstance(item,str):
+            if re.search(r'/(?:home|mnt|tmp|Users|var)/|[A-Za-z]:\\|https?://(?:localhost|127\.0\.0\.1)',item):
+                raise ValueError('Local deployment data in proposed public release')
+        elif isinstance(item,dict):
+            pending.extend(item.keys());pending.extend(item.values())
+        elif isinstance(item,(list,tuple)):
+            pending.extend(item)
     return value
 
 

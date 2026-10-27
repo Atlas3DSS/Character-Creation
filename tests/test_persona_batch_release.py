@@ -92,3 +92,19 @@ def test_capture_export_rejects_changed_frozen_plan_before_artifact_read(tmp_pat
     for name,value in [('persona_batch_capture_plan.json',p),('persona_batch_capture_proof.json',r),('persona_batch_capture_validation.json',v),('persona_batch_proof_plan.json',{})]:
         (results/name).write_text(json.dumps(value))
     with pytest.raises(ValueError,match='byte binding'):export_capture(tmp_path)
+
+
+def test_capture_prior_failure_is_allowlisted_and_drops_worker_details():
+    import json
+    from persona_batch_release import project_capture,APPROVED_CAPTURE_PLAN_SHA256
+    r,p,v=capture_fixture()
+    r['prior_attempts']=[{'state':'failed_pre_execution','passed':False,'runs':{},
+        'error':repr(TypeError("'mappingproxy' object does not support item assignment")),
+        'failed_worker_manifest':{'path':'/mnt/private','host':'private-host','lease':'private-lease'}},
+        {'state':'failed_pre_execution','runs':{'four':{}},'error':'different failure'}]
+    result=project_capture(p,r,v,{APPROVED_PROMPT})
+    assert APPROVED_CAPTURE_PLAN_SHA256=='2299100c6ce9cf0bbab209a850ee9dcb5fe809c8133b82b81806be275531aa4d'
+    assert len(result['prior_events'])==1 and result['prior_events'][0]['passed'] is False
+    assert 'before any trial replay' in result['prior_events'][0]['reason']
+    for secret in ('/mnt/private','private-host','private-lease','failed_worker_manifest'):
+        assert secret not in json.dumps(result)

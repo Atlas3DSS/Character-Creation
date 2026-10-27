@@ -81,3 +81,48 @@ def test_prepare_rejects_overwriting_existing_capture(monkeypatch):
     import pytest
     with pytest.raises(ValueError,match='already instrumented'):prepare_adapter(prepare)()
     assert bootstrap.PreparedDecoder is original
+
+def test_mappingproxy_facade_delegates_and_restores_on_failure():
+    from types import SimpleNamespace,MappingProxyType
+    from persona_batch_capture import wrapped_prepared
+    import pytest
+    original_graph=object();replacement=object();prefill=object();pool=object()
+    registry=MappingProxyType({'decode':original_graph,'prefill':prefill})
+    native=SimpleNamespace(graphs=registry,device='cpu',resources=[pool],signatures={'decode':'signature'})
+    engine=SimpleNamespace(prepared=native)
+    with pytest.raises(RuntimeError,match='trial failed'):
+        with wrapped_prepared(engine,{'decode':replacement}):
+            assert engine.prepared is not native
+            assert engine.prepared.graphs['decode'] is replacement
+            assert engine.prepared.graphs['prefill'] is prefill
+            assert engine.prepared.resources is native.resources
+            assert engine.prepared.signatures is native.signatures
+            assert native.graphs is registry and registry['decode'] is original_graph
+            with pytest.raises(TypeError):engine.prepared.graphs['decode']=None
+            raise RuntimeError('trial failed')
+    assert engine.prepared is native and native.graphs is registry
+    assert registry['decode'] is original_graph
+
+
+def test_recovery_only_known_unstarted_preserved_lineage(tmp_path):
+    from persona_batch_capture import recovery_history,KNOWN_UNSTARTED_ERROR
+    from persona_vectors import canonical_digest
+    import json,hashlib,pytest
+    plan={'schema':'test-fixture','cases':[{'budget':32}],'policy':{'exact':True},'adapter_sha256':'oldadapter','probe_source_sha256':'oldprobe','created':1}
+    digest=hashlib.sha256(json.dumps(plan,indent=2,allow_nan=False).encode()).hexdigest()
+    old={'schema':'character-creation.batch-capture-proof.v1','state':'failed_pre_execution','passed':False,'runs':{},'error':KNOWN_UNSTARTED_ERROR,
+         'failed_plan':plan,'failed_plan_sha256':digest,'policy_sha256':digest,'driver_sha256':'oldadapter',
+         'failed_worker_manifest':{'status':'failed','error':"TypeError: 'mappingproxy' object does not support item assignment",'calibration_equivalence':{'passed':True},'experiment_source_sha256':'oldadapter','script_sha256':'oldprobe'}}
+    output=tmp_path/'proof.json';artifact=tmp_path/'proof.npz'
+    output.write_text(json.dumps(old));new=dict(plan,adapter_sha256='newadapter',probe_source_sha256='newprobe',created=2)
+    assert recovery_history(output,artifact,new,True)==[old]
+    with pytest.raises(FileExistsError):recovery_history(output,artifact,new,False)
+    for field,value in [('runs',{'serial_0':{}}),('artifact',{'sha256':'x'}),('error','other failure'),('state','failed')]:
+        changed=deepcopy(old);changed[field]=value;output.write_text(json.dumps(changed))
+        with pytest.raises(FileExistsError):recovery_history(output,artifact,new,True)
+    output.write_text(json.dumps(old))
+    with pytest.raises(ValueError):recovery_history(output,artifact,dict(new,cases=[{'budget':64}]),True)
+    altered=deepcopy(old);altered['failed_plan']['cases'][0]['budget']=64;output.write_text(json.dumps(altered))
+    with pytest.raises(ValueError):recovery_history(output,artifact,new,True)
+    output.write_text(json.dumps(old));artifact.write_bytes(b'preserve')
+    with pytest.raises(FileExistsError):recovery_history(output,artifact,new,True)
