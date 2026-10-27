@@ -1,0 +1,650 @@
+{
+  "schema": "character-creation.reasoning-battery-index.v1",
+  "battery_sha256": "a6dc563117f7d941ff466b62cefeaff628c6ca716bb65208cba42730b41d9e3c",
+  "source_snapshot_sha256": "b28af268218d116f0f3e819dea16e095bdcd93b9a123549b621ed128e0ad1604",
+  "sources": {
+    "general": {
+      "dataset": "MultiSynt/MT-Reasoning-Prompts",
+      "revision": "fd38d4ff2264058042e5f7832821ac588ed96805",
+      "file": "data/dan_Latn/shard000000.parquet",
+      "split": "train",
+      "config": "dan_Latn",
+      "license": "cc0-1.0",
+      "license_scope": "Card states database selection/arrangement; cite MultiSynt and original Glaive AI."
+    },
+    "algebra": {
+      "dataset": "marcov/math_dataset_algebra__linear_1d_composed_promptsource",
+      "revision": "ee58f7f38cd91075f5a91f5366bd4076014ae8bd",
+      "file": "data/test-00000-of-00001.parquet",
+      "split": "test",
+      "config": "default",
+      "license": "unspecified",
+      "public_text_redistribution": false
+    }
+  },
+  "cards": {
+    "general": {
+      "sha256": "034b40cd73e4031348b29d62390b57466faa8b8958b0d7a0e06a3745ce96c4c4",
+      "url": "https://huggingface.co/datasets/MultiSynt/MT-Reasoning-Prompts/blob/fd38d4ff2264058042e5f7832821ac588ed96805/README.md"
+    },
+    "algebra": {
+      "sha256": "29ecff404dc3a80b74867c1c61ee822bb2b4d32cad53f64360fda2112e78b362",
+      "url": "https://huggingface.co/datasets/marcov/math_dataset_algebra__linear_1d_composed_promptsource/blob/ee58f7f38cd91075f5a91f5366bd4076014ae8bd/README.md"
+    }
+  },
+  "acquisition": {
+    "algebra": {
+      "file_bytes": 12525598,
+      "row_group": 0,
+      "inspected_rows": 1000,
+      "rows_sha256": "0dd6bc57b62c6cdce1d1874206162e2397d786a620b2b1b93f10d12325e410ef",
+      "upstream_file_sha256": "82195691b9956b6373b496abfaafa9d9ada5980e64f2645e7c9dee33b14373e8",
+      "upstream_file_bytes": 12525598,
+      "schema_fields": [
+        {
+          "name": "question",
+          "type": "string"
+        },
+        {
+          "name": "answer",
+          "type": "string"
+        },
+        {
+          "name": "template_name",
+          "type": "string"
+        },
+        {
+          "name": "template",
+          "type": "string"
+        },
+        {
+          "name": "rendered_input",
+          "type": "string"
+        },
+        {
+          "name": "rendered_output",
+          "type": "string"
+        }
+      ],
+      "range_budget_bytes": 67108864
+    },
+    "general": {
+      "file_bytes": 452727025,
+      "row_group": 0,
+      "inspected_rows": 1000,
+      "rows_sha256": "9db659b2b01409b576e2c0bc26ab85a5f9f85bcc872ceee7948aaf3e5e1c8c04",
+      "upstream_file_sha256": "930812ff9532a8062f036462d5b886da90404712d6dc7565b1fe2f61902c7683",
+      "upstream_file_bytes": 452727025,
+      "schema_fields": [
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "tokens",
+          "type": "int64"
+        }
+      ],
+      "range_budget_bytes": 67108864
+    }
+  },
+  "split_counts": {
+    "algebra": {
+      "discovery": 24,
+      "heldout": 8
+    },
+    "general": {
+      "discovery": 12,
+      "heldout": 4
+    }
+  },
+  "rebuild": {
+    "module": "persona_reasoning_battery.py",
+    "arguments": [
+      "--build",
+      "--battery",
+      "<existing-directory>/persona_reasoning_battery.json"
+    ],
+    "optional_dependencies": [
+      "requests",
+      "pyarrow"
+    ],
+    "overwrite_different_files": false,
+    "network": "Pinned bounded HTTP range reads only"
+  },
+  "cases": [
+    {
+      "id": "0009ae8559b9d6fe87e7fe244768316e8b6092b804f59369d075f8cf814dbdd6",
+      "kind": "algebra",
+      "question_id": "0009ae8559b9d6fe87e7fe244768316e8b6092b804f59369d075f8cf814dbdd6",
+      "split": "discovery",
+      "source_row_sha256": "8c7395160a47ff9bde631d65afd29beaf4cc80ec0222ad765a332360df8b8ec5",
+      "source_rows": [
+        551
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "00157ce537dd850dbe5b38bdf003d5f3e995002a1cb049df892b9bf803b2b91f",
+      "kind": "algebra",
+      "question_id": "00157ce537dd850dbe5b38bdf003d5f3e995002a1cb049df892b9bf803b2b91f",
+      "split": "discovery",
+      "source_row_sha256": "d7596b65e5f3ea0065226e3fbc358f511cdb417756aecbe8903470d9309f2a0b",
+      "source_rows": [
+        191
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "002d0007e41bbaf5503f15f1c24e3832f7999c507a1aa407d1d476c404856986",
+      "kind": "algebra",
+      "question_id": "002d0007e41bbaf5503f15f1c24e3832f7999c507a1aa407d1d476c404856986",
+      "split": "discovery",
+      "source_row_sha256": "181835fa86e29876126a8f3a10c4ebe414955acacc6f3230da6b54d9ceeab28d",
+      "source_rows": [
+        494
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "0035cef6f104aae1f490ec6058c6094bc9705be24408c3eeb52559eae63f19e7",
+      "kind": "algebra",
+      "question_id": "0035cef6f104aae1f490ec6058c6094bc9705be24408c3eeb52559eae63f19e7",
+      "split": "discovery",
+      "source_row_sha256": "5f239f2cd0baa6cda4dcab1f14b3004a22c9b6fa8adf3103be34c82121ffe683",
+      "source_rows": [
+        768
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "004e5afadab54afc2da88b6bc09ee418141fb0798caaf9f9036ab8c1086918cb",
+      "kind": "algebra",
+      "question_id": "004e5afadab54afc2da88b6bc09ee418141fb0798caaf9f9036ab8c1086918cb",
+      "split": "discovery",
+      "source_row_sha256": "73868651364170d166cd5eb87553874e3a34ef03fdd93334c629fc1f17671485",
+      "source_rows": [
+        436
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "00baf2f94b870134d90362335caae53ea77ec661dad9ac9fc98bc4a692bdd2dd",
+      "kind": "algebra",
+      "question_id": "00baf2f94b870134d90362335caae53ea77ec661dad9ac9fc98bc4a692bdd2dd",
+      "split": "discovery",
+      "source_row_sha256": "7499ed08164bd88839f26d2c4d4602b9c24a9c48c48e831241f739e9edcacd0a",
+      "source_rows": [
+        806
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "00ca4bb7d0e579bd887e02e8394ebf43f26e1263ef061fb2e87fd7ef00262dcd",
+      "kind": "algebra",
+      "question_id": "00ca4bb7d0e579bd887e02e8394ebf43f26e1263ef061fb2e87fd7ef00262dcd",
+      "split": "discovery",
+      "source_row_sha256": "1de65cd5b787677e12612a46565a79553e61e8071a6e10482f9ea393f227cd29",
+      "source_rows": [
+        821
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "00d114ffcb4b8e3fa48127963963975bc82e7a302c20ce8308db226b9c44ab0b",
+      "kind": "algebra",
+      "question_id": "00d114ffcb4b8e3fa48127963963975bc82e7a302c20ce8308db226b9c44ab0b",
+      "split": "discovery",
+      "source_row_sha256": "a194edc93fe1357109ccc8064210849b8cc97e5b938f5b866c736a25295dd154",
+      "source_rows": [
+        856
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "014227fa4826b56bc3f5e099f840febd670e78b9b82fd912fef74f3595c16e41",
+      "kind": "algebra",
+      "question_id": "014227fa4826b56bc3f5e099f840febd670e78b9b82fd912fef74f3595c16e41",
+      "split": "discovery",
+      "source_row_sha256": "019e5ad081d6a9384565920d47179319b8e614e33cbe013b7cc3e14748a91b23",
+      "source_rows": [
+        469
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "016b72499196e0e6843d68965cf729fa947b6e4774c5306c3a77611de5b1366c",
+      "kind": "algebra",
+      "question_id": "016b72499196e0e6843d68965cf729fa947b6e4774c5306c3a77611de5b1366c",
+      "split": "discovery",
+      "source_row_sha256": "42f0e2ffe83894bdc99cd61c1de3167be726a2519894e6c74951b1a7ccff6a4c",
+      "source_rows": [
+        708
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "01998a5e199b530606a194806fc65fbac94e9ee195dab388b04c8b25ad94e0ca",
+      "kind": "algebra",
+      "question_id": "01998a5e199b530606a194806fc65fbac94e9ee195dab388b04c8b25ad94e0ca",
+      "split": "discovery",
+      "source_row_sha256": "3f64b43367188738600767e8386fb830bfac9d2f53123f8d462a02492239f578",
+      "source_rows": [
+        853
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "01fd0b541adb7075a8ea8e7d3bfd58ac62bdb5a50d16eec128e9a4cbee527e5b",
+      "kind": "algebra",
+      "question_id": "01fd0b541adb7075a8ea8e7d3bfd58ac62bdb5a50d16eec128e9a4cbee527e5b",
+      "split": "discovery",
+      "source_row_sha256": "15d58f030bf2f5b86d24b0501b48d211b47d612b8a2732a29bc8c6391b500469",
+      "source_rows": [
+        807
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "024414f00ab3127de9387552b974c6cc4e774054e46b117997960b9775e468f5",
+      "kind": "algebra",
+      "question_id": "024414f00ab3127de9387552b974c6cc4e774054e46b117997960b9775e468f5",
+      "split": "discovery",
+      "source_row_sha256": "2eecc5ebeffce4607b64160dcfc33ada1f6f8debd97dea68d039cc0a4ec5da96",
+      "source_rows": [
+        334
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "02a242d914c709ddb35ab872a99f3dc61979873089951dbf2ef5ea5ba6cc7884",
+      "kind": "algebra",
+      "question_id": "02a242d914c709ddb35ab872a99f3dc61979873089951dbf2ef5ea5ba6cc7884",
+      "split": "discovery",
+      "source_row_sha256": "553e50c6f70d627ea8d101626316c18b3aa76bffe4538bac6f52327eb6d8df20",
+      "source_rows": [
+        42
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "036c0b8039cc878014098f0bea92c2f68e4e7037c29527dda378c134eaf7f7b1",
+      "kind": "algebra",
+      "question_id": "036c0b8039cc878014098f0bea92c2f68e4e7037c29527dda378c134eaf7f7b1",
+      "split": "discovery",
+      "source_row_sha256": "f5fc5dabf9e9a7b27457c2cf89ffcf5d1524ef9121ee451b5c4ea76ec8638682",
+      "source_rows": [
+        530
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "03a8e0a1328a1fc1884a7563ac682f5e721f00002f307e451774402c4ea8dbdb",
+      "kind": "algebra",
+      "question_id": "03a8e0a1328a1fc1884a7563ac682f5e721f00002f307e451774402c4ea8dbdb",
+      "split": "discovery",
+      "source_row_sha256": "008ea834ed54c0cf3b33929536484a7c8bc604e5d50a563fa44603bee2f58126",
+      "source_rows": [
+        732
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "03be04ecec31bf48265cb8cfc1916a91823a09e558fd0e1c98235ea742473512",
+      "kind": "algebra",
+      "question_id": "03be04ecec31bf48265cb8cfc1916a91823a09e558fd0e1c98235ea742473512",
+      "split": "discovery",
+      "source_row_sha256": "a6cb44fa559a1234f74ae0ee189c7b79b15c80b9d0e7e9fd9c035ec0b7742295",
+      "source_rows": [
+        11
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "041248bcb7475c457dd885efb1db5a4e16bbd611aa9558d558021556d53975d1",
+      "kind": "algebra",
+      "question_id": "041248bcb7475c457dd885efb1db5a4e16bbd611aa9558d558021556d53975d1",
+      "split": "discovery",
+      "source_row_sha256": "e357c3340488afbb47ea41974552037382a22664953ad3bb3437ad7d64f848a2",
+      "source_rows": [
+        28
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "0422c278b40097ff1ffeca5a75f4dda5a0ea06db2dea31c200fb26a357dd18d3",
+      "kind": "algebra",
+      "question_id": "0422c278b40097ff1ffeca5a75f4dda5a0ea06db2dea31c200fb26a357dd18d3",
+      "split": "discovery",
+      "source_row_sha256": "9cf93c25aa0c3d4ea33b43ebe0766596ffdb3876cd2e008e17e78ec7bb340020",
+      "source_rows": [
+        451
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "04454fbd322d375df0ca124aaf1428cd1860e058e460cf4cb93a24b4f0d09e3f",
+      "kind": "algebra",
+      "question_id": "04454fbd322d375df0ca124aaf1428cd1860e058e460cf4cb93a24b4f0d09e3f",
+      "split": "discovery",
+      "source_row_sha256": "272bbb451959f69acb3ca8df76b5e67487b2b7190e7f4f9afc9add2c1b806cfc",
+      "source_rows": [
+        485
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "044e00b20929a3f542d222cf4f78ca2a2c75efc82c6420b05ed5aec65062874d",
+      "kind": "algebra",
+      "question_id": "044e00b20929a3f542d222cf4f78ca2a2c75efc82c6420b05ed5aec65062874d",
+      "split": "discovery",
+      "source_row_sha256": "d9005d15faa1764a9f15224a03c252ef7bbe2027dd4b88966b73fd5f592a6934",
+      "source_rows": [
+        45
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "04637e422f75a8408ff42bd1cefc111f14f8e7670c78e1d8e59fcdda8a05bef9",
+      "kind": "algebra",
+      "question_id": "04637e422f75a8408ff42bd1cefc111f14f8e7670c78e1d8e59fcdda8a05bef9",
+      "split": "discovery",
+      "source_row_sha256": "e27b5dac2f972353d28b46fa4d68f0a515344665ca0800841a5a5bc496704000",
+      "source_rows": [
+        77
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "050299da9ada753d8c472effc115aad766414cbda21bb9caa3cf78c0cd4d8447",
+      "kind": "algebra",
+      "question_id": "050299da9ada753d8c472effc115aad766414cbda21bb9caa3cf78c0cd4d8447",
+      "split": "discovery",
+      "source_row_sha256": "a95983cd279ccc940de7ec2516e679654bd8ebc9ef73988e9ef34bd21aa8cfe4",
+      "source_rows": [
+        877
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "0563937b46b2f698b450a30a630602c5b3699c1f94e5d65d0594019ca5a6c582",
+      "kind": "algebra",
+      "question_id": "0563937b46b2f698b450a30a630602c5b3699c1f94e5d65d0594019ca5a6c582",
+      "split": "discovery",
+      "source_row_sha256": "90ddd76849631753852662debc8d0ffd942d32ed8668b91a473ddbc5f3a953d4",
+      "source_rows": [
+        166
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "0576694ff034435eaea8eff15f24677f3319b9935a1b31da672095858877f446",
+      "kind": "algebra",
+      "question_id": "0576694ff034435eaea8eff15f24677f3319b9935a1b31da672095858877f446",
+      "split": "heldout",
+      "source_row_sha256": "f7d3298c5a53752df1b1743f1e0e946575c4cb21fe0b8bc5ed00d08f52182d76",
+      "source_rows": [
+        198
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "05cdec46f2305f9e2695148af7bfe9423bfbaf8fe5bcec64778e8cd48a9dc563",
+      "kind": "algebra",
+      "question_id": "05cdec46f2305f9e2695148af7bfe9423bfbaf8fe5bcec64778e8cd48a9dc563",
+      "split": "heldout",
+      "source_row_sha256": "d17e0d5509f4ca8481008676ef28a2fc594a3943dd950d7ea29c8a6678f4a98c",
+      "source_rows": [
+        904
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "05e65fbcbdfec0b29075bfce3ec4607a9244e4a690774fd57fab29ebe7d67d95",
+      "kind": "algebra",
+      "question_id": "05e65fbcbdfec0b29075bfce3ec4607a9244e4a690774fd57fab29ebe7d67d95",
+      "split": "heldout",
+      "source_row_sha256": "47382c2cbd6da1cdcb9aa5d01c85d266d105a655a52485a2f3254b054030f81f",
+      "source_rows": [
+        441
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "064ebaa27416fe78ba41a3913b90905f312fe7ee426a0ebe33ece4469d275a3d",
+      "kind": "algebra",
+      "question_id": "064ebaa27416fe78ba41a3913b90905f312fe7ee426a0ebe33ece4469d275a3d",
+      "split": "heldout",
+      "source_row_sha256": "4816d602e2d904663902473b76b6f5290293946a8f76467e4e6f332b87b0d334",
+      "source_rows": [
+        373
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "072c31411266d5c4ff59a2a57f22bb14975111ade4b18ec255f115d60af47fd0",
+      "kind": "algebra",
+      "question_id": "072c31411266d5c4ff59a2a57f22bb14975111ade4b18ec255f115d60af47fd0",
+      "split": "heldout",
+      "source_row_sha256": "ed03e83e2b302ea781956e7fd7dff0856ffac94a865bfcd67e2fd8b3caa31afd",
+      "source_rows": [
+        662
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "076e4a40a90e0b3acef225489174c250b72120e2e1d68de86b3f28d2cc8fc274",
+      "kind": "algebra",
+      "question_id": "076e4a40a90e0b3acef225489174c250b72120e2e1d68de86b3f28d2cc8fc274",
+      "split": "heldout",
+      "source_row_sha256": "9e803015e61c7102ef472d2ca078fca10e19c1135f1fd782c14acc891f0e6d58",
+      "source_rows": [
+        396
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "07db0b32c825bb830b7560090d29d4166244a1ce0c15e072d237426a989de9d8",
+      "kind": "algebra",
+      "question_id": "07db0b32c825bb830b7560090d29d4166244a1ce0c15e072d237426a989de9d8",
+      "split": "heldout",
+      "source_row_sha256": "eb6ea909c23b2fe39b48600494b3f5e3fdc3b1ed42af54841972bca97c581785",
+      "source_rows": [
+        167
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "07fdef4cf3d6da275290978a3a0ff4e71eac4cf167ca713fa6e66e9df4bee764",
+      "kind": "algebra",
+      "question_id": "07fdef4cf3d6da275290978a3a0ff4e71eac4cf167ca713fa6e66e9df4bee764",
+      "split": "heldout",
+      "source_row_sha256": "1aa26a748bf0c811aeacb4009b999313ce7cbff7c0c88daddf500f6f0a05842e",
+      "source_rows": [
+        621
+      ],
+      "scoring": "exact_numeric_dataset_reference"
+    },
+    {
+      "id": "b393e7e3a5a7f682c8e9b2b16d6160390074cf507ca853a0e354e6fd999a3fee",
+      "kind": "general",
+      "question_id": "616a1bc4a736f482355a55847d979d628008fabbb7e053bdf4dca131cc4e2725",
+      "split": "discovery",
+      "source_row_sha256": "bdebc5437c07a7afc750a3c7b78718315bf989a509a625bb570301f075ba6c1a",
+      "source_rows": [
+        5
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "c3b324f1f746a571e26b359c0f6d399f07057104a5881d819dc15511ffde4ae8",
+      "kind": "general",
+      "question_id": "caae8973d8cc05927651564b4ee64bcf6e238209ee273d62bf9f808e81c47f16",
+      "split": "discovery",
+      "source_row_sha256": "345a50f26ab66ef94145c48d9fe6d91d63f499c9491264f41b2ddbe440221644",
+      "source_rows": [
+        30
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "3f54fe3c92c3ad814ea4893b48736038e98636c02664fae4086aef10c86fb52b",
+      "kind": "general",
+      "question_id": "32596fabe22b3e370c787d15086ba067bda8ac8f538a1588a6d1340ecd89dd27",
+      "split": "discovery",
+      "source_row_sha256": "d9c379b789641644dbcc5056a8cb08262c373fe7433744aefdb17370423425d0",
+      "source_rows": [
+        35
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "18871583fd9e918cea6f4783915523d42520110b7d08be9b59ca15121e4ab31d",
+      "kind": "general",
+      "question_id": "df26630a8b630cbb9d5e2232b95486c8f48aa95a378922332f7ddb90d7611466",
+      "split": "discovery",
+      "source_row_sha256": "d256441353a50b7f5d65ed349e1b8a46ce9095a74a7d59049e17d39d3c5f58ab",
+      "source_rows": [
+        38
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "0dda065a7a623303335ab43ab1dcf1c82fde9f1b28e62044943309d43faa48ac",
+      "kind": "general",
+      "question_id": "b37c793aad22450648997d441da61b5fcd73ae968a0c254f60fdde246c78b5c6",
+      "split": "discovery",
+      "source_row_sha256": "9f7a0c3262d090c6176ae7bed724eabc52e70af5784e98e75de4159c141c0ad4",
+      "source_rows": [
+        58
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "2e132ad0b67f6572bb31b1beaa885e34c67531454651e2528d197e247e7eded5",
+      "kind": "general",
+      "question_id": "88420d379a185921bd242f6bc31082d147f98dca57344f10f4c8e38f048bdc87",
+      "split": "discovery",
+      "source_row_sha256": "6d55fefa44223f8d4a1322ed51f2a369e062d56a7603a4d0314bb3fea8539c80",
+      "source_rows": [
+        59
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "d7291e650c6b4b9c2021ebf69a37de008a25511f127b18996674bb73bf6e8c10",
+      "kind": "general",
+      "question_id": "92cc1610f1dec3cd6a8cb1f2460cdac77ac9e1ded56310949b01ad78d215f211",
+      "split": "discovery",
+      "source_row_sha256": "51f83b2f45c500632809c7be1548ba61745ad02b6477bd3a327c062282f6725f",
+      "source_rows": [
+        61
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "3baab2557c5d6dd460f34c982e416862d5c76a99a519383dc7d5d63f7a5a3553",
+      "kind": "general",
+      "question_id": "015b1000c5ad0c3578e13f2679faf7c291b1ae0be23ac6311e9f43456110780b",
+      "split": "discovery",
+      "source_row_sha256": "00693f24544988d22be1fbd7ac920bda7841e6f5d88b21481f874c8856e6dba8",
+      "source_rows": [
+        70
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "b082b060758ae3c78496a82483545d5079e491779fcf12ba1897650155a06e47",
+      "kind": "general",
+      "question_id": "e83271130351b702a495a285e16e755e0b68343c2a608c607cfa35227b470488",
+      "split": "discovery",
+      "source_row_sha256": "6cc3fba4006eb31668c926eddfc88b7a0c342be4b6c3681320746a520cccb8cc",
+      "source_rows": [
+        82
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "9b893bf8a606531c79f54fcf8c2695087fc5103faecdb93a81b0cea4440c9587",
+      "kind": "general",
+      "question_id": "078237c563178e15db720861a723229a3fd0a24d5220b8722e9f464644ea76e3",
+      "split": "discovery",
+      "source_row_sha256": "d678c787a63bc68447ab0d9f2e5afd1a5998ca7acfd5f1f079db8047d4e53137",
+      "source_rows": [
+        96
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "39fd2fd4e059399f2e90547c31a4f7fb6d5a04134ff33aa48b3d35e7b94e0dd4",
+      "kind": "general",
+      "question_id": "7de1f58341680e5e247cc80a3cb08c552ef466a7fe1d181476d9b8aa947e0c95",
+      "split": "discovery",
+      "source_row_sha256": "2fa58afa4645019f537d35d00a8e441544f4a22a6de362f3bf19c3ec055bdab7",
+      "source_rows": [
+        124
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "7e331a99d463430db984559227fb4f9078d496e57fba7ab031cdb2d7190598d4",
+      "kind": "general",
+      "question_id": "2f1cc235d6ee6b35788d3a7b64ccc48e3e7eb2e2b6bb3eaceaf79909cfc5b5a8",
+      "split": "discovery",
+      "source_row_sha256": "0e30d8f645d2f7e029f8f7ade458ba78126337e9c2cd87cad02f8a7fcf61e38b",
+      "source_rows": [
+        135
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "f1c2cd4226f4da879e79d735811cf3272365df483bd84ea3cf98c49ee38a5b61",
+      "kind": "general",
+      "question_id": "a3424aba1b95bf0ce093560584edcd58db26aec16d1009c810f0d3112a0edd71",
+      "split": "heldout",
+      "source_row_sha256": "8cba5a9244ccb5a0641ce8d8774e95ba4ec4370c24245cf8c977b68c5cc9a009",
+      "source_rows": [
+        148
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "6428bb4c53018b4945b159bbb32db9e4394785098058c73d41d433376c18b0a1",
+      "kind": "general",
+      "question_id": "4af1c9c6027517271566f98ed090a8220d72ec4d402eb7d65161e6218a94c537",
+      "split": "heldout",
+      "source_row_sha256": "6b737a47cc48d750866973861e6d8ed35a2d9531fb82904d45f174e1a3421120",
+      "source_rows": [
+        153
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "54a0703b915fcdc344474148ce9be5f23360cd838ce0f9253d571875b7db4cf6",
+      "kind": "general",
+      "question_id": "a152b618f4b798cdd8b270be0b89a45ce0ab0d102dbd9abe64d597c460b8427a",
+      "split": "heldout",
+      "source_row_sha256": "d2e7d5f822a9a637ec1b0e8378c3eee22373c7db7e117aedcad19fe949593828",
+      "source_rows": [
+        158
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    },
+    {
+      "id": "c2447c472ac6ba0c588d126cb9ad702edaaa5e78109aff94ca8ff3eabbb26a7c",
+      "kind": "general",
+      "question_id": "f092741c622960ad92783fcfe5c81fc1d849c2cd066ef283145c4bc16fcc60c6",
+      "split": "heldout",
+      "source_row_sha256": "f09b17421c432f9633d981d32fdd38c18457542f64c2a3ccb01c21277cce1f2a",
+      "source_rows": [
+        180
+      ],
+      "scoring": "prompt_only_no_ground_truth"
+    }
+  ],
+  "scope": "Source identifiers/hashes only; no algebra prompt, answer or template text redistributed. No model outcomes."
+}

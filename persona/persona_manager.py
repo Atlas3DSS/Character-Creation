@@ -536,6 +536,38 @@ class Queue:
                 (row[0], number, endpoint, time.time(), 'running'))
             return json.loads(row[1]), number
 
+    def claim_many(self, endpoint: str, limit: int) -> list[tuple[dict,int]]:
+        uint(limit,1,4,'native_batch_size')
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            rows=db.execute("SELECT id,body,attempts FROM jobs WHERE state='queued' ORDER BY created,id LIMIT ?",(limit,)).fetchall()
+            for identity,body,attempts in rows:
+                db.execute("UPDATE jobs SET state='running',attempts=? WHERE id=?",(attempts+1,identity))
+                db.execute('INSERT INTO attempts(job_id,number,endpoint,started,state) VALUES (?,?,?,?,?)',(identity,attempts+1,endpoint,time.time(),'running'))
+            return [(json.loads(body),attempts+1) for identity,body,attempts in rows]
+
+    def release_unsubmitted(self, claims: list[tuple[dict,int]]) -> None:
+        """Only preflight leftovers, with no durable submission intent, may return."""
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            for job,number in claims:
+                submitted=db.execute("SELECT 1 FROM audit WHERE event IN ('native_batch_submitting','native_b1_submitting') AND EXISTS(SELECT 1 FROM json_each(audit.data,'$.attempts') WHERE json_extract(value,'$.job_id')=? AND json_extract(value,'$.number')=?)",(job['id'],number)).fetchone()
+                if submitted:raise ValueError('Submitted attempt cannot be released')
+                changed=db.execute("UPDATE jobs SET state='queued' WHERE id=? AND state='running' AND attempts=?",(job['id'],number)).rowcount
+                if changed!=1:raise ValueError('Attempt ownership differs')
+                db.execute("UPDATE attempts SET state='unsubmitted_preflight',finished=? WHERE job_id=? AND number=?",(time.time(),job['id'],number))
+                db.execute('INSERT INTO audit(time,event,data) VALUES (?,?,?)',(time.time(),'native_preflight_release',encoded({'job_id':job['id'],'number':number})))
+
+    def recover_native_batch(self) -> int:
+        """A crash may follow remote execution: never automatically resubmit."""
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            count=db.execute("SELECT COUNT(*) FROM jobs WHERE state='running'").fetchone()[0]
+            db.execute("UPDATE jobs SET state='failed',error='interrupted native dispatch; remote outcome uncertain; no retry' WHERE state='running'")
+            db.execute("UPDATE attempts SET state='uncertain_no_retry',finished=? WHERE state='running'",(time.time(),))
+            db.execute('INSERT INTO audit(time,event,data) VALUES (?,?,?)',(time.time(),'native_recovery_no_retry',encoded({'requests':count})))
+        return count
+
     def finish(self, job: dict, number: int, result: dict, *, retry: bool = False) -> None:
         state = ('queued' if retry else 'failed' if result.get('error')
                  else 'complete' if result.get('complete') else 'incomplete')
@@ -694,7 +726,7 @@ def response_complete(response: dict, *, diagnostic: bool, measurement: str = 'r
     return complete
 
 
-def execute_job(job: dict, endpoint: dict, bank: VectorBank, timeout: float) -> dict:
+def prepare_job(job: dict, endpoint: dict, bank: VectorBank) -> tuple[dict,dict,dict,str]:
     if file_hash(bank.root / f"layer_{job['experiment']['layer']:02d}.npz") != job['calibration_sha256']:
         raise ValueError('Calibration artifact changed after queue admission')
     program, provenance = bank.program(job['pushes'], job['phase'])
@@ -716,6 +748,11 @@ def execute_job(job: dict, endpoint: dict, bank: VectorBank, timeout: float) -> 
         payload.update(observation_only=True, max_tokens=1)
     if program['sites']:
         payload['steering'] = program
+    return payload,program,provenance,measurement
+
+
+def execute_job(job: dict, endpoint: dict, bank: VectorBank, timeout: float) -> dict:
+    payload,program,provenance,measurement=prepare_job(job,endpoint,bank)
     started = time.time()
     response = fetch(endpoint['url'] + '/v1/chat/completions', payload, timeout=timeout)
     activation = response.get('activation_artifact')
@@ -749,7 +786,9 @@ class Manager:
         self.bank_lock = threading.RLock()
         self.corpus, self.corpus_digest = {}, ''
         self.endpoints = config['endpoints']
-        if len(self.endpoints) != 6 or len({e['gpu_uuid'] for e in self.endpoints}) != 6:
+        self.native_batch = config.get('native_batch',{}).get('enabled') is True
+        allowed_count = 1 <= len(self.endpoints) <= 6 if self.native_batch else len(self.endpoints) == 6
+        if not allowed_count or len({e['gpu_uuid'] for e in self.endpoints}) != len(self.endpoints):
             raise ValueError('Six distinct, explicitly leased Quincies are required')
         for endpoint in [config['planner'], *self.endpoints]:
             endpoint['url'] = local_url(endpoint['url'])
@@ -763,6 +802,8 @@ class Manager:
         self.runtime_identity = shared_runtime(self.endpoints)
         self.concurrency = config.get('per_gpu_concurrency', 1)
         uint(self.concurrency, 1, 4, 'per_gpu_concurrency')
+        if self.native_batch and (self.concurrency!=1 or not all(e.get('diagnostic') for e in self.endpoints) or len({e['url'] for e in self.endpoints})!=len(self.endpoints)):
+            raise ValueError('Native batch mode requires one dispatcher per unique diagnostic endpoint')
         if any(e.get('diagnostic') for e in self.endpoints) and self.concurrency != 1:
             raise ValueError('Diagnostic graph workers require exactly one active request per card')
         uint(config.get('max_total_jobs', 100000), 1, 1000000, 'max_total_jobs')
@@ -772,6 +813,11 @@ class Manager:
         fraction = config.get('max_error_fraction', .15)
         if type(fraction) not in (int, float) or not 0 < fraction <= 1:
             raise ValueError('max_error_fraction must be in (0,1]')
+        if self.native_batch:
+            settings=config['native_batch']
+            from persona_propagation import ArtifactStore
+            if not Path(settings['artifact_directory']).is_dir():raise ValueError('Native artifact directory must exist')
+            ArtifactStore(Path(settings['artifact_directory']),settings['artifact_remote_host'],settings['artifact_remote_root'])
         self.admission = Admission(config['workboard'])
         self.stop = threading.Event()
         self.stop_signal = None
@@ -880,7 +926,46 @@ class Manager:
         with self.bank_lock:
             return validate_proposal(proposal, self.model, self.corpus, self.bank, allow_unmapped=self.allow_unmapped)
 
+    def batch_worker(self, endpoint: dict, finish: float) -> None:
+        from persona_batch_dispatch import dispatch,UNSUPPORTED
+        from persona_propagation import ArtifactStore
+        settings=self.config['native_batch']
+        store=ArtifactStore(Path(settings['artifact_directory']),settings['artifact_remote_host'],settings['artifact_remote_root'])
+        bank=VectorBank(self.bank.root,self.model,**({'checkpoint':Path(self.config['checkpoint'])} if self.allow_unmapped else {}))
+        def admit():
+            if self.stop.is_set() or time.time()>=finish:return False
+            allowed,_=self.admission.allowed(endpoint)
+            jobs=(self.admission.board or {}).get('jobs',[])
+            lease=next((j for j in jobs if j.get('id')==endpoint['lease_id']),{})
+            return allowed and lease.get('lease_expires_epoch',0)>time.time()+15
+        while not self.stop.is_set() and time.time()<finish:
+            try:allowed=admit()
+            except (OSError,ValueError,KeyError,subprocess.SubprocessError):allowed=False
+            if not allowed:self.stop.wait(5);continue
+            claims=self.queue.claim_many(endpoint['url'],4)
+            if not claims:self.stop.wait(1);continue
+            try:
+                entries=[]
+                for job,number in claims:
+                    payload,program,provenance,measurement=prepare_job(job,endpoint,bank)
+                    # Preserve explicit controls. Their capability determines B1 fallback;
+                    # never silently strip them to force a batch fit.
+                    for key in UNSUPPORTED:
+                        if key in job:payload[key]=job[key]
+                    if measurement=='rollout' and not any(k in payload for k in ('kv_control','capture_search')):payload['capture_response']={'id':canonical_digest([job['id'],number,'response'])[:32],'layers':[],'max_positions':0}
+                    entries.append({'job':job,'number':number,'request':payload,'provenance':provenance,'measurement':measurement})
+                outcomes=dispatch(entries,endpoint,self.queue,store,fetch=fetch,deadline=min(finish,time.time()+self.config.get('request_timeout_seconds',600)),admit=admit,receipt=settings.get('compatibility_receipt'))
+                for entry,result in outcomes:self.queue.finish(entry['job'],entry['number'],result,retry=False)
+            except Exception as error:
+                # A preflight can release unsubmitted leftovers. Preserve those;
+                # every still-owned attempt is terminal, never silently retried.
+                for job,number in claims:
+                    with self.queue.connect() as db:
+                        active=db.execute("SELECT 1 FROM jobs WHERE id=? AND state='running' AND attempts=?",(job['id'],number)).fetchone()
+                    if active:self.queue.finish(job,number,{'complete':False,'error':repr(error),'error_class':'native_dispatch_no_retry'},retry=False)
+
     def worker(self, endpoint: dict, finish: float) -> None:
+        if self.native_batch:return self.batch_worker(endpoint,finish)
         # A worker owns its checkpoint reader; no shared safetensors cache mutation.
         bank = VectorBank(self.bank.root, self.model,
                          **({'checkpoint': Path(self.config['checkpoint'])} if self.allow_unmapped else {}))
@@ -915,7 +1000,8 @@ class Manager:
         # explicit operator transition. Never run a stale in-memory binding.
         self.queue.bind({'model_identity': self.model.identity,
                          'prepared_identity': self.endpoints[0]['prepared_identity'], 'runtime_identity': self.runtime_identity})
-        self.queue.recover()
+        if self.native_batch:self.queue.recover_native_batch()
+        else:self.queue.recover()
         def stop_signal(signum, frame):
             self.stop_signal = signal.Signals(signum).name
             self.stop.set()

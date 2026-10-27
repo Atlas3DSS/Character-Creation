@@ -694,6 +694,31 @@ admission; active chemistry services must remain untouched.
 
 ## Operating a fork
 
+The fixed reasoning battery uses `MultiSynt/MT-Reasoning-Prompts` at
+`fd38d4ff2264058042e5f7832821ac588ed96805` and
+`marcov/math_dataset_algebra__linear_1d_composed_promptsource` at
+`ee58f7f38cd91075f5a91f5366bd4076014ae8bd`. The accidentally suggested dspark
+dataset is excluded. `data/persona_reasoning_index.json` publishes IDs, source
+revisions, hashes and splits without algebra text. Reconstruct local inputs with
+`python persona/persona_reasoning_battery.py --build`; install `requests pyarrow`
+for this bounded acquisition step. The builder checks pinned metadata and row
+hashes, preserves authored translations, and refuses different existing files.
+Raw local battery/source files are excluded from Git because the algebra mirror
+does not declare a redistribution license.
+
+There are 32 unique algebra questions (24 discovery, eight heldout) and 16
+explicitly translated general prompts (12 discovery, four heldout). MT is a
+multilingual prompt-only source, not a multi-turn answer dataset. Numeric scoring
+accepts an unambiguous final answer and exact rational equality to the supplied
+reference; ambiguous output is unscorable, not automatically incorrect. General
+cases remain unscored. `wrong_answer_challenge` creates labeled synthetic history,
+not a model-generated conversation. `persona_reasoning_sweep.build` prepares
+288 fixed Manager jobs using six qualified recipes, equal seeds and budgets;
+its read-only summarizer keeps execution failures, correctness and unscorable
+answers distinct. Enqueue all jobs before running with `max_total_jobs=288` so
+heldout outcomes cannot enter the adaptive planner. No inference follows from
+building or loading this battery.
+
 - CPU dependencies: `python -m pip install -r requirements-persona.txt` (includes optional
   local NLP tools and a hash-pinned spaCy language model). Analysis-only users can install
   just `datasets huggingface_hub numpy`. Pytest is an additional test dependency.
