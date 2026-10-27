@@ -74,6 +74,15 @@ def shared_runtime(endpoints: list[dict]) -> str | None:
     return identities.pop()
 
 
+def request_error_budget_exceeded(counts,config,*,native_batch=False):
+    failures=counts.get('failed',0)
+    completed=counts.get('complete',0)
+    if native_batch:completed+=counts.get('incomplete',0)
+    else:failures+=counts.get('incomplete',0)
+    return (failures>=config.get('error_budget',50)
+        or (failures+completed>=20 and failures/(failures+completed)>config.get('max_error_fraction',.15)))
+
+
 def verify_compression_source(old: str, new: str) -> None:
     """Allow only the reviewed level-one NPZ writer, import and single call change."""
     before, after = ast.parse(old), ast.parse(new)
@@ -663,6 +672,31 @@ def check_admission(board: dict, endpoint: dict) -> tuple[bool, str]:
     return True, 'admitted by existing owner lease and fresh thermal telemetry'
 
 
+
+def native_batch_ready(endpoint: dict, timeout: float = 10) -> bool:
+    """Read-only startup gate: never claim jobs from a warming endpoint."""
+    try:
+        value=fetch(endpoint['url']+'/v1/models',timeout=timeout)
+    except urllib.error.HTTPError as error:
+        if error.code in (408,425,429,502,503,504):return False
+        raise RuntimeError(f'Native batch readiness HTTP failure: {error.code}') from error
+    except (urllib.error.URLError,TimeoutError,ConnectionError,OSError):
+        return False
+    if isinstance(value,dict) and value.get('data')==[]:return False
+    if not isinstance(value,dict) or not isinstance(value.get('data'),list) or len(value['data'])!=1:
+        raise RuntimeError('Native batch readiness descriptor is malformed')
+    descriptor=value['data'][0]
+    flare=descriptor.get('flare',{}) if isinstance(descriptor,dict) else {}
+    for key in ('model_identity','runtime_identity','prepared_identity'):
+        if not endpoint.get(key) or flare.get(key)!=endpoint[key]:
+            raise RuntimeError('Native batch readiness identity mismatch: '+key)
+    capability=flare.get('batch',{})
+    if not isinstance(capability,dict) or capability.get('qualified') is not True:return False
+    if capability.get('supported') is not True or capability.get('max_batch_size')!=4:
+        raise RuntimeError('Qualified native batch descriptor has invalid capacity/support')
+    return True
+
+
 def native_capability(endpoint: dict, model: ModelSpec, program: dict, *, measurement: str = 'rollout') -> str:
     descriptor = fetch(endpoint['url'] + '/v1/models', timeout=10)['data'][0]
     flare = descriptor.get('flare', {})
@@ -942,6 +976,9 @@ class Manager:
             try:allowed=admit()
             except (OSError,ValueError,KeyError,subprocess.SubprocessError):allowed=False
             if not allowed:self.stop.wait(5);continue
+            if not native_batch_ready(endpoint,timeout=max(1,min(10,finish-time.time()))):
+                self.stop.wait(2);continue
+            if not admit():continue
             claims=self.queue.claim_many(endpoint['url'],4)
             if not claims:self.stop.wait(1);continue
             try:
@@ -1016,9 +1053,7 @@ class Manager:
                 while not self.stop.is_set() and time.time() < finish:
                     counts = self.queue.counts()
                     total = sum(counts.values())
-                    failures, completed = counts.get('failed', 0) + counts.get('incomplete', 0), counts.get('complete', 0)
-                    if (failures >= self.config.get('error_budget', 50)
-                            or (failures + completed >= 20 and failures / (failures + completed) > self.config.get('max_error_fraction', .15))):
+                    if request_error_budget_exceeded(counts,self.config,native_batch=self.native_batch):
                         reason = 'request_error_budget'; break
                     if any(worker.done() for worker in workers):
                         self.queue.audit('worker_exit', {'errors': [repr(worker.exception()) for worker in workers if worker.done()]})
@@ -1026,6 +1061,7 @@ class Manager:
                     if total >= self.config.get('max_total_jobs', 100000):
                         if not counts.get('queued', 0) and not counts.get('running', 0):
                             reason = 'job_budget_complete'; break
+                        self.stop.wait(.2)
                     elif counts.get('queued', 0) < self.config.get('plan_low_water', 1000):
                         try:
                             self.refresh_corpus()

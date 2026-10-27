@@ -78,3 +78,81 @@ def test_saved_numeric_scoring_general_unscored_and_public_redaction(tmp_path,mo
     with queue.connect() as db:
         wrong=deepcopy(selected[0]);wrong['prompt']['split']='heldout';db.execute('UPDATE jobs SET body=? WHERE id=?',(json.dumps(wrong),wrong['id']))
     with pytest.raises(ValueError,match='Persisted Manager job'):sweep.summarize(queue.path,p,battery)
+
+
+def test_publication_milestones_intent_and_pinned_bytes(tmp_path):
+    path=tmp_path/'public.json';path.write_text('{"safe":true}')
+    receipt_path=tmp_path/'receipt.json';receipt={'source':{'input':'f'*64},'state':'idle','attempts':[]}
+    calls=[]
+    def upload(p,timeout):
+        intent=json.loads(receipt_path.read_text())['attempts'][-1]
+        assert intent['state']=='intent' and intent['terminal_jobs']==48
+        calls.append(str(p))
+        return {'revision':'a'*40,'commit_url':'https://example.invalid/commit','sha256':sweep.hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size}
+    assert not sweep.publication_due(receipt,0,True)
+    assert not sweep.publication_due(receipt,47,False)
+    assert sweep.publish_snapshot(path,receipt_path,receipt,48,False,upload=upload)
+    assert len(calls)==1 and receipt['attempts'][0]['state']=='verified'
+    assert not sweep.publication_due(receipt,48,False)
+    assert not sweep.publication_due(receipt,95,False)
+    assert sweep.publication_due(receipt,96,False)
+    assert sweep.publication_due(receipt,49,True)
+
+
+@pytest.mark.parametrize('failure',['timeout','wrong_bytes','crash_intent'])
+def test_uncertain_publication_never_retried(tmp_path,failure):
+    path=tmp_path/'public.json';path.write_text('{}');receipt_path=tmp_path/'receipt.json'
+    receipt={'source':{},'state':'idle','attempts':[]};calls=[]
+    def upload(p,timeout):
+        calls.append(1)
+        if failure=='timeout':raise TimeoutError('Unknown commit outcome')
+        return {'sha256':'0'*64,'bytes':2}
+    if failure=='crash_intent':receipt['attempts'].append({'state':'intent','terminal_jobs':48})
+    else:assert not sweep.publish_snapshot(path,receipt_path,receipt,48,False,upload=upload)
+    assert not sweep.publish_snapshot(path,receipt_path,receipt,288,True,upload=upload)
+    assert len(calls)==(0 if failure=='crash_intent' else 1)
+
+
+def test_cli_upload_uses_only_public_file_and_verifies_pinned_commit(tmp_path,monkeypatch):
+    import subprocess
+    import urllib.request
+    from io import BytesIO
+    path=tmp_path/sweep.PUBLIC_FILE;path.write_bytes(b'{"redacted":true}')
+    revision='a'*40;urls=[]
+    def run(argv,**kwargs):
+        assert argv[:3]==['/home/orwel/.local/bin/hf','upload',sweep.REPOSITORY]
+        assert argv[3:5]==[str(path),sweep.PUBLIC_FILE]
+        assert kwargs['timeout']==45 and kwargs['check'] is True
+        return SimpleNamespace(stdout=json.dumps({'commit_url':f'https://huggingface.co/datasets/{sweep.REPOSITORY}/commit/{revision}'}))
+    def fetch(url,timeout):urls.append(url);return BytesIO(path.read_bytes())
+    monkeypatch.setattr(subprocess,'run',run);monkeypatch.setattr(urllib.request,'urlopen',fetch)
+    evidence=sweep.upload_summary(path,45)
+    assert evidence['sha256']==sweep.hashlib.sha256(path.read_bytes()).hexdigest()
+    assert urls==[f'https://huggingface.co/datasets/{sweep.REPOSITORY}/resolve/{revision}/{sweep.PUBLIC_FILE}']
+
+
+def test_validated_partial_keeps_private_evidence_without_correctness_scoring(tmp_path,monkeypatch):
+    battery,p,target=prepared_fixture(monkeypatch);queue=Queue(tmp_path/'queue.sqlite');queue.enqueue(p['proposal'],p['jobs'],limit=288)
+    cases={c['id']:c for c in battery['cases']}
+    selected=[p['jobs'][0],next(j for j in p['jobs'] if cases[j['battery_case_id']]['kind']=='general')]
+    for job in selected:
+        request={'messages':[{'role':'user','content':job['prompt']['prompt']}],'seed':80317,'max_tokens':2048,'steering':program(job['arm'])}
+        pointer={'request_sha256':canonical_digest(request),**target,'sha256':'f'*64}
+        response={**target,'choices':[{'finish_reason':'length','message':{'content':'PRIVATE_PARTIAL FINAL_ANSWER: '+str(cases[job['battery_case_id']].get('expected_answer'))}}],
+            'diagnostics':{'complete_final_answer':False},'activation_artifact':pointer,'provenance_artifact':pointer,
+            'usage':{'prompt_tokens':20,'completion_tokens':2048},'response_capture':{'generation_complete':False,'consumed_generated_tokens':2047}}
+        result={'complete':False,'error':None,'capture_validated':True,'generation_status':'length_limited','binding':target,
+            'response':response,'request':request,'program_sha256':job['program_sha256']}
+        with queue.connect() as db:
+            db.execute("UPDATE jobs SET state='incomplete',attempts=1 WHERE id=?",(job['id'],))
+            db.execute("INSERT INTO attempts(job_id,number,endpoint,started,state,result) VALUES (?,1,'synthetic',0,'incomplete',?)",(job['id'],json.dumps(result)))
+    local,public=sweep.summarize(queue.path,p,battery);rows={r['job_id']:r for r in local['rows']}
+    assert [rows[j['id']]['assessment']['state'] for j in selected]==['unscorable','unscored']
+    assert all(rows[j['id']]['answer'].startswith('PRIVATE_PARTIAL') and rows[j['id']]['response_sha256'] for j in selected)
+    assert 'PRIVATE_PARTIAL' not in json.dumps(public)
+    assert local['usage']=={'logical_prompt_tokens':40,'generated_tokens':4096,'consumed_generated_tokens':4094,
+        'responses_with_usage':2,'complete_captures':0,'incomplete_captures':2}
+    with queue.connect() as db:
+        result['response']['choices'][0]['finish_reason']='stop'
+        db.execute('UPDATE attempts SET result=? WHERE job_id=?',(json.dumps(result),selected[-1]['id']))
+    with pytest.raises(ValueError,match='termination differs'):sweep.summarize(queue.path,p,battery)

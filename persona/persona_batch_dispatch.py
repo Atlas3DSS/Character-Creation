@@ -66,6 +66,24 @@ def check_b1_controls(request,flare):
         if key=='prefill_stop' and capability.get('encoded_prefix_stop') is not True:raise ValueError('B1 prefix stop unsupported')
 
 
+def validate_generation(response,request,binding,store,*,native_batch,validator):
+    """Truthful full-budget truncation is incomplete science, not bad transport."""
+    choice=(response.get('choices') or [{}])[0];diagnostics=response.get('diagnostics',{});usage=response.get('usage',{})
+    limited=(native_batch and batch_eligible(request) and bool(request.get('capture_response'))
+        and choice.get('finish_reason')=='length' and diagnostics.get('complete_final_answer') is False
+        and diagnostics.get('unexpected_thinking') is False and type(usage.get('completion_tokens')) is int
+        and type(request.get('max_tokens')) is int and usage['completion_tokens']==request['max_tokens'])
+    if limited:
+        from persona_batch_qualify import checked_parity
+        verified=checked_parity(response,request,binding,store)
+        evidence=verified['evidence']
+        if evidence.get('finish_reason')!='length' or evidence.get('prose_complete') is not False or evidence.get('truncated_prose') is not True:
+            raise ValueError('Parity validator did not establish truthful truncation')
+        return {'complete':False,'generation_status':'length_limited','capture_validated':True}
+    arrays,paths=validator(response,request,binding,store);del arrays
+    return {'complete':True,'generation_status':'complete','capture_validated':True}
+
+
 def dispatch(entries,endpoint,queue,store,*,fetch,deadline,admit,receipt=None,validator=None):
     """One endpoint owner; preflight may shrink, submitted batches never retry."""
     import time
@@ -121,12 +139,12 @@ def dispatch(entries,endpoint,queue,store,*,fetch,deadline,admit,receipt=None,va
     outcomes=[]
     for entry,row in zip(selected,rows):
         try:
-            arrays,paths=validator(row['response'],entry['request'],binding,store);del arrays
-            result={'complete':True,'error':None,'response':row['response'],'request':entry['request'],'program_sha256':entry['provenance']['program_sha256'],
+            status=validate_generation(row['response'],entry['request'],binding,store,native_batch=native,validator=validator)
+            result={**status,'error':None,'response':row['response'],'request':entry['request'],'program_sha256':entry['provenance']['program_sha256'],
                 'provenance':entry['provenance'],'runtime_identity':binding['runtime_identity'],'binding':binding,'batch_id':batch_id,
                 'compatibility_sha256':entry['compatibility_sha256'],'activation_artifact':row['response']['activation_artifact'],
                 'provenance_artifact':row['response']['provenance_artifact'],'promotion_eligible':False,'measurement':entry.get('measurement','rollout')}
-            queue.audit('native_job_validated',{'batch_id':batch_id,'job_id':entry['job']['id'],'attempt':entry['number'],'request_sha256':row['request_sha256']})
+            queue.audit('native_job_validated',{'batch_id':batch_id,'job_id':entry['job']['id'],'attempt':entry['number'],'request_sha256':row['request_sha256'],'complete_answer':status['complete'],'generation_status':status['generation_status'],'capture_validated':True})
         except Exception as error:result={'complete':False,'error':repr(error),'error_class':'artifact_validation_no_retry','batch_id':batch_id}
         outcomes.append((entry,result))
     return outcomes

@@ -174,7 +174,8 @@ def test_primary_manager_worker_uses_native_dispatch_and_completes_each(tmp_path
     manager=Manager.__new__(Manager);manager.native_batch=True;manager.queue=queue
     manager.stop=threading.Event();manager.model=object();manager.bank=SimpleNamespace(root=tmp_path);manager.allow_unmapped=False
     manager.config={'native_batch':{'enabled':True,'artifact_directory':str(tmp_path),'artifact_remote_host':'v100','artifact_remote_root':'/approved'},'request_timeout_seconds':30}
-    endpoint={'url':'http://127.0.0.1:8935','lease_id':'lease'}
+    endpoint={'url':'http://127.0.0.1:8935','lease_id':'lease',**{k:'a'*64 for k in ('model_identity','runtime_identity','prepared_identity')}}
+    monkeypatch.setattr('persona_manager.fetch',lambda *a,**k:{'data':[{'flare':{**{k:endpoint[k] for k in ('model_identity','runtime_identity','prepared_identity')},'batch':{'qualified':True,'supported':True,'max_batch_size':4}}}]})
     manager.admission=SimpleNamespace(allowed=lambda e:(True,''),board={'jobs':[{'id':'lease','lease_expires_epoch':time.time()+1000}]})
     monkeypatch.setattr('persona_manager.VectorBank',lambda *a,**k:object())
     monkeypatch.setattr('persona_manager.prepare_job',lambda job,*a:({'model':'checkpoint','stream':False},{'sites':[]},{'program_sha256':'a'*64},'rollout'))
@@ -187,3 +188,127 @@ def test_primary_manager_worker_uses_native_dispatch_and_completes_each(tmp_path
     monkeypatch.setattr('persona_batch_dispatch.dispatch',dispatch)
     manager.worker(endpoint,time.time()+10)
     assert len(calls)==1 and queue.counts()=={'complete':4}
+
+
+@pytest.mark.parametrize('unready',['transport','empty','unqualified','503'])
+def test_warming_endpoint_does_not_claim_any_jobs(tmp_path,monkeypatch,unready):
+    import time,urllib.error
+    from types import SimpleNamespace
+    from persona_manager import Manager
+    queue=queue_fixture(tmp_path,4);manager=Manager.__new__(Manager)
+    class Stop:
+        stopped=False
+        waits=[]
+        def is_set(self):return self.stopped
+        def wait(self,seconds):self.waits.append(seconds);self.stopped=True
+    manager.stop=Stop();manager.native_batch=True;manager.queue=queue;manager.model=object();manager.bank=SimpleNamespace(root=tmp_path);manager.allow_unmapped=False
+    manager.config={'native_batch':{'enabled':True,'artifact_directory':str(tmp_path),'artifact_remote_host':'v100','artifact_remote_root':'/approved'}}
+    endpoint={'url':'http://127.0.0.1:8935','lease_id':'lease',**{k:'a'*64 for k in ('model_identity','runtime_identity','prepared_identity')}}
+    manager.admission=SimpleNamespace(allowed=lambda e:(True,''),board={'jobs':[{'id':'lease','lease_expires_epoch':time.time()+1000}]})
+    monkeypatch.setattr('persona_manager.VectorBank',lambda *a,**k:object())
+    def fetch(*a,**kw):
+        if unready=='transport':raise ConnectionResetError('warming')
+        if unready=='503':raise urllib.error.HTTPError(endpoint['url'],503,'warming',{},None)
+        if unready=='empty':return {'data':[]}
+        return {'data':[{'flare':{**{k:endpoint[k] for k in ('model_identity','runtime_identity','prepared_identity')},'batch':{'qualified':False}}}]}
+    monkeypatch.setattr('persona_manager.fetch',fetch)
+    def must_not_claim(*args):raise AssertionError('Warming endpoint claimed work')
+    monkeypatch.setattr(queue,'claim_many',must_not_claim)
+    manager.batch_worker(endpoint,time.time()+10)
+    assert queue.counts()=={'queued':4} and manager.stop.waits==[2]
+    with queue.connect() as db:assert db.execute('SELECT COUNT(*) FROM attempts').fetchone()[0]==0
+
+
+@pytest.mark.parametrize('field',['model_identity','runtime_identity','prepared_identity'])
+def test_readiness_wrong_identity_fails_closed(monkeypatch,field):
+    from persona_manager import native_batch_ready
+    endpoint={'url':'http://127.0.0.1:8935',**{k:'a'*64 for k in ('model_identity','runtime_identity','prepared_identity')}}
+    flare={**{k:endpoint[k] for k in ('model_identity','runtime_identity','prepared_identity')},'batch':{'qualified':True,'supported':True,'max_batch_size':4}};flare[field]='b'*64
+    monkeypatch.setattr('persona_manager.fetch',lambda *a,**k:{'data':[{'flare':flare}]})
+    with pytest.raises(RuntimeError,match='identity mismatch: '+field):native_batch_ready(endpoint)
+
+
+def test_fixed_job_budget_waits_without_calling_planner(tmp_path,monkeypatch):
+    import time
+    from types import SimpleNamespace
+    from persona_manager import Manager
+    queue=queue_fixture(tmp_path,4);manager=Manager.__new__(Manager)
+    class Stop:
+        stopped=False
+        waits=[]
+        def is_set(self):return self.stopped
+        def set(self):self.stopped=True
+        def wait(self,seconds):self.waits.append(seconds);self.stopped=True
+    class Pool:
+        def __init__(self,**kwargs):pass
+        def __enter__(self):return self
+        def __exit__(self,*args):pass
+        def submit(self,*args):return SimpleNamespace(done=lambda:False)
+    manager.stop=Stop();manager.stop_signal=None;manager.queue=queue;manager.native_batch=True
+    manager.model=SimpleNamespace(identity='a'*64);manager.runtime_identity='b'*64
+    manager.endpoints=[{'prepared_identity':'c'*64}];manager.concurrency=1
+    manager.config={'max_total_jobs':4}
+    monkeypatch.setattr('persona_manager.ThreadPoolExecutor',Pool)
+    monkeypatch.setattr('persona_manager.signal.signal',lambda *a:None)
+    def forbidden(*args):raise AssertionError('Fixed full queue must not call planner')
+    manager.propose=forbidden
+    manager.run(time.time()+10)
+    assert manager.stop.waits==[.2] and queue.counts()=={'queued':4}
+
+
+@pytest.mark.parametrize('corrupt',[False,True])
+def test_real_length_limited_native_artifacts_are_incomplete_not_failed(tmp_path,monkeypatch,corrupt):
+    import time
+    import test_persona_batch_qualify as qualification
+    from persona_batch_dispatch import dispatch
+    from persona_vectors import canonical_digest
+    original_payload=qualification.payload
+    monkeypatch.setattr(qualification,'payload',lambda:dict(original_payload(),stream=False))
+    response,request,bound,store,job=qualification.fixture(tmp_path)
+    if corrupt:job['artifact'].write_bytes(job['artifact'].read_bytes()+b'corrupt capture bytes')
+    queue=queue_fixture(tmp_path,1);claimed,number=queue.claim_many('endpoint',1)[0]
+    entries=[{'job':dict(claimed,pushes=[]),'number':number,'request':request,'provenance':{'program_sha256':canonical_digest({'phase':'all','sites':[]})}}]
+    endpoint=dict(bound,url='http://127.0.0.1:8935')
+    def fetch(url,payload=None,timeout=0):
+        if url.endswith('/models'):return {'data':[{'id':'checkpoint','flare':dict(bound,batch={'supported':True,'qualified':True,'max_batch_size':4,'physical_pages':8,'page_tokens':128,'preflight_path':'/v1/batch/preflight','completions_path':'/v1/batch/completions'})}]}
+        if url.endswith('/preflight'):return {'batch_id':payload['batch_id'],'binding':bound,'request_sha256':[canonical_digest(request)],'fits':True,'reason':None,'prompt_tokens':[3],'required_pages':[1],'available_pages':8}
+        return {'batch_id':payload['batch_id'],'results':[{'request_sha256':canonical_digest(request),'response':response}]}
+    outcomes=dispatch(entries,endpoint,queue,store,fetch=fetch,deadline=time.time()+30,admit=lambda:True)
+    entry,result=outcomes[0];queue.finish(entry['job'],entry['number'],result,retry=False)
+    assert result['complete'] is False
+    if corrupt:
+        assert result['error'] and result['error_class']=='artifact_validation_no_retry'
+        assert queue.counts()=={'failed':1}
+    else:
+        assert result['error'] is None and result['generation_status']=='length_limited' and result['capture_validated'] is True
+        assert result['request']==request and result['response']==response
+        assert queue.counts()=={'incomplete':1}
+        with queue.connect() as db:events=[json.loads(row[0]) for row in db.execute("SELECT data FROM audit WHERE event='native_job_validated'")]
+        assert len(events)==1 and events[0]['complete_answer'] is False
+        from persona_propagation import checked
+        with pytest.raises(ValueError,match='answer did not complete'):checked(response,request,bound,store)
+
+
+def test_native_infrastructure_budget_excludes_validated_scientific_incomplete():
+    from persona_manager import request_error_budget_exceeded
+    assert not request_error_budget_exceeded({'complete':39,'incomplete':9},{},native_batch=True)
+    assert request_error_budget_exceeded({'complete':39,'failed':9},{},native_batch=True)
+    assert request_error_budget_exceeded({'complete':39,'incomplete':9},{},native_batch=False)
+    assert request_error_budget_exceeded({'failed':2,'complete':100},{'error_budget':2},native_batch=True)
+    assert request_error_budget_exceeded({'complete':15,'incomplete':2,'failed':4},{'max_error_fraction':.15},native_batch=True)
+
+
+@pytest.mark.parametrize('mutation',['thinking','under_budget','wrong_diag','not_native','nonordinary'])
+def test_length_exception_gate_cannot_bypass_normal_validator(monkeypatch,mutation):
+    from persona_batch_dispatch import validate_generation
+    request={'stream':False,'max_tokens':2048,'capture_response':{'id':'a'*32}}
+    response={'choices':[{'finish_reason':'length'}],'diagnostics':{'complete_final_answer':False,'unexpected_thinking':False},'usage':{'completion_tokens':2048}}
+    native=True
+    if mutation=='thinking':response['diagnostics']['unexpected_thinking']=True
+    elif mutation=='under_budget':response['usage']['completion_tokens']=2047
+    elif mutation=='wrong_diag':response['diagnostics']['complete_final_answer']=True
+    elif mutation=='not_native':native=False
+    else:request['capture_trace']={}
+    monkeypatch.setattr('persona_batch_qualify.checked_parity',lambda *a:pytest.fail('Length-only exception must not apply'))
+    def strict(*args):raise ValueError('ordinary strict validator rejected')
+    with pytest.raises(ValueError,match='strict validator'):validate_generation(response,request,{},None,native_batch=native,validator=strict)

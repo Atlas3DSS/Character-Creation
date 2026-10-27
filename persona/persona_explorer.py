@@ -598,7 +598,8 @@ class Explorer:
                 continue
             for snapshot in snapshots:
                 self.check_program(descriptor, endpoint, snapshot['program'])
-                self.check_direction_binding(descriptor['flare'], snapshot['provenance'])
+                self.check_direction_binding(descriptor['flare'], snapshot['provenance'],
+                    self.config.get('native_batch_compatibility_receipt'))
                 if snapshot.get('capture_response') and descriptor['flare'].get('response_capture', {}).get('supported') is not True:
                     raise ValueError('Worker lacks response-token capture')
                 if snapshot.get('kv_control'): literary_eval.check_control(snapshot['kv_control'], descriptor, endpoint)
@@ -634,15 +635,20 @@ class Explorer:
         return flare
 
     @staticmethod
-    def check_direction_binding(flare, provenance):
+    def check_direction_binding(flare, provenance, receipt_spec=None):
         binding = provenance.get('direction_binding')
         if binding and any(flare.get(k) != v for k, v in binding.items()):
-            raise ValueError('Response direction belongs to a different native runtime')
+            if receipt_spec is None:
+                raise ValueError('Response direction belongs to a different native runtime')
+            from persona_batch_dispatch import authorize_direction
+            return authorize_direction(provenance, provenance['pushes'], flare, receipt_spec)
+        return None
 
     def infer(self, endpoint, prompt, settings, program, provenance, *, system='', extra=None, persist=None):
         descriptor = fetch(endpoint['url'] + '/v1/models', timeout=5)['data'][0]
         flare = self.check_program(descriptor, endpoint, program)
-        self.check_direction_binding(flare, provenance)
+        compatibility_sha = self.check_direction_binding(flare, provenance,
+            self.config.get('native_batch_compatibility_receipt'))
         check_generation_settings(flare, settings)
         messages = ([{'role': 'system', 'content': system}] if system else []) + [{'role': 'user', 'content': prompt}]
         request = {'model': descriptor['id'], 'messages': messages, 'seed': settings['seed'],
@@ -660,7 +666,8 @@ class Explorer:
         if extra and extra.get('job_id'): request['metadata'] = {'job_id': extra['job_id']}
         bound = {**provenance, **(extra or {}), 'model_identity': self.model.identity,
                  'prepared_identity': endpoint['prepared_identity'], 'runtime_identity': endpoint.get('runtime_identity'),
-                 'request_sha256': canonical_digest(request)}
+                 'request_sha256': canonical_digest(request),
+                 'native_batch_compatibility_receipt_sha256': compatibility_sha}
         raw = {'request': request, 'endpoint': endpoint, 'provenance': bound}
         if persist: persist(raw)
         response = fetch(endpoint['url'] + '/v1/chat/completions', request,

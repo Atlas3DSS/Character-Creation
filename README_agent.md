@@ -684,13 +684,23 @@ recovery used a temporary prepared facade; original native graph mappings remain
 untouched, and the original prepared object was restored by identity before
 capture-tensor cleanup.
 
-Production B4 HTTP queueing/routing is still not rolled out. A bounded **24-request
-HTTP/routing qualification** and an explicit integration decision remain next.
-The ordinary five/six B1 worker binding remains separate from the experimental callback
-runtime; checkpoint/prepared identities and exact production-core hashes establish
-which code is shared. No automatic rollout or personality/default promotion follows.
-John is now authorized for a finite planning role through normal shared workboard
-admission; active chemistry services must remain untouched.
+Production native B4 HTTP queueing/routing is now connected and qualified on six
+cards. `persona_batch_server.py` serves authoritative full-budget page preflight and
+batch completion endpoints; `persona_batch_dispatch.py` and Manager issue one native
+batch POST for up to four independent requests. Cascaded B1 prefill feeds genuine
+B4 decode, with private KV/recurrent/RNG state and per-request capture provenance.
+Unsupported controls retain B1 routing. Readiness is checked before claiming jobs;
+wrong model/runtime/prepared bindings fail closed. Never retry uncertain POSTs.
+The 24-job real Manager pilot passed; old direction artifacts require the explicit
+compatibility receipt, not merely a matching checkpoint name.
+
+The first six-card reasoning sample contains 48 responses, **51,428 generated tokens**
+and **51,380 consumed captured tokens**. First submission to last HTTP response:
+**281.3823335 s, 182.769 aggregate tokens/s**. Through artifact validation:
+**286.7781923 s, 179.330 tokens/s**. Preparation is excluded; artifact-inclusive
+throughput is not GPU kernel throughput. Earlier raw Flare **220.5549 tokens/s/card**
+used MTP depth four and cached prompts without deep capture. Do not extrapolate
+that rate to this workload or present a sustained daily capacity as measured.
 
 ## Operating a fork
 
@@ -719,6 +729,36 @@ answers distinct. Enqueue all jobs before running with `max_total_jobs=288` so
 heldout outcomes cannot enter the adaptive planner. No inference follows from
 building or loading this battery.
 
+The reasoning sweep is **underway, not finished**. Its first reporting checkpoint
+was 39 complete, nine valid length-limited captures and 240 queued. The nine were
+reclassified offline with append-only audit records preserving their original
+classification and responses. No requests were replayed; the remaining queue resumed. `checked()` retains its complete-answer gate. The dedicated
+strict parity validator admits full-budget length termination as capture-valid:
+`complete:false`, `error:null`, `generation_status:"length_limited"`,
+`capture_validated:true`, and Manager state `incomplete`. Invalid artifacts remain
+failures. Local summaries retain partial answers and response hashes but never
+score their correctness; algebra is unscorable and general prompts are unscored.
+Usage includes validated complete and incomplete captures with separate counts.
+
+Run the finite reporting watcher only against the frozen input and current launch,
+with `DEADLINE_EPOCH` set to the authorized finite deadline:
+
+```bash
+python persona/persona_reasoning_sweep.py --root "$PWD" --until "$DEADLINE_EPOCH" --watch --publish
+```
+
+It reads SQLite snapshots without changing jobs, refreshes
+`results/persona_reasoning_results.json` and `persona_reasoning_public.json` every
+15 seconds, and stops at all-terminal or deadline. Full answers remain local.
+Only the public text-redacted JSON is uploaded to
+`Atlas3D/character-creation-big-five/persona_reasoning_public.json` at 48-terminal-job
+milestones and final/deadline; zero-only snapshots are not published. The separate
+`persona_reasoning_sweep_publication.json` records durable intent before the HF CLI
+call and verifies bytes at the returned immutable commit. An uncertain upload
+blocks further publication, while offline summaries continue. Preserve this receipt
+on restart; do not erase uncertainty to force a retry. Heldout outcomes remain
+confirmation-only, with no adaptive selection.
+
 - CPU dependencies: `python -m pip install -r requirements-persona.txt` (includes optional
   local NLP tools and a hash-pinned spaCy language model). Analysis-only users can install
   just `datasets huggingface_hub numpy`. Pytest is an additional test dependency.
@@ -733,9 +773,9 @@ building or loading this battery.
 - Activation launcher accepts `--config`, `--jobs-config` and optional fleet keys
   `remote_project_root`, `heliopause_path`, `model_path`, `calibration_dir`.
 - Reference multi-card schedulers, GPU leases, thermal checks and memory admission require
-  adaptation to your infrastructure. The separate native B4 proof above does not turn
-  production B1 workers into a qualified multi-request HTTP/capture service. Never remove
-  locks to claim concurrent request safety.
+  adaptation to your infrastructure. The connected B4 service requires its own qualified
+  source/prepared binding and compatibility receipts; the original proof alone does not
+  qualify a fork. Never remove locks to claim concurrent request safety.
 - Detailed setup: [Explorer guide](https://github.com/Atlas3DSS/Character-Creation/blob/main/PERSONA_EXPLORER.md),
   [porting guide](https://github.com/Atlas3DSS/Character-Creation/blob/main/fork_agent.md).
 

@@ -360,3 +360,51 @@ class ExplorerWorkspaceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExplorerDirectionCompatibilityTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary=tempfile.TemporaryDirectory();self.addCleanup(self.temporary.cleanup)
+        self.path=Path(self.temporary.name)/'receipt.json'
+        self.old={k:c*64 for k,c in [('model_identity','a'),('runtime_identity','b'),('prepared_identity','c')]}
+        self.new=dict(self.old,runtime_identity='d'*64)
+        self.provenance={'direction_binding':self.old,'program_sha256':'e'*64,'pushes':[{'kind':'direction','sha256':'f'*64,'dose':.1}]}
+        self.receipt={'schema':'character-creation.batch-runtime-compatibility.v1','state':'complete','passed':True,
+            'old_binding':self.old,'new_binding':self.new,'artifact_sha256':'f'*64,'allowed_program_sha256':['e'*64],
+            'old_core_source_hashes':{'core':'1'*64},'new_core_source_hashes':{'core':'2'*64},'qualification_sha256':'3'*64,
+            'parity':{'programs_exact':True,'response_tokens_exact':True,'response_capture_exact':True}}
+        self.write_receipt()
+
+    def write_receipt(self):
+        self.path.write_text(json.dumps(self.receipt))
+        self.spec={'path':str(self.path),'sha256':hashlib.sha256(self.path.read_bytes()).hexdigest()}
+
+    def test_exact_receipt_required_and_original_provenance_unchanged(self):
+        original=deepcopy(self.provenance)
+        with self.assertRaises(ValueError):Explorer.check_direction_binding(self.new,self.provenance)
+        self.assertEqual(Explorer.check_direction_binding(self.new,self.provenance,self.spec),self.spec['sha256'])
+        self.assertEqual(self.provenance,original)
+        self.assertIsNone(Explorer.check_direction_binding(self.old,self.provenance))
+
+    def test_bad_hash_unqualified_program_and_unknown_receipt_fail(self):
+        with self.assertRaises(ValueError):Explorer.check_direction_binding(self.new,self.provenance,dict(self.spec,sha256='0'*64))
+        with self.assertRaises(ValueError):Explorer.check_direction_binding(self.new,dict(self.provenance,program_sha256='0'*64),self.spec)
+        self.receipt['schema']='unreviewed';self.write_receipt()
+        with self.assertRaises(ValueError):Explorer.check_direction_binding(self.new,self.provenance,self.spec)
+
+    def test_infer_uses_only_operator_receipt_and_records_accepted_hash(self):
+        app=Explorer.__new__(Explorer);app.model=type('Model',(),{'identity':self.new['model_identity']})()
+        app.config={'native_batch_compatibility_receipt':self.spec}
+        endpoint=dict(self.new,url='http://127.0.0.1:8935')
+        descriptor={'id':'checkpoint','flare':self.new}
+        response={**self.new,'choices':[{'message':{'content':'answer'},'finish_reason':'stop'}],'diagnostics':{'complete_final_answer':True}}
+        settings={'seed':1,'max_tokens':2048,'thinking':False}
+        with patch('persona_explorer.fetch',side_effect=[{'data':[descriptor]},response]),patch.object(app,'check_program',return_value=self.new),patch('persona_explorer.check_generation_settings'):
+            output,raw=app.infer(endpoint,'same prompt',settings,{'sites':[]},self.provenance,
+                extra={'native_batch_compatibility_receipt_sha256':'spoofed','native_batch_compatibility_receipt':{'path':'not-used'}})
+        self.assertEqual(output['provenance']['native_batch_compatibility_receipt_sha256'],self.spec['sha256'])
+        self.assertEqual(raw['provenance']['direction_binding'],self.old)
+        app.config={}
+        with patch('persona_explorer.fetch',return_value={'data':[descriptor]}) as api,patch.object(app,'check_program',return_value=self.new):
+            with self.assertRaises(ValueError):app.infer(endpoint,'same prompt',settings,{'sites':[]},self.provenance,extra={'native_batch_compatibility_receipt':self.spec})
+        self.assertEqual(api.call_count,1)  # Read-only descriptor; no generation POST.
