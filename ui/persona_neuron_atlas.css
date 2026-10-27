@@ -99,3 +99,8 @@ section{padding:34px 0;border-bottom:1px solid var(--line)}
 .who .ans{border-left:3px solid var(--line);padding:4px 10px;white-space:pre-wrap;font-size:13px}
 .who .ans b{display:block;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
 .who .ans.base{opacity:.75}
+.concept-head{margin-top:18px}.concept-head h3{margin:0 0 2px}
+.concepts button[aria-pressed=true]{border-color:var(--lime);background:#2f3a24;color:var(--ink)}
+.concepts button.unqualified{color:var(--dim)}
+.concepts button.unqualified i{background:var(--line)!important}
+.card .held.ok{color:var(--lime-strong)}.card .held.no{color:var(--dim)}

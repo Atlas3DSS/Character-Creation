@@ -914,6 +914,8 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
                 elif path.path == '/api/neuron-atlas': self.send(app.neuron_atlas.status())
                 elif path.path == '/api/neuron-atlas/sweep': self.send(app.neuron_atlas.sweep_state())
+                elif path.path == '/api/neuron-atlas/concepts': self.send(app.neuron_atlas.concepts())
+                elif path.path == '/api/neuron-atlas/concept': self.send(app.neuron_atlas.concept(parse_qs(path.query).get('name', [''])[0]))
                 elif path.path == '/api/neuron-atlas/layer': self.send(app.neuron_atlas.layer(parse_qs(path.query).get('layer', [''])[0]))
                 elif path.path == '/api/neuron-atlas/neuron':
                     query = parse_qs(path.query)

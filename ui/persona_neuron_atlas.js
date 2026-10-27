@@ -10,7 +10,7 @@ const COLORS = {
 COLORS.down = COLORS.up;
 const MODES = ['up', 'down', 'activation', 'evidence'];
 const S = { sum: null, codes: null, cells: null, inverse: [], mode: 'up', off: new Set(), labels: new Map(), barCat: 'persona',
-  lib: { offset: 0, rows: [], total: 0 }, list: [], at: -1, hero: 0 };
+  lib: { offset: 0, rows: [], total: 0 }, list: [], at: -1, hero: 0, concepts: null, concept: null };
 function toast(t) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 1600); }
 async function getJSON(url) { const r = await fetch(url); const v = await r.json(); if (!r.ok) throw new Error(v.error || r.statusText); return v; }
 const W = () => S.sum.neurons, N = () => S.sum.total;
@@ -34,7 +34,7 @@ async function init() {
     ['Prompt types', Object.entries(S.sum.domain_prompts).map(([d, c]) => `${esc(catLabel('activation', d))} ${fmt(c)}`).join(' · ')],
     ['Evidence', Object.entries(S.sum.evidence_counts).map(([d, c]) => `${esc(catLabel('evidence', d))} ${fmt(c)}`).join(' · ')],
     ['Built', new Date(S.sum.built_at * 1000).toLocaleString()]].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-  buildGrid(); setMode('up'); hero(); fillCats(); library(true); openFromHash(); sweepStatus();
+  buildGrid(); setMode('up'); hero(); fillCats(); library(true); openFromHash(); sweepStatus(); loadConcepts();
 }
 
 /* hero: saved "who are you" answers from multi-neuron recipes, next to their matched baseline */
@@ -78,7 +78,20 @@ function paint() {
     const ctx = c.getContext('2d'), img = ctx.createImageData(side, side), px = img.data;
     for (let k = 0; k < W(); k++) { const code = codes[L * W() + k], p = S.cells[L * W() + k] * 4, [r, g, b] = rgb[code];
       if (on[code]) { px[p] = r; px[p + 1] = g; px[p + 2] = b; px[p + 3] = 255; } else { px[p] = px[p + 1] = px[p + 2] = 34; px[p + 3] = 255; } }
+    if (S.concept) concept_overlay(L, px, side);
     ctx.putImageData(img, 0, 0); });
+}
+/* concept trace: dim the map, light the concept's top neurons per layer (2x2 so a single dot is visible) */
+function concept_overlay(L, px, side) {
+  for (let p = 0; p < px.length; p += 4) { px[p] *= .22; px[p + 1] *= .22; px[p + 2] *= .22; }
+  const lime = hexRGB('#a6d860'), rose = hexRGB('#de90b4'), gold = hexRGB('#efc77c'), q = S.concept.qualified;
+  const dot = (k, rgb, size) => { const cell = S.cells[L * W() + k], x = cell % side, y = Math.floor(cell / side);
+    for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) { const xx = x + dx, yy = y + dy; if (xx >= side || yy >= side) continue;
+      const p = (xx + yy * side) * 4; px[p] = rgb[0]; px[p + 1] = rgb[1]; px[p + 2] = rgb[2]; } };
+  for (const [k, d, h] of S.concept.layers[L].neurons) {
+    const ok = Math.sign(d) === Math.sign(h) && Math.abs(h) >= S.concepts.replicates, base = d > 0 ? lime : rose;
+    dot(k, ok ? base : base.map(v => v * .45), 2); }
+  if (q && q[0] === L) dot(q[1], gold, 3);
 }
 function setMode(mode) {
   S.mode = mode; S.off.clear();
@@ -99,6 +112,8 @@ function setMode(mode) {
 }
 document.querySelectorAll('.modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 function bylayer() {
+  if (S.concept) return conceptBars();
+  $('bylayer-head').textContent = 'By layer';
   const m = S.sum.modes[S.mode], c = m.codes.indexOf(S.barCat), rows = S.sum.per_layer[S.mode];
   const share = rows.map(r => r[c] / r.reduce((a, b) => a + b, 0)), top = Math.max(...share, 1e-9);
   $('bylayer-title').textContent = `Share of each layer’s neurons in “${m.label[S.barCat]}” (click a legend entry to change).`;
@@ -195,5 +210,40 @@ $('d-prev').onclick = () => step(-1); $('d-next').onclick = () => step(1);
 $('d-copy').onclick = () => navigator.clipboard.writeText(location.href).then(() => toast('Link copied'));
 addEventListener('keydown', e => { if ($('drawer').hidden) return; if (e.key === 'Escape') closeDrawer(); if (e.key === 'ArrowLeft') step(-1); if (e.key === 'ArrowRight') step(1); });
 function openFromHash() { const m = location.hash.match(/^#n=(\d+):(\d+)$/); if (m) openNeuron(+m[1], +m[2], null); }
+
+/* concepts */
+async function loadConcepts() {
+  try { S.concepts = await getJSON('/api/neuron-atlas/concepts'); }
+  catch (e) { $('concepts').innerHTML = `<span class="dim">${esc(e.message)}</span>`; return; }
+  const rows = [...S.concepts.concepts].sort((a, b) => (b.passed - a.passed) || a.name.localeCompare(b.name));
+  $('concepts').innerHTML = rows.map(c => `<button type="button" data-concept="${esc(c.name)}" aria-pressed="false" class="${c.passed ? '' : 'unqualified'}"
+    title="${c.passed ? 'Qualified label' : 'Traced, but no single neuron passed the held-out gate'} · peaks at layer ${c.peak_layer} (|d| ${c.peak.toFixed(2)})"><i style="background:#a6d860"></i>${esc(c.name)}</button>`).join('')
+    + '<button type="button" id="concept-clear" hidden>Clear</button>';
+  $('concepts').querySelectorAll('button[data-concept]').forEach(b => b.onclick = () => pickConcept(b.dataset.concept === (S.concept || {}).name ? null : b.dataset.concept));
+  $('concept-clear').onclick = () => pickConcept(null);
+  const m = decodeURIComponent(location.hash).match(/^#concept=(.+)$/); if (m) pickConcept(m[1]);
+}
+async function pickConcept(name) {
+  S.concept = name ? await getJSON('/api/neuron-atlas/concept?name=' + encodeURIComponent(name)).catch(e => { toast(e.message); return null; }) : null;
+  $('concepts').querySelectorAll('button[data-concept]').forEach(b => b.setAttribute('aria-pressed', b.dataset.concept === (S.concept || {}).name));
+  $('concept-clear').hidden = !S.concept; $('concept-top').hidden = !S.concept;
+  history.replaceState(null, '', S.concept ? '#concept=' + encodeURIComponent(S.concept.name) : location.pathname + '#atlas');
+  paint(); bylayer(); if (S.concept) conceptCards();
+}
+function conceptBars() {
+  const c = S.concept, top = Math.max(...c.layers.map(l => l.max), 1e-9), peak = c.layers.reduce((b, l, L) => l.max > c.layers[b].max ? L : b, 0);
+  $('bylayer-head').textContent = `Trace of “${c.name}” through the layers`;
+  $('bylayer-title').textContent = `Bar height = strongest separation in that layer (|d|, concept vs hard negatives). Peak at layer ${peak}. Faded bars: under half of that layer's top ${S.concepts.top_per_layer} neurons held up on held-out scenes.`;
+  $('bylayer').innerHTML = c.layers.map((l, L) => `<div style="height:${(l.max / top * 100).toFixed(1)}%;background:#a6d860;opacity:${l.replicated >= .5 ? 1 : .35}" title="Layer ${L}: strongest |d| ${l.max.toFixed(2)} · ${fmt(l.strong)} neurons with |d| ≥ ${S.concepts.strong} · ${(l.replicated * 100).toFixed(0)}% of top ${S.concepts.top_per_layer} replicated"></div>`).join('');
+  $('bylayer').querySelectorAll('div').forEach((b, L) => b.onclick = () => document.querySelector(`.tile[data-layer="${L}"]`).scrollIntoView({ block: 'center', behavior: 'smooth' }));
+}
+function conceptCards() {
+  const c = S.concept, rows = c.layers.flatMap((l, L) => l.neurons.map(([n, d, h]) => ({ layer: L, neuron: n, d, h }))).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 24);
+  $('concept-name').textContent = c.name;
+  $('concept-cards').innerHTML = rows.map((r, i) => { const ok = Math.sign(r.d) === Math.sign(r.h) && Math.abs(r.h) >= S.concepts.replicates;
+    return `<button type="button" class="card" data-i="${i}"><span class="id">L${r.layer} N${r.neuron}</span>
+      <div class="dirs"><em>d</em><span style="color:${r.d > 0 ? 'var(--lime-strong)' : 'var(--rose)'}">${r.d > 0 ? '+' : '−'}${Math.abs(r.d).toFixed(2)}</span><em>held-out</em><span class="held ${ok ? 'ok' : 'no'}">${r.h >= 0 ? '+' : '−'}${Math.abs(r.h).toFixed(2)} ${ok ? '✓' : '✗'}</span></div></button>`; }).join('');
+  $('concept-cards').querySelectorAll('.card').forEach(b => b.onclick = () => { const i = +b.dataset.i; openNeuron(rows[i].layer, rows[i].neuron, { rows, at: i }); });
+}
 
 init().catch(e => { $('grid').innerHTML = `<p class="dim">The atlas has not been built yet: ${esc(e.message)}</p>`; });

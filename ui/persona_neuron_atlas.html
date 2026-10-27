@@ -37,13 +37,19 @@
       <button type="button" data-mode="evidence">Our evidence</button>
     </div>
   </div>
+  <div class="concept-head"><h3>Trace a concept</h3>
+    <p class="hint" id="concept-note">Pick a concept to light up the neurons that separate it from look-alike scenes, layer by layer. Lime = more active when the concept holds, rose = less active. Bright = replicated on held-out scenes.</p></div>
+  <div id="concepts" class="legend concepts"><span class="dim">Loading concepts…</span></div>
   <div id="legend" class="legend"></div>
   <p id="mode-note" class="hint"></p>
   <div id="grid" class="grid"><p class="dim">Loading the atlas…</p></div>
   <div id="tip" class="tip" hidden></div>
-  <h3>By layer</h3>
+  <h3 id="bylayer-head">By layer</h3>
   <p class="dim" id="bylayer-title"></p>
   <div id="bylayer" class="bylayer"></div>
+  <div id="concept-top" hidden><h3>Strongest neurons for <span id="concept-name"></span></h3>
+    <p class="hint">Chosen on discovery scenes; “held-out” is the same neuron re-measured on scenes it never saw. Click to open.</p>
+    <div id="concept-cards" class="cards"></div></div>
 </section>
 
 <section id="library">

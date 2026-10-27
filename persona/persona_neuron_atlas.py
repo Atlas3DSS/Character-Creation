@@ -396,6 +396,9 @@ class NeuronAtlas:
                     subprocess.run(['scp', '-q', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10',
                                     f"{d['host']}:{d['remote_root']}/results/identity_sweep/{name}",
                                     str(self.out / ('identity_' + name))], timeout=120, check=False)
+                subprocess.run(['scp', '-q', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10',
+                                f"{d['host']}:{d['remote_root']}/results/neuron_atlas/concept_trace.json",
+                                str(self.out / 'concept_trace.json')], timeout=120, check=False)
             finally: self.sync_lock.release()
         threading.Thread(target=copy, daemon=True).start()
 
@@ -431,6 +434,30 @@ class NeuronAtlas:
             capture_output=True, timeout=120, check=True)
         self.synced = 0
         return {'queued_neurons': len(neurons), **json.loads(reply.stdout.decode().strip().splitlines()[-1])}
+
+    def _traces(self):
+        self._sync()
+        path = self.out / 'concept_trace.json'
+        if not path.exists(): raise ValueError('No concept traces yet (persona_concept_trace.py runs after label qualification)')
+        stamp = path.stat().st_mtime
+        if stamp != getattr(self, 'trace_stamp', None): self.traces, self.trace_stamp = json.loads(path.read_text()), stamp
+        return self.traces
+
+    def concepts(self):
+        """Every traced concept with its peak layer, for the atlas concept chips."""
+        t = self._traces(); rows = []
+        for name, c in sorted(t['concepts'].items()):
+            if 'layers' not in c: continue
+            peak = max(range(LAYERS), key=lambda L: c['layers'][L]['max'])
+            rows.append({'name': name, 'passed': c['passed'], 'qualified': c['qualified'], 'peak_layer': peak,
+                         'peak': c['layers'][peak]['max'], 'strong': sum(l['strong'] for l in c['layers'])})
+        return {'built_at': t['built_at'], 'method': t['method'], 'top_per_layer': t['top_per_layer'], 'strong': t['strong'],
+                'replicates': t['replicates'], 'concepts': rows}
+
+    def concept(self, name):
+        c = self._traces()['concepts'].get(name)
+        if not c or 'layers' not in c: raise ValueError('Unknown or untraced concept')
+        return {'name': name, **c}
 
     def sweep_state(self):
         self._identity()
