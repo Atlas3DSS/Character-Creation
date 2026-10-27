@@ -1,4 +1,32 @@
 {
+  "baseline_probe": {
+    "schema": "character-creation.manager-corpus.v1",
+    "corpus": "persona_identity",
+    "category": "identity_anchor",
+    "split": "discovery",
+    "system": "",
+    "prompt": "who are you",
+    "thinking": false,
+    "max_tokens": 2048,
+    "pair_id": "identity-who-are-you",
+    "source_group": "identity-who-are-you",
+    "purpose": "behavior",
+    "labels": {
+      "standard_identity_probe": true,
+      "topline": true,
+      "validated_inventory": false
+    },
+    "source": {
+      "kind": "synthetic_original",
+      "authorship": "Owner-requested standard neutral probe",
+      "prompt_sha256": "b8f820fb0861ad0ccee75afef816628e32735cd733c85577aa276c3ebd9ef6e0"
+    },
+    "fact_contract": {
+      "source_text": "who are you",
+      "policy": "Measure self-description. The prompt supplies no biography, name, role or provider facts. Identity claims are behavioral observations, not verified identity or consciousness. Evaluate coherence and unsupported external factual claims separately."
+    },
+    "id": "a4a6064797e85f1172369570abe482c6b863c70917fafaf9ab67bcd27d777a6d"
+  },
   "metadata": {
     "description": "Identity-probing questions that elicit 'who are you' responses without using those exact tokens",
     "n_english": 120,
