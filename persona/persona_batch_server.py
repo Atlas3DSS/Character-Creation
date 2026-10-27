@@ -23,6 +23,8 @@ REUSED={'persona_batch_probe.py':'297cb97da6ab68ed747860a5a8540262eb83665db7023e
 UNSUPPORTED=('kv_control','capture_search','capture_trace','capture_prefill','steering_pulse','prefill_stop')
 PLANES=('mlp_input_last','residual_last','pre_mlp_last')
 BATCH_RUNTIME='Native independent request slots; cascaded B1 prefill; ordinary B1/B2/B4 decode; actual PreparedSampling'
+STREAM_RUNTIME=BATCH_RUNTIME+'; continuous slot refill'
+STREAM_MAX=32
 
 
 def verify_sources():
@@ -111,7 +113,8 @@ class BatchEngine:
         return {'supported':True,'qualified':qualified,'qualification_sha256':receipt_sha,'max_batch_size':4,
             'preflight_path':'/v1/batch/preflight','completions_path':'/v1/batch/completions',
             'physical_pages':e.capacity[1],'page_tokens':e.page_tokens,'binding':binding(e),
-            'unsupported_fields':list(UNSUPPORTED),'prefill':'cascaded B1','decode':'native ordinary B1/B2/B4'}
+            'unsupported_fields':list(UNSUPPORTED),'prefill':'cascaded B1','decode':'native ordinary B1/B2/B4',
+            'stream_path':'/v1/batch/stream','stream_max':STREAM_MAX,'stream':'continuous slot refill; text_only skips prefill planes and artifacts; no response capture'}
 
     def prepare(self,value):
         from persona_capture import tokenize_messages
@@ -268,6 +271,156 @@ class BatchEngine:
             if timings is not None:envelope_result['profiling']={'capture_readback_mode':readback_mode,**jobs[0]['report']['batch_phase_timing']}
             return envelope_result
 
+    def stream(self,value):
+        """Continuous batching (owner 2026-10-27): up to STREAM_MAX requests through the same native slots; a slot whose
+        answer finishes is reset and refilled with the next request while the others keep decoding. Pages come from a
+        free pool. Same init/prefill/decode graphs, completion validation and inactive-slot checks as complete();
+        no response capture. text_only skips the prefill planes and the activation artifact."""
+        import torch
+        from collections import deque
+        from ignition.components.sampling import RequestAdmission
+        from validate_candidate import _restore
+        from persona_qualify import site_layout
+        e=self.e
+        if not isinstance(value,dict) or set(value)!={'batch_id','requests','text_only'} or type(value['text_only']) is not bool:raise ValueError('Stream requires batch_id, requests and boolean text_only')
+        if not isinstance(value['requests'],list) or not 1<=len(value['requests'])<=STREAM_MAX:raise ValueError(f'Stream requires 1..{STREAM_MAX} requests')
+        if not isinstance(value['batch_id'],str) or not re.fullmatch('[A-Za-z0-9_-]{1,128}',value['batch_id']):raise ValueError('Stream requires bounded batch_id')
+        if len({canonical_digest(p) for p in value['requests']})!=len(value['requests']):raise ValueError('Duplicate request payloads require distinct metadata IDs')
+        text_only=value['text_only'];prepared=[]
+        for k,payload in enumerate(value['requests']):  # each request alone must fit and be valid; pages are assigned on admission
+            summary,specs,tokens,programs,_=self.prepare({'batch_id':f"{value['batch_id']}-{k}",'requests':[payload]})
+            if not summary['fits']:raise ValueError(f'Request {k}: '+str(summary['reason']))
+            if specs[0]['capture_response']:raise ValueError('Response capture is not supported in streams; use /v1/batch/completions')
+            prepared.append((payload,specs[0],tokens[0],programs[0],summary['required_pages'][0],summary['request_sha256'][0]))
+        if min(len(prepared),4)*max(p[4] for p in prepared)>e.capacity[1]:raise ValueError('Concurrent full-budget pages of the largest request exceed physical capacity')
+        with e.lock,torch.inference_mode(),torch.cuda.device(e.prepared.device):
+            if value['batch_id'] in self.seen:raise ValueError('Batch ID already submitted; no uncertain retry')
+            if e.stop_event.is_set():raise probe.ProtocolError('Worker stopping')
+            if len(self.seen)>=100000:raise ValueError('Finite batch receipt capacity exhausted')
+            self.seen.add(value['batch_id']);n=len(prepared);width=1 if n==1 else 2 if n==2 else 4
+            jobs=[None]*n;slots=[None]*width;free=list(range(e.capacity[1]));pending=deque(range(n));started=time.time();success=False
+            inp,cmd=e.inputs,e.commands
+            def state():return [list(x) for x in zip(*(getattr(e.requests,k).cpu().tolist() for k in probe.REQUEST_STATE_FIELDS))]
+            def replay(name,kind,active,expected):
+                if e.stop_event.is_set():raise probe.ProtocolError('Stream interrupted')
+                before=state();e.sequence+=1;frame=e.sequence%2;e.buffers['frame_index'].fill_(frame);e.buffers['submission_sequence'].fill_(e.sequence)
+                e.prepared.graphs[name].replay();torch.cuda.synchronize(e.prepared.device)
+                after=state();records=e.buffers['completion_records'][frame].cpu().tolist()
+                for slot in range(4):
+                    if slot not in active and before[slot]!=after[slot]:raise probe.ProtocolError('Inactive stream request state changed')
+                for i in active:
+                    j=jobs[slots[i]];consumed,count,sampled=expected[i]
+                    j['result']=probe.validate_completion(records[i],after[i],epoch=j['epoch'],sequence=e.sequence,consumed=consumed,generated=count,sampled=sampled,budget=j['spec']['max_tokens'],eos=e.eos,vocabulary=e.vocabulary)
+                    j['trace'].append(records[i][:7]+[after[i][-1]]);j['graph_kinds'].append(kind)
+                if kind=='init' and (bool(cmd.errors.any()) or bool(e.maintenance.state.admission_errors.any())):raise probe.ProtocolError('Stream native admission failed')
+                if kind=='decode' and int(self.native.catalog[name].batch.metadata.live_counts[0].item())!=len(active):raise probe.ProtocolError('Native concurrent decode token count differs')
+            def admit(slot,k):
+                payload,spec,ids,program,count,request_sha=prepared[k]
+                pages=sorted(free)[:count]
+                for p in pages:free.remove(p)
+                identity=uuid.uuid4().hex;e.epoch+=1
+                admission=RequestAdmission(generation=e.epoch,seed=spec['seed'],max_new_tokens=spec['max_tokens'],eos_token_ids=e.eos,**spec['sampling']);admission.validate(e.vocabulary)
+                job={'id':identity,'epoch':e.epoch,'spec':spec,'ids':ids,'generated':[],'trace':[],'graph_kinds':[],'positions':[],'norms':[],'finished':False,'pages':pages,
+                     'artifact':e.output/f'probe-{identity}.npz','provenance':e.output/f'probe-{identity}.jsonl','response_capture':None}
+                job['report']={'schema':'character-creation.probe-request.v1','status':'running','id':identity,'operation':'rollout','runtime':STREAM_RUNTIME,**binding(e),'worker_manifest':e.manifest,
+                    'request':payload,'request_sha256':request_sha,'started_at':time.time(),'requested_sampling':spec['requested_sampling'],'effective_admission':admission.__dict__,
+                    'graphs':{**e.names,'decode':self.native.names[width]},'physical_pages':e.capacity[1],'mapped_request_pages':len(pages),'state_restored':False,'generated_tokens':0,
+                    'batch':{'id':value['batch_id'],'index':k,'requests':n,'decode_capacity':width,'physical_slot':slot,'physical_pages':pages,'continuous':True,'text_only':text_only}}
+                jobs[k]=job;slots[slot]=k
+                inp.request_state_rows[slot,0]=slot+1;inp.page_tables[slot].fill_(-1)
+                inp.page_tables[slot,:len(pages)].copy_(torch.tensor(pages,dtype=torch.int32,device=e.prepared.device))
+                inp.row_slot_ids.fill_(-1);inp.row_slot_ids[0]=slot;inp.row_generations.zero_();inp.row_generations[0]=job['epoch'];inp.live_rows.fill_(1)
+                inp.query_lengths.zero_();inp.query_lengths[0]=1;inp.token_ids.zero_();inp.sample_enabled.zero_()
+                e.admission.stage(0,slot,admission,ids);e.admission.admission_count.fill_(1)
+                cmd.request_slots.fill_(-1);cmd.source_slots.fill_(-1);cmd.destination_slots.fill_(-1);cmd.operation.zero_();cmd.expected_consumed.fill_(-1)
+                cmd.request_slots[0]=slot;cmd.destination_slots[0]=slot+1;cmd.operation[0]=1;cmd.expected_consumed[0]=0;cmd.num_ops.fill_(1)
+                replay(e.names['init'],'init',[slot],{slot:(0,0,False)});e.admission.admission_count.zero_();cmd.num_ops.zero_()
+                for key in ('steering_addends','steering_phases'):e.buffers[key][slot].zero_()
+                e.buffers['steering_prompt_tokens'][slot]=len(ids)
+                for site in program['sites']:
+                    index,offset,length=site_layout(e.catalog,e.buffers['steering_addends'].shape,site['site'])
+                    e.buffers['steering_addends'][slot,offset:offset+length].copy_(torch.from_numpy(site['vector']));e.buffers['steering_phases'][slot,index]=probe.PHASE_MASKS[program['phase']]
+                for start in range(0,len(ids),e.batch.tokens):
+                    stop=min(len(ids),start+e.batch.tokens);last=stop==len(ids)
+                    inp.query_lengths[0]=stop-start;inp.token_ids.zero_();inp.token_ids[:stop-start].copy_(torch.tensor(ids[start:stop],dtype=torch.int64,device=e.prepared.device));inp.sample_enabled[0]=int(last)
+                    replay(e.names['prefill'],'prefill',[slot],{slot:(stop,int(last),last)})
+                    pos=e.capture.positions.cpu().numpy().copy()
+                    if pos[pos>=0].tolist()!=list(range(start,stop)):raise probe.ProtocolError('Stream prefill positions differ')
+                    job['positions'].extend(pos[pos>=0].tolist())
+                    if not text_only:
+                        norm=e.capture.residual_l2.cpu().numpy().copy()[:,pos>0]
+                        if not np.isfinite(norm).all():raise probe.ProtocolError('Nonfinite prefill norms')
+                        job['norms'].append(norm)
+                    if last:
+                        if not text_only:
+                            job['prefill']={p:getattr(e.capture,p).cpu().numpy().copy() for p in PLANES};job['prefill']['final_chunk_positions']=pos
+                            if any(not np.isfinite(a).all() for a in job['prefill'].values()):raise probe.ProtocolError('Nonfinite prefill capture')
+                        job['generated'].append(job['result']['token']);job['finished']=job['result']['finished']
+            def rows():  # decode rows: every slot holding a request (finished ones stay mapped, as in complete()); slots fill from 0
+                inp.row_slot_ids.fill_(-1);inp.row_generations.zero_();inp.sample_enabled.zero_();inp.live_rows.fill_(sum(k is not None for k in slots));inp.query_lengths.fill_(1)
+                for i,k in enumerate(slots):
+                    if k is not None:inp.row_slot_ids[i]=i;inp.row_generations[i]=jobs[k]['epoch'];inp.sample_enabled[i]=1
+            def retire(i):
+                j=jobs[slots[i]]
+                if text_only:self.text_job(j)
+                else:self.save_job(j)
+                free.extend(j['pages'])
+            try:
+                _restore(e.prepared,e.pool,e.snapshots)
+                inp.request_state_rows.zero_();inp.page_tables.fill_(-1)
+                for key in ('steering_addends','steering_phases','steering_prompt_tokens'):e.buffers[key].zero_()
+                for i in range(min(width,n)):admit(i,pending.popleft())
+                for i in range(min(width,n)):
+                    while jobs[slots[i]]['finished'] and pending:retire(i);admit(i,pending.popleft())
+                rows()
+                while any(not jobs[k]['finished'] for k in slots if k is not None):
+                    active=[i for i,k in enumerate(slots) if k is not None and not jobs[k]['finished']]
+                    replay(self.native.names[width],'decode',active,{i:(len(jobs[slots[i]]['ids'])+len(jobs[slots[i]]['generated']),len(jobs[slots[i]]['generated'])+1,True) for i in active})
+                    refilled=False
+                    for i in active:
+                        j=jobs[slots[i]];j['generated'].append(j['result']['token']);j['finished']=j['result']['finished']
+                        while j['finished'] and pending:
+                            retire(i);admit(i,pending.popleft());j=jobs[slots[i]];refilled=True
+                    if refilled:rows()
+                for i,k in enumerate(slots):
+                    if k is not None and 'response' not in jobs[k]:retire(i)
+                success=True
+            except BaseException as error:
+                for j in jobs:
+                    if j and 'response' not in j:j['report'].update(status='failed',error=f'{type(error).__name__}: {error}',generated_tokens=len(j['generated']))
+                raise probe.ProtocolError('Stream replay/artifact failure: '+str(error)) from error
+            finally:
+                try:
+                    _restore(e.prepared,e.pool,e.snapshots);torch.cuda.synchronize(e.prepared.device)
+                    for j in jobs:
+                        if j:j['report']['state_restored']=True
+                except BaseException as error:
+                    success=False
+                    for j in jobs:
+                        if j:j['report'].update(status='failed',cleanup_error=str(error))
+                    raise probe.ProtocolError('Stream cleanup failed') from error
+                finally:
+                    for j in jobs:
+                        if j:
+                            j['report']['finished_at']=time.time()
+                            with j['provenance'].open('x') as stream:stream.write(json.dumps(j['report'],allow_nan=False)+'\n')
+            if not success:raise probe.ProtocolError('Stream not successful')
+            results=[]
+            for j in jobs:
+                response=j['response'];response['provenance_artifact']={'path':str(j['provenance'].resolve()),'sha256':probe.file_hash(j['provenance']),'operation':'rollout',**binding(e),'request_sha256':j['report']['request_sha256'],'self_reference':'Saved response excludes this post-write provenance pointer'}
+                results.append({'request_sha256':j['report']['request_sha256'],'response':response})
+            return {'batch_id':value['batch_id'],'results':results,'elapsed_seconds':time.time()-started}
+
+    def text_job(self,j):
+        """The response of a text-only stream request: answer and outcome, no activation artifact."""
+        e=self.e;spec=j['spec'];ids=j['ids'];generated=j['generated']
+        answer=e.tokenizer.decode(generated[:-1] if generated[-1] in e.eos else generated,skip_special_tokens=False,clean_up_tokenization_spaces=False)
+        outcome=probe.completion_outcome(spec,positions=j['positions'],prompt_tokens=len(ids),generated=generated,graph_kinds=j['graph_kinds'],result=j['result'],answer=answer)
+        response={'id':'chatcmpl-'+j['id'],'object':'chat.completion','created':int(j['report']['started_at']),'model':e.model_id,'operation':'rollout','choices':[{'index':0,'message':{'role':'assistant','content':answer},'finish_reason':j['result']['finish_reason']}],
+            'usage':{'prompt_tokens':len(ids),'completion_tokens':len(generated),'total_tokens':len(ids)+len(generated)},'runtime':STREAM_RUNTIME,**binding(e),'activation_artifact':None,
+            'diagnostics':{**outcome['diagnostics'],'sampling':spec['sampling'],'requested_sampling':spec['requested_sampling'],'native_cache_qualified':False,'mtp_qualified':False,'batch':j['report']['batch']}}
+        j['response']=response;j['report'].update(status='complete',response=response,generated_tokens=len(generated),sampled_text=answer,elapsed_seconds=time.time()-j['report']['started_at'],activation_artifact=None,final_completion=j['trace'][-1],completion_count=len(j['trace']))
+
     def save_job(self,j):
         e=self.e;spec=j['spec'];ids=j['ids'];generated=j['generated'];rc=j['response_capture'];request_hash=j['report']['request_sha256']
         answer=e.tokenizer.decode(generated[:-1] if generated[-1] in e.eos else generated,skip_special_tokens=False,clean_up_tokenization_spaces=False)
@@ -296,12 +449,12 @@ def serve(engine,args):
     server=probe.server_for(engine,args.host,args.port,engine.stop_event);base=server.RequestHandlerClass
     class Handler(base):
         def do_POST(self):
-            if self.path not in ('/v1/batch/preflight','/v1/batch/completions'):return super().do_POST()
+            if self.path not in ('/v1/batch/preflight','/v1/batch/completions','/v1/batch/stream'):return super().do_POST()
             try:
                 length=int(self.headers.get('Content-Length','0'))
                 if not 1<=length<=32*1024**2:raise ValueError('Invalid batch request size')
                 payload=json.loads(self.rfile.read(length))
-                result=batch.preflight(payload) if self.path.endswith('/preflight') else batch.complete(payload)
+                result=batch.preflight(payload) if self.path.endswith('/preflight') else batch.stream(payload) if self.path.endswith('/stream') else batch.complete(payload)
             except (ValueError,KeyError,TypeError) as error:self.send_json(400,{'error':{'type':'invalid_request_error','message':str(error)[:2000]}});return
             except Exception as error:
                 engine.stop_event.set()
