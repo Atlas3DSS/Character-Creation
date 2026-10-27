@@ -227,6 +227,7 @@ def captures(root):
         try: row = json.loads(open(meta).readline())
         except (OSError, ValueError): continue
         request = row.get('request') or {}
+        if (request.get('metadata') or {}).get('held_back'): continue  # owner-private prompts never enter the atlas
         steering = request.get('steering')
         if steering is not None and any(any(v != 0 for v in site.get('vector', [1])) for site in steering.get('sites', [{}])):
             continue  # final-prefill activations of steered requests are not the unsteered model

@@ -33,6 +33,9 @@ RAMP = (0.125, 0.25, 0.5)  # combos: fraction of each member's own coherent dose
 COMBO = -2                  # layer marker of a combo job; its members are in `pushes`
 BASE = -3                   # layer marker of an unsteered baseline pair; its user message is in `prompt`
 BASE_SOURCE, BASE_SWEEP, BASE_TOKENS = 'data/persona_generated_big_five.jsonl', 'baseline40k', 2048
+HELD = -4                   # held-back job: owner-private prompts (message list in `prompt`); first in the queue,
+HELD_SOURCE, HELD_SWEEP, HELD_TOKENS = 'private/held_back_prompts.jsonl', 'held-back', 512  # excluded from every shared export
+PUBLIC = 'layer>-3'         # identity work that may be exported (singles, baseline, combos)
 MAX_TOKENS, SEED, BATCH = 160, 0, 4
 OUT = 'results/identity_sweep'
 
@@ -139,6 +142,29 @@ def enqueue_baseline(root, db=None):
         return db.total_changes - before
 
 
+def enqueue_held(root, db=None):
+    """Adds the owner-private prompt set first in the queue (idempotent). Its rows never reach a shared export."""
+    db = db or connect(root); rows = []
+    for line in (Path(root) / HELD_SOURCE).open():
+        r = json.loads(line)
+        identity = hashlib.sha256(json.dumps([HELD_SWEEP, r['id'], SEED, HELD_TOKENS]).encode()).hexdigest()[:32]
+        rows.append((identity, HELD_SWEEP, HELD, -1, 0.0, json.dumps(r['messages'], ensure_ascii=False), r['id'],
+                     f"{r['facet']}|{r['condition']}|{r['pair_id']}", time.time()))
+    with db:
+        before = db.total_changes
+        db.executemany("INSERT OR IGNORE INTO jobs(id,sweep,layer,neuron,dose,prompt,source_id,kind,state,created) VALUES(?,?,?,?,?,?,?,?,'queued',?)", rows)
+        return db.total_changes - before
+
+
+def export_held(root):
+    """private/held_back_answers.jsonl beside the private prompts: answers and capture paths, never shared."""
+    path = Path(root) / 'private/held_back_answers.jsonl'; temporary = path.with_suffix('.tmp')
+    with connect(root) as db, temporary.open('w') as stream:
+        for row in db.execute("SELECT source_id,kind,answer,finish,tokens,coherent,declined,artifact,artifact_sha256,finished FROM jobs WHERE state='done' AND layer=-4 ORDER BY created,id"):
+            stream.write(json.dumps(dict(zip(('id', 'label', 'answer', 'finish_reason', 'completion_tokens', 'coherent_auto', 'declined_auto', 'artifact', 'artifact_sha256', 'finished'), row)), ensure_ascii=False) + '\n')
+    os.replace(temporary, path)
+
+
 def fetch(url, payload=None, timeout=600):
     data = None if payload is None else json.dumps(payload, allow_nan=False).encode()
     request = urllib.request.Request(url, data, {'Content-Type': 'application/json'} if data else {})
@@ -152,8 +178,9 @@ def claim(root, port, baseline=False):
     try:
         db.execute('BEGIN IMMEDIATE')
         order = ("SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer=-3 ORDER BY created, id LIMIT ?",
-                 "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer!=-3 ORDER BY layer=-1 DESC, level DESC, created, id LIMIT ?")
-        for query in (order if baseline else order[::-1]):
+                 "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer!=-3 ORDER BY layer=-4 DESC, layer=-1 DESC, level DESC, created, id LIMIT ?")
+        held = "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer=-4 ORDER BY created, id LIMIT ?"
+        for query in (held,) + (order if baseline else order[::-1]):  # held-back jobs go first on every turn
             rows = db.execute(query, (BATCH,)).fetchall()
             if rows: break
         db.executemany("UPDATE jobs SET state='running',started=?,port=? WHERE id=?", [(time.time(), port, r[0]) for r in rows])
@@ -199,9 +226,10 @@ def worker(root, port, bank, until, stop, log):
             stop.wait(15); continue
         requests, programs = [], []
         for identity, layer, neuron, dose, pushes, prompt in rows:
-            request = {'model': descriptor['id'], 'messages': [{'role': 'user', 'content': prompt if layer == BASE else PROMPT}], 'seed': SEED,
-                       'max_tokens': BASE_TOKENS if layer == BASE else MAX_TOKENS, 'temperature': 0, 'stream': False,
-                       'chat_template_kwargs': {'enable_thinking': False}, 'metadata': {'job_id': identity}}
+            messages = json.loads(prompt) if layer == HELD else [{'role': 'user', 'content': prompt if layer == BASE else PROMPT}]
+            request = {'model': descriptor['id'], 'messages': messages, 'seed': SEED,
+                       'max_tokens': BASE_TOKENS if layer == BASE else HELD_TOKENS if layer == HELD else MAX_TOKENS, 'temperature': 0, 'stream': False,
+                       'chat_template_kwargs': {'enable_thinking': False}, 'metadata': {'job_id': identity, **({'held_back': True} if layer == HELD else {})}}
             program = None
             members = ([{'kind': 'neuron', 'layer': m[0], 'neuron': m[1], 'dose': m[2] if m[3:] else m[2] * dose} for m in json.loads(pushes)] if layer == COMBO
                        else [{'kind': 'neuron', 'layer': layer, 'neuron': neuron, 'dose': dose}] if layer >= 0 else None)
@@ -237,7 +265,7 @@ def export(root):
     """Atomic JSONL of finished answers for the explorer to copy."""
     path = Path(root) / OUT / 'answers.jsonl'; temporary = path.with_suffix('.tmp')
     with connect(root) as db, temporary.open('w') as stream:
-        for row in db.execute("SELECT sweep,layer,neuron,dose,level,coherent,answer,finish,tokens,finished,artifact_sha256,kind,pushes,declined FROM jobs WHERE state='done' AND layer!=-3 ORDER BY layer,neuron,dose"):
+        for row in db.execute("SELECT sweep,layer,neuron,dose,level,coherent,answer,finish,tokens,finished,artifact_sha256,kind,pushes,declined FROM jobs WHERE state='done' AND layer>-3 ORDER BY layer,neuron,dose"):
             value = dict(zip(('sweep', 'layer', 'neuron', 'dose', 'level', 'coherent', 'answer', 'finish', 'tokens', 'finished', 'artifact_sha256', 'kind', 'pushes', 'declined'), row))
             value['declined'] = bool(value['declined'])
             if value['pushes'] is None: del value['kind'], value['pushes']
@@ -246,12 +274,13 @@ def export(root):
     os.replace(temporary, path)
     flagged = Path(root) / OUT / 'declined.jsonl'; temporary = flagged.with_suffix('.tmp')
     with connect(root) as db, temporary.open('w') as stream:  # the investigation list: every reply that said no
-        for row in db.execute("SELECT sweep,layer,neuron,dose,kind,pushes,answer,coherent FROM jobs WHERE state='done' AND declined=1 AND layer!=-3 ORDER BY layer,neuron,dose"):
+        for row in db.execute("SELECT sweep,layer,neuron,dose,kind,pushes,answer,coherent FROM jobs WHERE state='done' AND declined=1 AND layer>-3 ORDER BY layer,neuron,dose"):
             value = dict(zip(('sweep', 'layer', 'neuron', 'dose', 'kind', 'pushes', 'answer', 'coherent'), row))
             if value['pushes']: value['pushes'] = json.loads(value['pushes'])
             stream.write(json.dumps(value, ensure_ascii=False) + '\n')
     os.replace(temporary, flagged)
     export_baseline(root)
+    if (Path(root) / HELD_SOURCE).exists(): export_held(root)
     return status(root)
 
 
@@ -277,19 +306,20 @@ def backfill_flags(root):
 
 def status(root):
     with connect(root) as db:
-        counts = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer!=-3 GROUP BY state').fetchall())  # identity work only
+        counts = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer>-3 GROUP BY state').fetchall())  # identity work only
+        held = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer=-4 GROUP BY state').fetchall())
         baseline = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer=-3 GROUP BY state').fetchall())
         sweeps = {name: dict(db.execute('SELECT state,count(*) FROM jobs WHERE sweep=? GROUP BY state', (name,)).fetchall())
-                  for name, in db.execute('SELECT DISTINCT sweep FROM jobs') if name != BASE_SWEEP}
-        flagged = db.execute("SELECT count(*) FROM jobs WHERE state='done' AND declined=1 AND layer!=-3").fetchone()[0]
-        recent = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>? AND layer!=-3", (time.time() - 600,)).fetchone()
+                  for name, in db.execute('SELECT DISTINCT sweep FROM jobs') if name not in (BASE_SWEEP, HELD_SWEEP)}
+        flagged = db.execute("SELECT count(*) FROM jobs WHERE state='done' AND declined=1 AND layer>-3").fetchone()[0]
+        recent = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>? AND layer>-3", (time.time() - 600,)).fetchone()
         recent_base = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>? AND layer=-3", (time.time() - 600,)).fetchone()
         learned = kept_levels(db)
     cliffs = {f'L{g * 8}-{g * 8 + 7}': LEVELS[sorted(v)[len(v) // 2]] for g in range(8)
               for v in [[x for l in range(g * 8, g * 8 + 8) for x in learned.get(l, [])]] if len(v) >= 10}
     value = {'time': time.time(), 'counts': counts, 'sweeps': sweeps, 'last_10_min': {'answers': recent[0], 'tokens': recent[1] or 0},
              'median_strongest_coherent_dose': cliffs, 'declined': flagged,
-             'baseline40k': {'counts': baseline, 'last_10_min': {'answers': recent_base[0], 'tokens': recent_base[1] or 0}}}
+             'baseline40k': {'counts': baseline, 'last_10_min': {'answers': recent_base[0], 'tokens': recent_base[1] or 0}}, 'held_back': held}
     (Path(root) / OUT / 'status.json').write_text(json.dumps(value))
     return value
 
@@ -314,7 +344,7 @@ def run(root, until, ports, checkpoint):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('enqueue', 'enqueue-combos', 'enqueue-baseline', 'run', 'export', 'status', 'backfill-flags'))
+    parser.add_argument('command', choices=('enqueue', 'enqueue-combos', 'enqueue-baseline', 'enqueue-held-back', 'run', 'export', 'status', 'backfill-flags'))
     parser.add_argument('--root', default=str(Path(__file__).resolve().parent))
     parser.add_argument('--sweep', default='manual'); parser.add_argument('--neurons', help='JSON file of [layer, neuron] pairs')
     parser.add_argument('--combos', help='JSON file of combos (see enqueue_combos)')
@@ -332,6 +362,7 @@ def main():
         run(args.root, args.until, range(low, high + 1), args.checkpoint)
     elif args.command == 'export': print(json.dumps(export(args.root)))
     elif args.command == 'enqueue-baseline': print(json.dumps({'added': enqueue_baseline(args.root)}))
+    elif args.command == 'enqueue-held-back': print(json.dumps({'added': enqueue_held(args.root)}))
     elif args.command == 'backfill-flags': print(json.dumps({**backfill_flags(args.root), **export(args.root)}))
     else: print(json.dumps(status(args.root)))
 
