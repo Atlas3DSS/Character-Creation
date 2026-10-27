@@ -17,6 +17,7 @@ import shlex
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -180,10 +181,17 @@ def main():
                 log('atlas_rebuild_started', pid=process.pid)
             if used > DISK_BUDGET: log('disk_budget_reached', used=used)
             elif status and queued < LOW_WATER and (labels is None or labels.get('complete')):
-                options = [o for o in MENU if o['id'] not in state['queued_menu']]
-                if options:
+                # Several picks per cycle: a menu item whose neurons were already swept adds almost nothing, and
+                # one pick a minute would leave the GPUs idle for an hour of such items.
+                for _ in range(10):
+                    options = [o for o in MENU if o['id'] not in state['queued_menu']]
+                    if not options or queued >= LOW_WATER: break
                     chosen, why = planner_pick(options, status)
-                    result = post(EXPLORER + '/api/neuron-atlas/sweep', {'name': re.sub(r'[^A-Za-z0-9 _.-]', '-', chosen['id']), **chosen['query']})  # ids hold ':'
+                    try:
+                        result = post(EXPLORER + '/api/neuron-atlas/sweep', {'name': re.sub(r'[^A-Za-z0-9 _.-]', '-', chosen['id']), **chosen['query']})  # ids hold ':'
+                    except urllib.error.HTTPError as exc:  # e.g. a word no neuron label contains: skip it, never retry forever
+                        result = {'skipped': f'HTTP {exc.code}: ' + exc.read().decode(errors='replace')[:200]}
+                    queued += int(result.get('added') or 0)
                     state['queued_menu'].append(chosen['id']); log('batch_queued', menu=chosen['id'], why=why, result=result)
             if units.get('character-identity-sweep') != 'active' and workers_up and (queued or status is None):
                 start_runner(record['deadline'] - 120, log)
