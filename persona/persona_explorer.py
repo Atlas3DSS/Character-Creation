@@ -198,12 +198,28 @@ def response_study_summary(root):
 
 
 class Explorer:
+    def sync_private(self):
+        """Copy the files private/sync.json lists ({host, remote_dir, files}) in the background, at most once a minute."""
+        spec = self.root / 'private/sync.json'
+        if not spec.exists() or time.time() - self.private_synced < 60 or not self.private_lock.acquire(blocking=False): return
+        self.private_synced = time.time()
+        def copy():
+            try:
+                s = json.loads(spec.read_text())
+                for name in s['files']:
+                    if re.fullmatch(r'[A-Za-z0-9_.-]+', name):
+                        subprocess.run(['scp', '-q', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', f"{s['host']}:{s['remote_dir']}/{name}",
+                                        str(self.root / 'private' / name)], timeout=120, check=False)
+            finally: self.private_lock.release()
+        threading.Thread(target=copy, daemon=True).start()
+
     def __init__(self, root: Path, config: dict):
         self.root, self.config = root, config
         self.model = ModelSpec.load(root / "data/persona_model.json")
         self.neighbors = CoactivityCohorts(root, self.model)
         self.atlas = WeightAtlas(root, self.model)
         self.neuron_atlas = NeuronAtlas(root)
+        self.private_synced, self.private_lock = 0., threading.Lock()
         self.bank = VectorBank(root / "results", self.model,
             **({"checkpoint": Path(config["checkpoint"])} if config.get("checkpoint") else {}))
         self.bank_lock = threading.RLock()
@@ -903,6 +919,18 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     body = (app.root / 'ui' / name).read_bytes()
                     content_type = 'application/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8'
                     self.send_response(200); self.send_header('Content-Type', content_type); self.send_header('Cache-Control', 'no-cache')
+                    self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+                elif path.path == '/private' or path.path.startswith('/private/'):
+                    # Owner-only local folder (git-ignored); served on this loopback server only. Opening the page refreshes
+                    # the files listed in private/sync.json from their host, at most once a minute.
+                    name = path.path[len('/private/'):] or 'index.html'
+                    folder = app.root / 'private'; target = folder / name
+                    if not re.fullmatch(r'[A-Za-z0-9_.-]+\.(html|js|css|json|jsonl)', name) or not target.is_file():
+                        self.send_response(404); self.send_header('Content-Length', '0'); self.end_headers(); return
+                    if name == 'index.html': app.sync_private()
+                    body = target.read_bytes(); kind = name.rsplit('.', 1)[1]
+                    self.send_response(200); self.send_header('Content-Type', {'html': 'text/html; charset=utf-8', 'js': 'application/javascript; charset=utf-8',
+                        'css': 'text/css; charset=utf-8'}.get(kind, 'application/json; charset=utf-8')); self.send_header('Cache-Control', 'no-store')
                     self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
                 elif path.path == '/neuron-atlas':
                     body = (app.root / 'ui/persona_neuron_atlas.html').read_bytes()
