@@ -38,6 +38,15 @@ reduce the observed Dry Wit neuron dose. It does not learn from confirmation
 failures. Both controllers require a hash-bound qualified runtime gate, finite
 deadline and valid leases; uncertain requests are never silently replayed.
 
+The frozen follow-on controller can report a premature Manager exit when its
+saved progress snapshot becomes stale during a long judging loop. The external
+`persona_preset_followon_watchdog.py` guards this specific race without changing
+the study's pinned implementation. It verifies that the owned controller exited,
+all expected jobs are terminal, frozen inputs still match, and no review request
+has an uncertain outcome before resuming the controller. It records at most two
+recoveries, retains completed judgments, and stops at the original deadline.
+Other failures remain blocked for inspection.
+
 `/api/sculptor` exposes a separate `evaluated_presets` envelope. Verification binds
 plan, model, calibration, exact program and evaluation files. Automatic acceptance
 requires 12 clean confirmation groups, at least eight behavioral wins and the
