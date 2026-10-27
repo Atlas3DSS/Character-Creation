@@ -262,17 +262,24 @@ def finish_analysis(root, pool, log):
             "SELECT id,label,family,split,artifact FROM scenes WHERE concept=? AND split IS NOT NULL AND artifact IS NOT NULL", (name,))]
         db.execute("UPDATE concepts SET state='analysing' WHERE name=?", (name,)); db.commit()
         def done(future, name=name):
-            result = future.result(); slug = re.sub(r'[^a-z0-9]+', '_', name).strip('_')
-            if 'evidence' in result:
-                from persona_vectors import ModelSpec
-                identity = ModelSpec.load(Path(root) / 'data/persona_model.json').identity
-                (Path(root) / OUT / f'persona_label_evidence_v2_{slug}.json').write_text(json.dumps({**result['evidence'],
-                    'model_identity': identity}, indent=1))
-            with connect(root) as d: d.execute("UPDATE concepts SET state='done', result=? WHERE name=?",
-                                                (json.dumps({k: v for k, v in result.items() if k != 'evidence'}), name))
-            log(None, 'analysed', {k: result.get(k) for k in ('concept', 'passed', 'lower_bound', 'outcomes', 'reason')})
+            try: record(root, future.result(), name, log)
+            except Exception as exc:  # never leave a concept 'analysing' forever: log it and let the next pass retry
+                log(None, 'analysis_failed', {'concept': name, 'error': f'{type(exc).__name__}: {str(exc)[:300]}'})
+                with connect(root) as d: d.execute("UPDATE concepts SET state='analysis' WHERE name=? AND state='analysing'", (name,))
         pool.submit(analyse, (root, name, definition, rows)).add_done_callback(done)
     db.close()
+
+
+def record(root, result, name, log):
+    slug = re.sub(r'[^a-z0-9]+', '_', name).strip('_')
+    if 'evidence' in result:
+        from persona_vectors import ModelSpec
+        identity = ModelSpec.load(Path(root) / 'data/persona_model.json').identity
+        (Path(root) / OUT / f'persona_label_evidence_v2_{slug}.json').write_text(json.dumps({**result['evidence'],
+            'model_identity': identity}, indent=1))
+    with connect(root) as d: d.execute("UPDATE concepts SET state='done', result=? WHERE name=?",
+                                        (json.dumps({k: v for k, v in result.items() if k != 'evidence'}), name))
+    log(None, 'analysed', {k: result.get(k) for k in ('concept', 'passed', 'lower_bound', 'outcomes', 'reason')})
 
 
 def status(root):
