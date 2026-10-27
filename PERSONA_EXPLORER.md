@@ -200,7 +200,7 @@ The host operator configures `persona_jobs.local.json` beside the explorer:
 }
 ```
 
-Run `python3 persona/persona_jobs.py validate-config --config persona_jobs.local.json`, then supervise `python3 persona/persona_jobs.py daemon --config persona_jobs.local.json` as a persistent user service on the configured resource owner. `--once` scans for one due job; it creates no resources if nothing is due. The reference deployment uses `character-persona-jobs.service` with automatic restart and a 600-second cooperative stop allowance. The fixed adapter is currently configured for the owner's Devbox/John and six-card V100 host; other installations must explicitly configure and review their own fleet bindings. `persona/persona_lease.py` wraps the hash-verified installed workboard supervisor to register exact worker ownership without bypassing its admission, thermal or memory guards.
+Run `python3 persona/persona_jobs.py validate-config --config persona_jobs.local.json`, then supervise `python3 persona/persona_jobs.py daemon --config persona_jobs.local.json` as a persistent user service on the configured resource owner. `--once` scans for one due job; it creates no resources if nothing is due. The reference deployment uses `character-persona-jobs.service` with automatic restart and a 600-second cooperative stop allowance. The fixed adapter is currently configured for the reference planner host and six-card V100 host; other installations must explicitly configure and review their own fleet bindings. `persona/persona_lease.py` wraps the hash-verified installed workboard supervisor to register exact worker ownership without bypassing its admission, thermal or memory guards.
 
 | API | Purpose |
 | --- | --- |
