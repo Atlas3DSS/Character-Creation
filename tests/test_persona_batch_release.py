@@ -40,3 +40,55 @@ class BatchReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.export()
 
 if __name__=='__main__':unittest.main()
+
+
+def capture_fixture():
+    from test_persona_batch_capture_validate import fixture
+    from persona_batch_capture_validate import recompute
+    r,p,a=fixture()
+    for c in p['cases']:
+        c['prompt']=APPROVED_PROMPT;c['push']={'kind':'neuron','layer':32,'dose':.1}
+    p['original_plan_canonical_sha256']='a'*64
+    r['driver_sha256']=p['adapter_sha256'];r['artifact']={'filename':'persona_batch_capture_proof.npz','sha256':'e'*64,'bytes':10,'uncompressed_array_bytes':100,'compression':'np.savez_compressed lossless'}
+    v=recompute(r,p,a,layers=2,hidden=4,intermediate=6)
+    v.update(schema='character-creation.batch-capture-validation.v1',validator_sha256='f'*64,plan_sha256='f'*64,report_sha256='f'*64)
+    return r,p,v
+
+
+def test_capture_projection_preserves_all_counts_programs_and_drops_private_receipts():
+    import json
+    from persona_batch_release import project_capture
+    r,p,v=capture_fixture()
+    r['capture_override']={'path':'/mnt/private','sha256':'e'*64}
+    r['lease_id']='private-lease';r['hostname']='private-host'
+    r['runs']['four']['capture']['private_path']='/home/private'
+    result=project_capture(p,r,v,{APPROVED_PROMPT});text=json.dumps(result)
+    assert len(result['runs'])==16 and result['runs']['four']['capture']['counts']==[2]*4
+    assert result['cases'][0]['program']['sites'][0]['nonzero']==[[0,1.0]]
+    assert result['artifact']['filename']=='persona_batch_capture_proof.npz'
+    assert result['automatic_production_rollout'] is False
+    for secret in ('/mnt/private','/home/private','private-lease','private-host','mapping_steps'):assert secret not in text
+
+
+def test_capture_projection_fails_closed_on_missing_validation_or_private_output():
+    import pytest
+    from persona_batch_release import project_capture
+    r,p,v=capture_fixture()
+    for key in ('verified','passed'):
+        bad=deepcopy(v);bad[key]=False
+        with pytest.raises(ValueError):project_capture(p,r,bad,{APPROVED_PROMPT})
+    bad=deepcopy(v);bad['checks']['serial_B4_exact']=False
+    with pytest.raises(ValueError):project_capture(p,r,bad,{APPROVED_PROMPT})
+    r['runs']['four']['answers']=['/home/private']
+    with pytest.raises(ValueError):project_capture(p,r,v,{APPROVED_PROMPT})
+
+
+def test_capture_export_rejects_changed_frozen_plan_before_artifact_read(tmp_path):
+    import json
+    import pytest
+    from persona_batch_release import export_capture
+    results=tmp_path/'results';results.mkdir()
+    r,p,v=capture_fixture()
+    for name,value in [('persona_batch_capture_plan.json',p),('persona_batch_capture_proof.json',r),('persona_batch_capture_validation.json',v),('persona_batch_proof_plan.json',{})]:
+        (results/name).write_text(json.dumps(value))
+    with pytest.raises(ValueError,match='byte binding'):export_capture(tmp_path)

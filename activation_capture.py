@@ -153,3 +153,125 @@ class ActivationCapture:
     def record_residual(self, value, layer):
         self.residual_last[layer].copy_(torch.where(self.live, value[self.last_index].reshape(-1), 0))
         self.residual_l2[layer].copy_(torch.where(self.positions >= 0, value.square().sum(-1).sqrt(), 0))
+
+
+@dataclass(frozen=True)
+class RequestActivationCapture:
+    """Ordinary-decode observations indexed by physical request slot.
+
+    Separate from legacy B1 capture: no selected-neuron or all-token search
+    reduction is pooled across requests. Each live slot must own exactly one
+    packed token. Invalid mappings and duplicate owners produce explicit error
+    masks; absent/ambiguous slots have zero planes and sentinel evidence.
+    The consumer must reject a replay when mapping_error is true.
+    """
+    row_slot_ids: torch.Tensor
+    row_generations: torch.Tensor
+    request_generations: torch.Tensor
+    physical_slots: torch.Tensor
+    token_rows: torch.Tensor
+    token_slots: torch.Tensor
+    token_positions: torch.Tensor
+    token_ids: torch.Tensor
+    token_generations: torch.Tensor
+    token_live: torch.Tensor
+    invalid_tokens: torch.Tensor
+    slot_match_counts: torch.Tensor
+    slot_last_index: torch.Tensor
+    slot_live: torch.Tensor
+    slot_positions: torch.Tensor
+    slot_token_ids: torch.Tensor
+    slot_generations: torch.Tensor
+    mapping_error: torch.Tensor
+    residual_last: torch.Tensor
+    pre_mlp_last: torch.Tensor
+    mlp_input_last: torch.Tensor
+
+    @classmethod
+    def allocate(cls, layers, capacity, hidden, device, *, intermediate,
+                 row_slot_ids, row_generations, request_generations):
+        if (any(type(n) is not int or n < 1 for n in (layers, capacity, hidden, intermediate))
+                or capacity not in (1, 2, 4, 8, 16, 32, 64)):
+            raise ValueError('Capture dimensions require a supported positive request capacity')
+        device = torch.device(device)
+        for value in (row_slot_ids, row_generations, request_generations):
+            if (value.ndim != 1 or value.numel() != capacity
+                    or value.dtype not in (torch.int32, torch.int64)
+                    or value.device != torch.empty(0, device=device).device):
+                raise ValueError('Request capture must bind the full native row/epoch buffers')
+        def zeros(shape, dtype=torch.int64):
+            return torch.zeros(shape, dtype=dtype, device=device)
+        def sentinel():
+            return torch.full((capacity,), -1, dtype=torch.int64, device=device)
+        return cls(row_slot_ids, row_generations, request_generations,
+                   torch.arange(capacity, dtype=torch.int64, device=device),
+                   sentinel(), sentinel(), sentinel(), sentinel(), zeros(capacity),
+                   zeros(capacity, torch.bool), zeros(capacity, torch.bool),
+                   zeros(capacity), zeros(capacity), zeros(capacity, torch.bool),
+                   sentinel(), sentinel(), zeros(capacity), zeros(1, torch.bool),
+                   zeros((layers, capacity, hidden), torch.float32),
+                   zeros((layers, capacity, hidden), torch.float32),
+                   zeros((layers, capacity, intermediate), torch.float32))
+
+    def rows(self, tokens):
+        if type(tokens) is not int or not 1 <= tokens <= self.physical_slots.numel():
+            raise ValueError('Decode token capacity must fit physical request capacity')
+        # Output planes remain physical-slot indexed even in a B1/B2 view.
+        return type(self)(self.row_slot_ids, self.row_generations, self.request_generations,
+            self.physical_slots, self.token_rows[:tokens], self.token_slots[:tokens],
+            self.token_positions[:tokens], self.token_ids[:tokens], self.token_generations[:tokens],
+            self.token_live[:tokens], self.invalid_tokens[:tokens], self.slot_match_counts,
+            self.slot_last_index, self.slot_live, self.slot_positions, self.slot_token_ids,
+            self.slot_generations, self.mapping_error, self.residual_last,
+            self.pre_mlp_last, self.mlp_input_last)
+
+    def begin(self, metadata):
+        if (metadata.positions.shape != self.token_positions.shape
+                or metadata.requests.shape != self.token_rows.shape
+                or metadata.token_ids.shape != self.token_ids.shape):
+            raise ValueError('Request capture only supports its prepared ordinary decode shape')
+        rows = metadata.requests.to(torch.int64)
+        row_valid = ((rows >= 0) & (rows < self.token_positions.numel())
+                     & (rows < metadata.live_counts[1]))
+        safe_rows = rows.clamp(0, self.row_slot_ids.numel() - 1)
+        slots = self.row_slot_ids[safe_rows].to(torch.int64)
+        slot_valid = (slots >= 0) & (slots < self.physical_slots.numel())
+        safe_slots = slots.clamp(0, self.physical_slots.numel() - 1)
+        epochs = self.row_generations[safe_rows].to(torch.int64)
+        live = metadata.positions >= 0
+        valid = live & row_valid & slot_valid & (epochs > 0)
+        valid = valid & (epochs == self.request_generations[safe_slots])
+        matches = (self.physical_slots[:, None] == slots[None, :]) & valid[None, :]
+        counts = matches.to(torch.int64).sum(dim=1)
+        indices = matches.to(torch.int64).argmax(dim=1)
+        unique = counts == 1
+        self.token_rows.copy_(rows)
+        self.token_slots.copy_(slots)
+        self.token_positions.copy_(metadata.positions)
+        self.token_ids.copy_(metadata.token_ids)
+        self.token_generations.copy_(epochs)
+        self.token_live.copy_(live)
+        self.invalid_tokens.copy_(live & ~valid)
+        self.slot_match_counts.copy_(counts)
+        self.slot_last_index.copy_(indices)
+        self.slot_live.copy_(unique)
+        self.slot_positions.copy_(torch.where(unique, metadata.positions[indices], -1))
+        self.slot_token_ids.copy_(torch.where(unique, metadata.token_ids[indices], -1))
+        self.slot_generations.copy_(torch.where(unique, epochs[indices], 0))
+        self.mapping_error.copy_(((live & ~valid).any() | (counts > 1).any()
+                                 | (live.sum() != metadata.live_counts[0])
+                                 | (metadata.live_counts[1] < 0)
+                                 | (metadata.live_counts[1] > self.token_positions.numel())).reshape(1))
+        # Clearing here also removes stale observations if a later layer aborts.
+        self.residual_last.zero_()
+        self.pre_mlp_last.zero_()
+        self.mlp_input_last.zero_()
+
+    def record_pre_mlp(self, value, layer):
+        self.pre_mlp_last[layer].copy_(torch.where(self.slot_live[:, None], value[self.slot_last_index], 0))
+
+    def record_mlp_input(self, value, layer):
+        self.mlp_input_last[layer].copy_(torch.where(self.slot_live[:, None], value[self.slot_last_index], 0))
+
+    def record_residual(self, value, layer):
+        self.residual_last[layer].copy_(torch.where(self.slot_live[:, None], value[self.slot_last_index], 0))

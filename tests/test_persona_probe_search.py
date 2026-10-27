@@ -81,3 +81,19 @@ def test_canonical_override_binds_actual_source_and_aot_namespace(tmp_path,monke
     assert probe.bind_capture_cache_namespace(override)==digest
     override.write_text('source-two')
     with pytest.raises(RuntimeError,match='another capture'):probe.bind_capture_cache_namespace(override)
+
+
+def test_experimental_preparation_has_separate_cache_identity(tmp_path,monkeypatch):
+    module=ModuleType('ignition.preparation.aot');seen=[]
+    class Cache:
+        def __init__(self,*,namespace,**kwargs):seen.append(namespace)
+    module.ForwardCache=Cache
+    monkeypatch.setitem(sys.modules,'ignition.preparation.aot',module)
+    override=tmp_path/'activation_capture.py';override.write_text('same-capture')
+    digest=probe.bind_capture_cache_namespace(override,'a'*64)
+    Cache(namespace={'checkpoint':'bound'})
+    assert seen==[{'checkpoint':'bound','activation_capture_override_sha256':probe.file_hash(override),'preparation_adapter_sha256':'a'*64}]
+    assert digest!=probe.file_hash(override)
+    assert probe.bind_capture_cache_namespace(override,'a'*64)==digest
+    with pytest.raises(RuntimeError):probe.bind_capture_cache_namespace(override,'b'*64)
+    with pytest.raises(RuntimeError):probe.bind_capture_cache_namespace(override)

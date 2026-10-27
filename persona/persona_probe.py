@@ -834,16 +834,23 @@ def load_capture_override(path: Path | None) -> Path | None:
 
 
 
-def bind_capture_cache_namespace(override: Path | None) -> str | None:
+def bind_capture_cache_namespace(override: Path | None, preparation_adapter_sha256: str | None = None) -> str | None:
     """Partition AOT forward caches by the externally loaded capture source.
 
     Flare's normal cache key hashes physical ignition sources. An isolated
     override is outside that tree, so it must explicitly join the namespace.
     """
-    if override is None:
+    if override is None and preparation_adapter_sha256 is None:
         return None
+    if preparation_adapter_sha256 is not None and (len(preparation_adapter_sha256) != 64
+            or any(c not in '0123456789abcdef' for c in preparation_adapter_sha256)):
+        raise ValueError('Preparation adapter must have an exact SHA256')
     from ignition.preparation.aot import ForwardCache
-    digest = file_hash(override)
+    capture_digest = file_hash(override) if override is not None else None
+    additions = {'activation_capture_override_sha256': capture_digest}
+    if preparation_adapter_sha256 is not None:
+        additions['preparation_adapter_sha256'] = preparation_adapter_sha256
+    digest = capture_digest if preparation_adapter_sha256 is None else canonical_digest(additions)
     original = ForwardCache.__init__
     previous = getattr(original, "capture_override_sha256", None)
     if previous is not None:
@@ -852,7 +859,7 @@ def bind_capture_cache_namespace(override: Path | None) -> str | None:
         return digest
 
     def initialize(cache, *, namespace, **kwargs):
-        bound_namespace = {**namespace, "activation_capture_override_sha256": digest}
+        bound_namespace = {**namespace, **additions}
         original(cache, namespace=bound_namespace, **kwargs)
 
     initialize.capture_override_sha256 = digest
@@ -866,7 +873,7 @@ def capture_source_hashes(flare: Path, sources: list[str], override: Path | None
             for name in sources}
 
 
-def run(args, *, experiment=None):
+def run(args, *, experiment=None, preparation_adapter=None):
     # Lease/host/physical UUID verification happens before importing CUDA or the
     # native extension, including on failed startup.
     from persona_capture import require_lease
@@ -901,7 +908,16 @@ def run(args, *, experiment=None):
     from ignition.preparation.compilation import _OPTIONS
     from ignition.preparation import compile_pool
     from ignition.recipes.qwen38_dense.bootstrap import PreparationConfig, prepare
-    capture_cache_namespace = bind_capture_cache_namespace(capture_override)
+    adapter_sha256 = None
+    if preparation_adapter is not None:
+        if experiment is None or capture_override is None:
+            raise ValueError('Experimental preparation requires a finite experiment and explicit capture override')
+        import inspect
+        adapter_sha256 = file_hash(Path(inspect.getfile(preparation_adapter)))
+        prepare = preparation_adapter(prepare)
+        if not callable(prepare):
+            raise ValueError('Preparation adapter must return a callable')
+    capture_cache_namespace = bind_capture_cache_namespace(capture_override, adapter_sha256)
 
     if tuple(torch.cuda.get_device_capability()) != (7, 0):
         raise RuntimeError("This diagnostic worker requires V100 SM70")
@@ -934,6 +950,9 @@ def run(args, *, experiment=None):
         import inspect
         manifest['experiment_source_sha256'] = file_hash(Path(inspect.getfile(experiment)))
         runtime_binding['experiment_source_sha256'] = manifest['experiment_source_sha256']
+    if adapter_sha256 is not None:
+        manifest['preparation_adapter_source_sha256'] = adapter_sha256
+        runtime_binding['preparation_adapter_source_sha256'] = adapter_sha256
     runtime_binding["preparation"] = {key: value for key, value in manifest["preparation"].items()
         if key not in {"compile_workers", "kernel_cache", "cutlass_include", "headroom_bytes", "snapshot_budget_bytes"}}
     manifest["runtime_identity"] = canonical_digest(runtime_binding)
