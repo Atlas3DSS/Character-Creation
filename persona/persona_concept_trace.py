@@ -21,6 +21,7 @@ LAYERS, WIDTH = 64, 17408
 TOP = 24            # neurons kept per layer per concept (discovery selection)
 STRONG = 1.0        # |discovery contrast| counted as a strong neuron
 REPLICATES = 0.5    # held-out contrast of the same sign and at least this size = replicated
+MIN_SCENES = 12     # per class in each split
 DB = 'results/label_qualify/qualify.sqlite'
 OUT = 'results/neuron_atlas/concept_trace.json'
 
@@ -62,7 +63,7 @@ def trace(args):
             continue
         slot = acc[split][label]; slot[0] += 1; slot[1] += plane; slot[2] += plane * plane
     counts = {s: {l: acc[s][l][0] for l in (0, 1)} for s in acc}
-    if min(counts['discovery'].values()) < 12 or min(counts['heldout'].values()) < 12:
+    if min(counts['discovery'].values()) < MIN_SCENES or min(counts['heldout'].values()) < MIN_SCENES:
         return name, {'skipped': 'too few captured scenes', 'scenes': counts}
     disc = contrast(acc['discovery']).reshape(LAYERS, WIDTH)
     held = contrast(acc['heldout']).reshape(LAYERS, WIDTH)
