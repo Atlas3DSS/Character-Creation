@@ -46,6 +46,13 @@ qualified challenger for that target, capped at eight. Loading preserves exact
 pushes/doses/phase; it does not reconstruct the recipe from five UI dial values.
 Historical presets and frozen selection inputs stay unchanged.
 
+GET `/api/sculptor/preset-evidence?target=TARGET&group=OPTIONAL_GROUP_DIGEST`
+returns one saved matched scene/seed group plus a bounded group index. It verifies
+the selected overlay recipe, frozen plan, each control program and response/model
+bindings. The UI's **Read comparisons** shows saved baseline/candidate/control
+answers without inference or a live GPU session. Pending, incomplete and failed
+arms remain explicit. Reading evidence does not promote a recipe.
+
 `persona_preset_publication.py --root PATH --until EPOCH --publish` publishes
 `persona_preset_overnight_public.json` after 48 terminal answers, eight review
 groups, evaluation changes and at deadline. It reads only the allowlisted

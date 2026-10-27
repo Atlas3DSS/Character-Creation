@@ -171,6 +171,78 @@ def evaluated_presets(root, model):
     return primary
 
 
+def preset_evidence(root, model, target, group=''):
+    """One saved matched group, from the allowlisted authored publication only."""
+    from persona_vectors import VectorBank
+    from persona_preset_overnight import attach_column, TARGETS
+    root=Path(root)
+    if target not in TARGETS or not isinstance(group,str) or (group and not re.fullmatch('[a-f0-9]{64}',group)):
+        raise ValueError('Invalid target or saved group')
+    overlay=evaluated_presets(root,model)
+    selected=next((r for r in overlay['presets'] if r['preset_id']==target),None)
+    empty={'status':'pending','target':target,'groups':[],'cells':[],'message':'Saved comparisons are not available for this exact recipe yet.'}
+    if selected is None:return {**empty,'status':'unavailable','message':'Recipe evidence binding is unavailable.'}
+    path=root/'results/persona_preset_overnight_public.json'
+    if not path.exists():return empty
+    try:
+        def require(ok,message):
+            if not ok:raise ValueError(message)
+        require(path.stat().st_size<=256*1024**2,'Publication exceeds bound')
+        raw=path.read_bytes();public=json.loads(raw);study=selected['study_cycle']
+        require(public['schema']=='character-creation.preset-overnight-public.v1','Unexpected publication schema')
+        entry=public['plans'][study];plan=entry['plan']
+        require(entry['sha256']==selected['evidence']['plan_sha256'] and plan['input_sha256']==selected['input_sha256']==canonical_digest({k:v for k,v in plan.items() if k!='input_sha256'}),'Published plan differs')
+        require(plan['model_identity']==model.identity,'Published model differs')
+        recipe=next(r for r in plan['recipes'] if r['id']==selected['recipe_id'])
+        require(all(recipe[k]==selected[k] for k in ('pushes','phase','program_sha256')) and recipe['target']==target,'Published recipe differs')
+        prompts={stage:{p['id']:p for p in plan[key]} for stage,key in [('discovery','discovery'),('confirmation','confirmation')]}
+        groups={};seen=set()
+        require(isinstance(public['rows'],list) and len(public['rows'])<=3000,'Publication row bound exceeded')
+        for row in public['rows']:
+            if row.get('study')!=study or row.get('recipe_id')!=selected['recipe_id']:continue
+            stage=row['stage'];prompt=row['prompt'];seed=row['seed'];arm=row['arm']
+            require(stage in prompts and prompt==prompts[stage].get(prompt['id']) and seed in plan['seeds'] and row['target']==target and row['phase']==recipe['phase'],'Saved scene/seed/source differs')
+            arms=('baseline','zero','candidate','reversal','random') if stage=='discovery' else ('baseline','candidate','reversal','random')
+            require(arm in arms,'Unexpected saved arm')
+            identity=canonical_digest([study,recipe['id'],stage,prompt['id'],seed]);key=(identity,arm)
+            require(key not in seen,'Duplicate saved arm');seen.add(key)
+            record=groups.setdefault(identity,{'id':identity,'stage':stage,'prompt':prompt,'seed':seed,'arms':arms,'rows':{}});record['rows'][arm]=row
+        require(len(groups)<=24,'Saved group bound exceeded')
+        index=[{'id':g['id'],'stage':g['stage'],'seed':g['seed'],'scene_id':g['prompt'].get('pair_id',g['prompt']['id']),'category':g['prompt'].get('category','scene'),'recorded':len(g['rows']),'complete':sum(r.get('complete') is True for r in g['rows'].values()),'expected':len(g['arms'])} for g in sorted(groups.values(),key=lambda g:(g['stage'],g['prompt']['id'],g['seed']))]
+        if not index:return empty
+        readable=[g for g in index if all(groups[g['id']]['rows'].get(a,{}).get('answer') is not None for a in groups[g['id']]['arms'])]
+        if not readable:readable=[g for g in index if all(groups[g['id']]['rows'].get(a,{}).get('answer') is not None for a in ('baseline','candidate'))]
+        identity=group or (readable or index)[0]['id'];require(identity in groups,'Saved group is not in this recipe')
+        chosen=groups[identity];bank=attach_column(VectorBank(root/'results',model),root/'results/persona_preset_columns.json');cells=[]
+        for arm in chosen['arms']:
+            row=chosen['rows'].get(arm)
+            if row is None:cells.append({'label':arm,'state':'pending','output':None});continue
+            pushes=[] if arm=='baseline' else [{'kind':'random','layer':int(site.split('.')[1]),'site':'mlp_out' if site.split('.')[2]=='mlp_input' else site.split('.')[2],'dose':norm,'seed':chosen['seed']} for site,norm in recipe['relative_norms'].items() if norm] if arm=='random' else deepcopy(recipe['pushes'])
+            if arm=='reversal':
+                for push in pushes:push['dose']=-push['dose']
+            require(row['pushes']==pushes,'Saved arm recipe differs')
+            program,_=bank.program(pushes,recipe['phase'])
+            if arm=='zero':program={'phase':program['phase'],'sites':[{'site':s['site'],'vector':[0.0]*len(s['vector'])} for s in program['sites']]}
+            require(row['program_sha256']==canonical_digest(program),'Saved arm program hash differs')
+            answer=row.get('answer');require(answer is None or isinstance(answer,str) and len(answer)<=100000,'Saved answer bound exceeded')
+            require(type(row['complete']) is bool and type(row['has_error']) is bool,'Saved completion flags differ')
+            bound=row.get('binding') or {}
+            if answer is not None and not row['has_error']:
+                require(bound.get('model_identity') == model.identity and all(re.fullmatch('[a-f0-9]{64}', bound.get(k,'')) for k in ('model_identity','runtime_identity','prepared_identity')), 'Saved response model/runtime binding differs')
+                require(re.fullmatch('[a-f0-9]{64}',row.get('response_sha256') or ''), 'Saved response hash missing')
+                for kind in ('activation_artifact','provenance_artifact'):
+                    artifact=row.get(kind) or {}
+                    require(all(artifact.get(k)==bound[k] for k in ('model_identity','runtime_identity','prepared_identity')) and re.fullmatch('[a-f0-9]{64}',artifact.get('sha256','')), 'Saved artifact binding differs')
+            state=row['state'];require(state in {'queued','running','complete','incomplete','failed','interrupted','cancelled'},'Unknown saved state')
+            if row['has_error']:state='failed'
+            elif state=='complete' and not row['complete']:state='incomplete'
+            if row['complete']:require(state=='complete' and row.get('finish_reason')=='stop' and bool(answer),'Invalid saved complete claim')
+            cells.append({'label':arm,'state':state,'error':'Saved execution reported an error.' if row['has_error'] else None,'output':None if answer is None else {'answer':answer,'complete':row['complete'],'finish_reason':row.get('finish_reason'),'usage':row.get('usage'),'runtime_identity':bound.get('runtime_identity'),'provenance':{'model_identity':model.identity,'response_sha256':row.get('response_sha256'),'program_sha256':row['program_sha256']}}})
+        return {'status':'available','target':target,'recipe_id':selected['recipe_id'],'study':study,'qualification_state':selected['state'],'groups':index,'group_id':identity,'scene':chosen['prompt']['prompt'],'seed':chosen['seed'],'stage':chosen['stage'],'cells':cells,'publication_sha256':__import__('hashlib').sha256(raw).hexdigest(),'scope':'Saved authored comparisons; automatic battery qualification is not general personality validation.'}
+    except (OSError,ValueError,KeyError,TypeError,StopIteration):
+        return {**empty,'status':'unavailable','message':'Saved comparison source or recipe binding could not be verified.'}
+
+
 class Sculptor:
     def __init__(self, app):
         self.app = app
@@ -207,6 +279,9 @@ class Sculptor:
                 bank = self.app.bank.layer(layer)
                 if all('trait_' + trait in bank for trait in TRAITS): result.append(layer)
         return result
+
+    def preset_evidence(self, target, group=''):
+        return preset_evidence(self.app.root, self.app.model, target, group)
 
     def catalog(self):
         from persona_explorer import prompt_label

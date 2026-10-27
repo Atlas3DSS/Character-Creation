@@ -924,6 +924,9 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif path.path == "/api/state": self.send(app.state())
                 elif path.path == '/api/capacity': self.send(app.capacity())
                 elif path.path == '/api/sculptor': self.send(app.sculptor.catalog())
+                elif path.path == '/api/sculptor/preset-evidence':
+                    query = parse_qs(path.query)
+                    self.send(app.sculptor.preset_evidence(query.get('target',[''])[0], query.get('group',[''])[0]))
                 elif path.path == '/api/sculptor/preset-comparisons': self.send(app.sculptor.preset_comparisons())
                 elif path.path == '/api/sculptor/presets': self.send(app.sculptor.presets())
                 elif path.path == '/api/sculptor/campaigns': self.send(app.sculptor.listing())

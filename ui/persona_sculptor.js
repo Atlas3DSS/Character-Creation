@@ -424,10 +424,33 @@
         if (!preset.program_valid || !window.PersonaLab?.useCurrentRecipe) return;
         window.PersonaLab.useCurrentRecipe({name: preset.name, pushes: clone(preset.pushes), phase: preset.phase});
       }, 'ps-secondary');
-      load.disabled = !preset.program_valid; card.append(load);
+      load.disabled = !preset.program_valid; card.append(load, button('Read comparisons', () => readEvaluatedComparisons(preset), 'ps-secondary'));
       const details = node('details', undefined, 'ps-disclosure'); details.append(node('summary', 'Recipe & battery evidence'), node('pre', JSON.stringify({recipe_id: preset.recipe_id, state: preset.state, phase: preset.phase, pushes: preset.pushes, program_sha256: preset.program_sha256, input_sha256: preset.input_sha256, evidence: preset.evidence}, null, 2))); card.append(details); grid.append(card);
     }
     refs.evaluated.append(grid);
+    refs.evaluatedReading ||= node('div'); refs.evaluated.append(refs.evaluatedReading);
+  }
+
+  let evaluatedReadSerial = 0;
+  async function readEvaluatedComparisons(preset, group = '') {
+    const serial = ++evaluatedReadSerial, host = refs.evaluatedReading;
+    if (!host) return;
+    host.replaceChildren(hint('Reading saved comparisons…')); scroll(host);
+    try {
+      const value = await request('/api/sculptor/preset-evidence?' + new URLSearchParams({target: preset.preset_id, ...(group ? {group} : {})}));
+      if (serial !== evaluatedReadSerial || host !== refs.evaluatedReading) return;
+      host.replaceChildren(node('h4', preset.name + ' · saved comparisons'));
+      if (value.status !== 'available') {host.append(hint(value.message || 'Saved answers are pending.')); return;}
+      const picker = select(value.groups.map(g => [g.id, `${g.stage} · ${g.category} · ${g.scene_id} · seed ${g.seed} · ${g.complete}/${g.expected} complete`]), 'Saved scene and seed');
+      picker.value = value.group_id; picker.onchange = () => readEvaluatedComparisons(preset, picker.value);
+      host.append(field('Scene and shared seed', picker), hint(`${human(value.qualification_state)} · ${value.scope}`), node('p', value.scene, 'ps-preset-shared-prompt'));
+      if (value.recipe_id !== preset.recipe_id) host.append(hint('The evaluated recipe changed since this page loaded; these answers belong to ' + value.recipe_id + '.'));
+      const runtimeIds = [...new Set(value.cells.map(c => c.output?.runtime_identity).filter(Boolean))];
+      if (runtimeIds.length > 1) host.append(hint('These saved arms span multiple recorded runtime identities; inspect each response provenance.'));
+      const answers = node('div', undefined, 'ps-preset-answers');
+      for (const cell of value.cells) answers.append(outputPane(cell, cell.label === 'baseline' ? 'Baseline · unsteered' : human(cell.label), cell.label === 'baseline' ? 'ps-baseline' : 'ps-variant'));
+      host.append(answers, hint('Saved evidence only. No inference is started by reading or changing the scene selector.'));
+    } catch (error) {if (serial === evaluatedReadSerial) host.replaceChildren(hint('Could not read saved comparisons: ' + error.message));}
   }
 
   function renderPresets() {
