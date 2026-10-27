@@ -193,7 +193,8 @@ def main():
                         result = {'skipped': f'HTTP {exc.code}: ' + exc.read().decode(errors='replace')[:200]}
                     queued += int(result.get('added') or 0)
                     state['queued_menu'].append(chosen['id']); log('batch_queued', menu=chosen['id'], why=why, result=result)
-            if units.get('character-identity-sweep') != 'active' and workers_up and (queued or status is None):
+            baseline_left = sum(v for k, v in ((status or {}).get('baseline40k') or {}).get('counts', {}).items() if k in ('queued', 'running'))
+            if units.get('character-identity-sweep') != 'active' and workers_up and (queued or baseline_left or status is None):
                 start_runner(record['deadline'] - 120, log)
             state.update(updated=time.time(), workers_up=workers_up, runner=units.get('character-identity-sweep'),
                          worker_deadline=record['deadline'], status=status, until=args.until, last_error=None)
