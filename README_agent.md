@@ -98,6 +98,12 @@ The reference run stops dispatch at 07:49 PDT, reserving the 600-second request
 timeout plus a validation margin before 08:00. Its atomic public report is
 `persona_contrastive_backfill_public.json`, with authored text, saved answers,
 exact interventions and capture hashes; raw arrays are not included in that JSON.
+`persona_contrastive_publication.py --root PATH --input-sha256 PLAN_HASH --publish`
+publishes this one report at 48-terminal milestones and completion, ending by
+08:05. Without `--publish`, it only validates the local report. The observer
+pins the authored source and plan identity, checks capture references, and uses
+a separate SQLite ledger of immutable bytes and conditional parent commits.
+It does not control inference or modify the other publication ledgers.
 
 `persona_preset_publication.py --root PATH --until EPOCH --publish` publishes
 `persona_preset_overnight_public.json` after 48 terminal answers, eight review

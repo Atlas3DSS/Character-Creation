@@ -25,8 +25,9 @@ eight existing recipes across 512 additional discovery scenes. Each scene has
 one shared baseline plus positive, reversed and random-control interventions:
 12,800 planned responses, limited by the overnight compute window. This measures
 how recipe effects vary with context. Confirmation scenes stay excluded, and
-confirmation or interactive work takes priority. Completed answers and capture
-hashes are published in batches; these exploratory results do not qualify a preset.
+confirmation or interactive work takes priority. [Completed answers and capture
+hashes](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_contrastive_backfill_public.json)
+are published in batches; these exploratory results do not qualify a preset.
 
 ## Start without a GPU
 
