@@ -12,7 +12,9 @@ Character Creation is an interactive workbench for exploring persona changes thr
 
 The primary methodological inspiration is **[Lyra’s neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer)**: precise signed neuron interventions, relative-dose normalization, read/write distinctions and complete response comparisons. This project combines those ideas with Atlas’s broader Big Five and layer experiments. The implementation is independent; Lyra’s code is not vendored.
 
-![Persona Studio showing sixteen presets, an editable Skippy-inspired profile, and five signed trait controls](ui/persona-studio.png)
+![Create view: the starting cast of sixteen authored presets, six experimental voices and six Lab archetypes, each with “+ Compare”, beside the selected GPT-4o-inspired profile](ui/persona-studio.png)
+
+![Neuron Atlas tracing “joy”: all 64 layers of 17,408 neurons with the concept’s strongest neurons lit, and the layer-by-layer trace below](ui/neuron-atlas.png)
 
 **[Explorer and Studio guide](PERSONA_EXPLORER.md) · [Agent porting guide](fork_agent.md) · [Reusable V100 runtime](https://github.com/Atlas3DSS/flare-local-inference) · [Feature comparison with Lyra](PERSONA_EXPLORER.md#feature-comparison-with-lyras-explorer)**
 

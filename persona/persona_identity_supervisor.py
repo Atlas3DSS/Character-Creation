@@ -183,7 +183,7 @@ def main():
                 options = [o for o in MENU if o['id'] not in state['queued_menu']]
                 if options:
                     chosen, why = planner_pick(options, status)
-                    result = post(EXPLORER + '/api/neuron-atlas/sweep', {'name': chosen['id'], **chosen['query']})
+                    result = post(EXPLORER + '/api/neuron-atlas/sweep', {'name': re.sub(r'[^A-Za-z0-9 _.-]', '-', chosen['id']), **chosen['query']})  # ids hold ':'
                     state['queued_menu'].append(chosen['id']); log('batch_queued', menu=chosen['id'], why=why, result=result)
             if units.get('character-identity-sweep') != 'active' and workers_up and (queued or status is None):
                 start_runner(record['deadline'] - 120, log)
