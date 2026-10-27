@@ -866,7 +866,7 @@ def capture_source_hashes(flare: Path, sources: list[str], override: Path | None
             for name in sources}
 
 
-def run(args):
+def run(args, *, experiment=None):
     # Lease/host/physical UUID verification happens before importing CUDA or the
     # native extension, including on failed startup.
     from persona_capture import require_lease
@@ -930,6 +930,10 @@ def run(args):
                           ("persona_capture.py", "persona_qualify.py", "persona_vectors.py", "persona_fleet.py", "persona_trace.py", "persona_map.py", "persona_kv.py", "persona_phantom.py", "persona_activation_search.py")},
         "preparation": {k: str(v) if isinstance(v, Path) else v for k, v in prep.__dict__.items()}}
     runtime_binding = {key: manifest[key] for key in ("script_sha256", "helper_sha256", "source_sha256", "torch", "heliopause_sha256")}
+    if experiment is not None:
+        import inspect
+        manifest['experiment_source_sha256'] = file_hash(Path(inspect.getfile(experiment)))
+        runtime_binding['experiment_source_sha256'] = manifest['experiment_source_sha256']
     runtime_binding["preparation"] = {key: value for key, value in manifest["preparation"].items()
         if key not in {"compile_workers", "kernel_cache", "cutlass_include", "headroom_bytes", "snapshot_budget_bytes"}}
     manifest["runtime_identity"] = canonical_digest(runtime_binding)
@@ -999,6 +1003,15 @@ def run(args):
             publish("calibration_equivalence")
             if not qualification["passed"]:
                 raise ProtocolError("Diagnostic target arithmetic differs from the original calibration; endpoint will not become ready")
+            if experiment is not None:
+                manifest.update(status='qualified', prepared_identity=prepared.server_config['identity'])
+                publish('finite_experiment_start')
+                manifest['experiment'] = experiment(engine, args)
+                if manifest['experiment'].get('passed') is not True:
+                    raise ProtocolError('Finite experiment completed but did not pass its frozen gates')
+                manifest['status'] = 'complete'
+                publish('finite_experiment_complete')
+                return
             server = server_for(engine, args.host, args.port, stop_event)
             manifest.update(status="ready", ready_at=time.time(), prepared_identity=prepared.server_config["identity"],
                             url=f"http://{args.host}:{args.port}", physical_capacity=engine.capacity, descriptor=engine.descriptor())
@@ -1031,7 +1044,7 @@ def report_stem(value):
     return value
 
 
-def main():
+def argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("run",))
     parser.add_argument("--config", type=Path, required=True)
@@ -1052,7 +1065,11 @@ def main():
     parser.add_argument("--host", choices=("127.0.0.1",), default="127.0.0.1")
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--model-id", default="checkpoint")
-    run(parser.parse_args())
+    return parser
+
+
+def main():
+    run(argument_parser().parse_args())
 
 
 if __name__ == "__main__":
