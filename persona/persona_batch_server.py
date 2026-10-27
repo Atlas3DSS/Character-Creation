@@ -61,9 +61,36 @@ class BatchResponseCapture(ResponseCapture):
         with self.engine.trace_lock:self.record['consumed_generated_tokens']=len(self.ids)
 
 
+def read_response_residual(capture,active,*,mode='optimized'):
+    """Exact host checks; only inactive non-residual slices need transfer.
+
+    Baseline deliberately retains the former redundant full-plane reads for a
+    same-model A/B experiment. Neither mode changes GPU buffers or arithmetic.
+    """
+    if mode not in ('baseline','optimized'):raise ValueError('Unknown capture readback mode')
+    if len(set(active))!=len(active) or any(type(s) is not int or not 0<=s<4 for s in active):raise probe.ProtocolError('Invalid active capture slots')
+    values=capture.residual_last.cpu().numpy().copy()
+    inactive=sorted(set(range(4))-set(active))
+    if mode=='baseline':
+        for p in PLANES:
+            plane=getattr(capture,p).cpu().numpy()
+            if any(np.any(plane[:,s,:]) for s in inactive):raise probe.ProtocolError('Inactive capture plane not zero')
+    elif inactive:
+        if any(np.any(values[:,s,:]) for s in inactive):raise probe.ProtocolError('Inactive capture plane not zero')
+        for p in PLANES:
+            if p=='residual_last':continue
+            # Basic slices preserve layout and avoid allocating GPU gather tensors.
+            for slot in inactive:
+                if np.any(getattr(capture,p)[:,slot:slot+1,:].cpu().numpy()):raise probe.ProtocolError('Inactive capture plane not zero')
+    return values
+
+
 class BatchEngine:
-    def __init__(self,engine,qualification=None):
+    def __init__(self,engine,qualification=None,*,capture_readback='optimized',phase_timing=False):
         from persona_batch_probe import BatchTrial
+        if capture_readback not in ('baseline','optimized'):raise ValueError('Unknown capture readback mode')
+        if type(phase_timing) is not bool:raise ValueError('phase_timing must be boolean')
+        self.capture_readback=capture_readback;self.phase_timing=phase_timing
         self.e=engine;self.native=BatchTrial(engine);self.receipt=qualification;self.seen=set()
         for width in (2,4):
             c=self.native.catalog[self.native.names[width]].decoder.activation_capture
@@ -122,6 +149,12 @@ class BatchEngine:
             self.seen.add(value['batch_id']);n=len(specs);width=1 if n==1 else 2 if n==2 else 4
             snapshots={k:getattr(self.capture,k).clone() for k in FIELDS}
             jobs=[];started=time.time();success=False
+            readback_mode=self.capture_readback
+            timings={} if self.phase_timing else None
+            def tick():return time.perf_counter() if timings is not None else None
+            def elapsed(phase,start):
+                if timings is not None:
+                    entry=timings.setdefault(phase,{'calls':0,'seconds':0.0});entry['calls']+=1;entry['seconds']+=time.perf_counter()-start
             try:
                 for i,(payload,spec,ids) in enumerate(zip(value['requests'],specs,tokens)):
                     identity=uuid.uuid4().hex;e.epoch+=1
@@ -140,7 +173,7 @@ class BatchEngine:
                 def replay(name,kind,active,expected):
                     if e.stop_event.is_set():raise probe.ProtocolError('Batch interrupted')
                     before=state();e.sequence+=1;frame=e.sequence%2;e.buffers['frame_index'].fill_(frame);e.buffers['submission_sequence'].fill_(e.sequence)
-                    e.prepared.graphs[name].replay();torch.cuda.synchronize(e.prepared.device)
+                    stamp=tick();e.prepared.graphs[name].replay();torch.cuda.synchronize(e.prepared.device);elapsed(kind+'_graph_and_sync',stamp)
                     after=state();records=e.buffers['completion_records'][frame].cpu().tolist()
                     for slot in range(4):
                         if slot not in active and before[slot]!=after[slot]:raise probe.ProtocolError('Inactive batch request state changed')
@@ -150,6 +183,7 @@ class BatchEngine:
                         j['trace'].append(records[i][:7]+[after[i][-1]]);j['graph_kinds'].append(kind);j['result']=result
                     if kind=='init' and (bool(cmd.errors.any()) or bool(e.maintenance.state.admission_errors.any())):raise probe.ProtocolError('Batch native admission failed')
                     if kind=='decode':
+                        stamp=tick()
                         owner=self.native.catalog[name]
                         if int(owner.batch.metadata.live_counts[0].item())!=len(active):raise probe.ProtocolError('Native concurrent decode token count differs')
                         if width==1:
@@ -160,13 +194,11 @@ class BatchEngine:
                             c=owner.decoder.activation_capture
                             evidence={k:getattr(c,k).cpu().numpy().copy() for k in ('slot_live','slot_positions','slot_token_ids','slot_generations','slot_match_counts','mapping_error','token_live','invalid_tokens','token_slots','token_positions','token_ids','token_generations')}
                             if mapping_expected(before,list(range(n)),evidence)!=set(active):raise probe.ProtocolError('Batch capture ownership differs')
-                            values=c.residual_last.cpu().numpy().copy()
-                            for p in PLANES:
-                                plane=getattr(c,p).cpu().numpy()
-                                if any(np.any(plane[:,s,:]) for s in set(range(4))-set(active)):raise probe.ProtocolError('Inactive capture plane not zero')
+                            values=read_response_residual(c,active,mode=readback_mode)
                         for i in active:
                             rc=jobs[i]['response_capture']
                             if rc:rc.observe_value(before[i][1],before[i][3],values[:,i,:])
+                        elapsed('decode_capture_validation_and_accumulation',stamp)
                 for i,j in enumerate(jobs):
                     ids=j['ids'];inp.request_state_rows[i,0]=i+1
                     inp.page_tables[i,:len(pages[i])].copy_(torch.tensor(pages[i],dtype=torch.int32,device=e.prepared.device))
@@ -199,7 +231,9 @@ class BatchEngine:
                     active=[i for i,j in enumerate(jobs) if not j['finished']]
                     replay(self.native.names[width],'decode',active,{i:(len(jobs[i]['ids'])+len(jobs[i]['generated']),len(jobs[i]['generated'])+1,True) for i in active})
                     for i in active:j=jobs[i];j['generated'].append(j['result']['token']);j['finished']=j['result']['finished']
+                stamp=tick()
                 for j in jobs:self.save_job(j)
+                elapsed('artifact_save',stamp)
                 success=True
             except BaseException as error:
                 for j in jobs:
@@ -220,13 +254,17 @@ class BatchEngine:
                 finally:
                     for j in jobs:
                         j['report']['finished_at']=time.time()
+                        j['report']['capture_readback_mode']=readback_mode
+                        if timings is not None:j['report']['batch_phase_timing']={'scope':'Whole batch host elapsed; graph includes existing CUDA synchronization, not kernel-only timing; no additional synchronization.', 'phases':deepcopy(timings)}
                         with j['provenance'].open('x') as stream:stream.write(json.dumps(j['report'],allow_nan=False)+'\n')
             if not success:raise probe.ProtocolError('Batch not successful')
             results=[]
             for j in jobs:
                 response=j['response'];response['provenance_artifact']={'path':str(j['provenance'].resolve()),'sha256':probe.file_hash(j['provenance']),'operation':'rollout',**binding(e),'request_sha256':j['report']['request_sha256'],'self_reference':'Saved response excludes this post-write provenance pointer'}
                 results.append({'request_sha256':j['report']['request_sha256'],'response':response})
-            return {'batch_id':value['batch_id'],'results':results}
+            envelope_result={'batch_id':value['batch_id'],'results':results}
+            if timings is not None:envelope_result['profiling']={'capture_readback_mode':readback_mode,**jobs[0]['report']['batch_phase_timing']}
+            return envelope_result
 
     def save_job(self,j):
         e=self.e;spec=j['spec'];ids=j['ids'];generated=j['generated'];rc=j['response_capture'];request_hash=j['report']['request_sha256']

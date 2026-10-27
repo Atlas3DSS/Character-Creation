@@ -88,3 +88,56 @@ def test_saved_per_job_response_passes_existing_checked(tmp_path):
             path=Path(pointer['path']);assert __import__('persona_probe').file_hash(path)==pointer['sha256'];return path
     arrays,paths=checked(response,p,binding(e),Store())
     assert arrays['response_residual_count']==1 and arrays['completion_trace'][-1,1]==8
+
+
+class CountingPlane:
+    def __init__(self,array,reads,name):self.array=array;self.reads=reads;self.name=name
+    def cpu(self):self.reads.append((self.name,self.array.nbytes));return self
+    def numpy(self):return self.array
+    def __getitem__(self,index):return CountingPlane(self.array[index],self.reads,self.name)
+
+
+def readback_fixture():
+    reads=[]
+    arrays={p:np.zeros((2,4,6 if p=='mlp_input_last' else 3),np.float32) for p in ('residual_last','pre_mlp_last','mlp_input_last')}
+    capture=SimpleNamespace(**{p:CountingPlane(a,reads,p) for p,a in arrays.items()})
+    return capture,arrays,reads
+
+
+def test_readback_full_active_skips_redundant_copies_exactly():
+    from persona_batch_server import read_response_residual
+    capture,arrays,reads=readback_fixture();arrays['residual_last'][:]=np.arange(24).reshape(2,4,3)
+    baseline=read_response_residual(capture,[0,1,2,3],mode='baseline');old=list(reads);reads.clear()
+    optimized=read_response_residual(capture,[3,1,0,2]);assert np.array_equal(baseline,optimized)
+    assert len(old)==4 and [name for name,size in reads]==['residual_last']
+    assert not np.shares_memory(optimized,arrays['residual_last'])
+
+
+@pytest.mark.parametrize('active',[[0,2],[3],[1,2,3]])
+def test_readback_holes_checks_only_inactive_slices_and_reuses_residual(active):
+    from persona_batch_server import read_response_residual
+    capture,arrays,reads=readback_fixture()
+    for a in arrays.values():a[:,active,:]=2
+    old=read_response_residual(capture,active,mode='baseline');oldbytes=sum(n for _,n in reads);reads.clear()
+    new=read_response_residual(capture,active)
+    assert np.array_equal(old,new) and sum(n for _,n in reads)<oldbytes
+    assert sum(name=='residual_last' for name,size in reads)==1
+    assert len(reads)==1+2*(4-len(active))
+
+
+@pytest.mark.parametrize('plane',['residual_last','pre_mlp_last','mlp_input_last'])
+@pytest.mark.parametrize('bad',[1,np.nan,np.inf])
+def test_readback_rejects_inactive_nonzero_and_nonfinite(plane,bad):
+    from persona_batch_server import read_response_residual
+    capture,arrays,reads=readback_fixture();arrays[plane][0,2,0]=bad
+    for mode in ('baseline','optimized'):
+        with pytest.raises(Exception,match='Inactive capture plane'):read_response_residual(capture,[0,1,3],mode=mode)
+
+
+def test_readback_invalid_mapping_and_mode_fail_before_transfers():
+    from persona_batch_server import read_response_residual
+    capture,arrays,reads=readback_fixture()
+    for slots in ([0,0],[-1],[4],[True]):
+        with pytest.raises(Exception,match='active capture slots'):read_response_residual(capture,slots)
+    with pytest.raises(ValueError,match='readback mode'):read_response_residual(capture,[0],mode='unchecked')
+    assert not reads
