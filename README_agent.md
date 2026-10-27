@@ -53,6 +53,30 @@ bindings. The UI's **Read comparisons** shows saved baseline/candidate/control
 answers without inference or a live GPU session. Pending, incomplete and failed
 arms remain explicit. Reading evidence does not promote a recipe.
 
+Exact auxiliary files are also on the Hub: `persona_preset_overnight_plan.json`,
+`persona_preset_columns.json`, `persona_preset_optimized_columns.json`,
+`persona_batch_optimized_qualification.json`, and
+`persona_batch_optimized_compatibility.json`. Download at one pinned revision and
+preserve their bytes. The column is a checkpoint-derived numeric asset, subject
+to upstream model terms. Its read-only vector parity record is distinct from
+the serving qualification receipt. Do not infer portable runtime qualification
+from downloading these files.
+
+`persona_perturbation_mapping.py` captures one unsteered answer per authored
+discovery row (2,443 total, 2,048-token budget), retaining final-prefill activations
+and all-layer response residual summaries. It excludes all 629 heldout rows.
+Its separate PriorityQueue checks the five fixed study databases and interactive
+viewer tables before claiming and again before HTTP submission. Foreground work
+or an unreadable priority database blocks new claims; submitted batches drain.
+Only demonstrably unsubmitted claims may be released. The existing Manager and
+GPU service remain unchanged. The reference run has finite 07:58 dispatch and
+08:00 PDT publication deadlines. Its public file is
+`persona_perturbation_mapping_public.json`: original synthetic inputs, answers,
+status and capture hashes, with raw-array coverage explicitly excluded. Uploads
+occur at 48-terminal-job milestones and final/deadline, with durable intent and
+commit-pinned verification. The source pins this corpus revision and runtime
+gate; a fork must configure and qualify its own admitted workers.
+
 `persona_preset_publication.py --root PATH --until EPOCH --publish` publishes
 `persona_preset_overnight_public.json` after 48 terminal answers, eight review
 groups, evaluation changes and at deadline. It reads only the allowlisted

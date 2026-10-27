@@ -14,6 +14,12 @@ The scene browser now includes **3,072 original prompts authored with GPT-6.1 Te
 
 An overnight study targets **up to eight distinct presets**, with 960 discovery responses and up to 384 fresh confirmation responses. A further pass can test distributed interventions across six layers on fresh scenes. It keeps successful incumbents when a challenger fails. The viewer shows experimental and automatically qualified candidates separately; **Load exact recipe** preserves the tested layers, doses and phase. **Read comparisons** shows saved answers for a chosen scene and seed, including unfinished or failed arms, without starting inference. Qualification requires consistent behavioral differences, factual fidelity, coherence and separation from other accepted presets on the fixed battery. It is automatic model evaluation, not human certification or a promise about a long-term relationship. No result is promoted just to reach eight. [Answers and evaluation progress](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_preset_overnight_public.json) are published in batches.
 
+A lower-priority baseline sweep captures activations and answers for the new
+collection's 2,443 discovery prompts. Its 629 held-out prompts remain excluded.
+This queue yields to persona studies and interactive comparisons, and publishes
+[completed batches](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_perturbation_mapping_public.json).
+These are baseline observations for association research, not persona validation.
+
 ## Start without a GPU
 
 You can inspect prompts, analyze published measurements, and develop evaluation code on an ordinary computer. You do not need to load the model to use the public [Hugging Face dataset](https://huggingface.co/datasets/Atlas3D/character-creation-big-five). The [GitHub repository](https://github.com/Atlas3DSS/Character-Creation) supplies the workbench and analysis code; the Hub repository supplies the public data and published research artifacts.
