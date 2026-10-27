@@ -203,4 +203,91 @@ class DirectionValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError): self.bank.program([first,second])
 
 
+class FitAggregationRegressionTests(unittest.TestCase):
+    def test_fit_preserves_scene_style_keys_and_equal_scene_contrasts(self):
+        from unittest.mock import patch
+        import persona_contrastive as module
+        data, scene_sha = scenes(ROOT)
+        binding = dict(model_identity='a'*64, runtime_identity='b'*64, prepared_identity='c'*64)
+        columns = np.zeros((5120, 2)); columns[0, 0] = columns[1, 1] = 1
+        class Bank:
+            def layer(self, layer):
+                return {'down_columns': columns, 'neuron_ids': np.array([17, 29])}
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); (root/'results').mkdir()
+            batches = build_batches(data, binding, 'development')
+            plan = dict(schema='synthetic-fit', stage='development', state='complete',
+                        binding=binding, model_id='synthetic', scene_sha256=scene_sha,
+                        policy=module.POLICY, direction_artifact=None, qualification_sha256='d'*64,
+                        batches=[dict(index=i, input=b, state='complete', result={'cells':[]})
+                                 for i,b in enumerate(batches)])
+            expected_sources = {}; artifacts = {}
+            for batch in plan['batches']:
+                for spec in batch['input']['cells']:
+                    record = spec['_record']; style = record['arm']; scene = record['scene_id']
+                    i = next(j for j,row in enumerate(data['development']) if row['id']==scene)
+                    # Unequal response lengths must NOT weight the per-scene means.
+                    count = {'baseline':1, 'A':i+1, 'B':2*i+3}[style]
+                    mean = np.zeros((64,5120), dtype=np.float64)
+                    baseline = np.array([10*i, -i], dtype=float)
+                    delta = {'baseline':np.zeros(2), 'A':np.array([i+1,2.]),
+                             'B':np.array([-3.,2*(i+1)])}[style]
+                    mean[:,:2] = np.arange(1,65)[:,None]*(baseline+delta)
+                    consumed = np.arange(20,20+count,dtype=np.int64)
+                    generated = np.append(consumed,99); positions=np.arange(3,3+count)
+                    request_sha = hashlib.sha256((scene+':'+style).encode()).hexdigest()
+                    path = root/'results'/f'{scene}_{style}.npz'
+                    np.savez_compressed(path, response_residual_mean=mean,
+                        response_residual_sum=mean*count, response_residual_count=count,
+                        response_residual_mean_defined=True, response_consumed_token_ids=consumed,
+                        generated_token_ids=generated, response_consumed_positions=positions,
+                        prompt_token_ids=np.arange(3), request_sha256=request_sha, **binding)
+                    sha = module.file_sha(path); artifacts[sha] = path
+                    artifact = dict(sha256=sha, request_sha256=request_sha)
+                    capture = dict(artifact=artifact, consumed_generated_tokens=count)
+                    for field, values in [('consumed_token_ids_sha256',consumed),
+                                          ('generated_token_ids_sha256',generated),
+                                          ('consumed_positions_sha256',positions)]:
+                        capture[field] = hashlib.sha256(np.asarray(values,dtype='<i8').tobytes()).hexdigest()
+                    batch['result']['cells'].append({'output':{'response_capture':capture,
+                        'provenance':{'request_sha256':request_sha}}})
+                    expected_sources[(scene,style)] = (count, sha, request_sha)
+            plan['input_sha256'] = input_digest(plan)
+            plan_path=root/'results/persona_contrastive_development.json'
+            plan_path.write_text(json.dumps(plan))
+            with patch.object(module,'scenes',return_value=(data,scene_sha)), \
+                 patch.object(module.ModelSpec,'load',return_value=None), \
+                 patch.object(module,'VectorBank',return_value=Bank()), \
+                 patch.object(module,'validate_result'), \
+                 patch.object(module,'artifact_local',side_effect=lambda root,a:artifacts[a['sha256']]):
+                module.fit(root)
+                with np.load(root/'results/persona_response_directions.npz',allow_pickle=False) as result:
+                    expected_a=np.zeros((64,5120)); expected_b=np.zeros((64,5120))
+                    expected_a[:,:2]=np.arange(1,65)[:,None]*[4.5,2.]
+                    expected_b[:,:2]=np.arange(1,65)[:,None]*[-3.,9.]
+                    np.testing.assert_array_equal(result['direction_A'],expected_a)
+                    np.testing.assert_array_equal(result['direction_B'],expected_b)
+                    metadata=json.loads(str(result['metadata']))
+                actual={(r['scene_id'],r['style']):(r['consumed_tokens'],r['artifact_sha256'],r['request_sha256'])
+                        for r in metadata['sources']}
+                self.assertEqual(len(metadata['sources']),24)
+                self.assertEqual(actual,expected_sources)
+                self.assertEqual(metadata['development_sha256'],module.file_sha(plan_path))
+                self.assertEqual(metadata['scene_sha256'],scene_sha)
+                ranking=json.loads((root/'results/persona_response_contrasts.json').read_text())['ranking']
+                self.assertEqual(ranking['A']['alignment_coverage'],128)
+                self.assertAlmostEqual(ranking['B']['layer_contrast_l2'][0],np.sqrt(90))
+                # Fit must also enforce actual counts and token hashes, despite the
+                # isolated endpoint/result validator being mocked in this regression.
+                capture=plan['batches'][0]['result']['cells'][0]['output']['response_capture']
+                original=capture['consumed_generated_tokens'];capture['consumed_generated_tokens']=original+1
+                plan_path.write_text(json.dumps(plan))
+                with self.assertRaisesRegex(ValueError,'averaging count'):
+                    module.fit(root)
+                capture['consumed_generated_tokens']=original
+                capture['generated_token_ids_sha256']='0'*64;plan_path.write_text(json.dumps(plan))
+                with self.assertRaisesRegex(ValueError,'token/position hash'):
+                    module.fit(root)
+
+
 if __name__=='__main__': unittest.main()

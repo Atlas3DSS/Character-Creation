@@ -15,6 +15,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import math
 import os
+import re
 import sys
 import numpy as np
 from pathlib import Path
@@ -123,6 +124,76 @@ def verify_endpoint(descriptor: dict, endpoint: dict) -> dict:
     if endpoint.get("runtime_identity") and flare.get("model_identity") != endpoint["model_identity"]:
         raise ValueError("Diagnostic server omitted its model identity")
     return flare
+
+
+def response_study_summary(root):
+    """Read-only projection of explicitly named authored-study artifacts."""
+    def load(name):
+        path = root / 'results' / name
+        if not path.exists(): return None
+        if path.is_symlink() or path.stat().st_size > 128 * 1024**2: return {'state': 'unavailable'}
+        try:
+            value = json.loads(path.read_text())
+            return value if isinstance(value, dict) else {'state': 'unavailable'}
+        except (ValueError, OSError): return {'state': 'unavailable'}
+    def label(value):
+        return value if isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_. -]{1,100}', value) else None
+    def number(value):
+        return value if type(value) in (int, float) and math.isfinite(value) else None
+    def campaign(name, expected):
+        data = load(name)
+        if data is None: return {'state': 'not_started', 'expected': expected, 'complete': 0, 'batches': []}
+        batches=[];complete=0
+        for row in data.get('batches', []):
+            cells=row.get('result', {}).get('cells', [])
+            done=sum(c.get('state')=='complete' and c.get('output',{}).get('complete') is True for c in cells)
+            complete+=done;spec=row.get('input',{});first=(spec.get('cells') or [{}])[0].get('_record',{})
+            identity=row.get('batch_id')
+            batches.append({'id': identity if isinstance(identity,str) and re.fullmatch('[0-9a-f]{32}',identity) else None,
+                'index':number(row.get('index')), 'scene':label(first.get('scene_id')), 'split':label(first.get('split')),
+                'replay':any('replay_of' in c.get('_record',{}) for c in spec.get('cells',[])),
+                'seed':number(spec.get('seed')), 'state':label(row.get('state')), 'complete':done, 'total':len(spec.get('cells',[]))})
+        return {'state':label(data.get('state')) or 'unavailable','expected':expected,'complete':complete,'batches':batches}
+    development=campaign('persona_contrastive_development.json',24)
+    pilot=campaign('persona_contrastive_pilot.json',256)
+    directions=load('persona_response_contrasts.json')
+    analysis=load('persona_pilot_analysis.json');splits={}
+    for split in ('discovery','heldout'):
+        source=(analysis or {}).get('splits',{}).get(split)
+        if not isinstance(source,dict): continue
+        contrasts={}
+        for name,metrics in source.get('paired_contrasts',{}).items():
+            if not re.fullmatch(r'(?:A|B|A_reverse|B_reverse|random)_vs_(?:baseline|random|A_reverse|B_reverse)',name):continue
+            contrasts[name]={}
+            for metric in ('dry_wit','attentive_candor','fidelity_issue','fidelity_uncertain','coherence_issue','coherence_uncertain'):
+                value=metrics.get(metric,{})
+                contrasts[name][metric]={'mean':number(value.get('mean')),'ci95':[number(v) for v in value.get('ci95',[])[:2]],'n_scenes':number(value.get('n_scenes'))}
+        splits[split]={'n_scenes':number(source.get('n_scenes')),'paired_contrasts':contrasts}
+    propagation=load('persona_propagation.json');measurements=[]
+    for context in (propagation or {}).get('results',[]):
+        for direction in context.get('directions',[]):
+            metrics=[]
+            for m in direction.get('metrics',[]):
+                if m.get('layer') not in (31,32,48,63) or m.get('lag') not in (0,1,2,4,8):continue
+                metrics.append({k:number(m.get(k)) for k in ('layer','lag','small_symmetric_derivative_l2','large_symmetric_derivative_l2','even_response_l2_at_point1')})
+            measurements.append({'context':label(context.get('context_id')),'direction':label(direction.get('direction_id')),'metrics':metrics})
+    repair_data=load('persona_repair_analysis.json');repair_summary=None
+    if repair_data is not None:
+        repair_summary={'study':campaign('persona_repair_pilot.json',42),'arms':{}}
+        for arm in ('baseline','reference','half','quarter','random_half','random_quarter'):
+            row=repair_data.get('arms',{}).get(arm,{})
+            repair_summary['arms'][arm]={'n':number(row.get('n')),
+                'fidelity':{state:number(row.get('fidelity',{}).get(state,0)) for state in ('ok','issue','uncertain')},
+                'coherence':{state:number(row.get('coherence',{}).get(state,0)) for state in ('ok','issue','uncertain')}}
+    rating=load('persona_self_rating_analysis.json')
+    rating_summary=None
+    if rating is not None:
+        rating_summary={'n_selected':number(rating.get('n_selected')),'n_valid':number(rating.get('n_valid')),'metrics':{}}
+        for metric in ('dry_wit','attentive_candor'):
+            rating_summary['metrics'][metric]={k:number(rating.get('metrics',{}).get(metric,{}).get(k)) for k in ('spearman','within_scene_centered_spearman','ceiling_fraction')}
+    return {'development':development,'pilot':pilot,'directions_available':bool((directions or {}).get('ranking')),
+            'analysis':splits or None,'propagation':{'state':label((propagation or {}).get('state')) or 'not_available','measurements':measurements},
+            'self_rating':rating_summary,'repair':repair_summary,'automatic_default_promotion':False}
 
 
 class Explorer:
@@ -317,8 +388,11 @@ class Explorer:
             stat = path.stat()
             supplement = self.root / 'data/persona_adult_sexuality.json'
             extra_bytes = supplement.read_bytes() if supplement.exists() else b'[]'
+            diagnostic_path = self.root / 'data/persona_personality_probes.json'
+            diagnostic_bytes = diagnostic_path.read_bytes() if diagnostic_path.exists() else b''
+            diagnostic_digest = hashlib.sha256(diagnostic_bytes).hexdigest()
             extra_digest = hashlib.sha256(extra_bytes).hexdigest()
-            signature = (hashlib.sha256(manifest_bytes).hexdigest(), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, extra_digest)
+            signature = (hashlib.sha256(manifest_bytes).hexdigest(), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, extra_digest, diagnostic_digest)
             if signature == self.corpus_signature:
                 return self.corpus_cache, self.corpus_binding
             raw = path.read_bytes()
@@ -329,7 +403,13 @@ class Explorer:
             extra_rows = json.loads(extra_bytes)
             if not isinstance(extra_rows, list) or any(not isinstance(r, dict) or r.get('corpus') != 'adult_sexuality' for r in extra_rows):
                 raise ValueError('Invalid adult sexuality supplement')
-            for row in [json.loads(line) for line in raw.splitlines() if line.strip()] + extra_rows:
+            diagnostic_rows = []
+            if diagnostic_bytes:
+                from persona_personality_probes import load_suite, registered_rows
+                suite = load_suite(diagnostic_path)
+                if diagnostic_path.read_bytes() != diagnostic_bytes: raise ValueError('Diagnostic suite changed during publication')
+                diagnostic_rows = registered_rows(suite)
+            for row in [json.loads(line) for line in raw.splitlines() if line.strip()] + extra_rows + diagnostic_rows:
                 if (not isinstance(row, dict) or row.get('schema') != 'character-creation.manager-corpus.v1'
                         or not isinstance(row.get('id'), str) or row['id'] in rows
                         or row['id'] != canonical_digest({key: value for key, value in row.items() if key != 'id'})
@@ -348,7 +428,7 @@ class Explorer:
             if not rows or not self.corpus_cache.keys() <= rows.keys():
                 raise ValueError('Corpus publication must preserve existing immutable records')
             self.corpus_cache, self.corpus_signature = rows, signature
-            self.corpus_binding = {'corpus_sha256': digest, 'manifest_sha256': signature[0], 'supplement_sha256': extra_digest}
+            self.corpus_binding = {'corpus_sha256': digest, 'manifest_sha256': signature[0], 'supplement_sha256': extra_digest, 'personality_diagnostics_sha256': diagnostic_digest}
             return self.corpus_cache, self.corpus_binding
 
     def corpora(self):
@@ -789,7 +869,7 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     body = (app.root / "ui/atlas-logo.png").read_bytes()
                     self.send_response(200); self.send_header("Content-Type", "image/png")
                     self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
-                elif path.path in ('/persona_neuron_labels.js','/persona_neuron_labels.css','/persona_coherence.js','/persona_coherence.css','/persona_overnight.js', '/persona_literature.js', '/persona_literature.css', '/persona_concept_controls.js', '/persona_concept_controls.css', '/persona_activation_search.js', '/persona_activation_search.css', '/persona_prompt_browser.js', '/persona_prompt_browser.css', '/persona_concepts.js', '/persona_trace.js', '/persona_trace.css', '/persona_atlas.js', '/persona_atlas.css', '/persona_graph.js', '/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css'):
+                elif path.path in ('/persona_response_study.js','/persona_neuron_labels.js','/persona_neuron_labels.css','/persona_coherence.js','/persona_coherence.css','/persona_overnight.js', '/persona_literature.js', '/persona_literature.css', '/persona_concept_controls.js', '/persona_concept_controls.css', '/persona_activation_search.js', '/persona_activation_search.css', '/persona_prompt_browser.js', '/persona_prompt_browser.css', '/persona_concepts.js', '/persona_trace.js', '/persona_trace.css', '/persona_atlas.js', '/persona_atlas.css', '/persona_graph.js', '/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css'):
                     name = path.path[1:]
                     body = (app.root / 'ui' / name).read_bytes()
                     content_type = 'application/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8'
@@ -820,6 +900,7 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif path.path == '/api/trace/search': self.send(app.traces.search(parse_qs(path.query).get('q',[''])[0]))
                 elif path.path == '/api/traces': self.send(app.traces.listing())
                 elif path.path == '/api/trace': self.send(app.traces.get(parse_qs(path.query).get('id',[''])[0]))
+                elif path.path == "/api/response-study": self.send(response_study_summary(app.root))
                 elif path.path == "/api/state": self.send(app.state())
                 elif path.path == '/api/capacity': self.send(app.capacity())
                 elif path.path == '/api/sculptor': self.send(app.sculptor.catalog())
@@ -857,6 +938,9 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif path.path == '/api/concepts':
                     query = parse_qs(path.query)
                     self.send(app.concepts.query(q=query.get('q',[''])[0], corpus=query.get('corpus',['all'])[0], limit=int(query.get('limit',['20'])[0])))
+                elif path.path == '/api/personality-probes':
+                    from persona_personality_probes import load_suite
+                    self.send(load_suite(app.root / 'data/persona_personality_probes.json'))
                 elif path.path == '/api/prompt-browser':
                     query = parse_qs(path.query, keep_blank_values=True)
                     options = {key: query[key][0] for key in ('corpus','split','q','group','trait','facet','domain','category','origin') if key in query}

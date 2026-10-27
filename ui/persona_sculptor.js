@@ -147,8 +147,9 @@
     refs.castSeed = input('number', 7035); Object.assign(refs.castSeed, {min: '0', max: '4294967295', step: '1', required: true});
     refs.castBudget = select([['2048', '2,048 tokens'], ['3072', '3,072 tokens'], ['4096', '4,096 tokens']], 'Cast comparison answer budget');
     refs.castRun = node('button', 'Compare this cast', 'ps-primary'); refs.castRun.type = 'submit'; refs.castHint = hint('');
-    refs.castCompare.append(node('h3', 'Give this cast a prompt'), field('One prompt for the baseline and every selected candidate', refs.castPrompt), row(field('Shared seed', refs.castSeed), field('Answer budget', refs.castBudget), refs.castRun), refs.castHint,
+    refs.castCompare.append(node('h3', 'Give this cast a prompt'), diagnosticPicker(refs.castPrompt, 'Cast'), field('One prompt for the baseline and every selected candidate', refs.castPrompt), row(field('Shared seed', refs.castSeed), field('Answer budget', refs.castBudget), refs.castRun), refs.castHint,
       button('Advanced: compare a shared prompt battery ↓', () => scroll(refs.batterySection), 'ps-link-button'));
+    refs.castCompare.append(button('Clear prompt', () => {refs.castPrompt.value = ''; diagnosticPickers[0]?.reset(); updateControls(); refs.castPrompt.focus();}, 'ps-secondary'));
     refs.castCompare.onsubmit = event => {event.preventDefault(); runCampaign([{prompt: refs.castPrompt.value}], {seed: Number(refs.castSeed.value), max_tokens: Number(refs.castBudget.value)});};
     refs.gallerySection.append(refs.castCompare);
 
@@ -206,9 +207,9 @@
     ];
     refs.presetScenario = select([['', 'Choose a scenario…'], ...scenarios.map(([label], i) => [String(i), label])], 'Preset comparison scenario');
     refs.presetPrompt = node('textarea'); refs.presetPrompt.rows = 4; refs.presetPrompt.maxLength = 20000; refs.presetPrompt.required = true; refs.presetPrompt.value = scenarios[0][1];
-    refs.presetScenario.onchange = () => {if (refs.presetScenario.value !== '') refs.presetPrompt.value = scenarios[Number(refs.presetScenario.value)][1];};
+    refs.presetScenario.onchange = () => {if (refs.presetScenario.value !== '') {diagnosticPickers[1]?.reset(); refs.presetPrompt.value = scenarios[Number(refs.presetScenario.value)][1];}};
     refs.presetPrompt.oninput = () => {refs.presetScenario.value = '';};
-    const form = node('form'); form.append(field('Start with a scenario', refs.presetScenario), field('Shared editable prompt for the next comparison', refs.presetPrompt));
+    const form = node('form'); form.append(diagnosticPicker(refs.presetPrompt, 'Preset'), field('Start with a scenario', refs.presetScenario), field('Shared editable prompt for the next comparison', refs.presetPrompt));
     refs.presetSeed = input('number', 7035); Object.assign(refs.presetSeed, {min: '0', max: '4294967295', step: '1', required: true});
     refs.presetBudget = select([['2048', '2,048 tokens'], ['3072', '3,072 tokens'], ['4096', '4,096 tokens']], 'Preset comparison answer budget');
     refs.presetRun = node('button', 'Run baseline + presets', 'ps-primary'); refs.presetRun.type = 'submit'; refs.presetRun.disabled = true;
@@ -221,7 +222,7 @@
       const saved = presetCompare.history.get(id)?.input;
       if (saved) {
         presetCompare.selected = new Set(saved.preset_ids || []); refs.presetScenario.value = '';
-        if (typeof saved.prompt === 'string') refs.presetPrompt.value = saved.prompt;
+        if (typeof saved.prompt === 'string') {diagnosticPickers[1]?.reset(); refs.presetPrompt.value = saved.prompt;}
         if (Number.isInteger(saved.seed)) refs.presetSeed.value = String(saved.seed);
         if (Number.isInteger(saved.max_tokens)) {
           if (![...refs.presetBudget.children].some(option => Number(option.value) === saved.max_tokens)) {const option = node('option', `${saved.max_tokens.toLocaleString()} tokens`); option.value = String(saved.max_tokens); refs.presetBudget.append(option);}
@@ -253,6 +254,7 @@
   }
   function clearPresetComparison() {
     clearTimeout(presetCompare.timer); presetCompare.serial++; presetCompare.draftSerial = (presetCompare.draftSerial || 0) + 1;
+    diagnosticPickers[1]?.reset();
     presetCompare.selected.clear(); presetCompare.batch = null; refs.presetPrompt.value = ''; refs.presetScenario.value = ''; refs.presetHistory.value = '';
     refs.presetAnswers.replaceChildren(); refs.presetComparisonEvidence.replaceChildren(); refs.presetCompareStatus.textContent = 'Draft cleared. Saved comparisons remain in history.';
     renderPresetChoices(); refs.presetPrompt.focus();
@@ -730,9 +732,48 @@
       schedulePoll();
     }, app.campaign && !terminal.has(app.campaign.state) ? 2500 : 10000);
   }
+  let diagnosticSuite = null, diagnosticLoading = null;
+  const diagnosticPickers = [];
+  function diagnosticPicker(target, label) {
+    const box = node('div', undefined, 'ps-diagnostic-picker');
+    const axis = select([['', 'Choose a diagnostic axis…']], label + ' diagnostic axis');
+    const cases = select([['', 'Choose a situation…']], label + ' diagnostic situation');
+    const description = hint('Same scene; only the activation recipe changes. Compare with the baseline, keeping correctness separate from manner.');
+    const evidence = node('details'); evidence.append(node('summary', 'Facts, unknowns & observations')); const content = node('div'); evidence.append(content); evidence.hidden = true;
+    const reset = () => {axis.value = ''; cases.replaceChildren(new Option('Choose a situation…', '')); evidence.hidden = true; description.textContent = 'Same scene; only the activation recipe changes. Compare with the baseline, keeping correctness separate from manner.';};
+    axis.onchange = () => {
+      cases.replaceChildren(new Option('Choose a situation…', '')); evidence.hidden = true;
+      for (const item of diagnosticSuite?.cases || []) if (item.axis === axis.value) cases.append(new Option(`${item.title} · ${item.pressure === 'higher' ? 'More' : 'Less'} pressure`, item.id));
+      const selected = diagnosticSuite?.axes.find(a => a.id === axis.value);
+      description.textContent = selected ? selected.description + ' Correctness and manner remain separate.' : 'Select an axis, then a situation. Text remains shared across all arms.';
+    };
+    target.addEventListener('input', () => {evidence.hidden = true;});
+    cases.onchange = () => {
+      const item = diagnosticSuite?.cases.find(c => c.id === cases.value); if (!item) return;
+      target.value = item.prompt; target.dispatchEvent(new Event('input', {bubbles: true}));
+      content.replaceChildren();
+      for (const [title, values] of [['Facts to preserve', (item.fact_contract.facts || []).map(f => f.expected || f.claim || f.source_span)], ['Keep uncertain', item.fact_contract.unknowns || []], ['Distinctions to preserve', item.fact_contract.required_distinctions || []], ['Manner to observe', item.observations || []]]) {if (!values.length) continue; content.append(node('strong', title)); const list = node('ul'); values.forEach(value => list.append(node('li', value))); content.append(list);}
+      evidence.hidden = false; updateControls();
+    };
+    box.append(node('strong', 'Personality diagnostics · shared input'), row(field('Diagnostic axis', axis), field('Situation', cases)), description, evidence);
+    diagnosticPickers.push({axis, reset}); return box;
+  }
+  async function loadDiagnostics() {
+    if (diagnosticSuite) return;
+    if (!diagnosticLoading) diagnosticLoading = request('/api/personality-probes').then(value => {
+      diagnosticSuite = value;
+      for (const picker of diagnosticPickers) for (const axis of value.axes) picker.axis.append(new Option(human(axis.id), axis.id));
+      const starter = value.cases[0]?.prompt;
+      const old = 'A friend is excited about a plan that has an obvious flaw. Explain the problem and help them decide what to do next.';
+      if (starter && refs.castPrompt.value === old) {diagnosticPickers[0]?.reset(); refs.castPrompt.value = starter;}
+      if (starter && refs.presetPrompt.value === old) {diagnosticPickers[1]?.reset(); refs.presetPrompt.value = starter;}
+    }).catch(error => {notice('Diagnostic battery unavailable: ' + error.message);}).finally(() => {diagnosticLoading = null;});
+    await diagnosticLoading;
+  }
   async function open() {
     if (!ensure()) return;
     if (!app.meta) await loadMeta();
+    await loadDiagnostics();
     await Promise.all([refreshFleet(), loadPresetComparisonHistory()]); await refreshPresetAvailability(); schedulePoll();
     if (!presetCompare.deepLinkHandled) {
       presetCompare.deepLinkHandled = true;
@@ -741,6 +782,6 @@
       else if (id) refs.presetCompareStatus.textContent = 'The linked comparison is not present in saved preset history.';
     }
   }
-  async function preloadPresetPrompt(text) {presetCompare.deepLinkHandled = true; await open(); refs.presetPrompt.value = String(text); refs.presetScenario.value = ''; scroll(refs.presetCompare); refs.presetPrompt.focus({preventScroll: true});}
+  async function preloadPresetPrompt(text) {presetCompare.deepLinkHandled = true; await open(); diagnosticPickers[1]?.reset(); refs.presetPrompt.value = String(text); refs.presetScenario.value = ''; scroll(refs.presetCompare); refs.presetPrompt.focus({preventScroll: true});}
   window.PersonaSculptor = {open, preloadPresetPrompt};
 })();

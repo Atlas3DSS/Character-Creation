@@ -4,6 +4,15 @@ This document is the machine-oriented entry point. [README_human.md](README_huma
 explains the motivation and workflow. Source: [GitHub](https://github.com/Atlas3DSS/Character-Creation).
 Public data: `Atlas3D/character-creation-big-five` on Hugging Face, repository type `dataset`.
 
+Product intent: character creation for a persistent companion. Preserve the progression
+from understandable starter presets and trait adjustments to optional neuron/feature,
+dose and phase controls. Evaluate observable differences without treating a friendly
+personality as the only successful outcome. Keep factual fidelity and coherence separate
+from agreeableness, sarcasm, hostility, assertiveness and warmth. Preset/cast comparisons
+hold the user prompt, seed and generation budget fixed; they do not inject a persona
+system prompt or KV control. Saved activation recipes are checkpoint-bound, not universal
+personality descriptions or a claim that long-term companion memory is implemented.
+
 ## Resolve and pin before reading
 
 ```python
@@ -188,6 +197,21 @@ operates between full responses, not a proven live-token controller. Interaction
 exploratory until independently confirmed.
 
 ## Arbitrary-input activation and matched scene workflow
+
+`data/persona_personality_probes.json` (Hub: `persona_personality_probes.json`)
+contains 24 new authored discovery prompts across six axes: correction, social
+pressure, criticism, reassurance, conflict and uncertainty. They form 12 matched
+low/high pressure families, not 24 independent scenes. Each has an exact prompt
+SHA, source-span fact contract, unknowns and descriptive behavioral observations.
+`persona/persona_personality_probes.py` validates/exports registry rows with empty
+`system`, no KV control and no persona instruction. `/api/personality-probes` serves
+the validated suite; Persona Studio exposes axis/situation pickers for cast and
+preset comparisons. Selection fills the shared editable prompt; only an explicit
+run submits inference. Registered browsing uses corpus `personality_diagnostics`.
+The suite is newly available, **not measured in the completed 256-answer pilot**.
+Report agreement with a false statement as a correctness issue independently of
+whether the response is gentle, blunt, sarcastic or hostile. Do not infer a validated
+neuron label or user-preference score from the authored axis names.
 
 The existing Live activation search accepts whole/partial prompts, phrases, ideas,
 feelings and thoughts. Highlighting a span makes that span the next input. A compatible
@@ -507,6 +531,78 @@ for discovery and heldout, and proposes follow-up doses from discovery only. Mod
 judgments are fallible, intervals are descriptive/unadjusted, and no preset is
 promoted automatically. Original NPZ captures and failed attempts stay auditable.
 Public exports accept only the frozen authored scenes and omit local paths.
+
+Completed reference run (2026-10-26): 24 development answers, 256 pilot answers,
+90 native response/pulse qualification requests, 60 fixed-token propagation captures,
+and 48 discovery-only self-ratings. Four preregistered cross-GPU replays matched exact
+generated-token hashes and text. Current runtime identity is
+`f6ab2595295abe692321cb7c4c5248287c661c7f4e2e5af4eb478f79e5d38954`;
+prepared identity is `b9665f876d96a82c7e8d0a77146f9e8533775188b64a0de4907808fad6bcceb4`.
+Learned KV also passed fresh 72-request qualification for this binding in
+`results/phantom-qualification-12b894292d5d40f4b15fdfb9c89e567e.json`,
+SHA-256 `b8855ff4cce8db5489c874a74ba0ec266576d22b24de6b5d6028af0934c5cebe`.
+
+The stateless, tools-disabled Opus5.5 critic received only anonymous answers,
+authored scenes and the rubric. On heldout scenes, A's dry-wit contrast was
++0.889 versus baseline (95% scene-bootstrap interval [0.333,1.500]) and +0.833
+versus random ([0.278,1.500]). B's warmth contrast was +0.444 versus baseline
+([0.167,0.722]) but +0.167 versus random ([-0.167,0.500]). These unadjusted,
+descriptive intervals do not certify quality. Observed detail/coherence issues and
+uncertainty prevent automatic promotion. Discovery and heldout remain separate.
+
+Self-rating diagnostics (`persona/persona_self_rating.py`) use four discovery
+families × two seeds × six arms, rated in fresh unsteered requests on a 0–9 scale.
+All 48 ratings parsed. Spearman agreement with the blinded external judge was 0.575
+for dry wit and 0.427 for attentive candor; within-scene centered values were 0.538
+and 0.323. No ceiling ratings occurred. The 48 dependent observations do not
+establish reward quality, judge calibration or heldout generalization. No self-reward
+optimization or model training was performed.
+
+`persona_response_study_public.json` is the public index: model/runtime/preparation
+bindings, exact file hashes/sizes, policy, 24 development answers, four replay answers,
+contrastive rankings, qualification, propagation summaries and 48 joined self-ratings.
+`persona_pilot_public.json` contains the 252 judged answers and split-specific analysis.
+`persona_response_directions.npz` stores both 64×5120 development directions.
+`persona_response_capture_bundle.npz` contains:
+
+| Array | Shape / semantics |
+| --- | --- |
+| `response_mean` | `[280,64,5120]` FP64 means over consumed generated tokens only. |
+| `response_count` | `[280]` int64 consumed-token counts; prompt and final sampled-but-unconsumed token excluded. |
+| `propagation_residual` | `[60,5,4,5120]` FP32 fixed-input block-output snapshots. |
+| `propagation_positions`, `propagation_token_ids` | `[60,5]` exact encoded positions and token IDs. |
+| `propagation_layers` | `[4]`: 31,32,48,63. |
+| `calibration_residual_median` | `[64]` checkpoint-bound dose scales. |
+| `metadata` | JSON scalar with exact row joins, source/artifact/request/token hashes and bindings. |
+
+Download at a pinned Hub revision; verify the index hashes before loading with
+`numpy.load(..., allow_pickle=False)`. Join answer rows by scene, seed and arm;
+exclude replay rows when estimating effects. To reproduce the fitted directions,
+average each development scene's style-minus-baseline response means, giving each
+scene equal weight. Compare the result to `direction_A`/`direction_B` in the direction
+artifact. The bundle's complete source residual means are distinct from selected
+neuron trajectories or all-neuron-by-all-token captures.
+
+`persona/persona_response_bundle.py` validates original native NPZ/provenance files
+on the capture host and extracts only the approved authored data. Pulse vectors
+are compared exactly after the runtime's FP32 conversion; sub-FP32 NumPy norm
+rounding differences do not change the native intervention. One FP32 ULP does fail.
+`persona/persona_response_release.py` creates the public index only after a verified
+bundle publication receipt; it has no inference or upload side effects. The Studies
+panel reads `/api/response-study` and links existing saved six-card batches.
+
+`persona/persona_repair.py` ran a separate 42-answer outcome-guided follow-up:
+seven discovery positive-A/B failures × baseline, original +0.1, +0.05, +0.025,
+random +0.05, random +0.025. All 14 baseline/original replays matched exact tokens
+and text. A new stateless blinded Opus5.5 call graded all 42 before its key was read.
+Original/half/quarter dose fidelity issues were 5/3/2 of seven, and coherence issues
+4/0/1; the quarter dose also had one fidelity uncertainty. Baseline and random arms
+had no judged issues, with one uncertainty for quarter random. Dry-wit target means
+were 0.5 for each A dose versus 0.25 for baseline/random across four selected cases;
+B's three selected cases showed no target-score advantage. Selection on previous
+failures and critic variability prevent treating these as general error rates or
+fresh heldout evidence. `persona_repair_public.json` retains the answers, code/arm
+joins, exact design and judge evidence. No default changed or automatic repair ran.
 
 Method sources: [self-reward persona study](https://www.lesswrong.com/posts/LBKjnyKDEwEJ45Wjf/self-reward-can-elicit-diverse-model-personas),
 [response-steering code](https://github.com/fjzzq2002/self-reward/blob/main/scripts/persona_steer.py),

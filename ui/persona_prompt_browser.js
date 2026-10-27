@@ -1,7 +1,7 @@
 /* Shared metadata graph and full-text browser. Never launches inference. */
 (() => {
  'use strict';
- const names={big_five:'Big Five',adult_sexuality:'Adult sexuality · 18+',scotus:'SCOTUS',skippy:'Skippy books'};
+ const names={personality_diagnostics:'Personality diagnostics · shared input',big_five:'Big Five',adult_sexuality:'Adult sexuality · 18+',scotus:'SCOTUS',skippy:'Skippy books'};
  const human=s=>String(s).replaceAll('_',' '), n=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
  const button=(text,fn)=>{const e=n('button',text);e.type='button';e.onclick=fn;return e;};
  function mount(root,{onSelect=()=>{},corpus='big_five'}={}){

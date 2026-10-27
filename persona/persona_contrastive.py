@@ -229,8 +229,8 @@ def fit(root):
                     or not np.array_equal(positions,np.arange(len(arrays['prompt_token_ids']),len(arrays['prompt_token_ids'])+count))
                     or not np.allclose(mean*count,arrays['response_residual_sum'],rtol=1e-13,atol=1e-10)):
                 raise ValueError('Response averaging count/positions differ')
-            for name,key in (('response_consumed_token_ids','consumed_token_ids_sha256'),('generated_token_ids','generated_token_ids_sha256'),('response_consumed_positions','consumed_positions_sha256')):
-                if hashlib.sha256(np.asarray(arrays[name],dtype='<i8').tobytes()).hexdigest()!=capture[key]:raise ValueError('Response token/position hash differs')
+            for name,hash_key in (('response_consumed_token_ids','consumed_token_ids_sha256'),('generated_token_ids','generated_token_ids_sha256'),('response_consumed_positions','consumed_positions_sha256')):
+                if hashlib.sha256(np.asarray(arrays[name],dtype='<i8').tobytes()).hexdigest()!=capture[hash_key]:raise ValueError('Response token/position hash differs')
             if str(arrays['request_sha256'])!=cell['output']['provenance']['request_sha256'] or str(arrays['request_sha256'])!=artifact['request_sha256']:
                 raise ValueError('NPZ request binding differs')
             if any(str(arrays[k])!=v for k,v in plan['binding'].items() if k!='layout_sha256'):raise ValueError('NPZ binding differs')

@@ -5,7 +5,10 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
-from persona_blind_eval import ARMS,analyze,digest,public_export,validate
+from unittest.mock import patch
+from types import SimpleNamespace
+import tempfile
+from persona_blind_eval import ARMS,analyze,digest,public_export,validate,judge_authored
 
 
 class BlindTests(unittest.TestCase):
@@ -92,6 +95,42 @@ class BlindTests(unittest.TestCase):
         self.judgments[0]['evidence']='See /home/person/private'
         self.bind();result=self.analyze()
         with self.assertRaises(ValueError):public_export(self.packet,self.key,self.judgments,self.provenance,result,self.scenes)
+
+    def test_judge_receives_no_arm_key_and_cannot_use_tools(self):
+        receipt={'subtype':'success','is_error':False,'modelUsage':{'claude-opus-5-5':{}},'structured_output':{'judgments':self.judgments}}
+        with tempfile.TemporaryDirectory() as folder,patch('persona_blind_eval.subprocess.run',return_value=SimpleNamespace(returncode=0,stdout=json.dumps(receipt),stderr='')) as run:
+            path=Path(folder)/'attempt.json'
+            judgments,provenance=judge_authored(self.packet,self.key,self.scenes,path)
+            self.assertEqual(judgments,self.judgments)
+            args,kwargs=run.call_args;command=args[0]
+            self.assertEqual(command[command.index('--tools')+1],'')
+            self.assertNotIn('"arm":',kwargs['input'])
+            self.assertNotIn('"split":',kwargs['input'])
+            self.assertEqual(json.loads(path.read_text())['state'],'validated')
+            self.assertEqual(provenance['key_sha256'],digest(self.key))
+            with self.assertRaises(FileExistsError):judge_authored(self.packet,self.key,self.scenes,path)
+            self.assertEqual(run.call_count,1)
+
+    def test_unapproved_corpus_is_rejected_before_external_call(self):
+        altered=deepcopy(self.scenes);altered['evaluation'][0]['prompt']='Unapproved private passage'
+        with tempfile.TemporaryDirectory() as folder,patch('persona_blind_eval.subprocess.run') as run:
+            with self.assertRaises(ValueError):judge_authored(self.packet,self.key,altered,Path(folder)/'attempt.json')
+            run.assert_not_called()
+
+    def test_recovery_only_for_proven_pre_execution_failure(self):
+        receipt={'subtype':'success','is_error':False,'modelUsage':{'claude-opus-5-5':{}},'structured_output':{'judgments':self.judgments}}
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'attempt.json'
+            with patch('persona_blind_eval.subprocess.run',side_effect=FileNotFoundError(2,'No such file or directory')):
+                with self.assertRaises(FileNotFoundError):judge_authored(self.packet,self.key,self.scenes,path)
+            original=json.loads(path.read_text())
+            with patch('persona_blind_eval.subprocess.run',return_value=SimpleNamespace(returncode=0,stdout=json.dumps(receipt),stderr='')):
+                judge_authored(self.packet,self.key,self.scenes,path,recover_spawn_failure=True)
+            self.assertEqual(json.loads(path.read_text())['prior_attempts'],[original])
+            original['stdout']='A process may have returned output';path.write_text(json.dumps(original))
+            with patch('persona_blind_eval.subprocess.run') as run:
+                with self.assertRaises(ValueError):judge_authored(self.packet,self.key,self.scenes,path,recover_spawn_failure=True)
+                run.assert_not_called()
 
 
 if __name__=='__main__':unittest.main()
