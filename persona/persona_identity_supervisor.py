@@ -61,10 +61,10 @@ def post(url, value, timeout=120):
 
 
 def remote_state():
-    units = [f'character-persona-probe-{i}' for i in range(6)] + ['character-identity-sweep']
+    units = [f'character-persona-probe-{i}' for i in range(6)] + ['character-identity-sweep', 'character-label-qualify']
     reply = ssh('systemctl --user is-active ' + ' '.join(units) + f'; cd {shlex.quote(REMOTE)} && {PYTHON} persona_identity_sweep.py status')
     lines = reply.stdout.strip().splitlines()
-    return dict(zip(units, lines[:7])), json.loads(lines[-1]) if lines and lines[-1].startswith('{') else None
+    return dict(zip(units, lines[:8])), json.loads(lines[-1]) if lines and lines[-1].startswith('{') else None
 
 
 def relaunch_workers(log):
@@ -84,6 +84,41 @@ def start_runner(until, log):
                 f'--working-directory={shlex.quote(REMOTE)} --setenv=OMP_NUM_THREADS=4 taskset -c {D["runner_cpus"]} {PYTHON} '
                 f'{shlex.quote(REMOTE + "/persona_identity_sweep.py")} run --until {int(until)} --checkpoint {shlex.quote(D["checkpoint"])}')
     log('runner_started', returncode=reply.returncode, detail=(reply.stdout + reply.stderr)[:200])
+
+
+def label_status():
+    reply = ssh(f'cd {shlex.quote(REMOTE)} && test -f results/label_qualify/qualify.sqlite && {PYTHON} persona_label_qualify.py status')
+    return json.loads(reply.stdout.strip().splitlines()[-1]) if reply.returncode == 0 and reply.stdout.strip() else None
+
+
+def start_labels(until, log):
+    reply = ssh(f'systemd-run --user --unit=character-label-qualify --collect --property=RuntimeMaxSec={WINDOW_MIN * 60} '
+                f'--working-directory={shlex.quote(REMOTE)} --setenv=OMP_NUM_THREADS=2 {PYTHON} '
+                f'{shlex.quote(REMOTE + "/persona_label_qualify.py")} run --until {int(until)} --workers 16')
+    log('labels_started', returncode=reply.returncode, detail=(reply.stdout + reply.stderr)[:200])
+
+
+def publish_labels(log):
+    """Copy v2 evidence beside the panel's registry and add or replace one row per concept; v1 rows stay."""
+    import hashlib
+    listing = ssh(f'ls {shlex.quote(REMOTE)}/results/label_qualify/ | grep "^persona_label_evidence_v2_" || true').stdout.split()
+    registry_path = ROOT / 'results/persona_neuron_labels.json'
+    registry = json.loads(registry_path.read_text())
+    rows = {r['evidence']['artifact']: r for r in registry['labels'] if r.get('evidence', {}).get('artifact', '').startswith('persona_label_evidence_v2_')}
+    passed = []
+    for name in listing:
+        local = ROOT / 'results' / name
+        subprocess.run(['scp', '-q', '-o', 'BatchMode=yes', f"{D['host']}:{REMOTE}/results/label_qualify/{name}", str(local)], timeout=120, check=True)
+        raw = local.read_bytes(); proof = json.loads(raw)
+        rows[name] = {'layer': proof['layer'], 'neuron': proof['neuron'], 'label': proof['label'], 'direction': proof['direction'],
+                      'confidence': proof['confidence'], 'evidence': {'artifact': name, 'sha256': hashlib.sha256(raw).hexdigest()},
+                      'association': {'measurement': proof['measurement'], 'standardized_contrast': proof['frozen_candidate']['standardized_contrast'],
+                                      'steering_sign_validated': False}}
+        if proof['confidence']['calibrated']: passed.append(proof['label'])
+    registry['labels'] = [r for r in registry['labels'] if not r.get('evidence', {}).get('artifact', '').startswith('persona_label_evidence_v2_')] + list(rows.values())
+    temporary = registry_path.with_suffix('.tmp'); temporary.write_text(json.dumps(registry, indent=1)); temporary.replace(registry_path)
+    log('labels_published', evidence=len(rows), passed=sorted(passed))
+    return sorted(passed)
 
 
 def planner_pick(options, status):
@@ -124,7 +159,17 @@ def main():
             state.setdefault('free_at_start', free); used = state['free_at_start'] - free
             state['disk_used_bytes'] = used
             if used > DISK_BUDGET: log('disk_budget_reached', used=used)
-            elif status and queued < LOW_WATER:
+            # Owner order: the core-emotion batch finishes, then label qualification, then further identity batches.
+            running = (status or {}).get('counts', {}).get('running', 0)
+            labels = label_status()
+            if status and not queued and not running and labels and not labels.get('complete'):
+                if units.get('character-label-qualify') != 'active' and workers_up:
+                    start_labels(record['deadline'] - 120, log)
+            finished = (labels or {}).get('concepts', {}).get('done', 0)
+            if finished and finished != state.get('labels_finished_published'):
+                state['labels_passed'] = publish_labels(log); state['labels_finished_published'] = finished
+            if used > DISK_BUDGET: log('disk_budget_reached', used=used)
+            elif status and queued < LOW_WATER and (labels is None or labels.get('complete')):
                 options = [o for o in MENU if o['id'] not in state['queued_menu']]
                 if options:
                     chosen, why = planner_pick(options, status)
