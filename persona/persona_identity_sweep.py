@@ -8,6 +8,10 @@ baseline per sweep. Greedy, 160 tokens, thinking off, no response capture. Runs 
 beside the workers; the explorer queues batches and reads the exported answers.
 A submitted batch whose reply is lost is marked uncertain and never replayed.
 
+Baseline pairs (layer -3, owner 2026-10-27) are unsteered answers to the 40,072 generated Big Five prompts: user message
+only, greedy, seed 0, thinking off, up to 2,048 tokens, text only (their prefill captures already exist). Workers
+alternate identity and baseline batches so both progress; baseline rows have their own export and status counts.
+
 Combos (layer -2) push 2-4 neurons together. Each member carries its own strongest coherent single-push dose (signed);
 the combo scales all members by a ramp fraction that goes UP, 1/8 -> 1/4 -> 1/2, and stops at the first collapse.
 """
@@ -27,6 +31,8 @@ PROMPT = 'who are you'
 LEVELS = (1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125)  # cascade; the 27B collapses near 0.3 at L0, so ±1 alone is mostly empty
 RAMP = (0.125, 0.25, 0.5)  # combos: fraction of each member's own coherent dose, weakest first
 COMBO = -2                  # layer marker of a combo job; its members are in `pushes`
+BASE = -3                   # layer marker of an unsteered baseline pair; its user message is in `prompt`
+BASE_SOURCE, BASE_SWEEP, BASE_TOKENS = 'data/persona_generated_big_five.jsonl', 'baseline40k', 2048
 MAX_TOKENS, SEED, BATCH = 160, 0, 4
 OUT = 'results/identity_sweep'
 
@@ -40,7 +46,7 @@ def connect(root):
         artifact TEXT, artifact_sha256 TEXT, program_sha256 TEXT, error TEXT);
         CREATE INDEX IF NOT EXISTS jobs_state ON jobs(state, created);''')
     columns = {row[1] for row in db.execute('PRAGMA table_info(jobs)')}
-    for name, kind in (('level', 'INT'), ('coherent', 'INT'), ('pushes', 'TEXT'), ('kind', 'TEXT'), ('declined', 'INT')):
+    for name, kind in (('level', 'INT'), ('coherent', 'INT'), ('pushes', 'TEXT'), ('kind', 'TEXT'), ('declined', 'INT'), ('prompt', 'TEXT'), ('source_id', 'TEXT')):
         if name not in columns: db.execute(f'ALTER TABLE jobs ADD COLUMN {name} {kind}')
     return db
 
@@ -119,6 +125,20 @@ def enqueue_combos(root, sweep, combos, db=None):
         return db.total_changes - before
 
 
+def enqueue_baseline(root, db=None):
+    """Adds one unsteered job per generated Big Five prompt (idempotent)."""
+    db = db or connect(root); rows = []
+    for line in (Path(root) / BASE_SOURCE).open():
+        r = json.loads(line)
+        if r.get('system') or not r.get('prompt'): continue
+        identity = hashlib.sha256(json.dumps([BASE_SWEEP, r['id'], SEED, BASE_TOKENS]).encode()).hexdigest()[:32]
+        rows.append((identity, BASE_SWEEP, BASE, -1, 0.0, r['prompt'], r['id'], time.time()))
+    with db:
+        before = db.total_changes
+        db.executemany("INSERT OR IGNORE INTO jobs(id,sweep,layer,neuron,dose,prompt,source_id,state,created) VALUES(?,?,?,?,?,?,?,'queued',?)", rows)
+        return db.total_changes - before
+
+
 def fetch(url, payload=None, timeout=600):
     data = None if payload is None else json.dumps(payload, allow_nan=False).encode()
     request = urllib.request.Request(url, data, {'Content-Type': 'application/json'} if data else {})
@@ -126,11 +146,16 @@ def fetch(url, payload=None, timeout=600):
         return json.loads(reply.read())
 
 
-def claim(root, port):
+def claim(root, port, baseline=False):
+    """One batch of one kind: baseline pairs when asked (else identity work), falling back to the other kind."""
     db = connect(root)
     try:
         db.execute('BEGIN IMMEDIATE')
-        rows = db.execute("SELECT id,layer,neuron,dose,pushes FROM jobs WHERE state='queued' ORDER BY layer=-1 DESC, level DESC, created, id LIMIT ?", (BATCH,)).fetchall()
+        order = ("SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer=-3 ORDER BY created, id LIMIT ?",
+                 "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer!=-3 ORDER BY layer=-1 DESC, level DESC, created, id LIMIT ?")
+        for query in (order if baseline else order[::-1]):
+            rows = db.execute(query, (BATCH,)).fetchall()
+            if rows: break
         db.executemany("UPDATE jobs SET state='running',started=?,port=? WHERE id=?", [(time.time(), port, r[0]) for r in rows])
         db.commit(); return rows
     finally: db.close()
@@ -159,6 +184,7 @@ def finish(root, updates):
 def worker(root, port, bank, until, stop, log):
     from persona_vectors import canonical_digest
     base = f'http://127.0.0.1:{port}'
+    turn = port % 2  # workers alternate identity and baseline batches, half of them starting with each
     while not stop.is_set() and time.time() < until:
         try:
             descriptor = fetch(base + '/v1/models', timeout=10)['data'][0]
@@ -167,13 +193,14 @@ def worker(root, port, bank, until, stop, log):
                 raise ValueError('Native batch capability not qualified')
         except Exception as exc:
             log(port, 'waiting', repr(exc)[:200]); stop.wait(30); continue
-        rows = claim(root, port)
+        turn ^= 1
+        rows = claim(root, port, baseline=bool(turn))
         if not rows:
             stop.wait(15); continue
         requests, programs = [], []
-        for identity, layer, neuron, dose, pushes in rows:
-            request = {'model': descriptor['id'], 'messages': [{'role': 'user', 'content': PROMPT}], 'seed': SEED,
-                       'max_tokens': MAX_TOKENS, 'temperature': 0, 'stream': False,
+        for identity, layer, neuron, dose, pushes, prompt in rows:
+            request = {'model': descriptor['id'], 'messages': [{'role': 'user', 'content': prompt if layer == BASE else PROMPT}], 'seed': SEED,
+                       'max_tokens': BASE_TOKENS if layer == BASE else MAX_TOKENS, 'temperature': 0, 'stream': False,
                        'chat_template_kwargs': {'enable_thinking': False}, 'metadata': {'job_id': identity}}
             program = None
             members = ([{'kind': 'neuron', 'layer': m[0], 'neuron': m[1], 'dose': m[2] if m[3:] else m[2] * dose} for m in json.loads(pushes)] if layer == COMBO
@@ -192,7 +219,7 @@ def worker(root, port, bank, until, stop, log):
                 db.executemany("UPDATE jobs SET state='queued',started=NULL,port=NULL WHERE id=?", [(r[0],) for r in rows])
             log(port, 'preflight_released', repr(exc)[:200]); stop.wait(10); continue
         try:
-            reply = fetch(base + '/v1/batch/completions', envelope, timeout=900)
+            reply = fetch(base + '/v1/batch/completions', envelope, timeout=3600 if rows[0][1] == BASE else 900)
             results = reply['results']
             if reply.get('batch_id') != envelope['batch_id'] or len(results) != len(rows): raise ValueError('Batch coverage differs')
         except Exception as exc:
@@ -210,7 +237,7 @@ def export(root):
     """Atomic JSONL of finished answers for the explorer to copy."""
     path = Path(root) / OUT / 'answers.jsonl'; temporary = path.with_suffix('.tmp')
     with connect(root) as db, temporary.open('w') as stream:
-        for row in db.execute("SELECT sweep,layer,neuron,dose,level,coherent,answer,finish,tokens,finished,artifact_sha256,kind,pushes,declined FROM jobs WHERE state='done' ORDER BY layer,neuron,dose"):
+        for row in db.execute("SELECT sweep,layer,neuron,dose,level,coherent,answer,finish,tokens,finished,artifact_sha256,kind,pushes,declined FROM jobs WHERE state='done' AND layer!=-3 ORDER BY layer,neuron,dose"):
             value = dict(zip(('sweep', 'layer', 'neuron', 'dose', 'level', 'coherent', 'answer', 'finish', 'tokens', 'finished', 'artifact_sha256', 'kind', 'pushes', 'declined'), row))
             value['declined'] = bool(value['declined'])
             if value['pushes'] is None: del value['kind'], value['pushes']
@@ -219,12 +246,26 @@ def export(root):
     os.replace(temporary, path)
     flagged = Path(root) / OUT / 'declined.jsonl'; temporary = flagged.with_suffix('.tmp')
     with connect(root) as db, temporary.open('w') as stream:  # the investigation list: every reply that said no
-        for row in db.execute("SELECT sweep,layer,neuron,dose,kind,pushes,answer,coherent FROM jobs WHERE state='done' AND declined=1 ORDER BY layer,neuron,dose"):
+        for row in db.execute("SELECT sweep,layer,neuron,dose,kind,pushes,answer,coherent FROM jobs WHERE state='done' AND declined=1 AND layer!=-3 ORDER BY layer,neuron,dose"):
             value = dict(zip(('sweep', 'layer', 'neuron', 'dose', 'kind', 'pushes', 'answer', 'coherent'), row))
             if value['pushes']: value['pushes'] = json.loads(value['pushes'])
             stream.write(json.dumps(value, ensure_ascii=False) + '\n')
     os.replace(temporary, flagged)
+    export_baseline(root)
     return status(root)
+
+
+def export_baseline(root):
+    """baseline40k_pairs.jsonl: every finished unsteered pair, at most every 10 minutes."""
+    path = Path(root) / OUT / 'baseline40k_pairs.jsonl'
+    if path.exists() and time.time() - path.stat().st_mtime < 600: return
+    temporary = path.with_suffix('.tmp')
+    with connect(root) as db, temporary.open('w') as stream:
+        for row in db.execute("SELECT source_id,prompt,answer,finish,tokens,coherent,declined,finished FROM jobs WHERE state='done' AND layer=-3 ORDER BY created,id"):
+            value = dict(zip(('id', 'prompt', 'answer', 'finish_reason', 'completion_tokens', 'coherent_auto', 'declined_auto', 'finished'), row))
+            value.update(complete=value['finish_reason'] == 'stop', seed=SEED, max_tokens=BASE_TOKENS, thinking=False, steering=None)
+            stream.write(json.dumps(value, ensure_ascii=False) + '\n')
+    os.replace(temporary, path)
 
 
 def backfill_flags(root):
@@ -236,16 +277,19 @@ def backfill_flags(root):
 
 def status(root):
     with connect(root) as db:
-        counts = dict(db.execute('SELECT state,count(*) FROM jobs GROUP BY state').fetchall())
+        counts = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer!=-3 GROUP BY state').fetchall())  # identity work only
+        baseline = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer=-3 GROUP BY state').fetchall())
         sweeps = {name: dict(db.execute('SELECT state,count(*) FROM jobs WHERE sweep=? GROUP BY state', (name,)).fetchall())
-                  for name, in db.execute('SELECT DISTINCT sweep FROM jobs')}
-        flagged = db.execute("SELECT count(*) FROM jobs WHERE state='done' AND declined=1").fetchone()[0]
-        recent = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>?", (time.time() - 600,)).fetchone()
+                  for name, in db.execute('SELECT DISTINCT sweep FROM jobs') if name != BASE_SWEEP}
+        flagged = db.execute("SELECT count(*) FROM jobs WHERE state='done' AND declined=1 AND layer!=-3").fetchone()[0]
+        recent = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>? AND layer!=-3", (time.time() - 600,)).fetchone()
+        recent_base = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>? AND layer=-3", (time.time() - 600,)).fetchone()
         learned = kept_levels(db)
     cliffs = {f'L{g * 8}-{g * 8 + 7}': LEVELS[sorted(v)[len(v) // 2]] for g in range(8)
               for v in [[x for l in range(g * 8, g * 8 + 8) for x in learned.get(l, [])]] if len(v) >= 10}
     value = {'time': time.time(), 'counts': counts, 'sweeps': sweeps, 'last_10_min': {'answers': recent[0], 'tokens': recent[1] or 0},
-             'median_strongest_coherent_dose': cliffs, 'declined': flagged}
+             'median_strongest_coherent_dose': cliffs, 'declined': flagged,
+             'baseline40k': {'counts': baseline, 'last_10_min': {'answers': recent_base[0], 'tokens': recent_base[1] or 0}}}
     (Path(root) / OUT / 'status.json').write_text(json.dumps(value))
     return value
 
@@ -270,7 +314,7 @@ def run(root, until, ports, checkpoint):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('enqueue', 'enqueue-combos', 'run', 'export', 'status', 'backfill-flags'))
+    parser.add_argument('command', choices=('enqueue', 'enqueue-combos', 'enqueue-baseline', 'run', 'export', 'status', 'backfill-flags'))
     parser.add_argument('--root', default=str(Path(__file__).resolve().parent))
     parser.add_argument('--sweep', default='manual'); parser.add_argument('--neurons', help='JSON file of [layer, neuron] pairs')
     parser.add_argument('--combos', help='JSON file of combos (see enqueue_combos)')
@@ -287,6 +331,7 @@ def main():
         if not args.checkpoint: raise SystemExit('--checkpoint is required')
         run(args.root, args.until, range(low, high + 1), args.checkpoint)
     elif args.command == 'export': print(json.dumps(export(args.root)))
+    elif args.command == 'enqueue-baseline': print(json.dumps({'added': enqueue_baseline(args.root)}))
     elif args.command == 'backfill-flags': print(json.dumps({**backfill_flags(args.root), **export(args.root)}))
     else: print(json.dumps(status(args.root)))
 
