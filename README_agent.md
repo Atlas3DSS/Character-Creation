@@ -86,6 +86,18 @@ excluded. Each upload records intent and verifies commit-pinned bytes. An
 uncertain attempt disables retries. Artifact hashes reference retained capture
 arrays; this JSON does not claim those arrays have been uploaded.
 
+`persona_publication_recovery.py` can continue these two report streams after a
+read-only reconciliation of uncertain uploads. It preserves the original
+receipts and stores frozen upload bytes, their parent commit and all subsequent
+outcomes in a separate SQLite ledger. Known commits are only verified; an
+unknown outcome is reconciled against bounded history before retrying the same
+conditional parent. Only an explicit parent conflict allows refreshing that
+parent. The allowlist contains the two reports and these two guides. It has no
+inference controls or request replay, and the reference observer stops at
+08:05 PDT. Run its `--validate-only` preflight before starting a new observer;
+changing its source or reconciliation lineage requires a separately reviewed
+ledger, not overwriting the existing one.
+
 ## Capture performance evidence
 
 `persona_batch_optimization_public.json` records the readback benchmark at Git
