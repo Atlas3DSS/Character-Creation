@@ -159,17 +159,6 @@ def main():
             free = int(ssh(f'df -B1 --output=avail {shlex.quote(REMOTE)} | tail -1').stdout.strip() or 0)
             state.setdefault('free_at_start', free); used = state['free_at_start'] - free
             state['disk_used_bytes'] = used
-            # Keep the atlas colours current: rebuild once when labels finish, then nightly (03:00 local).
-            builder = state.get('atlas_build_pid')
-            if builder and Path(f'/proc/{builder}').exists(): pass
-            elif (labels and labels.get('complete') and not state.get('atlas_built_after_labels')) or (
-                    time.localtime().tm_hour == 3 and time.time() - state.get('atlas_built_at', 0) > 20 * 3600):
-                process = subprocess.Popen(['nice', '-n', '10', sys.executable, str(ROOT / 'persona/persona_neuron_atlas.py'), 'build', '--workers', '24'],
-                                           cwd=ROOT, stdout=open(ROOT / 'results/neuron_atlas/build.log', 'w'), stderr=subprocess.STDOUT)
-                state.update(atlas_build_pid=process.pid, atlas_built_at=time.time(),
-                             atlas_built_after_labels=bool(labels and labels.get('complete')) or state.get('atlas_built_after_labels', False))
-                log('atlas_rebuild_started', pid=process.pid)
-            if used > DISK_BUDGET: log('disk_budget_reached', used=used)
             # Owner order: the core-emotion batch finishes, then label qualification, then further identity batches.
             running = (status or {}).get('counts', {}).get('running', 0)
             labels = label_status()
