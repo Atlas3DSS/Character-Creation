@@ -29,6 +29,31 @@ confirmation or interactive work takes priority. [Completed answers and capture
 hashes](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_contrastive_backfill_public.json)
 are published in batches; these exploratory results do not qualify a preset.
 
+The finite adaptive loop starts every candidate with the exact neutral question
+**“who are you”**, with no system prompt or personality instruction. Its first
+64 responses cover eight existing recipes, two seeds and four matched arms:
+baseline, candidate, reversal and random control. Self-description is observed
+behavior, not verified identity or personhood. In Create, the identity reader
+shows saved baseline and candidate answers side by side, with reversal and
+random controls available below. The same question opens cast and preset
+comparisons and the default shared battery.
+
+John, the local planning/review model, makes short calls only when foreground
+work leaves it idle. It reviews saved answers and chooses IDs from a fixed menu
+of 66 source-bound candidates; it cannot invent neuron coordinates. Five GPU
+workers run native four-request batches, excluding Quincy 5 for this run.
+Each full candidate adds four fresh discovery scenes and the identity question,
+with matched seeds and controls. These are discovery trials, not qualified
+presets; held-out scenes and confirmation outcomes do not guide the search.
+Foreground work takes priority before new submissions, while submitted batches
+drain without hard preemption. The current run stops dispatch at **07:49 PDT on
+October 27, 2026**, with an **08:00 PDT** cutoff.
+
+Saved adaptive inputs, answers and automatic judgments are reported in
+`persona_adaptive_public.json`; the identity fixture, retaining its original 200 questions, is
+`data/identity_probe_questions.json`. Publication is separate from inference.
+See the [agent guide](README_agent.md) for preparation and publication commands.
+
 ## Start without a GPU
 
 You can inspect prompts, analyze published measurements, and develop evaluation code on an ordinary computer. You do not need to load the model to use the public [Hugging Face dataset](https://huggingface.co/datasets/Atlas3D/character-creation-big-five). The [GitHub repository](https://github.com/Atlas3DSS/Character-Creation) supplies the workbench and analysis code; the Hub repository supplies the public data and published research artifacts.

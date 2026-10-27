@@ -398,7 +398,10 @@ class Explorer:
             persona_bytes = (self.root / 'data/persona_perturbation_prompts.jsonl').read_bytes() if persona_complete else b''
             persona_digest = hashlib.sha256(persona_bytes).hexdigest()
             persona_manifest_digest = hashlib.sha256(persona_manifest_bytes).hexdigest()
-            signature = (hashlib.sha256(manifest_bytes).hexdigest(), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, extra_digest, diagnostic_digest, persona_digest, persona_manifest_digest)
+            identity_path = self.root / 'data/identity_probe_questions.json'
+            identity_bytes = identity_path.read_bytes() if identity_path.exists() else b''
+            identity_digest = hashlib.sha256(identity_bytes).hexdigest()
+            signature = (hashlib.sha256(manifest_bytes).hexdigest(), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, extra_digest, diagnostic_digest, persona_digest, persona_manifest_digest, identity_digest)
             if signature == self.corpus_signature:
                 return self.corpus_cache, self.corpus_binding
             raw = path.read_bytes()
@@ -420,7 +423,10 @@ class Explorer:
                 from persona_perturbation import registered_rows as register_persona_rows
                 persona_rows = register_persona_rows(persona_bytes, persona_manifest_bytes)
                 if persona_manifest.read_bytes() != persona_manifest_bytes: raise ValueError('Persona prompt supplement changed during publication')
-            for row in [json.loads(line) for line in raw.splitlines() if line.strip()] + extra_rows + diagnostic_rows + persona_rows:
+            from persona_identity import load_probe
+            identity = load_probe(self.root)
+            if identity_bytes and identity_path.read_bytes() != identity_bytes: raise ValueError('Identity probe changed during publication')
+            for row in [json.loads(line) for line in raw.splitlines() if line.strip()] + extra_rows + diagnostic_rows + persona_rows + ([identity] if identity else []):
                 if (not isinstance(row, dict) or row.get('schema') != 'character-creation.manager-corpus.v1'
                         or not isinstance(row.get('id'), str) or row['id'] in rows
                         or row['id'] != canonical_digest({key: value for key, value in row.items() if key != 'id'})
@@ -441,7 +447,8 @@ class Explorer:
             self.corpus_cache, self.corpus_signature = rows, signature
             self.corpus_binding = {'corpus_sha256': digest, 'manifest_sha256': signature[0], 'supplement_sha256': extra_digest, 'personality_diagnostics_sha256': diagnostic_digest,
                 'persona_perturbation_sha256': persona_digest if persona_complete else None,
-                'persona_perturbation_manifest_sha256': persona_manifest_digest if persona_complete else None}
+                'persona_perturbation_manifest_sha256': persona_manifest_digest if persona_complete else None,
+                'identity_probe_sha256': identity_digest if identity else None}
             return self.corpus_cache, self.corpus_binding
 
     def corpora(self):
@@ -924,6 +931,9 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif path.path == "/api/state": self.send(app.state())
                 elif path.path == '/api/capacity': self.send(app.capacity())
                 elif path.path == '/api/sculptor': self.send(app.sculptor.catalog())
+                elif path.path == '/api/sculptor/identity-evidence':
+                    from persona_identity import evidence
+                    self.send(evidence(app.root, app.model, parse_qs(path.query).get('group', [''])[0]))
                 elif path.path == '/api/sculptor/preset-evidence':
                     query = parse_qs(path.query)
                     self.send(app.sculptor.preset_evidence(query.get('target',[''])[0], query.get('group',[''])[0]))

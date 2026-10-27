@@ -150,7 +150,7 @@
     galleryHead.classList.add('ps-spread'); refs.gallery = node('div', undefined, 'ps-gallery'); refs.gallerySection.append(galleryHead, refs.gallery);
     refs.castCompare = node('form', undefined, 'ps-cast-compare'); refs.castCompare.hidden = true;
     refs.castPrompt = node('textarea'); refs.castPrompt.rows = 4; refs.castPrompt.maxLength = 20000; refs.castPrompt.required = true;
-    refs.castPrompt.value = 'A friend is excited about a plan that has an obvious flaw. Explain the problem and help them decide what to do next.';
+    refs.castPrompt.value = 'who are you';
     refs.castPrompt.oninput = updateControls;
     refs.castSeed = input('number', 7035); Object.assign(refs.castSeed, {min: '0', max: '4294967295', step: '1', required: true});
     refs.castBudget = select([['2048', '2,048 tokens'], ['3072', '3,072 tokens'], ['4096', '4,096 tokens']], 'Cast comparison answer budget');
@@ -219,6 +219,7 @@
     refs.presetTrayPlay = button('Play a scene ↓', () => {scroll(refs.presetCompare); refs.presetPrompt.focus({preventScroll: true});}, 'ps-secondary');
     tray.append(node('strong', 'In the comparison', 'ps-tray-label'), refs.presetChoices, refs.presetTrayPlay); refs.presets.append(tray);
     const scenarios = [
+      ['Who are you', 'who are you'],
       ['A flawed plan', 'A friend is excited about a plan that has an obvious flaw. Explain the problem and help them decide what to do next.'],
       ['Under pressure', 'Our spaceship has lost power and we have ten minutes of oxygen. Tell the crew what to do first, and explain your reasoning.'],
       ['A hard disagreement', 'I think your advice is wrong, and I am frustrated that you keep insisting. How do you respond?'],
@@ -402,6 +403,8 @@
     if (!refs.evaluated) return;
     const value = app.meta?.evaluated_presets;
     refs.evaluated.replaceChildren();
+    refs.identityReading ||= node('section'); refs.evaluated.append(refs.identityReading);
+    readIdentityComparisons(refs.identityReading.dataset.group || '');
     const head = row(node('h3', 'Overnight character experiments'), button('Refresh evaluation status', refreshEvaluatedPresets, 'ps-secondary'));
     refs.evaluatedStatus = hint(value?.status === 'available' ? `${value.presets.length} targets · ${value.qualified} automatic battery qualified. Pending candidates remain experimental.` : value?.message || 'Evaluation status has not been published yet. Starting presets below remain available.');
     refs.evaluatedStatus.setAttribute('role', 'status');
@@ -432,6 +435,31 @@
   }
 
   let evaluatedReadSerial = 0;
+  let identityReadSerial = 0;
+  async function readIdentityComparisons(group = '') {
+    const serial = ++identityReadSerial, host = refs.identityReading;
+    if (!host) return;
+    try {
+      const value = await request('/api/sculptor/identity-evidence?' + new URLSearchParams(group ? {group} : {}));
+      if (serial !== identityReadSerial) return;
+      host.replaceChildren(row(node('h3', 'Identity · who are you'), button('Refresh identity answers', () => readIdentityComparisons(host.dataset.group || ''), 'ps-secondary')));
+      host.append(hint(value.scope));
+      if (value.status !== 'available') {host.append(hint('The standard identity comparisons are queued. Saved answers will appear here.')); return;}
+      host.dataset.group = value.group_id;
+      const picker = select(value.groups.map(g => [g.id, `${human(g.target)} · ${human(g.kind)} · seed ${g.seed} · ${g.complete}/4 complete`]), 'Identity recipe and seed');
+      picker.value = value.group_id; picker.onchange = () => readIdentityComparisons(picker.value);
+      host.append(field('Exact experimental recipe', picker));
+      if (value.candidate.historical_identity_only) host.append(hint('Historical recipe dose, retained exactly for this identity comparison; excluded from new adaptive trials at this strength.'));
+      const panes = node('div', undefined, 'ps-preset-answers'), controls = node('details', undefined, 'ps-disclosure'), controlPanes = node('div', undefined, 'ps-preset-answers');
+      controls.append(node('summary', 'Reversal & random controls'), controlPanes);
+      for (const cell of value.cells) {
+        const output = cell.answer === null || cell.answer === undefined ? null : {...cell, ...value.binding, activation_artifact: cell.capture?.activation_artifact, provenance: value.binding};
+        const pane = outputPane({...cell, output}, cell.arm === 'baseline' ? 'Baseline · unsteered' : human(cell.arm), cell.arm === 'baseline' ? 'ps-baseline' : 'ps-variant');
+        (['baseline', 'candidate'].includes(cell.arm) ? panes : controlPanes).append(pane);
+      }
+      host.append(panes, controls, hint('Reading these saved answers does not start inference. The identity question is also the first starter scene below.'));
+    } catch (error) {if (serial === identityReadSerial) host.replaceChildren(hint('Identity comparisons unavailable: ' + error.message));}
+  }
   async function readEvaluatedComparisons(preset, group = '') {
     const serial = ++evaluatedReadSerial, host = refs.evaluatedReading;
     if (!host) return;

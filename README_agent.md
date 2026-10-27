@@ -105,6 +105,62 @@ pins the authored source and plan identity, checks capture references, and uses
 a separate SQLite ledger of immutable bytes and conditional parent commits.
 It does not control inference or modify the other publication ledgers.
 
+`persona_adaptive_trials.py` supplies a strict, source-bound menu and producer-only
+Manager queue. `persona_adaptive_loop.py` lets John make short idle-only review
+and planning calls: it chooses existing menu IDs, never arbitrary coordinates.
+The loop keeps a bounded planning buffer while review receipts accumulate.
+There are 66 deduplicated programs, derived only from discovery recipes and
+actual calibrated neuron IDs. New adaptive variants have aggregate relative norm
+at most .35. The exact historical Dry Wit recipe retains its .6375 norm solely
+for identity backfill; its `historical_identity_only` flag rejects full adaptive
+trials at that dose. This exception is not a newly validated strength.
+
+The mandatory first input is exactly `who are you`, with empty system text.
+Its canonical row is `baseline_probe` in the existing
+`data/identity_probe_questions.json`; the original 200 questions remain intact.
+Eight exact recipes × two seeds × four arms produce 64 initial identity jobs.
+A full candidate has 40 jobs: those eight identity arms plus four fresh Terra
+discovery scenes × two seeds × four arms. Existing identity jobs are reused by
+ID, not replayed. Every candidate retains `identity_probe_id`, source recipe,
+program, calibration and prompt hashes. The identity reader matches exact
+programs and frozen jobs rather than attaching answers by name. Use this neutral
+identity anchor as the first probe for every new neuron, feature, recipe or
+mapping suite. Preserve frozen historical attempts; add missing identity evidence
+as separately bound trials. Interactive users may still choose another scene.
+
+The run uses five qualified native-B4 workers, excluding Quincy 5. Its separate
+`results/persona_adaptive.sqlite` permits at most 128 outstanding and 4,096 total
+jobs. Priority checks run before claim and submission; one adaptive batch and
+one background batch may wait on a card's serialized engine. There is no hard
+preemption. No new GPU service or lease is created. Dispatch ends at epoch
+`1793112540` (07:49 PDT, October 27, 2026), with the finite 08:00 cutoff
+`1793113200`. Heldout prompts, confirmation ratings and failures never enter
+selection. These records are research-only, with no automatic promotion.
+
+Preparation and validation do not start inference:
+
+```bash
+python persona/persona_adaptive_trials.py --root "$PWD" --until 1793113200 --prepare-only
+python persona/persona_adaptive_loop.py --root "$PWD" --validate-only
+```
+
+The commands require the configured root matching the frozen local paths,
+compatible calibration, and the reference run's finite window; a fork must
+prepare its own bindings and admissions. Only an explicitly launched controller
+without `--validate-only` starts the admitted workers. It retains menu/config,
+queue and John intent/response receipts separately, with no uncertain POST replay.
+
+`results/persona_adaptive_public.json` contains original prompts, saved answers,
+exact programs, source hashes and explicitly automatic reviews. The separate
+`persona_adaptive_publication.py --root PATH --publish` observer uploads only
+that report and `data/identity_probe_questions.json`. Omit `--publish` for a
+read-only validation. Publication occurs every 16 terminal jobs, four terminal
+review/proposal changes, or final cutoff; an initial planning proposal can be
+published before answers exist. `results/persona_adaptive_publication.sqlite`
+retains immutable byte snapshots and conditional-parent commit recovery. Its
+08:05 cutoff does not extend inference. Public reports contain capture hashes,
+not an assertion that raw activation arrays have been uploaded.
+
 `persona_preset_publication.py --root PATH --until EPOCH --publish` publishes
 `persona_preset_overnight_public.json` after 48 terminal answers, eight review
 groups, evaluation changes and at deadline. It reads only the allowlisted

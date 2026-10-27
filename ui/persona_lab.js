@@ -343,11 +343,19 @@
   }
   async function loadSources() {
     notify();
-    const results = await Promise.allSettled([request('/api/state'), request('/api/corpora'), request('/api/saved-recipes')]);
+    const results = await Promise.allSettled([request('/api/state'), request('/api/corpora'), request('/api/saved-recipes'), request('/api/prompts?corpus=persona_identity&split=discovery&limit=1')]);
     if (results[0].status === 'fulfilled') {
       app.model = results[0].value; refs.model.textContent = app.model.model?.model_id || app.model.model?.model || 'Current calibrated model';
     }
     if (results[2].status === 'fulfilled') for (const recipe of results[2].value.recipes) app.recipes.set('saved:' + recipe.id, recipe);
+    if (!app.identityInitialized && results[3].status === 'fulfilled') {
+      const prompt = results[3].value.rows?.find(value => value.prompt === 'who are you');
+      if (prompt && !app.selectedPrompts.length) {
+        app.prompts.set(prompt.id, prompt); app.selectedPrompts = [prompt.id];
+        app.slots.forEach(slot => {if (!slot.prompt) slot.prompt = prompt.id;}); renderSelections();
+      }
+      app.identityInitialized = true;
+    }
     const failures = results.filter(result => result.status === 'rejected');
     if (failures.length) notify(failures.map(result => result.reason.message).join(' · '), true);
     renderRecipeLibrary(); renderSlots(); await Promise.all([loadPrompts(), loadHistory(), loadCapacity()]);

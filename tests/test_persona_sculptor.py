@@ -267,6 +267,29 @@ class PersonaSculptorTests(unittest.TestCase):
         self.assertNotIn(catalog['default_prompts'][0]['id'], ('profile', 'mutation', self.prompts[1]['id']))
         self.assertEqual(catalog['defaults']['count'], 6); self.assertEqual(catalog['capacity']['available'], 0)
 
+    def test_identity_anchor_is_registered_and_first_without_changing_existing_prompts(self):
+        source = Path(__file__).resolve().parents[1] / 'data/identity_probe_questions.json'
+        (self.root / 'data/identity_probe_questions.json').write_bytes(source.read_bytes())
+        rows, binding = self.app.corpus_snapshot()
+        identity = next(row for row in rows.values() if row['corpus'] == 'persona_identity')
+        self.assertEqual(identity['prompt'], 'who are you')
+        self.assertEqual(identity['system'], '')
+        self.assertEqual(rows[self.prompts[0]['id']], self.prompts[0])
+        self.assertTrue(binding['identity_probe_sha256'])
+        with patch.object(self.app, 'capacity', return_value={'configured': 6, 'available': 0}):
+            first = self.app.sculptor.catalog()['default_prompts'][0]
+        self.assertEqual(first['id'], identity['id'])
+        self.assertEqual(self.app.prompts(corpus='persona_identity')['rows'][0]['prompt'], 'who are you')
+
+    def test_identity_anchor_rejects_leading_system_even_with_rehashed_id(self):
+        from persona_identity import load_probe
+        value = json.loads((Path(__file__).resolve().parents[1] / 'data/identity_probe_questions.json').read_text())
+        row = value['baseline_probe']; row['system'] = 'Act like a confident captain.'
+        row['id'] = canonical_digest({k: v for k, v in row.items() if k != 'id'})
+        (self.root / 'data/identity_probe_questions.json').write_text(json.dumps(value))
+        with self.assertRaisesRegex(ValueError, 'neutral context'):
+            load_probe(self.root)
+
     def test_preset_comparison_keeps_prompt_seed_baseline_and_saved_snapshots(self):
         catalog = json.loads((Path(__file__).resolve().parents[1] / 'data/persona_presets.json').read_text())
         catalog['presets'] = catalog['presets'][:2]
@@ -395,3 +418,34 @@ class PersonaSculptorTests(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+
+# Reuse the existing offline overlay fixture; this test never touches worker APIs.
+from test_persona_sculptor_evaluated import overlay, write as write_overlay
+import pytest
+
+
+@pytest.mark.parametrize('tamper',[None,'reason','extra','selection','qualified','input','evidence'])
+def test_exact_no_selection_terminal_overlay(overlay,tamper):
+    from persona_sculptor import _evaluated_cycle
+    root,model,plan,value,path=overlay
+    selection={'schema':'character-creation.preset-discovery-selection.v1','input_sha256':plan['input_sha256'],'selected':[]}
+    report={'status':'complete','input_sha256':plan['input_sha256'],'automatically_battery_qualified':[],
+        'reason':'No candidate passed fixed discovery gates; no forced promotion or heldout tuning.'}
+    if tamper=='reason':report['reason']='Another reason'
+    elif tamper=='extra':report['unverified']=True
+    elif tamper=='selection':selection['selected']=[plan['recipes'][0]['id']]
+    elif tamper=='qualified':report['automatically_battery_qualified']=[plan['recipes'][0]['id']]
+    elif tamper=='input':report['input_sha256']='0'*64
+    sh=write_overlay(root/'results/persona_preset_selection.json',selection)
+    rh=write_overlay(root/'results/persona_preset_overnight_results.json',report)
+    for row in value['presets']:
+        row['state']='not_qualified';row['evidence'].update(selection_sha256=sh,confirmation_sha256=rh)
+    if tamper=='evidence':value['presets'][0]['evidence']['confirmation_sha256']='0'*64
+    write_overlay(path,value)
+    out=_evaluated_cycle(root,model)
+    if tamper:assert out['status']=='unavailable'
+    else:
+        assert out['status']=='available' and out['stage']=='discovery_complete_no_selection'
+        assert out['qualified']==0 and len(out['presets'])==8
+        assert all(r['state']=='not_qualified' and r['program_valid'] for r in out['presets'])

@@ -96,11 +96,12 @@ def test_frontend_handoff_preserves_exact_recipe_and_labels(tmp_path):
     render=source[source.index('  function renderEvaluatedPresets()'):source.index('  function renderPresets()')]
     script="""
 const assert=require('node:assert/strict');
-function node(tag,text,cls){return {tag,text,cls,children:[],append(...xs){this.children.push(...xs)},replaceChildren(){this.children=[]},setAttribute(){}}}
+function node(tag,text,cls){return {tag,text,cls,dataset:{},children:[],append(...xs){this.children.push(...xs)},replaceChildren(...xs){this.children=[...xs]},setAttribute(){}}}
 const button=(text,action)=>Object.assign(node('button',text),{onclick:action});
 const row=(...xs)=>{let n=node('div');n.append(...xs);return n};
 const hint=text=>node('p',text), clone=x=>JSON.parse(JSON.stringify(x));
 const refreshEvaluatedPresets=()=>{};let accepted=[];
+const request=async url=>{assert(url.startsWith('/api/sculptor/identity-evidence?'));return {status:'pending',scope:'Saved identity comparisons'};};
 const window={PersonaLab:{useCurrentRecipe:r=>accepted.push(r)}};
 const preset={name:'Bound candidate',recipe_id:'r',state:'discovery_running',program_valid:true,pushes:[{kind:'trait',layer:32,trait:'openness',dose:0.037891}],phase:'decode',evidence:{plan_sha256:'a'}};
 const refs={evaluated:node('section')},app={meta:{evaluated_presets:{status:'available',qualified:0,presets:[preset]}}};

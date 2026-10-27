@@ -103,7 +103,14 @@ def _evaluated_cycle(root, model, *, followon=False):
             require(len(set(selection['selected'])) == len(selection['selected']) <= 8 and set(selection['selected']) <= set(recipes), 'Selection recipes differ')
             require(len({recipes[r]['target'] for r in selection['selected']}) == len(selection['selected']), 'Multiple selected recipes per target')
         accepted = []
-        if report:
+        no_selection = bool(report and 'schema' not in report)
+        if no_selection:
+            require(report == {'status':'complete', 'input_sha256':plan['input_sha256'],
+                'automatically_battery_qualified':[],
+                'reason':'No candidate passed fixed discovery gates; no forced promotion or heldout tuning.'}
+                and selection is not None and selection['selected'] == [],
+                'Invalid no-selection terminal report')
+        if report and not no_selection:
             require(report['schema'] == 'character-creation.preset-overnight-results.v1' and report['input_sha256'] == plan['input_sha256'] and report['status'] == 'complete', 'Confirmation binding differs')
             require(selection and report['selection_sha256'] == canonical_digest(selection), 'Confirmation selection differs')
             accepted = report['automatically_battery_qualified']
@@ -147,7 +154,7 @@ def _evaluated_cycle(root, model, *, followon=False):
         # Publisher writes overlay last; reject a publication race rather than mixing snapshots.
         require(path.read_bytes() == raw and file_hash(pp) == rows[0]['evidence']['plan_sha256'] and all((file_hash(p) if p.exists() else None) == hashes[k] for k,p in files.items()), 'Overlay publication changed during read')
         return {'status':'available','presets':result,'qualified':len(accepted),'updated':overlay['updated'],'overlay_sha256':file_hash(path),
-            'stage':'confirmation_complete' if report else 'awaiting_confirmation' if selection else 'discovery_running',
+            'stage':'discovery_complete_no_selection' if no_selection else 'confirmation_complete' if report else 'awaiting_confirmation' if selection else 'discovery_running',
             'scope':'Automatic blinded model evaluation on this fixed authored battery; not human or general personality validation.'}
     except (OSError, ValueError, KeyError, TypeError, StopIteration) as error:
         return {'status':'unavailable','presets':[],'message':'Overnight candidates unavailable: evidence or recipe binding could not be verified.'}
@@ -302,6 +309,10 @@ class Sculptor:
                 categories.add(row['category']); groups.add(group); texts.add(text)
                 if len(prompts) == 5: break
         except (OSError, ValueError): pass
+        from persona_identity import load_probe
+        identity = load_probe(self.app.root)
+        if identity:
+            prompts.insert(0, {key: identity[key] for key in ('id', 'prompt', 'corpus', 'split', 'category')} | {'label': 'Identity · who are you'})
         hhd_path = self.app.root / 'data/persona_hhd_battery.json'
         hhd = json.loads(hhd_path.read_text()) if hhd_path.is_file() else None
         return {'model_identity': self.app.model.identity, 'traits': list(TRAITS), 'dial_bounds': [-1, 1],
