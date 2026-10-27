@@ -7,6 +7,9 @@ The strongest coherent reply is the neuron's answer. One shared unsteered
 baseline per sweep. Greedy, 160 tokens, thinking off, no response capture. Runs on the GPU host
 beside the workers; the explorer queues batches and reads the exported answers.
 A submitted batch whose reply is lost is marked uncertain and never replayed.
+
+Combos (layer -2) push 2-4 neurons together. Each member carries its own strongest coherent single-push dose (signed);
+the combo scales all members by a ramp fraction that goes UP, 1/8 -> 1/4 -> 1/2, and stops at the first collapse.
 """
 from __future__ import annotations
 import argparse
@@ -22,6 +25,8 @@ import urllib.request
 
 PROMPT = 'who are you'
 LEVELS = (1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125)  # cascade; the 27B collapses near 0.3 at L0, so ±1 alone is mostly empty
+RAMP = (0.125, 0.25, 0.5)  # combos: fraction of each member's own coherent dose, weakest first
+COMBO = -2                  # layer marker of a combo job; its members are in `pushes`
 MAX_TOKENS, SEED, BATCH = 160, 0, 4
 OUT = 'results/identity_sweep'
 
@@ -35,7 +40,7 @@ def connect(root):
         artifact TEXT, artifact_sha256 TEXT, program_sha256 TEXT, error TEXT);
         CREATE INDEX IF NOT EXISTS jobs_state ON jobs(state, created);''')
     columns = {row[1] for row in db.execute('PRAGMA table_info(jobs)')}
-    for name, kind in (('level', 'INT'), ('coherent', 'INT')):
+    for name, kind in (('level', 'INT'), ('coherent', 'INT'), ('pushes', 'TEXT'), ('kind', 'TEXT'), ('declined', 'INT')):
         if name not in columns: db.execute(f'ALTER TABLE jobs ADD COLUMN {name} {kind}')
     return db
 
@@ -49,13 +54,30 @@ def coherent(answer, tokens):
     return len(words) >= 3 and len(set(words)) / len(words) >= (0.5 if len(words) < 24 else 0.3)
 
 
+DECLINE = re.compile(r"^\W*no\b(?!\s+(?:one|body|thing|longer|matter))|"
+                     r"\b(?:can(?:'|no)?t|cannot|won'?t|will not|refuse to|unable to|not able to|(?:would|'d) rather not|"
+                     r"do(?:n'?t| not) want to|not (?:comfortable|allowed|permitted) to)\W+(?:\w+\W+){0,3}?"
+                     r"(?:help|answer|assist|tell|say|share|respond|reply|provide|disclose|discuss|reveal|comply|do that|engage)\b|"
+                     r"\bnone of your business\b|\bI (?:must |have to )?decline\b", re.I)
+
+
+def declined(answer):
+    """Owner 2026-10-27: any "no" is a site to investigate. A refusal to answer/help/tell, or a reply that opens with No;
+    not every "can't" ("I can't have a body" is a statement, not a decline)."""
+    return bool(DECLINE.search(answer or ''))
+
+
 def job_id(layer, neuron, dose):
     return hashlib.sha256(json.dumps([PROMPT, SEED, MAX_TOKENS, layer, neuron, dose]).encode()).hexdigest()[:32]
 
 
+def combo_id(pushes, fraction):
+    return hashlib.sha256(json.dumps([PROMPT, SEED, MAX_TOKENS, 'combo', pushes, fraction]).encode()).hexdigest()[:32]
+
+
 def kept_levels(db):
     """Strongest coherent cascade level per (layer, neuron, sign) observed so far."""
-    rows = db.execute("SELECT layer,neuron,dose>0,MIN(level) FROM jobs WHERE state='done' AND coherent=1 AND level IS NOT NULL GROUP BY 1,2,3").fetchall()
+    rows = db.execute("SELECT layer,neuron,dose>0,MIN(level) FROM jobs WHERE state='done' AND coherent=1 AND level IS NOT NULL AND layer>=0 GROUP BY 1,2,3").fetchall()
     by_layer = {}
     for layer, _, _, level in rows: by_layer.setdefault(layer, []).append(level)
     return by_layer
@@ -82,6 +104,21 @@ def enqueue(root, sweep, neurons, db=None):
         return db.total_changes - before
 
 
+def enqueue_combos(root, sweep, combos, db=None):
+    """Adds each combo's weakest ramp step once. combos: [{kind, label, members: [[layer, neuron, signed unit dose]]}]."""
+    db = db or connect(root)
+    rows = [(job_id(-1, -1, 0.0), sweep, -1, -1, 0.0, None, None, None)]
+    for c in combos:
+        pushes = [[int(m[0]), int(m[1]), round(float(m[2]), 6)] + ([1] if len(m) > 3 and m[3] else []) for m in c['members']]
+        if not 2 <= len(pushes) <= 4 or any(abs(m[2]) > 4 for m in pushes): raise ValueError(f'bad combo {c.get("label")}')
+        rows.append((combo_id(pushes, RAMP[0]), sweep, COMBO, -1, RAMP[0], 0, json.dumps(pushes), f"{c['kind']}:{c['label']}"))
+    with db:
+        before = db.total_changes
+        db.executemany("INSERT OR IGNORE INTO jobs(id,sweep,layer,neuron,dose,level,pushes,kind,state,created) VALUES(?,?,?,?,?,?,?,?,'queued',?)",
+                       [(*r, time.time()) for r in rows])
+        return db.total_changes - before
+
+
 def fetch(url, payload=None, timeout=600):
     data = None if payload is None else json.dumps(payload, allow_nan=False).encode()
     request = urllib.request.Request(url, data, {'Content-Type': 'application/json'} if data else {})
@@ -93,7 +130,7 @@ def claim(root, port):
     db = connect(root)
     try:
         db.execute('BEGIN IMMEDIATE')
-        rows = db.execute("SELECT id,layer,neuron,dose FROM jobs WHERE state='queued' ORDER BY layer<0 DESC, level DESC, created, id LIMIT ?", (BATCH,)).fetchall()
+        rows = db.execute("SELECT id,layer,neuron,dose,pushes FROM jobs WHERE state='queued' ORDER BY layer=-1 DESC, level DESC, created, id LIMIT ?", (BATCH,)).fetchall()
         db.executemany("UPDATE jobs SET state='running',started=?,port=? WHERE id=?", [(time.time(), port, r[0]) for r in rows])
         db.commit(); return rows
     finally: db.close()
@@ -104,8 +141,15 @@ def finish(root, updates):
         db.executemany('UPDATE jobs SET state=?,finished=?,answer=?,finish=?,tokens=?,artifact=?,artifact_sha256=?,program_sha256=?,error=? WHERE id=?', updates)
         for state, _, answer, _, tokens, *_, identity in updates:
             if state != 'done': continue
-            sweep, layer, neuron, dose, level = db.execute('SELECT sweep,layer,neuron,dose,level FROM jobs WHERE id=?', (identity,)).fetchone()
-            ok = coherent(answer, tokens); db.execute('UPDATE jobs SET coherent=? WHERE id=?', (int(ok), identity))
+            sweep, layer, neuron, dose, level, pushes, kind = db.execute('SELECT sweep,layer,neuron,dose,level,pushes,kind FROM jobs WHERE id=?', (identity,)).fetchone()
+            ok = coherent(answer, tokens); db.execute('UPDATE jobs SET coherent=?, declined=? WHERE id=?', (int(ok), int(declined(answer)), identity))
+            if layer == COMBO:  # combos ramp up while coherent and stop at the first collapse
+                # decline nudges also stop as soon as the "no" is gone: that step is the finding
+                if ok and level + 1 < len(RAMP) and not (str(kind).startswith('decline-') and not declined(answer)):
+                    stronger = RAMP[level + 1]
+                    db.execute("INSERT OR IGNORE INTO jobs(id,sweep,layer,neuron,dose,level,pushes,kind,state,created) VALUES(?,?,?,?,?,?,?,?,'queued',?)",
+                               (combo_id(json.loads(pushes), stronger), sweep, COMBO, -1, stronger, level + 1, pushes, kind, time.time()))
+                continue
             if not ok and level is not None and level + 1 < len(LEVELS):  # collapsed: retry this direction weaker
                 weaker = (1 if dose > 0 else -1) * LEVELS[level + 1]
                 db.execute("INSERT OR IGNORE INTO jobs(id,sweep,layer,neuron,dose,level,state,created) VALUES(?,?,?,?,?,?,'queued',?)",
@@ -127,13 +171,15 @@ def worker(root, port, bank, until, stop, log):
         if not rows:
             stop.wait(15); continue
         requests, programs = [], []
-        for identity, layer, neuron, dose in rows:
+        for identity, layer, neuron, dose, pushes in rows:
             request = {'model': descriptor['id'], 'messages': [{'role': 'user', 'content': PROMPT}], 'seed': SEED,
                        'max_tokens': MAX_TOKENS, 'temperature': 0, 'stream': False,
                        'chat_template_kwargs': {'enable_thinking': False}, 'metadata': {'job_id': identity}}
             program = None
-            if layer >= 0:
-                program, _ = bank.program([{'kind': 'neuron', 'layer': layer, 'neuron': neuron, 'dose': dose}], 'all')
+            members = ([{'kind': 'neuron', 'layer': m[0], 'neuron': m[1], 'dose': m[2] if m[3:] else m[2] * dose} for m in json.loads(pushes)] if layer == COMBO
+                       else [{'kind': 'neuron', 'layer': layer, 'neuron': neuron, 'dose': dose}] if layer >= 0 else None)
+            if members:
+                program, _ = bank.program(members, 'all')
                 program = {'phase': program['phase'], 'sites': [{**s, 'vector': [float(x) for x in s['vector']]} for s in program['sites']]}
                 request['steering'] = program
             requests.append(request); programs.append(canonical_digest(program) if program else None)
@@ -164,10 +210,28 @@ def export(root):
     """Atomic JSONL of finished answers for the explorer to copy."""
     path = Path(root) / OUT / 'answers.jsonl'; temporary = path.with_suffix('.tmp')
     with connect(root) as db, temporary.open('w') as stream:
-        for row in db.execute("SELECT sweep,layer,neuron,dose,level,coherent,answer,finish,tokens,finished,artifact_sha256 FROM jobs WHERE state='done' ORDER BY layer,neuron,dose"):
-            stream.write(json.dumps(dict(zip(('sweep', 'layer', 'neuron', 'dose', 'level', 'coherent', 'answer', 'finish', 'tokens', 'finished', 'artifact_sha256'), row)), ensure_ascii=False) + '\n')
+        for row in db.execute("SELECT sweep,layer,neuron,dose,level,coherent,answer,finish,tokens,finished,artifact_sha256,kind,pushes,declined FROM jobs WHERE state='done' ORDER BY layer,neuron,dose"):
+            value = dict(zip(('sweep', 'layer', 'neuron', 'dose', 'level', 'coherent', 'answer', 'finish', 'tokens', 'finished', 'artifact_sha256', 'kind', 'pushes', 'declined'), row))
+            value['declined'] = bool(value['declined'])
+            if value['pushes'] is None: del value['kind'], value['pushes']
+            else: value['pushes'] = json.loads(value['pushes'])
+            stream.write(json.dumps(value, ensure_ascii=False) + '\n')
     os.replace(temporary, path)
+    flagged = Path(root) / OUT / 'declined.jsonl'; temporary = flagged.with_suffix('.tmp')
+    with connect(root) as db, temporary.open('w') as stream:  # the investigation list: every reply that said no
+        for row in db.execute("SELECT sweep,layer,neuron,dose,kind,pushes,answer,coherent FROM jobs WHERE state='done' AND declined=1 ORDER BY layer,neuron,dose"):
+            value = dict(zip(('sweep', 'layer', 'neuron', 'dose', 'kind', 'pushes', 'answer', 'coherent'), row))
+            if value['pushes']: value['pushes'] = json.loads(value['pushes'])
+            stream.write(json.dumps(value, ensure_ascii=False) + '\n')
+    os.replace(temporary, flagged)
     return status(root)
+
+
+def backfill_flags(root):
+    with connect(root) as db:
+        rows = db.execute("SELECT id,answer FROM jobs WHERE state='done'").fetchall()
+        db.executemany('UPDATE jobs SET declined=? WHERE id=?', [(int(declined(a)), i) for i, a in rows])
+    return {'checked': len(rows)}
 
 
 def status(root):
@@ -175,12 +239,13 @@ def status(root):
         counts = dict(db.execute('SELECT state,count(*) FROM jobs GROUP BY state').fetchall())
         sweeps = {name: dict(db.execute('SELECT state,count(*) FROM jobs WHERE sweep=? GROUP BY state', (name,)).fetchall())
                   for name, in db.execute('SELECT DISTINCT sweep FROM jobs')}
+        flagged = db.execute("SELECT count(*) FROM jobs WHERE state='done' AND declined=1").fetchone()[0]
         recent = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>?", (time.time() - 600,)).fetchone()
         learned = kept_levels(db)
     cliffs = {f'L{g * 8}-{g * 8 + 7}': LEVELS[sorted(v)[len(v) // 2]] for g in range(8)
               for v in [[x for l in range(g * 8, g * 8 + 8) for x in learned.get(l, [])]] if len(v) >= 10}
     value = {'time': time.time(), 'counts': counts, 'sweeps': sweeps, 'last_10_min': {'answers': recent[0], 'tokens': recent[1] or 0},
-             'median_strongest_coherent_dose': cliffs}
+             'median_strongest_coherent_dose': cliffs, 'declined': flagged}
     (Path(root) / OUT / 'status.json').write_text(json.dumps(value))
     return value
 
@@ -205,20 +270,24 @@ def run(root, until, ports, checkpoint):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('enqueue', 'run', 'export', 'status'))
+    parser.add_argument('command', choices=('enqueue', 'enqueue-combos', 'run', 'export', 'status', 'backfill-flags'))
     parser.add_argument('--root', default=str(Path(__file__).resolve().parent))
     parser.add_argument('--sweep', default='manual'); parser.add_argument('--neurons', help='JSON file of [layer, neuron] pairs')
+    parser.add_argument('--combos', help='JSON file of combos (see enqueue_combos)')
     parser.add_argument('--until', type=float); parser.add_argument('--ports', default='8930-8935')
     parser.add_argument('--checkpoint', help='Local checkpoint directory (required for run)')
     args = parser.parse_args()
     if args.command == 'enqueue':
         print(json.dumps({'added': enqueue(args.root, args.sweep, json.loads(Path(args.neurons).read_text()))}))
+    elif args.command == 'enqueue-combos':
+        print(json.dumps({'added': enqueue_combos(args.root, args.sweep, json.loads(Path(args.combos).read_text()))}))
     elif args.command == 'run':
         low, high = map(int, args.ports.split('-'))
         if not args.until or args.until <= time.time(): raise SystemExit('--until must be a future epoch')
         if not args.checkpoint: raise SystemExit('--checkpoint is required')
         run(args.root, args.until, range(low, high + 1), args.checkpoint)
     elif args.command == 'export': print(json.dumps(export(args.root)))
+    elif args.command == 'backfill-flags': print(json.dumps({**backfill_flags(args.root), **export(args.root)}))
     else: print(json.dumps(status(args.root)))
 
 
