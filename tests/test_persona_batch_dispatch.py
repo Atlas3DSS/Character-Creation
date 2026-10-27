@@ -312,3 +312,21 @@ def test_length_exception_gate_cannot_bypass_normal_validator(monkeypatch,mutati
     monkeypatch.setattr('persona_batch_qualify.checked_parity',lambda *a:pytest.fail('Length-only exception must not apply'))
     def strict(*args):raise ValueError('ordinary strict validator rejected')
     with pytest.raises(ValueError,match='strict validator'):validate_generation(response,request,{},None,native_batch=native,validator=strict)
+
+
+def test_hash_bound_remote_column_provider(tmp_path,monkeypatch):
+    import persona_manager as manager
+    import numpy as np
+    from types import SimpleNamespace
+    value={'layer':40,'neuron':1661,'model_identity':'m','runtime_identity':'r','checkpoint_config_sha256':'c','checkpoint_index_sha256':'i','vector':[1.,2.]}
+    path=tmp_path/'column.json';path.write_text(json.dumps(value));endpoint={'url':'http://127.0.0.1:1','model_identity':'m','runtime_identity':'r'}
+    monkeypatch.setattr(manager,'native_batch_ready',lambda e:True)
+    monkeypatch.setattr(manager,'fetch',lambda *a,**k:value)
+    source={'path':str(path),'sha256':manager.file_hash(path)};model=SimpleNamespace(identity='m',hidden=2)
+    bank={'checkpoint_config_sha256':'c','checkpoint_index_sha256':'i'}
+    provider=manager.remote_column_provider(endpoint,model,source)
+    assert np.array_equal(provider(bank,40,1661),[1,2])
+    for patch in ({'runtime_identity':'wrong'},{'vector':[1.]},{'vector':[float('nan'),2.]},{'neuron':1},{'checkpoint_index_sha256':'bad'}):
+        altered={**value,**patch};monkeypatch.setattr(manager,'fetch',lambda *a,**k:altered)
+        with pytest.raises(ValueError):manager.remote_column_provider(endpoint,model,source)(bank,40,1661)
+    with pytest.raises(ValueError):manager.remote_column_provider(endpoint,model,{**source,'sha256':'0'*64})

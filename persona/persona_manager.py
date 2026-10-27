@@ -697,6 +697,29 @@ def native_batch_ready(endpoint: dict, timeout: float = 10) -> bool:
     return True
 
 
+def remote_column_provider(endpoint: dict, model: ModelSpec, source: dict):
+    """Opt-in, hash-pinned exact column; no residual substitution or bank mutation."""
+    path=Path(source['path'])
+    if file_hash(path)!=source['sha256']:raise ValueError('Remote-column source hash differs')
+    expected=json.loads(path.read_text());cache={}
+    def column(bank,layer,neuron):
+        import numpy as np
+        if (layer,neuron)!=(expected['layer'],expected['neuron']):raise ValueError('Remote column not explicitly authorized')
+        if (layer,neuron) in cache:return cache[layer,neuron]
+        if not native_batch_ready(endpoint):raise ValueError('Remote-column endpoint not qualified and ready')
+        value=fetch(endpoint['url']+f'/v1/neuron-column?layer={layer}&neuron={neuron}',timeout=30)
+        if any(value.get(k)!=endpoint.get(k) for k in ('model_identity','runtime_identity')) or value.get('model_identity')!=model.identity:
+            raise ValueError('Remote column endpoint binding differs')
+        if (value.get('layer'),value.get('neuron'))!=(layer,neuron):raise ValueError('Remote column coordinates differ')
+        for key in ('checkpoint_config_sha256','checkpoint_index_sha256'):
+            if value.get(key)!=str(bank.get(key,'')) or value.get(key)!=expected.get(key):raise ValueError('Remote column checkpoint differs')
+        vector=np.asarray(value['vector'],dtype=np.float64)
+        if vector.shape!=(model.hidden,) or not np.isfinite(vector).all() or np.linalg.norm(vector)<=0:raise ValueError('Invalid remote column vector')
+        if value['vector']!=expected['vector'] or expected['model_identity']!=model.identity:raise ValueError('Remote column differs from pinned source')
+        cache[layer,neuron]=vector;return vector
+    return column
+
+
 def native_capability(endpoint: dict, model: ModelSpec, program: dict, *, measurement: str = 'rollout') -> str:
     descriptor = fetch(endpoint['url'] + '/v1/models', timeout=10)['data'][0]
     flare = descriptor.get('flare', {})
@@ -820,6 +843,7 @@ class Manager:
         self.bank_lock = threading.RLock()
         self.corpus, self.corpus_digest = {}, ''
         self.endpoints = config['endpoints']
+        if config.get('remote_column_source'):self.bank.column_provider=remote_column_provider(self.endpoints[0],self.model,config['remote_column_source'])
         self.native_batch = config.get('native_batch',{}).get('enabled') is True
         allowed_count = 1 <= len(self.endpoints) <= 6 if self.native_batch else len(self.endpoints) == 6
         if not allowed_count or len({e['gpu_uuid'] for e in self.endpoints}) != len(self.endpoints):
@@ -966,6 +990,7 @@ class Manager:
         settings=self.config['native_batch']
         store=ArtifactStore(Path(settings['artifact_directory']),settings['artifact_remote_host'],settings['artifact_remote_root'])
         bank=VectorBank(self.bank.root,self.model,**({'checkpoint':Path(self.config['checkpoint'])} if self.allow_unmapped else {}))
+        if self.config.get('remote_column_source'):bank.column_provider=remote_column_provider(endpoint,self.model,self.config['remote_column_source'])
         def admit():
             if self.stop.is_set() or time.time()>=finish:return False
             allowed,_=self.admission.allowed(endpoint)

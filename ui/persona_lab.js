@@ -358,14 +358,14 @@
     app.ready = true; root.classList.add('persona-lab');
     app.recipes.set(BASE, {name: 'Baseline', pushes: [], phase: 'all'});
     const head = node('div', undefined, 'lab-heading');
-    const heading = node('div'); heading.append(node('h2', 'Experiment workspace'), hint('Keep your recipes. Change the prompt. Compare up to six jobs.'));
+    const heading = node('div'); heading.append(node('h2', 'Recipe workbench'), hint('Edit and save recipes, pick the scenes that reveal them, then run up to six jobs side by side.'));
     refs.model = node('span', 'Loading model…', 'lab-tag');
     const jumps = row(button('Arrange batch ↓', () => refs.composer?.scrollIntoView({behavior: 'smooth', block: 'start'})),
       button('Results ↓', () => refs.results?.scrollIntoView({behavior: 'smooth', block: 'start'})));
     jumps.classList.add('lab-jumps'); head.append(heading, refs.model, jumps, button('Refresh', loadSources)); root.append(head);
     refs.notice = node('div', '', 'lab-notice'); refs.notice.hidden = true; refs.notice.setAttribute('role', 'status'); refs.notice.setAttribute('aria-live', 'polite'); root.append(refs.notice);
     const sources = node('div', undefined, 'lab-sources'); root.append(sources);
-    const prompts = panel('1 · Choose prompts', 'Search registered sources or add a custom prompt. Select up to six.');
+    const prompts = panel('2 · Choose scenes', 'Search the registered catalog by scene, concept, facet or domain, or write your own. Select up to six for one batch.');
     refs.promptCount = node('span', '0 / 6 selected', 'lab-counter'); refs.selectedPrompts = node('div', undefined, 'lab-selection');
     prompts.append(refs.promptCount, refs.selectedPrompts);
     const browser = node('div'); prompts.append(browser);
@@ -382,8 +382,8 @@
       const key = `custom:${++app.serial}`; app.prompts.set(key, {id: key, custom: true, prompt: text,
         label: refs.customName.value.trim() || `Custom prompt ${app.serial}`, corpus: 'custom', split: 'manual'});
       toggleSelection('prompt', key); refs.customText.value = refs.customName.value = '';
-    })); prompts.append(custom); sources.append(prompts);
-    const recipes = panel('2 · Choose recipes', 'Select saved recipes or make a variation. Baseline adds no activation push.');
+    })); prompts.append(custom);
+    const recipes = panel('1 · Choose recipes', 'Your saved recipe library. Select up to six for a batch, edit one, or make dose variations. Baseline adds no activation push.');
     refs.recipeCount = node('span', '', 'lab-counter'); refs.recipeLibrary = node('div', undefined, 'lab-recipe-list'); recipes.append(refs.recipeCount, refs.recipeLibrary);
     const editor = node('div', undefined, 'lab-editor'); editor.append(node('h4', 'Recipe editor'));
     refs.editing = hint(''); refs.recipeName = input('text', 'New recipe', 'Recipe name'); refs.recipeName.maxLength = 120;
@@ -412,7 +412,7 @@
     refs.variantFactors = input('text', '-1, 0, 0.5, 1, 1.5, 2', 'Dose multipliers');
     editor.append(field('Quick variants · multiply every dose by', refs.variantFactors), button('Select these variants', doseVariants),
       hint('Variants replace the recipe selection, not your saved recipes. A zero-dose recipe keeps its explicit zero pushes.'));
-    recipes.append(editor); sources.append(recipes);
+    recipes.append(editor); sources.append(recipes, prompts);
     const composer = panel('3 · Arrange your batch', 'Up to six concurrent jobs. Pause the overnight map before running interactive jobs.');
     refs.composer = composer; composer.id = 'lab-composer';
     refs.fleetStatus = node('strong', 'Checking worker reachability…', 'lab-fleet-status');
@@ -463,9 +463,20 @@
       if (typeof window.tab === 'function') window.tab('lab');
       else if (typeof tab === 'function') tab('lab');
       document.getElementById('lab-view').classList.remove('hidden');
-      notify('Map recipe selected. Choose prompts, arrange your jobs and run the batch.');
+      notify('Recipe selected. Choose prompts, arrange your jobs and run the batch.');
     },
-    refresh() {if (init()) return loadSources();}
+    refresh() {if (init()) return loadSources();},
+    // Finder hand-offs: add one catalog scene to the batch selection, or open the catalog on a query.
+    addPrompt(prompt) {
+      if (!init()) throw Error('The recipe workbench is unavailable.');
+      if (!prompt?.id) throw Error('This scene has no catalog ID.');
+      if (!app.selectedPrompts.includes(prompt.id)) {
+        if (app.selectedPrompts.length >= MAX) throw Error('The batch already has six scenes. Remove one in Recipes first.');
+        app.prompts.set(prompt.id, prompt); toggleSelection('prompt', prompt.id);
+      }
+      return app.selectedPrompts.length;
+    },
+    searchPrompts(query, corpus) {if (init()) refs.promptBrowser?.search?.(query, corpus);}
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, {once: true}); else init();
 })();

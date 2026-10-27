@@ -392,7 +392,13 @@ class Explorer:
             diagnostic_bytes = diagnostic_path.read_bytes() if diagnostic_path.exists() else b''
             diagnostic_digest = hashlib.sha256(diagnostic_bytes).hexdigest()
             extra_digest = hashlib.sha256(extra_bytes).hexdigest()
-            signature = (hashlib.sha256(manifest_bytes).hexdigest(), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, extra_digest, diagnostic_digest)
+            persona_manifest = self.root / 'data/persona_perturbation_prompts_manifest.json'
+            persona_manifest_bytes = persona_manifest.read_bytes() if persona_manifest.exists() else b''
+            persona_complete = persona_manifest_bytes and json.loads(persona_manifest_bytes).get('status') == 'complete'
+            persona_bytes = (self.root / 'data/persona_perturbation_prompts.jsonl').read_bytes() if persona_complete else b''
+            persona_digest = hashlib.sha256(persona_bytes).hexdigest()
+            persona_manifest_digest = hashlib.sha256(persona_manifest_bytes).hexdigest()
+            signature = (hashlib.sha256(manifest_bytes).hexdigest(), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, extra_digest, diagnostic_digest, persona_digest, persona_manifest_digest)
             if signature == self.corpus_signature:
                 return self.corpus_cache, self.corpus_binding
             raw = path.read_bytes()
@@ -409,7 +415,12 @@ class Explorer:
                 suite = load_suite(diagnostic_path)
                 if diagnostic_path.read_bytes() != diagnostic_bytes: raise ValueError('Diagnostic suite changed during publication')
                 diagnostic_rows = registered_rows(suite)
-            for row in [json.loads(line) for line in raw.splitlines() if line.strip()] + extra_rows + diagnostic_rows:
+            persona_rows = []
+            if persona_complete:
+                from persona_perturbation import registered_rows as register_persona_rows
+                persona_rows = register_persona_rows(persona_bytes, persona_manifest_bytes)
+                if persona_manifest.read_bytes() != persona_manifest_bytes: raise ValueError('Persona prompt supplement changed during publication')
+            for row in [json.loads(line) for line in raw.splitlines() if line.strip()] + extra_rows + diagnostic_rows + persona_rows:
                 if (not isinstance(row, dict) or row.get('schema') != 'character-creation.manager-corpus.v1'
                         or not isinstance(row.get('id'), str) or row['id'] in rows
                         or row['id'] != canonical_digest({key: value for key, value in row.items() if key != 'id'})
@@ -428,7 +439,9 @@ class Explorer:
             if not rows or not self.corpus_cache.keys() <= rows.keys():
                 raise ValueError('Corpus publication must preserve existing immutable records')
             self.corpus_cache, self.corpus_signature = rows, signature
-            self.corpus_binding = {'corpus_sha256': digest, 'manifest_sha256': signature[0], 'supplement_sha256': extra_digest, 'personality_diagnostics_sha256': diagnostic_digest}
+            self.corpus_binding = {'corpus_sha256': digest, 'manifest_sha256': signature[0], 'supplement_sha256': extra_digest, 'personality_diagnostics_sha256': diagnostic_digest,
+                'persona_perturbation_sha256': persona_digest if persona_complete else None,
+                'persona_perturbation_manifest_sha256': persona_manifest_digest if persona_complete else None}
             return self.corpus_cache, self.corpus_binding
 
     def corpora(self):

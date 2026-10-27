@@ -20,7 +20,11 @@
     refs.history = node('select'); refs.history.setAttribute('aria-label', 'Saved coherence runs'); refs.history.onchange = () => {if (refs.history.value) load(refs.history.value);};
     const refresh = node('button', 'Refresh saved evaluations'); refresh.type = 'button'; refresh.onclick = history;
     refs.status = node('p', '', 'hint'); refs.status.setAttribute('aria-live', 'polite'); refs.output = node('div');
-    refs.root.append(refs.suite, form, field('Saved evaluations', refs.history), refresh, refs.status, refs.output); parent.append(refs.root);
+    refs.root.append(refs.suite, form, field('Saved evaluations', refs.history), refresh, refs.status, refs.output);
+    // Inside Create's "More tests" stage when present; otherwise at the end of the studio.
+    const stage = document.getElementById('ps-more');
+    if (stage) {const wrap = node('details', undefined, 'ps-disclosure pc-disclosure'); wrap.append(node('summary', 'Coherence & evidence checks · saved recipes at several dose scales'), refs.root); stage.append(wrap);}
+    else parent.append(refs.root);
   }
   async function history() {
     try {
@@ -49,6 +53,6 @@
     clearTimeout(timer); const generation = ++serial; active = id;
     try {const run = await request('/api/coherence/run?id=' + encodeURIComponent(id)); if (generation !== serial) return; render(run); if (!terminal.has(run.state)) timer = setTimeout(() => load(id), 3000);} catch (e) {if (generation === serial) refs.status.textContent = e.message;}
   }
-  async function open() {mount(); if (refs.root) {await history();const id=new URLSearchParams(location.search).get('coherence');if(!linked && id && /^[a-f0-9]{32}$/.test(id)){linked=true;await load(id);refs.root.scrollIntoView({block:'start'});}}}
+  async function open() {mount(); if (refs.root) {await history();const id=new URLSearchParams(location.search).get('coherence');if(!linked && id && /^[a-f0-9]{32}$/.test(id)){linked=true;await load(id);const wrap=refs.root.closest('details');if(wrap)wrap.open=true;refs.root.scrollIntoView({block:'start'});}}}
   window.PersonaCoherence = {open};
 })();

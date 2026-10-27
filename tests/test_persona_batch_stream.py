@@ -73,3 +73,115 @@ def test_loaded_server_binding_survives_disk_restore_but_startup_rejects(monkeyp
     with pytest.raises(ValueError,match='Source changed'):m.validate_plan(p)
     assert m.validate_plan(p,loaded_server_sha256=digests['persona_batch_server.py']) is p
     with pytest.raises(ValueError,match='Source changed'):m.validate_plan(p,loaded_server_sha256='f'*64)
+
+
+def test_empty_pool_readmits_pending_after_all_current_owners_finish():
+    from persona_batch_stream import check_empty_readmission
+    s=Slots(4);slot,row=s.admit('first',4)
+    assert s.admit('pending',4) is None
+    s.retire(slot,'first',row['generation'])
+    assert check_empty_readmission(s,4)
+    assert s.admit('pending',4)[0]==slot
+    with pytest.raises(ValueError):check_empty_readmission(Slots(4),5)
+
+
+def payload(i):
+    return {'metadata':{'job_id':str(i)},'capture_response':{'id':f'{i:032x}','layers':[],'max_positions':0}}
+
+
+def test_stream_envelope_rejects_duplicates_missing_capture_and_overcapacity():
+    from persona_batch_stream import stream_envelope
+    assert len(stream_envelope({'batch_id':'x','requests':[payload(i) for i in range(16)]})['requests'])==16
+    for rows in [[payload(1),payload(1)],[{}],[payload(i) for i in range(17)]]:
+        with pytest.raises(ValueError):stream_envelope({'batch_id':'x','requests':rows})
+    with pytest.raises(ValueError):stream_envelope({'batch_id':'../x','requests':[payload(1)]})
+
+
+def fake_trial(tmp_path):
+    from types import SimpleNamespace as NS
+    e=NS(output=tmp_path,model=NS(identity='model',layers=64,hidden=5120,intermediate=17408),manifest={'runtime_identity':'runtime'},prepared=NS(server_config={'identity':'prepared'}),capacity=(4,8),page_tokens=256)
+    def prepare(value):
+        r=value['requests'][0]
+        return ({'fits':True,'prompt_tokens':[100],'required_pages':[8]},[{'capture_response':r['capture_response'],'max_tokens':128}],[[0]*100],[],[])
+    return NS(e=e,prepare=prepare)
+
+
+def test_preflight_allows_queue_larger_than_simultaneous_pages_but_bounds_memory(tmp_path):
+    from persona_batch_stream import stream_preflight
+    t=fake_trial(tmp_path);v={'batch_id':'x','requests':[payload(i) for i in range(16)]}
+    r=stream_preflight(t,v)
+    assert r['fits'] and sum(r['required_pages'])>r['available_pages'] and r['max_active']==4
+    for p in v['requests']:p['capture_response'].update(layers=list(range(64)),max_positions=128)
+    with pytest.raises(ValueError,match='memory'):stream_preflight(t,v)
+
+
+def test_capability_receipt_exact_loaded_sources_and_limits(tmp_path,monkeypatch):
+    import json
+    import persona_batch_stream as m
+    from persona_batch_server import SERVER_SOURCE_SHA256
+    t=fake_trial(tmp_path);path=tmp_path/'receipt.json'
+    receipt={'schema':'character-creation.stream-service-qualification.v1','verified':True,'passed':True,'binding':m.binding(t.e),'stream_sha256':m.STREAM_SOURCE_SHA256,'server_sha256':SERVER_SOURCE_SHA256,'physical_pages':8,'page_tokens':256,'max_queued':16,'limits':m.STREAM_LIMITS}
+    path.write_text(json.dumps(receipt));assert m.stream_capability(t.e,path)['qualified']
+    monkeypatch.setattr(m,'sha',lambda path:'changed-on-disk')
+    assert m.stream_capability(t.e,path)['qualified']
+    for key in ('stream_sha256','server_sha256','binding','limits'):
+        bad=dict(receipt);bad[key]='wrong';path.write_text(json.dumps(bad));assert not m.stream_capability(t.e,path)['qualified']
+
+
+def test_service_durable_received_and_uncertain_no_retry(tmp_path,monkeypatch):
+    import json
+    import persona_batch_stream as m
+    t=fake_trial(tmp_path);calls=[]
+    def execute(rows,deadline):calls.append(rows);raise RuntimeError('uncertain GPU failure')
+    t.execute=execute;s=m.StreamService(t.e,None,trial=t);monkeypatch.setattr(s,'capability',lambda:{'qualified':True})
+    v={'batch_id':'attempt','requests':[payload(1)]}
+    with pytest.raises(RuntimeError):s.complete(v)
+    with pytest.raises(ValueError,match='no retry'):s.complete(v)
+    s2=m.StreamService(t.e,None,trial=t);monkeypatch.setattr(s2,'capability',lambda:{'qualified':True})
+    with pytest.raises(ValueError,match='no retry'):s2.complete(v)
+    assert len(calls)==1
+    events=[json.loads(x) for x in next(tmp_path.glob('stream-*.jsonl')).read_text().splitlines()]
+    assert [e['state'] for e in events]==['submitting','uncertain_no_retry']
+
+
+def test_service_missing_response_fails_no_silent_drop(tmp_path,monkeypatch):
+    import persona_batch_stream as m
+    t=fake_trial(tmp_path);t.execute=lambda rows,deadline:({},{});s=m.StreamService(t.e,None,trial=t);monkeypatch.setattr(s,'capability',lambda:{'qualified':True})
+    with pytest.raises(ValueError,match='Missing/extra'):s.complete({'batch_id':'x','requests':[payload(1)]})
+    assert '"state": "received"' in next(tmp_path.glob('stream-*.jsonl')).read_text()
+
+
+def test_busy_rejects_before_creating_intent(tmp_path,monkeypatch):
+    import persona_batch_stream as m
+    t=fake_trial(tmp_path);s=m.StreamService(t.e,None,trial=t);s.lock.acquire()
+    try:
+        with pytest.raises(ValueError,match='busy'):s.complete({'batch_id':'x','requests':[payload(1)]})
+    finally:s.lock.release()
+    assert list(tmp_path.iterdir())==[]
+
+
+def test_service_validates_every_response_preserves_order_and_truncation(tmp_path,monkeypatch):
+    import json
+    import persona_batch_stream as m
+    t=fake_trial(tmp_path);seen=[]
+    def execute(rows,deadline):return ({m.canonical_digest(r):{'original':r['metadata']['job_id'],'complete':False} for r in reversed(rows)},{'active':4})
+    def checked(response,request,bound,store):seen.append(request['metadata']['job_id']);return {'evidence':{'prose_complete':False}}
+    t.execute=execute;s=m.StreamService(t.e,None,trial=t);monkeypatch.setattr(s,'capability',lambda:{'qualified':True});monkeypatch.setattr(m,'checked_parity',checked)
+    rows=[payload(i) for i in range(8)];out=s.complete({'batch_id':'x','requests':rows})
+    assert seen==[str(i) for i in range(8)]
+    assert [r['response']['original'] for r in out['results']]==seen
+    assert all(r['response']['complete'] is False for r in out['results'])
+    events=[json.loads(x) for x in next(tmp_path.glob('stream-*.jsonl')).read_text().splitlines()]
+    assert [e['state'] for e in events]==['submitting','received','validated']
+    assert events[0]['envelope']['requests']==rows
+
+
+def test_received_bad_capture_is_terminal_uncertain_not_success(tmp_path,monkeypatch):
+    import persona_batch_stream as m
+    t=fake_trial(tmp_path);t.execute=lambda rows,deadline:({m.canonical_digest(r):{} for r in rows},{})
+    s=m.StreamService(t.e,None,trial=t);monkeypatch.setattr(s,'capability',lambda:{'qualified':True})
+    def bad(*args):raise ValueError('capture hash mismatch')
+    monkeypatch.setattr(m,'checked_parity',bad)
+    with pytest.raises(ValueError,match='capture hash'):s.complete({'batch_id':'x','requests':[payload(1)]})
+    log=next(tmp_path.glob('stream-*.jsonl')).read_text()
+    assert 'uncertain_no_retry' in log and '"state": "validated"' not in log

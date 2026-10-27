@@ -66,6 +66,111 @@ def trusted_planner():
             'launcher_model_sha256': MODEL_SHA, 'url': 'http://127.0.0.1:18511'}
 
 
+def _evaluated_cycle(root, model, *, followon=False):
+    """Read-only, fail-closed overlay. Never consult remote column providers."""
+    from persona_vectors import VectorBank
+    from persona_preset_overnight import attach_column, TARGETS
+    root = Path(root); path = root / ('results/persona_preset_followon_plan.json' if followon else 'results/persona_preset_evaluated.json')
+    if not path.exists(): return {'status': 'pending', 'presets': [], 'message': 'Overnight evaluation has not published candidates yet.'}
+    try:
+        def require(ok, message):
+            if not ok: raise ValueError(message)
+        raw = path.read_bytes(); overlay = json.loads(raw)
+        if followon: overlay = {'schema':'character-creation.evaluated-presets.v1','catalogue_source_unchanged':True,'input_sha256':overlay['input_sha256'],'updated':path.stat().st_mtime}
+        require(overlay['schema'] == 'character-creation.evaluated-presets.v1' and overlay['catalogue_source_unchanged'] is True, 'Invalid overlay schema')
+        pp = root / ('results/persona_preset_followon_plan.json' if followon else 'results/persona_preset_overnight_plan.json'); plan = json.loads(pp.read_bytes())
+        require(plan['schema'] == 'character-creation.preset-overnight.v1' and plan['model_identity'] == model.identity, 'Overlay model differs')
+        require(plan['input_sha256'] == canonical_digest({k:v for k,v in plan.items() if k != 'input_sha256'}) == overlay['input_sha256'], 'Overlay plan hash differs')
+        allowed = {'data/persona_presets.json', 'data/persona_preset_candidates.json', 'data/persona_personality_probes.json', 'results/persona_preset_columns.json'}
+        if followon:
+            allowed |= {'data/persona_perturbation_prompts.jsonl','data/persona_perturbation_prompts_manifest.json','results/persona_preset_selection.json'}
+            require(plan.get('cycle') == 'fresh_context_followon', 'Unexpected follow-on cycle')
+            require(plan.get('implementation_sha256') == {'followon':file_hash(root/'persona/persona_preset_followon.py'),'shared':file_hash(root/'persona/persona_preset_overnight.py')}, 'Follow-on implementation binding differs')
+        require(set(plan['sources']) == allowed, 'Unexpected overlay source set')
+        for name, digest in plan['sources'].items(): require(file_hash(root / name) == digest, 'Overlay source bytes changed')
+        for layer, digest in plan['calibration_sha256'].items():
+            require(str(int(layer)) == layer and 0 <= int(layer) < model.layers, 'Invalid calibration layer')
+            require(file_hash(root / f'results/layer_{int(layer):02d}.npz') == digest, 'Overlay calibration changed')
+        bank = attach_column(VectorBank(root / 'results', model), root / 'results/persona_preset_columns.json')
+        recipes = {r['id']: r for r in plan['recipes']}
+        require(len(recipes) == len(plan['recipes']) == 16, 'Overlay recipe coverage differs')
+        files = {'selection_sha256': root / ('results/persona_preset_followon_selection.json' if followon else 'results/persona_preset_selection.json'), 'confirmation_sha256': root / ('results/persona_preset_followon_results.json' if followon else 'results/persona_preset_overnight_results.json')}
+        docs = {key: json.loads(p.read_bytes()) if p.exists() else None for key,p in files.items()}
+        hashes = {key: file_hash(p) if p.exists() else None for key,p in files.items()}
+        selection, report = docs['selection_sha256'], docs['confirmation_sha256']
+        if selection:
+            require(selection['schema'] == 'character-creation.preset-discovery-selection.v1' and selection['input_sha256'] == plan['input_sha256'], 'Selection binding differs')
+            require(len(set(selection['selected'])) == len(selection['selected']) <= 8 and set(selection['selected']) <= set(recipes), 'Selection recipes differ')
+            require(len({recipes[r]['target'] for r in selection['selected']}) == len(selection['selected']), 'Multiple selected recipes per target')
+        accepted = []
+        if report:
+            require(report['schema'] == 'character-creation.preset-overnight-results.v1' and report['input_sha256'] == plan['input_sha256'] and report['status'] == 'complete', 'Confirmation binding differs')
+            require(selection and report['selection_sha256'] == canonical_digest(selection), 'Confirmation selection differs')
+            accepted = report['automatically_battery_qualified']
+            require(len(set(accepted)) == len(accepted) <= 8 and set(accepted) <= set(selection['selected']), 'Qualified recipes differ')
+            for rid in accepted:
+                evidence = [r for r in report['candidates'] if r['recipe_id'] == rid]
+                require(len(evidence) == 1, 'Qualification evidence missing/duplicated')
+                r = evidence[0]
+                require(r['battery_pass'] is True and r['groups'] == r['clean_groups'] == 12 and r['behavior_wins'] >= 8 and len(r['evidence']) == 12, 'Automatic battery gate failed')
+                require(all(set(g) == {'baseline','candidate','reversal','random'} and all(re.fullmatch('[a-f0-9]{64}', x) for x in g.values()) for g in r['evidence']), 'Invalid confirmation job references')
+                require(len({x for g in r['evidence'] for x in g.values()}) == 48, 'Duplicate confirmation evidence')
+            for i,a in enumerate(accepted):
+                for b in accepted[:i]:
+                    pairs = [p for p in report['cross_target_distinctness'] if {p['a'],p['b']} == {a,b}]
+                    require(len(pairs) == 1 and pairs[0]['passed'] is True and pairs[0]['matched_groups'] == 12 and pairs[0]['a_axis_wins'] >= 2 and pairs[0]['b_axis_wins'] >= 2, 'Cross-target battery gate failed')
+        if followon:
+            overlay['presets'] = []
+            overlay['automatically_battery_qualified'] = len(accepted)
+            for target in TARGETS:
+                chosen = next((r for r in plan['recipes'] if r['target'] == target and r['id'] in accepted), None)
+                selected = next((r for r in plan['recipes'] if r['target'] == target and selection and r['id'] in selection['selected']), None)
+                recipe = chosen or selected or next(r for r in plan['recipes'] if r['target'] == target and r['factor'] == 1)
+                state = 'automatically_battery_qualified' if chosen else 'not_qualified' if report else 'awaiting_confirmation' if selected else 'evaluated_candidate' if selection else 'discovery_running'
+                overlay['presets'].append({key:deepcopy(recipe[key]) for key in ('name','pushes','phase','program_sha256','aggregate_relative_norm')} | {'recipe_id':recipe['id'],'preset_id':target,'state':state,'model_identity':plan['model_identity'],'input_sha256':plan['input_sha256'],'calibration_sha256':plan['calibration_sha256'],'evidence':{'plan_sha256':file_hash(pp),**hashes}})
+        rows = overlay['presets'];require(len(rows) == len(TARGETS) and {r['preset_id'] for r in rows} == set(TARGETS), 'Overlay target coverage differs')
+        result = []
+        for row in rows:
+            recipe = recipes[row['recipe_id']];target = row['preset_id']
+            require(recipe['target'] == target and row['model_identity'] == model.identity and row['input_sha256'] == plan['input_sha256'], 'Candidate source binding differs')
+            for key in ('name','pushes','phase','program_sha256','aggregate_relative_norm'): require(row[key] == recipe[key], 'Candidate recipe changed')
+            require(row['calibration_sha256'] == plan['calibration_sha256'] and row['evidence'] == {'plan_sha256':file_hash(pp), **hashes}, 'Candidate evidence hashes differ')
+            _, provenance = bank.program(row['pushes'], row['phase'])
+            require(provenance['program_sha256'] == row['program_sha256'], 'Candidate program differs')
+            chosen = next((r for r in plan['recipes'] if r['target'] == target and r['id'] in accepted), None)
+            selected = next((r for r in plan['recipes'] if r['target'] == target and selection and r['id'] in selection['selected']), None)
+            expected = chosen or selected or next(r for r in plan['recipes'] if r['target'] == target and r['factor'] == 1)
+            state = 'automatically_battery_qualified' if chosen else 'not_qualified' if report else 'awaiting_confirmation' if selected else 'evaluated_candidate' if selection else 'discovery_running'
+            require(row['state'] == state and row['recipe_id'] == expected['id'], 'Candidate qualification state differs')
+            result.append({key:deepcopy(row[key]) for key in ('preset_id','recipe_id','name','state','pushes','phase','program_sha256','aggregate_relative_norm','input_sha256','evidence')} | {'program_valid':True,'study_cycle':'followon' if followon else 'primary','recipe_change':recipe.get('change') if followon else None})
+        require(overlay['automatically_battery_qualified'] == len(accepted), 'Qualified count differs')
+        # Publisher writes overlay last; reject a publication race rather than mixing snapshots.
+        require(path.read_bytes() == raw and file_hash(pp) == rows[0]['evidence']['plan_sha256'] and all((file_hash(p) if p.exists() else None) == hashes[k] for k,p in files.items()), 'Overlay publication changed during read')
+        return {'status':'available','presets':result,'qualified':len(accepted),'updated':overlay['updated'],'overlay_sha256':file_hash(path),
+            'stage':'confirmation_complete' if report else 'awaiting_confirmation' if selection else 'discovery_running',
+            'scope':'Automatic blinded model evaluation on this fixed authored battery; not human or general personality validation.'}
+    except (OSError, ValueError, KeyError, TypeError, StopIteration) as error:
+        return {'status':'unavailable','presets':[],'message':'Overnight candidates unavailable: evidence or recipe binding could not be verified.'}
+
+
+def evaluated_presets(root, model):
+    """Merge qualified follow-on challengers only; retain primary incumbents otherwise."""
+    primary = _evaluated_cycle(root, model)
+    followon = _evaluated_cycle(root, model, followon=True)
+    primary['followon'] = {k:deepcopy(followon[k]) for k in ('status','stage','qualified','message','updated') if k in followon}
+    if primary['status'] != 'available' or followon['status'] != 'available': return primary
+    incumbents = {r['preset_id']:r for r in primary['presets']}
+    for candidate in followon['presets']:
+        if candidate['state'] == 'automatically_battery_qualified':
+            old = incumbents[candidate['preset_id']]
+            candidate['previous_recipe_id'] = old['recipe_id']
+            candidate['previous_program_sha256'] = old['program_sha256']
+            incumbents[candidate['preset_id']] = candidate
+    primary['presets'] = [incumbents[r['preset_id']] for r in primary['presets']]
+    primary['qualified'] = sum(r['state'] == 'automatically_battery_qualified' for r in primary['presets'])
+    return primary
+
+
 class Sculptor:
     def __init__(self, app):
         self.app = app
@@ -129,7 +234,7 @@ class Sculptor:
                 'layers': defaults, 'dose_budget': .35, 'phase': 'all', 'seed': 7035, 'max_tokens': 2048},
             'lab_battery': json.loads((self.app.root / 'data/persona_lab_battery.json').read_text()) if (self.app.root / 'data/persona_lab_battery.json').is_file() else None,
             'hhd_battery': dict(hhd, canonical_sha256=canonical_digest(hhd)) if hhd else None,
-            'default_prompts': prompts, 'capacity': self.app.capacity(), 'evidence': EVIDENCE, 'presets': self.presets()['presets'],
+            'default_prompts': prompts, 'capacity': self.app.capacity(), 'evidence': EVIDENCE, 'presets': self.presets()['presets'], 'evaluated_presets': evaluated_presets(self.app.root, self.app.model),
             'planner': {'url': 'http://127.0.0.1:18511', 'model': 'persona-manager', 'requires_owner_lease': True,
                         'context_tokens': 131072, 'fallback': 'Explicit manual heuristic controls; never automatic'}}
 

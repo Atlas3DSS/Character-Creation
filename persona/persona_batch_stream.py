@@ -16,6 +16,109 @@ from persona_vectors import canonical_digest,ModelSpec,VectorBank
 SOURCES=('persona_batch_stream.py','persona_batch_server.py','persona_batch_performance.py','persona_batch_capture.py','persona_batch_probe.py','persona_batch_qualify.py','persona_probe.py','persona_vectors.py')
 POLICY={'requests':8,'isolated_references':8,'capacity':4,'deadline_seconds':1200,'initial_budgets':[1,8,64,128],'replacement_budgets':[1,8,64,128],'prefix_cache':False,'mtp':False,'automatic_rollout':False}
 
+
+STREAM_SOURCE_SHA256=sha(__file__)
+STREAM_LIMITS={'max_queued':16,'max_envelope_bytes':32*1024**2,'max_capture_bytes':1024*1024**2,'deadline_seconds':1200}
+
+
+def stream_envelope(value,*,max_queued=16):
+    import re
+    if max_queued not in (8,16):raise ValueError('Queue capacity must be8or16')
+    if not isinstance(value,dict) or set(value)!={'batch_id','requests'} or not isinstance(value['batch_id'],str) or not re.fullmatch('[A-Za-z0-9_-]{1,128}',value['batch_id']):raise ValueError('Invalid stream envelope')
+    rows=value['requests']
+    if not isinstance(rows,list) or not 1<=len(rows)<=max_queued or any(not isinstance(r,dict) for r in rows):raise ValueError('Bounded request list required')
+    if len(json.dumps(value,allow_nan=False).encode())>STREAM_LIMITS['max_envelope_bytes']:raise ValueError('Envelope byte bound exceeded')
+    hashes=[canonical_digest(r) for r in rows]
+    if len(set(hashes))!=len(hashes):raise ValueError('Duplicate request hashes')
+    ids=[r.get('capture_response',{}).get('id') if isinstance(r.get('capture_response'),dict) else None for r in rows]
+    if None in ids or len(set(ids))!=len(ids):raise ValueError('Stream requires distinct response captures; use B1 fallback otherwise')
+    return value
+
+
+def check_empty_readmission(ledger,required):
+    if ledger.live:raise ValueError('Expected empty ledger')
+    if required>len(ledger.free):raise ValueError('Head request cannot fit empty page pool')
+    return True
+
+
+def stream_preflight(trial,value,*,max_queued=16):
+    """Tokenizer/program validation only; never replay a graph or reserve pages."""
+    value=stream_envelope(value,max_queued=max_queued);rows=[];estimated=0
+    for request in value['requests']:
+        summary,specs,tokens,_,_=trial.prepare({'batch_id':value['batch_id'],'requests':[request]})
+        if not summary['fits']:raise ValueError('Request cannot fit full budget on this card')
+        spec=specs[0];cap=spec['capture_response'];e=trial.e
+        # Bound queued host capture arrays, including copies during serialization/validation.
+        layers=e.model.layers;hidden=e.model.hidden;intermediate=e.model.intermediate
+        base=4*layers*(2*hidden+intermediate)+16*layers*hidden+4*layers*len(tokens[0])
+        selected=4*len(cap['layers'])*hidden*min(cap['max_positions'],spec['max_tokens']-1)
+        estimated+=3*(base+selected)+32*(len(tokens[0])+spec['max_tokens'])
+        rows.append(summary)
+    if estimated>STREAM_LIMITS['max_capture_bytes']:raise ValueError('Queued capture memory estimate exceeds finite bound; split envelope')
+    return {'batch_id':value['batch_id'],'fits':True,'binding':binding(trial.e),'max_active':4,'max_queued':max_queued,
+        'prompt_tokens':[r['prompt_tokens'][0] for r in rows],'required_pages':[r['required_pages'][0] for r in rows],
+        'available_pages':trial.e.capacity[1],'request_sha256':[canonical_digest(r) for r in value['requests']],
+        'estimated_capture_bytes':estimated,'max_capture_bytes':STREAM_LIMITS['max_capture_bytes'],
+        'page_policy':'Reserve full prompt+answer budget per admitted request; queued requests need not fit simultaneously.'}
+
+
+def stream_capability(engine,receipt=None,*,max_queued=16):
+    from persona_batch_server import SERVER_SOURCE_SHA256,UNSUPPORTED
+    if max_queued not in (8,16):raise ValueError('Queue capacity must be8or16')
+    qualified=False;receipt_sha=None
+    if receipt is not None:
+        try:
+            raw=Path(receipt).read_bytes();r=json.loads(raw)
+            qualified=(r.get('schema')=='character-creation.stream-service-qualification.v1' and r.get('verified') is True and r.get('passed') is True
+                and r.get('binding')==binding(engine) and r.get('stream_sha256')==STREAM_SOURCE_SHA256 and r.get('server_sha256')==SERVER_SOURCE_SHA256
+                and r.get('physical_pages')==engine.capacity[1] and r.get('page_tokens')==engine.page_tokens and r.get('max_queued')==max_queued
+                and r.get('limits')==STREAM_LIMITS)
+            if qualified:receipt_sha=__import__('hashlib').sha256(raw).hexdigest()
+        except (OSError,ValueError,TypeError):pass
+    return {'supported':True,'qualified':qualified,'qualification_sha256':receipt_sha,'binding':binding(engine),'stream_sha256':STREAM_SOURCE_SHA256,'server_sha256':SERVER_SOURCE_SHA256,
+        'max_batch_size':max_queued,'max_active':4,'limits':deepcopy(STREAM_LIMITS),'unsupported_fields':list(UNSUPPORTED),
+        'requires_response_capture':True,'prefix_cache':False,'mtp':False,'preflight_path':'/v1/stream/preflight','completions_path':'/v1/stream/completions'}
+
+
+class StreamService:
+    """Route-neutral bounded API. Single serialized owner; durable IDs survive restart."""
+    def __init__(self,engine,receipt,*,max_queued=16,trial=None):
+        import threading
+        self.engine=engine;self.receipt=receipt;self.max_queued=max_queued;self.trial=trial or StreamTrial(engine);self.lock=threading.Lock()
+    def capability(self):return stream_capability(self.engine,self.receipt,max_queued=self.max_queued)
+    def preflight(self,value):return stream_preflight(self.trial,value,max_queued=self.max_queued)
+    def complete(self,value):
+        import os
+        from contextlib import contextmanager
+        @contextmanager
+        def exclusive():
+            if not self.lock.acquire(blocking=False):raise ValueError('Stream card busy; envelope not submitted')
+            try:yield
+            finally:self.lock.release()
+        with exclusive():
+            cap=self.capability()
+            if not cap['qualified']:raise ValueError('Stream runtime is not qualified')
+            value=deepcopy(stream_envelope(value,max_queued=self.max_queued))
+            path=self.engine.output/('stream-'+canonical_digest(value['batch_id'])+'.jsonl')
+            if path.exists():raise ValueError('Prior stream submission retained; no retry after uncertain result')
+            summary=self.preflight(value)
+            def append(f,event):f.write(json.dumps(event,allow_nan=False)+'\n');f.flush();os.fsync(f.fileno())
+            with path.open('x') as f:
+                append(f,{'state':'submitting','envelope':value,'preflight':summary,'capability':cap,'time':time.time()})
+                try:
+                    responses,metrics=self.trial.execute(value['requests'],time.monotonic()+STREAM_LIMITS['deadline_seconds'])
+                    append(f,{'state':'received','responses':responses,'metrics':metrics})
+                    expected=summary['request_sha256']
+                    if set(responses)!=set(expected) or len(responses)!=len(expected):raise ValueError('Missing/extra stream responses; no partial success')
+                    evidence=[]
+                    for request,digest in zip(value['requests'],expected):
+                        record=checked_parity(responses[digest],request,binding(self.engine),LocalStore(self.engine.output));evidence.append(record['evidence'])
+                    result={'batch_id':value['batch_id'],'results':[{'request_sha256':h,'response':responses[h]} for h in expected],'profiling':metrics}
+                    append(f,{'state':'validated','evidence':evidence,'response':result});return result
+                except BaseException as error:
+                    append(f,{'state':'uncertain_no_retry','error':repr(error),'time':time.time()});raise
+
+
 class Slots:
     """CPU ownership ledger: reserve entire budget before native admission."""
     def __init__(self,pages):self.free=set(range(pages));self.live={};self.epochs=[0]*4;self.history=[]
@@ -127,7 +230,7 @@ class StreamTrial(BatchEngine):
                     for s in list(owners):
                         if owners[s]['finished']:retire(s)
                     if not owners:
-                        if next_job<len(requests):raise ValueError('Head request cannot fit empty page pool')
+                        if next_job<len(requests):check_empty_readmission(ledger,prepared[next_job][0]['required_pages'][0])
                         continue
                     slots=sorted(owners);inp.row_slot_ids.fill_(-1);inp.row_generations.zero_();inp.sample_enabled.zero_();inp.live_rows.fill_(len(slots));inp.query_lengths.fill_(1)
                     for row,s in enumerate(slots):inp.row_slot_ids[row]=s;inp.row_generations[row]=owners[s]['epoch'];inp.sample_enabled[row]=1

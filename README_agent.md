@@ -13,6 +13,66 @@ hold the user prompt, seed and generation budget fixed; they do not inject a per
 system prompt or KV control. Saved activation recipes are checkpoint-bound, not universal
 personality descriptions or a claim that long-term companion memory is implemented.
 
+## Authored persona prompts and bounded preset search
+
+`data/persona_perturbation_prompts.jsonl` contains 3,072 independent original
+synthetic prompts authored with GPT-6.1 Terra: 2,443 discovery / 629 heldout.
+The manifest pins exact bytes, groups, splits and duplicate checks. Inputs have
+empty systems; anticipated behavioral sensitivity is metadata, not validated
+psychometrics. Download both files from the same Hub revision. The original row
+IDs remain stable. `persona_perturbation.registered_rows` adds `source_row_id` and
+canonical viewer IDs without rewriting the source or frozen Manager corpus.
+
+`persona_preset_overnight.py` freezes up to two variants for each of eight targets:
+960 discovery answers (five arms, six scenes, two seeds), then at most 384
+confirmation answers (four arms, six new scenes, two seeds). Zero, reversed and
+matched-random controls accompany baseline/candidates. All arms share neutral
+text; activation programs supply the variation. The v2 blind judge returns IDs
+of exact answer spans; unknown/cross-answer IDs are rejected. It remains a local
+Qwen-family automatic judge, not independent human ground truth.
+
+`persona_preset_followon.py` freezes new discovery/confirmation source groups
+from the completed authored corpus and constructs challengers using discovery
+evidence only. It can distribute interventions over L16/L24/L32/L40/L44/L48 or
+reduce the observed Dry Wit neuron dose. It does not learn from confirmation
+failures. Both controllers require a hash-bound qualified runtime gate, finite
+deadline and valid leases; uncertain requests are never silently replayed.
+
+`/api/sculptor` exposes a separate `evaluated_presets` envelope. Verification binds
+plan, model, calibration, exact program and evaluation files. Automatic acceptance
+requires 12 clean confirmation groups, at least eight behavioral wins and the
+cross-target distinctness gates. The reader replaces an incumbent only with a
+qualified challenger for that target, capped at eight. Loading preserves exact
+pushes/doses/phase; it does not reconstruct the recipe from five UI dial values.
+Historical presets and frozen selection inputs stay unchanged.
+
+`persona_preset_publication.py --root PATH --until EPOCH --publish` publishes
+`persona_preset_overnight_public.json` after 48 terminal answers, eight review
+groups, evaluation changes and at deadline. It reads only the allowlisted
+authored-study databases. Original synthetic prompts, generated answers, exact
+recipes, status and automatic judgments are public; deployment settings are
+excluded. Each upload records intent and verifies commit-pinned bytes. An
+uncertain attempt disables retries. Artifact hashes reference retained capture
+arrays; this JSON does not claim those arrays have been uploaded.
+
+## Capture performance evidence
+
+`persona_batch_optimization_public.json` records the readback benchmark at Git
+commit `707397a` and slot-refill canary at `dd29910`. Preserve those source versions
+when reconstructing the completed plans; later stream helper code is not covered
+by an earlier proof. The readback benchmark ran B1/B2/B4, inactive-slot holes and
+reversed order repeats: 40 exact comparisons, 2,504 generated tokens per mode,
+66.3213 seconds baseline versus 62.2313 optimized (1.06572×). Host timing includes
+existing synchronization; it is not kernel-only timing or sustained fleet rate.
+
+The refill canary matched eight isolated references, captured 394 consumed inputs
+over 136 decode rounds and reused a slot four times. Stream execution took 9.1920
+seconds including serialized prefill. This proves ownership/capture parity, not
+measured speedup versus matched fixed B4. Production remains fixed B4 dispatch;
+stream-service helpers require their own source-bound qualification before use.
+The server pins its imported source digest, preventing subsequent on-disk edits
+from relabeling an already loaded worker. No MTP capture qualification is claimed.
+
 ## Resolve and pin before reading
 
 ```python
@@ -729,10 +789,10 @@ answers distinct. Enqueue all jobs before running with `max_total_jobs=288` so
 heldout outcomes cannot enter the adaptive planner. No inference follows from
 building or loading this battery.
 
-The reasoning sweep is **underway, not finished**. Its first reporting checkpoint
-was 39 complete, nine valid length-limited captures and 240 queued. The nine were
+The reasoning sweep is **complete: 253 complete, 35 incomplete, zero failed**.
+Its first reporting checkpoint included nine valid length-limited captures that were
 reclassified offline with append-only audit records preserving their original
-classification and responses. No requests were replayed; the remaining queue resumed. `checked()` retains its complete-answer gate. The dedicated
+classification and responses. No requests were replayed. `checked()` retains its complete-answer gate. The dedicated
 strict parity validator admits full-budget length termination as capture-valid:
 `complete:false`, `error:null`, `generation_status:"length_limited"`,
 `capture_validated:true`, and Manager state `incomplete`. Invalid artifacts remain
