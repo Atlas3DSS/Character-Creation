@@ -8,6 +8,9 @@ A failed commit is checked against the Hub and retried with the same bytes;
 published shards are never rewritten. Raw activation arrays are not uploaded;
 each row carries the SHA-256 of its retained capture.
 
+When all 40,072 unsteered Big Five response pairs have finished, they are published once as baseline40k_responses/
+(four JSONL shards, manifest, README), joinable to the prefill activation archives by prompt_sha256.
+
 Combo and decline-nudge rows (2-4 neurons pushed together) go to their own stream, identity_combos/, with their own
 columns, manifest and README, so the single-neuron config keeps one schema across all of its shards.
 """
@@ -39,6 +42,12 @@ COMBO_CONFIG = '''- config_name: identity_combos
   - split: train
     path: identity_combos/answers-*.jsonl
 '''
+BASELINE_CONFIG = '''- config_name: baseline40k_responses
+  data_files:
+  - split: train
+    path: baseline40k_responses/responses-*.jsonl
+'''
+BASELINE_TOTAL, BASELINE_SHARDS = 40072, 4
 PUSH = pa.struct([('layer', pa.int16()), ('neuron', pa.int32()), ('unit_dose', pa.float32()), ('fixed', pa.bool_())])
 COMBO_SCHEMA = pa.schema([('kind', pa.string()), ('label', pa.string()), ('pushes', pa.list_(PUSH)), ('ramp_fraction', pa.float32()),
     ('ramp_step', pa.int8()), ('coherent_auto', pa.bool_()), ('declined_auto', pa.bool_()), ('answer', pa.string()),
@@ -166,6 +175,40 @@ incoherent reply. Decline nudges also stop at the first reply that no longer dec
 '''
 
 
+BASELINE_README = '''# Unsteered answers to 40,072 synthetic Big Five prompts (Qwen3.8-27B-NVFP4)
+
+Each row is one prompt from the project's generated Big Five scenario set and the unsteered reply of
+`nvidia/Qwen3.8-27B-NVFP4` (revision `482ca0f3832238542f8f5295dde86b5f22711d80`): user message only, no system
+prompt, greedy (temperature 0), seed 0, thinking off, at most 2,048 tokens, no steering. Load it with
+`load_dataset("Atlas3D/character-creation-big-five", "baseline40k_responses")`.
+
+## Activations for the same prompts
+
+The final-prompt-token activations of these prompts (MLP input, residual and pre-MLP for all 64 layers, captured
+from the same checkpoint with no steering) are in the `research_raw_*.tar` archives listed in
+`research_raw_manifest.json`. Each archive's entry manifest gives every array file's `prompt_sha256`; join on
+`prompt_sha256` here. Those captures are of the prompt only: they record the model's state before it answers,
+not while it writes the reply below.
+
+## Columns
+
+| Column | Meaning |
+|---|---|
+| `id` | Prompt id in the generated set |
+| `prompt`, `prompt_sha256` | The user message and SHA-256 of its UTF-8 text (join key to the activation archives) |
+| `answer`, `finish_reason`, `completion_tokens` | The reply; `finish_reason = length` means it hit 2,048 tokens |
+| `complete` | `finish_reason == "stop"` |
+| `coherent_auto`, `declined_auto` | Cheap automatic checks: collapse (empty, special tokens, loops) and a refusal to answer |
+| `seed`, `max_tokens`, `thinking`, `model`, `model_revision` | Generation settings |
+
+## Limitations
+
+- Prompts are model-generated scenario prompts (synthetic discovery material), not a validated psychometric set.
+- One greedy answer per prompt; sampling would vary.
+- The activations are bound to this exact checkpoint and runtime; they do not transfer to other models.
+'''
+
+
 def lens():
     detail = np.load(OUT / 'detail.npz', allow_pickle=False); names = json.loads((OUT / 'names.json').read_text())
     kinds = json.loads((OUT / 'summary.json').read_text())['modes']['up']['codes']
@@ -220,7 +263,8 @@ def on_hub(api, path, local):
 def card_operation():
     """Adds the identity_sweep / identity_combos configs to the dataset card if the live card lacks them."""
     text = Path(hf_hub_download(REPO, 'README.md', repo_type='dataset', force_download=True)).read_text()
-    missing = [block for name, block in (('identity_sweep', CONFIG), ('identity_combos', COMBO_CONFIG)) if f'config_name: {name}\n' not in text]
+    missing = [block for name, block in (('identity_sweep', CONFIG), ('identity_combos', COMBO_CONFIG), ('baseline40k_responses', BASELINE_CONFIG))
+               if f'config_name: {name}\n' not in text]
     if not missing: return None
     head, sep, body = text.partition('\n---\n')
     if not head.startswith('---') or not sep: return None
@@ -262,6 +306,43 @@ def tick(api, state, log):
     rows = [json.loads(line) for line in local.open()]
     for stream, sub in (('identity_sweep', state), ('identity_combos', combos)):
         cut(api, sub, log, stream, [r for r in rows if STREAMS[stream][0](r)], lambda: STATE.write_text(json.dumps(state, indent=1)))
+    publish_baseline(api, state, log, d)
+
+
+def publish_baseline(api, state, log, d):
+    """Once every baseline pair has finished and the export holds them all: one commit of four shards + README."""
+    if state.get('baseline40k_published'): return
+    status = OUT / 'identity_status_for_hub.json'
+    subprocess.run(['scp', '-q', '-o', 'BatchMode=yes', f"{d['host']}:{d['remote_root']}/results/identity_sweep/status.json", str(status)], timeout=120, check=True)
+    counts = (json.loads(status.read_text()).get('baseline40k') or {}).get('counts') or {}
+    if counts.get('queued') or counts.get('running') or sum(counts.values()) < BASELINE_TOTAL: return
+    local = OUT / 'baseline40k_pairs.jsonl'
+    subprocess.run(['scp', '-q', '-o', 'BatchMode=yes', f"{d['host']}:{d['remote_root']}/results/identity_sweep/baseline40k_pairs.jsonl", str(local)], timeout=900, check=True)
+    rows = [json.loads(line) for line in local.open()]
+    if len(rows) != counts.get('done', 0): return  # the 10-minute export has not caught up yet
+    out, size = [], -(-len(rows) // BASELINE_SHARDS)
+    for i in range(BASELINE_SHARDS):
+        path = OUT / f'baseline40k_responses-{i:05d}.jsonl'
+        with path.open('w') as stream:
+            for r in rows[i * size:(i + 1) * size]:
+                stream.write(json.dumps({'id': r['id'], 'prompt': r['prompt'], 'prompt_sha256': hashlib.sha256(r['prompt'].encode()).hexdigest(),
+                    'answer': r['answer'], 'finish_reason': r['finish_reason'], 'completion_tokens': r['completion_tokens'],
+                    'complete': r['complete'], 'coherent_auto': bool(r['coherent_auto']), 'declined_auto': bool(r['declined_auto']),
+                    'seed': r['seed'], 'max_tokens': r['max_tokens'], 'thinking': r['thinking'], **MODEL}, ensure_ascii=False) + '\n')
+        out.append((f'baseline40k_responses/responses-{i:05d}.jsonl', path))
+    manifest = OUT / 'baseline40k_responses_manifest.json'; readme = OUT / 'baseline40k_responses_README.md'
+    manifest.write_text(json.dumps({'schema': 'character-creation.baseline40k-responses.v1', 'repo': REPO, **MODEL, 'rows': len(rows),
+        'not_finished': {k: v for k, v in counts.items() if k != 'done'}, 'complete': sum(r['complete'] for r in rows),
+        'shards': [{'file': name.split('/')[-1], 'sha256': sha(path)} for name, path in out]}, indent=1))
+    readme.write_text(BASELINE_README)
+    operations = [CommitOperationAdd(name, str(path)) for name, path in out] + [
+        CommitOperationAdd('baseline40k_responses/manifest.json', str(manifest)), CommitOperationAdd('baseline40k_responses/README.md', str(readme))]
+    card = card_operation()
+    if card: operations.append(card)
+    commit = api.create_commit(REPO, operations, repo_type='dataset', commit_message=f'baseline40k_responses: {len(rows)} unsteered answers')
+    if not all(on_hub(api, name, path) for name, path in out): raise RuntimeError('Baseline shards not visible after commit')
+    state['baseline40k_published'] = {'commit': commit.oid, 'rows': len(rows), 'at': iso(time.time())}
+    log('published', shard='baseline40k_responses', rows=len(rows))
 
 
 def cut(api, state, log, stream, rows, save):
