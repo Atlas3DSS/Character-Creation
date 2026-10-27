@@ -95,6 +95,12 @@ The learned-control literary pilot produced 15 complete responses and one trunca
 
 A separate 216-capture study tested six source neurons in six contexts with baseline, zero and four signed-dose arms. All 36 baseline/zero pairs matched; all 144 nonzero arms preserved the recorded upstream/unaffected same-layer panel values. Effects depended on context, and even weakly associated neurons could have effects. These short activation observations do not measure story quality or reveal direct neural wiring.
 
+## Four requests on one card: verified native proof
+
+A native test ran four distinct neuronal injections concurrently in one decode graph. Across 16 run sets, repeatability, slot/row permutations and unaffected-request isolation passed. The matched four-request run generated **203 tokens** in **3.165 seconds**, versus **8.779 seconds** serially: **2.77377× warm wall-speedup**. First-decode logits and hidden values, and the entire generated token sequences, matched the serial references exactly.
+
+This is a bounded runtime proof, not evidence of better personalities or a production four-request API. Production B4 HTTP serving and intermediate activation capture are not yet qualified. The next step is B4 capture validation. The [public proof](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_batch_public.json) describes the experiment and identifies its [numeric arrays](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_batch_proof.npz) by hash; timing excludes model preparation.
+
 ## Read results with the right limits
 
 A calibrated concept label requires held-out evidence, including a **95% Wilson precision lower bound above 70%**, plus the qualification’s recall, coverage, and balanced-accuracy checks. That is conditional performance on authored text probes—not a universal probability that a neuron “means” a word. Discovery examples select candidates; held-out examples evaluate frozen choices. Neither activation magnitude nor label direction establishes the sign of a useful steering intervention.

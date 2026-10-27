@@ -446,7 +446,7 @@ Preserved requirements for completing learned-graft integration:
 1. Preserve the frozen capture runtime and ledger. Add a separately bound interactive
    adapter with exact model, tokenizer, runtime, cache-layout, rotary-position and
    artifact hashes. Reject mismatches before inference. GPU qualification uses fleet
-   admission; John remains reserved for chemistry.
+   admission. Historical chemistry reservation is superseded by the owner’s finite John planner authorization; coexist through workboard admission without displacing active chemistry.
 2. Establish cached benign literary context equivalence using the complete hybrid
    state. This is a cached-text control, not a learned Phantom-KV result. A learned
    attention-only graft must be labelled as such and independently qualified; it has
@@ -610,6 +610,44 @@ and [Jacobian-lens theory](https://arxiv.org/abs/2610.31955).
 This is response-contrast steering and finite-difference instrumentation, not GRPO,
 self-reward training, weight interpolation or an exact Jacobian-lens implementation.
 
+## Verified native B4 proof and release boundary
+
+The source-bound `character-creation.batch-proof.v1` experiment passed; its separate
+`character-creation.batch-proof-validation.v1` receipt reports `verified:true` and
+`passed:true`. All 16 run sets cover serial/pair/four-request execution, exact repeats,
+physical-slot and packed-row permutations, unaffected requests, early-finished holes,
+and sampled RNG isolation. The four distinct pushes are L32 N1728 MLP-input +0.1,
+L32 N2608 output-column −0.1, L32 extraversion residual +0.1, and L32 seeded random
+residual +0.1. Each receives the same authored arithmetic-correction prompt.
+
+Matched serial versus B4 warm runs each generated **203 tokens**: 8.779256891 versus
+3.165097378 wall seconds (**2.773771497×**). All four first-decode comparisons have
+KL=0, max-absolute logit difference=0, hidden relative L2=0 and equal top-1; full
+recorded token sequences are exact. Gates were frozen at KL≤0.01, hidden relative
+L2≤0.02, top-1 agreement=1, plus exact repeats/isolation/permutations. The result
+uses serial per-request prefill followed by a true four-active-token decode graph;
+it is not four concurrently queued B1 calls. Timings exclude model preparation.
+
+`persona/persona_batch_release.py` produces `results/persona_batch_public.json`
+(`character-creation.batch-public.v1`) offline from byte-bound proof, plan,
+validation receipt and NPZ. The JSON includes the authored prompt, four push
+specifications, exact sparse program vectors, policy, all16 run summaries, gates,
+timings, core/source identities and an exact NPZ filename/SHA/size/array inventory.
+Its prior-event projection preserves the failed pre-execution graph-catalog attempt
+without host units, lease IDs, local paths or the prior worker manifest.
+The unchanged numeric-only `persona_batch_proof.npz` holds 32 arrays. Sanitized JSON
+omits raw physical completion traces and deployment receipts: **do not claim it is
+independently executable input to the raw validator**. First-decode arrays are retained;
+later logit equality is supported by recorded hashes rather than full logit arrays.
+
+Production B4 HTTP routing and intermediate B4 activation capture remain unqualified.
+The next gate is B4 capture validation, then an explicit production integration decision.
+The ordinary five/six B1 worker binding remains separate from the experimental callback
+runtime; checkpoint/prepared identities and exact production-core hashes establish
+which code is shared. No automatic rollout or personality/default promotion follows.
+John is now authorized for a finite planning role through normal shared workboard
+admission; active chemistry services must remain untouched.
+
 ## Operating a fork
 
 - CPU dependencies: `python -m pip install -r requirements-persona.txt` (includes optional
@@ -626,8 +664,9 @@ self-reward training, weight interpolation or an exact Jacobian-lens implementat
 - Activation launcher accepts `--config`, `--jobs-config` and optional fleet keys
   `remote_project_root`, `heliopause_path`, `model_path`, `calibration_dir`.
 - Reference multi-card schedulers, GPU leases, thermal checks and memory admission require
-  adaptation to your infrastructure. Single-card/multi-request behavior is not qualified by
-  the six independent B1 workers. Never remove locks to claim concurrent request safety.
+  adaptation to your infrastructure. The separate native B4 proof above does not turn
+  production B1 workers into a qualified multi-request HTTP/capture service. Never remove
+  locks to claim concurrent request safety.
 - Detailed setup: [Explorer guide](https://github.com/Atlas3DSS/Character-Creation/blob/main/PERSONA_EXPLORER.md),
   [porting guide](https://github.com/Atlas3DSS/Character-Creation/blob/main/fork_agent.md).
 

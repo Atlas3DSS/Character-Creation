@@ -19,7 +19,8 @@ class BatchProofTests(unittest.TestCase):
         with self.assertRaises(ValueError):allocation([100],[0],32,4096)
     def prepared(self):
         signatures={f'decode{n}':SimpleNamespace(kind='decode',batch_capacity=n,speculation_enabled=False) for n in (1,2,4)}
-        return SimpleNamespace(signatures=signatures,resources=[{n:object() for n in signatures}])
+        owners={f'decode{n}':SimpleNamespace(batch=SimpleNamespace(rows=n),decoder=object()) for n in (1,2,4)}
+        return SimpleNamespace(signatures=signatures,resources=[owners])
     def test_selects_actual_four_request_decode(self):
         p=self.prepared();names,_=select_graphs(p);self.assertEqual(names[4],'decode4')
         p.signatures['decode4'].speculation_enabled=True
@@ -27,6 +28,9 @@ class BatchProofTests(unittest.TestCase):
     def test_missing_or_ambiguous_catalog_rejected(self):
         p=self.prepared();del p.signatures['decode4']
         with self.assertRaises(ValueError):select_graphs(p)
+    def test_signature_and_graph_maps_are_not_owner_catalogs(self):
+        p=self.prepared();p.resources.extend([p.signatures,{n:object() for n in p.signatures}])
+        self.assertEqual(select_graphs(p)[0][4],'decode4')
         p=self.prepared();p.resources.append(p.resources[0])
         with self.assertRaises(ValueError):select_graphs(p)
     def test_distribution_metric_is_shift_invariant(self):

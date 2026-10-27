@@ -41,7 +41,9 @@ def select_graphs(prepared):
         matches=[n for n,s in prepared.signatures.items() if s.kind=='decode' and s.batch_capacity==rows and s.speculation_enabled is False]
         if len(matches)!=1:raise ValueError(f'Exactly one ordinary decode{rows} graph required')
         names[rows]=matches[0]
-    catalogs=[r for r in prepared.resources if isinstance(r,Mapping) and all(n in r for n in names.values())]
+    catalogs=[r for r in prepared.resources if isinstance(r,Mapping)
+              and all(hasattr(r.get(n),'batch') and hasattr(r.get(n),'decoder')
+                      and r[n].batch.rows==rows for rows,n in names.items())]
     if len(catalogs)!=1:raise ValueError('One retained ordinary graph catalog required')
     return names,catalogs[0]
 
@@ -122,11 +124,13 @@ class BatchTrial:
                 consumed,count,sample=expected[i]
                 results[i]=probe.validate_completion(records[slots[i]],after[slots[i]],epoch=epochs[i],sequence=e.sequence,
                     consumed=consumed,generated=count,sampled=sample,budget=cases[i]['budget'],eos=e.eos,vocabulary=e.vocabulary)
-            traces.append({'graph':name,'sequence':e.sequence,'active_slots':sorted(active_slots),'state':[list(x) for x in after]})
+            traces.append({'graph':name,'sequence':e.sequence,'active_slots':sorted(active_slots),
+                           'state':[list(x) for x in after],'completion_records':records})
             if decode:
                 decode_ms+=elapsed;decode_rounds+=1
                 owner=self.catalog[name];actual=int(owner.batch.metadata.live_counts[0].item())
                 if actual!=len(active):raise probe.ProtocolError('Packed decode did not execute all active tokens')
+                traces[-1]['actual_decode_tokens']=actual
                 if initial_active is None:initial_active=actual
                 row_for={logical:row for row,logical in enumerate(order)}
                 logits=owner.decoder.scratch.logits.cpu().numpy().copy()
@@ -192,7 +196,15 @@ def metrics(reference,candidate):
 
 def experiment(engine,args):
     path=args.output/'persona_batch_proof.json';arrays_path=args.output/'persona_batch_proof.npz'
-    if path.exists() or arrays_path.exists():raise FileExistsError('Retain existing proof; no implicit rerun')
+    history=[]
+    if path.exists():
+        old=json.loads(path.read_text())
+        if (not args.recover_unstarted or old.get('state')!='failed_pre_execution' or old.get('runs')
+                or old.get('artifact') or old.get('policy_sha256')!=sha(args.proof_plan)
+                or old.get('failed_worker_manifest',{}).get('status')!='failed'):
+            raise FileExistsError('Retain existing proof; recovery requires a verified unstarted trial')
+        history=[old]
+    if arrays_path.exists():raise FileExistsError('Existing native proof arrays must not be overwritten')
     plan=json.loads(args.proof_plan.read_text())
     if plan['schema']!='character-creation.batch-proof-plan.v1' or plan['policy']!=POLICY or plan['model_identity']!=engine.model.identity:raise ValueError('Frozen proof policy/model differs')
     if sha(args.output/'layer_32.npz')!=plan['calibration_sha256']:raise ValueError('Calibration changed')
@@ -205,7 +217,9 @@ def experiment(engine,args):
         'policy_sha256':sha(args.proof_plan),'driver_sha256':sha(__file__),'production_binding':plan['production_binding'],
         'production_core_source_hashes':core,'production_core_equal':True,'binding':{**plan['production_binding'],'runtime_identity':engine.manifest['runtime_identity']},
         'gpu_uuid':engine.manifest['gpu_uuid'],'lease_id':engine.manifest['lease_id'],'runs':{},'checks':{},'automatic_rollout':False}
-    atomic(path,report);arrays={};results={};trial=BatchTrial(engine);cases=plan['cases']
+    report['eos_token_ids']=list(engine.eos)
+    if history:report['prior_attempts']=history
+    atomic(path,report);arrays={};results={};trial=None;cases=plan['cases']
     def run(name,items,**options):
         print('batch-proof '+name,flush=True)
         value=trial.execute(items,**options);results[name]=value
@@ -217,6 +231,10 @@ def experiment(engine,args):
         return all(a['generated'][i]==b['generated'][i] and hashes(a,i)==hashes(b,i)
                    and np.array_equal(a['_logits'][i],b['_logits'][i]) and np.array_equal(a['_hidden'][i],b['_hidden'][i]) for i in indices)
     try:
+        trial=BatchTrial(engine)
+        report['decode_graphs']={str(rows):{'name':name,'batch_capacity':rows,
+            'token_capacity':engine.prepared.signatures[name].token_capacity,'speculation_enabled':False} for rows,name in trial.names.items()}
+        atomic(path,report)
         for i,c in enumerate(cases):run('serial_'+str(i),[c],width=1)
         run('pair_0',cases[:2],width=2);run('pair_1',cases[2:],width=2)
         base=run('four',cases,width=4)
@@ -270,7 +288,9 @@ def main():
         with a.output.open('x') as f:json.dump(value,f,indent=2,allow_nan=False)
         print(json.dumps({'plan':str(a.output),'sha256':sha(a.output)}))
     else:
-        p=probe.argument_parser();p.add_argument('--proof-plan',type=Path,required=True);args=p.parse_args();probe.run(args,experiment=experiment)
+        p=probe.argument_parser();p.add_argument('--proof-plan',type=Path,required=True)
+        p.add_argument('--recover-unstarted',action='store_true',help='Explicit recovery only after saved pre-execution failure; retains prior receipt')
+        args=p.parse_args();probe.run(args,experiment=experiment)
 
 
 if __name__=='__main__':main()
