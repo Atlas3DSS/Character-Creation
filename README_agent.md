@@ -86,6 +86,19 @@ occur at 48-terminal-job milestones and final/deadline, with durable intent and
 commit-pinned verification. The source pins this corpus revision and runtime
 gate; a fork must configure and qualify its own admitted workers.
 
+`persona_contrastive_backfill.py` keeps capture independent of judge latency.
+Its frozen plan chooses 512 domain-balanced Terra discovery groups, excluding
+both partitions of the primary and follow-on studies. It reuses the eight exact
+distributed recipes from verified follow-on job prototypes at seed 80411.
+Each scene has one shared baseline and candidate/reversal/matched-random arms
+for each recipe: 12,800 maximum jobs. Every contrast points to its shared
+baseline job ID. The existing PriorityQueue yields at claim and before submission;
+already submitted batches drain. No judge calls or preset promotion occur here.
+The reference run stops dispatch at 07:49 PDT, reserving the 600-second request
+timeout plus a validation margin before 08:00. Its atomic public report is
+`persona_contrastive_backfill_public.json`, with authored text, saved answers,
+exact interventions and capture hashes; raw arrays are not included in that JSON.
+
 `persona_preset_publication.py --root PATH --until EPOCH --publish` publishes
 `persona_preset_overnight_public.json` after 48 terminal answers, eight review
 groups, evaluation changes and at deadline. It reads only the allowlisted

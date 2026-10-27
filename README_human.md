@@ -20,6 +20,14 @@ This queue yields to persona studies and interactive comparisons, and publishes
 [completed batches](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_perturbation_mapping_public.json).
 These are baseline observations for association research, not persona validation.
 
+While the judge evaluates persona candidates, a separate background queue tests
+eight existing recipes across 512 additional discovery scenes. Each scene has
+one shared baseline plus positive, reversed and random-control interventions:
+12,800 planned responses, limited by the overnight compute window. This measures
+how recipe effects vary with context. Confirmation scenes stay excluded, and
+confirmation or interactive work takes priority. Completed answers and capture
+hashes are published in batches; these exploratory results do not qualify a preset.
+
 ## Start without a GPU
 
 You can inspect prompts, analyze published measurements, and develop evaluation code on an ordinary computer. You do not need to load the model to use the public [Hugging Face dataset](https://huggingface.co/datasets/Atlas3D/character-creation-big-five). The [GitHub repository](https://github.com/Atlas3DSS/Character-Creation) supplies the workbench and analysis code; the Hub repository supplies the public data and published research artifacts.
