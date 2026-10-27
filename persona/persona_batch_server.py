@@ -16,6 +16,8 @@ import persona_probe as probe
 from persona_trace import ResponseCapture
 from persona_vectors import canonical_digest
 
+SERVER_SOURCE_SHA256=probe.file_hash(__file__)
+
 REUSED={'persona_batch_probe.py':'297cb97da6ab68ed747860a5a8540262eb83665db7023e01dd63b3d230a3b1ee',
         'persona_batch_capture.py':'04541454c5fbb0b71223dcf9aa0b2f832f1303b3dd231bbce416ab8b71b04f58'}
 UNSUPPORTED=('kv_control','capture_search','capture_trace','capture_prefill','steering_pulse','prefill_stop')
@@ -103,7 +105,7 @@ class BatchEngine:
         if self.receipt and Path(self.receipt).exists():
             r=json.loads(Path(self.receipt).read_text())
             qualified=(r.get('schema')=='character-creation.batch-service-qualification.v1' and r.get('verified') is True and r.get('passed') is True
-                and r.get('binding')==binding(e) and r.get('server_sha256')==probe.file_hash(__file__)
+                and r.get('binding')==binding(e) and r.get('server_sha256')==SERVER_SOURCE_SHA256
                 and r.get('physical_pages')==e.capacity[1] and r.get('page_tokens')==e.page_tokens)
             if qualified:receipt_sha=probe.file_hash(self.receipt)
         return {'supported':True,'qualified':qualified,'qualification_sha256':receipt_sha,'max_batch_size':4,
@@ -285,6 +287,8 @@ class BatchEngine:
 
 def serve(engine,args):
     """Runs under the existing finite leased probe callback, with unchanged B1 handler."""
+    if any(engine.manifest.get(key)!=SERVER_SOURCE_SHA256 for key in ('experiment_source_sha256','preparation_adapter_source_sha256')):
+        raise ValueError('Loaded service source differs from the preparation/runtime manifest')
     batch=BatchEngine(engine,args.batch_qualification);original_descriptor=engine.descriptor
     def descriptor():
         value=original_descriptor();value['flare']['batch']=batch.capability();return value

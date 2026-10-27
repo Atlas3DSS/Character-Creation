@@ -70,6 +70,25 @@ def test_qualification_exact_binding_gate(tmp_path):
     receipt['binding']['runtime_identity']='f'*64;s.receipt.write_text(json.dumps(receipt));assert s.capability()['qualified'] is False
 
 
+def test_qualification_uses_loaded_source_not_later_disk_deployment(tmp_path,monkeypatch):
+    import persona_batch_server as module
+    e=engine(tmp_path);s=BatchEngine.__new__(BatchEngine);s.e=e;s.receipt=tmp_path/'qualification.json'
+    receipt={'schema':'character-creation.batch-service-qualification.v1','verified':True,'passed':True,'binding':binding(e),
+        'server_sha256':module.SERVER_SOURCE_SHA256,'physical_pages':8,'page_tokens':128}
+    s.receipt.write_text(json.dumps(receipt));original=module.probe.file_hash
+    monkeypatch.setattr(module.probe,'file_hash',lambda p:'f'*64 if Path(p)==Path(module.__file__) else original(p))
+    assert s.capability()['qualified'] is True
+    receipt['server_sha256']='f'*64;s.receipt.write_text(json.dumps(receipt))
+    assert s.capability()['qualified'] is False
+
+
+def test_service_rejects_import_preparation_source_race(tmp_path):
+    import persona_batch_server as module
+    e=engine(tmp_path);e.manifest.update(experiment_source_sha256='f'*64,preparation_adapter_source_sha256=module.SERVER_SOURCE_SHA256)
+    with pytest.raises(ValueError,match='Loaded service source'):
+        module.serve(e,SimpleNamespace())
+
+
 def test_saved_per_job_response_passes_existing_checked(tmp_path):
     from persona_propagation import checked
     e=engine(tmp_path,64,5120);s=BatchEngine.__new__(BatchEngine);s.e=e
