@@ -77,6 +77,10 @@ configs:
   data_files:
   - split: train
     path: scenarios.jsonl
+- config_name: identity_sweep
+  data_files:
+  - split: train
+    path: identity_sweep/answers-*.jsonl
 ---
 # Character Creation — synthetic Big Five scenarios
 

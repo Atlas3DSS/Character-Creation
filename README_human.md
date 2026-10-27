@@ -38,21 +38,28 @@ shows saved baseline and candidate answers side by side, with reversal and
 random controls available below. The same question opens cast and preset
 comparisons and the default shared battery.
 
-John, the local planning/review model, makes short calls only when foreground
+The local planning/review model makes short calls only when foreground
 work leaves it idle. It reviews saved answers and chooses IDs from a fixed menu
 of 66 source-bound candidates; it cannot invent neuron coordinates. Five GPU
-workers run native four-request batches, excluding Quincy 5 for this run.
+workers run native four-request batches; the sixth card was assigned to other work.
 Each full candidate adds four fresh discovery scenes and the identity question,
 with matched seeds and controls. These are discovery trials, not qualified
 presets; held-out scenes and confirmation outcomes do not guide the search.
 Foreground work takes priority before new submissions, while submitted batches
-drain without hard preemption. The current run stops dispatch at **07:49 PDT on
-October 27, 2026**, with an **08:00 PDT** cutoff.
+drain without hard preemption. Each run has a finite dispatch deadline and cutoff.
 
 Saved adaptive inputs, answers and automatic judgments are reported in
 `persona_adaptive_public.json`; the identity fixture, retaining its original 200 questions, is
 `data/identity_probe_questions.json`. Publication is separate from inference.
 See the [agent guide](README_agent.md) for preparation and publication commands.
+
+## Ask every neuron "who are you"
+
+Open `/neuron-atlas` in the explorer for one dot per neuron: what it writes when pushed up or down, which prompts
+raise it, and what evidence we hold. **Ask "who are you" for these neurons** in the Library queues a sweep: each
+neuron is pushed up and down, starting strong and retrying weaker until the reply is coherent, because this 27B
+falls silent under strong single-neuron pushes. Answers appear in each neuron's panel and are published in batches
+to the `identity_sweep` config on the Hub. The sweep starts with core human emotions.
 
 ## Start without a GPU
 
@@ -129,7 +136,7 @@ Activity is a contextual clue, not confidence that a neuron means a concept. Pre
 
 A separate **288-answer diagnostic sweep is complete**: 24 authored prompts × six activation arms × two seeds. It retained response activation means across all 64 layers from **136,018 consumed generated tokens**. The blinded reviewer was a local Qwen-family model, not a human or independent source of truth. It flagged detail issues in baseline and steered answers; no recipe became a default. The release files are [answers, recipes and review](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_personality_public.json) and the [response activation bundle](https://huggingface.co/datasets/Atlas3D/character-creation-big-five/blob/main/persona_personality_capture_bundle.npz). These are discovery comparisons, separate from the 256-answer pilot below.
 
-The **256-answer persona pilot is complete** across all six Quincies. It tested two response-derived candidates—dry skeptical wit and warm attentive candor—alongside their reversals, baseline and equal-strength random steering. It used 21 fresh scenes and two seeds (252 answers), plus four reproducibility checks. All four checks reproduced the exact tokens and text on different cards. Eight separate development scenes supplied the answer-token activation contrasts.
+The **256-answer persona pilot is complete** across all six GPU workers. It tested two response-derived candidates—dry skeptical wit and warm attentive candor—alongside their reversals, baseline and equal-strength random steering. It used 21 fresh scenes and two seeds (252 answers), plus four reproducibility checks. All four checks reproduced the exact tokens and text on different cards. Eight separate development scenes supplied the answer-token activation contrasts.
 
 The blinded model judge found a repeatable dry-wit effect: on the nine held-out scenes, the candidate improved its target score by **0.89 out of 4 against baseline** and **0.83 against random steering**. The warmth candidate improved by 0.44 against baseline, but its 0.17 advantage over random steering remained uncertain. Invented details, missing details and coherence issues occurred in the comparisons, so neither candidate became a default. These are model judgments with descriptive uncertainty estimates, not human certification.
 

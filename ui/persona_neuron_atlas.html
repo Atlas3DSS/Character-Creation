@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neuron Atlas · Atlas</title>
+<link rel="icon" href="/atlas-logo.png">
+<link rel="stylesheet" href="/persona_neuron_atlas.css">
+<body>
+<header>
+  <img src="/atlas-logo.png" alt="">
+  <a class="brand" href="/">Character Creation</a>
+  <nav aria-label="Atlas sections"><a href="#top">Neuron Atlas</a><a href="#atlas">Atlas</a><a href="#library">Library</a><a href="#method">Method</a></nav>
+  <a class="back" href="/#map">← Explorer</a>
+</header>
+<main>
+<section id="top" class="hero">
+  <div class="hero-text">
+    <p class="kicker">Qwen3.8-27B · 64 layers × 17,408 MLP neurons</p>
+    <h1>Every neuron in our 27B, on one page</h1>
+    <p class="lede">Each of its <b id="h-total">1,114,112</b> MLP neurons has a dot. The dot's colour shows what that neuron writes into the vocabulary when pushed up or down, which kind of prompt activates it most, or what evidence we hold about it.</p>
+    <p class="lede dim" id="h-captures">Built from the checkpoint lens and our unsteered all-neuron captures.</p>
+    <div class="cta"><a class="primary" href="#atlas">View the atlas</a><a class="button" href="#library">Search the library</a></div>
+  </div>
+  <div class="hero-chat" aria-live="polite">
+    <p class="prompt">who are you</p>
+    <div id="h-slide" class="slide"><p class="dim">Loading saved comparisons…</p></div>
+    <div class="hero-nav"><button type="button" id="h-prev" aria-label="Previous">‹</button><span id="h-pos" class="dim"></span><button type="button" id="h-next" aria-label="Next">›</button></div>
+  </div>
+</section>
+
+<section id="atlas">
+  <div class="section-head">
+    <div><h2>Atlas of every neuron</h2>
+    <p class="dim">Each square is one layer, 132 × 132 dots. Neurons with similar output directions sit near each other. Hover a dot for its label; click it to open the neuron. Click a legend entry to show only that category.</p></div>
+    <div class="modes" role="tablist" aria-label="Colour by">
+      <button type="button" data-mode="up" aria-selected="true">Lens · pushed up</button>
+      <button type="button" data-mode="down">Lens · pushed down</button>
+      <button type="button" data-mode="activation">What activates it</button>
+      <button type="button" data-mode="evidence">Our evidence</button>
+    </div>
+  </div>
+  <div id="legend" class="legend"></div>
+  <p id="mode-note" class="hint"></p>
+  <div id="grid" class="grid"><p class="dim">Loading the atlas…</p></div>
+  <div id="tip" class="tip" hidden></div>
+  <h3>By layer</h3>
+  <p class="dim" id="bylayer-title"></p>
+  <div id="bylayer" class="bylayer"></div>
+</section>
+
+<section id="library">
+  <div class="section-head"><div><h2>Library</h2>
+  <p class="dim">Search the label of every neuron, in either direction, and filter by category, layer and evidence. Open any neuron by layer and number.</p></div></div>
+  <div class="controls">
+    <label>Search<input id="q" type="search" placeholder="lust, sarcas, grief, dog…" autocomplete="off"></label>
+    <label>Colour mode<select id="l-mode"><option value="up">Lens · up</option><option value="down">Lens · down</option><option value="activation">What activates it</option><option value="evidence">Evidence</option></select></label>
+    <label>Category<select id="l-cat"><option value="">Any</option></select></label>
+    <label>Layers<span class="pair"><input id="l-min" type="number" min="0" max="63" value="0"><input id="l-max" type="number" min="0" max="63" value="63"></span></label>
+    <label>Sort<select id="l-sort"><option value="strength">Strongest lens</option><option value="selective">Most prompt-selective</option><option value="layer">Layer</option></select></label>
+    <label class="check"><input id="l-evidence" type="checkbox"> With evidence only</label>
+    <a id="l-csv" class="button" href="#" download="neuron-atlas.csv">Download CSV</a>
+  </div>
+  <div class="sweep-row"><button type="button" id="sweep" class="primary">Ask “who are you” for these neurons</button>
+    <span class="hint">Queues up to the first 2,000 matching neurons on the GPU workers. Each is pushed up and down, starting at strength 1× and retrying at 0.5×, 0.25× and 0.125× while the reply collapses. Greedy, 160 tokens, compared with one unsteered answer.</span></div>
+  <p id="sweep-status" class="dim"></p>
+  <form id="open" class="open"><span>Open a neuron</span><input id="o-layer" type="number" min="0" max="63" placeholder="Layer" required><input id="o-neuron" type="number" min="0" max="17407" placeholder="Neuron" required><button type="submit">Open</button></form>
+  <p id="l-count" class="dim"></p>
+  <div id="cards" class="cards"></div>
+  <button type="button" id="more" class="wide" hidden>Show more</button>
+</section>
+
+<section id="method">
+  <h2>Method</h2>
+  <div class="method">
+    <div>
+      <h3>Lens · pushed up / down</h3>
+      <pre>logits = lm_head · RMSNorm(± W_down[:, n])</pre>
+      <p>For each neuron we project its down-projection column, and its negation, through the final norm and the unembedding, using the checkpoint's NVFP4 weights in FP32. We keep the top 24 tokens per direction. The colour comes from a weighted vote over the top 12 token kinds. <i>Feeling &amp; character</i> means at least two of the top eight tokens, or the label itself, are words about feelings, desire, temperament, morals or relationships. The label is the most repeated normalized token, otherwise the top token.</p>
+      <h3>What activates it</h3>
+      <p>We use the final-prefill SwiGLU products for all 1,114,112 neurons, from every capture with no steering (or an all-zero program), averaged per distinct prompt. Each authored scenario family maps to one of eight prompt types. A neuron is coloured by the prompt type with the largest standardized mean difference against all other prompts, if that difference is at least <span id="m-sel">0.8</span> SD. Otherwise it shows as <i>No clear preference</i>. A prompt type needs at least <span id="m-min">60</span> prompts to colour neurons; smaller ones, including today's “who are you” set, are listed but cannot win, because very short prompts shift the final-token state for formatting reasons alone.</p>
+      <h3>Our evidence</h3>
+      <p>The highest-priority evidence wins: a recorded concept label (activation contrast), a push in a saved recipe (adaptive and preset studies), a hit in the association searches, or a Big Five map candidate.</p>
+    </div>
+    <div>
+      <h3>Setup</h3>
+      <dl id="m-setup"></dl>
+      <h3>Steering convention</h3>
+      <pre>h_L ← h_L + c · W_down[:, n]
+c = dose · median‖resid_L‖ / ‖W_down[:, n]‖</pre>
+      <h3>Limitations</h3>
+      <ul>
+        <li><b>The lens is static.</b> It shows what a neuron's output direction favours in the vocabulary. It does not show what the model says when that neuron is pushed. Middle-layer lenses are noisy, and many neurons show as <i>Mixed</i> or <i>Word pieces</i>.</li>
+        <li><b>Activation is an association.</b> It covers final-prefill activity over authored prompts only. It is not a causal effect, and the prompt types are coarse groupings of the authored families. Long story-continuation prompts differ from chat turns in format as well as content, so part of the <i>Stories</i> colour is likely format.</li>
+        <li><b>No full single-neuron sweep yet.</b> The reference atlas pushed every neuron of Qwen3-8B and asked “Who are you?”. For this checkpoint we hold “who are you” answers only for saved multi-neuron recipes (shown at the top), not for every neuron. The per-neuron identity sweep has started with the core-emotion neurons; their answers appear in each neuron's panel. On this 27B a single push collapses the reply to nothing near 0.3× at layer 0, so every direction cascades from 1× down to 0.125× and keeps the strongest coherent reply. Coherence is a cheap automatic check (length, special tokens, loops) until John labels the replies.</li>
+        <li><b>Labels are automatic.</b> No human has checked them.</li>
+      </ul>
+      <p class="dim">Inspired by the <a href="https://qwen-neurons-site.vercel.app/">Neuron Persona Library</a>, Sauers' single-neuron steering, and <a href="https://github.com/lyramakesmusic/neuron-explorer">Lyra's neuron-explorer</a>. Independently implemented on Atlas's Flare V100 runtime.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<div id="drawer" class="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="d-title">
+  <div class="drawer-card">
+    <div class="drawer-head"><h2 id="d-title"></h2><div><button type="button" id="d-prev" aria-label="Previous neuron">‹</button><button type="button" id="d-next" aria-label="Next neuron">›</button><button type="button" id="d-copy">Copy link</button><button type="button" id="d-close" aria-label="Close">×</button></div></div>
+    <div id="d-body"></div>
+  </div>
+</div>
+<div id="toast" class="toast" hidden></div>
+<script src="/persona_neuron_atlas.js" defer></script>
+</body></html>

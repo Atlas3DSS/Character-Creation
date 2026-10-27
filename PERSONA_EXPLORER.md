@@ -85,7 +85,7 @@ Saved comparisons retain their original recipes, preset catalog, calibrated-dire
 
 Worker availability means **reachable with a verified identity**, not idle. The cards are shared with overnight sweeps. A common endpoint pool limits legacy comparisons and workspace batches to one UI inference request per configured worker; fewer reachable workers execute the admitted jobs in waves. A reachable model, prepared-package or runtime mismatch rejects admission. Transport loss after admission is recorded as a cell failure. The capacity display refreshes about every ten seconds and reports context and thinking support when known. These are leased services, not an always-on fleet: the 2026-10-25 overnight window ends around **09:00 America/Los_Angeles**, and later use requires newly available verified workers.
 
-Live verification completed both **six recipes × one prompt** and **one recipe × six prompts** on all six Quincies: **12/12 cells completed**. The accompanying persona test suite passed 159 tests. Browser checks covered desktop and mobile layouts. These checks establish operation of the workspace, not a causal personality effect or native cache/MTP qualification.
+Live verification completed both **six recipes × one prompt** and **one recipe × six prompts** on all six GPU workers: **12/12 cells completed**. The accompanying persona test suite passed 159 tests. Browser checks covered desktop and mobile layouts. These checks establish operation of the workspace, not a causal personality effect or native cache/MTP qualification.
 
 ### Persona studio
 
@@ -99,7 +99,7 @@ Open **Persona studio** for a profile-first workflow. The five dials range from 
 
 The default answer budget is 2,048 tokens with thinking off. Prompt plus answer must fit the admitted worker's context; the UI does not silently truncate. A battery of five prompts and six candidates creates 35 responses: five baselines plus 30 candidate answers. Up to six run concurrently after baseline waves; fewer reachable workers execute smaller waves. Reachable means identity-verified, not idle, and other experiments share the worker pool. **Stop future waves** prevents further campaign waves; an in-flight request may finish and remains in the record.
 
-When no workers are reachable, **Start studio session** explicitly schedules a `studio_session` job for John and the six owned Quincies. Choose a duration, defaulting to two hours. Cold model preparation can take tens of minutes on this six-card fleet because the validated shared-cache publication stage is serialized; session time includes startup. Existing workboard admission, GPU ownership, thermal checks and the absolute deadline still apply. The UI reuses a current studio session or reachable fleet instead of automatically launching another. **Jobs & schedules** shows durable startup/status events; **Stop this studio session** requests cooperative cleanup of that session's own resources. Opening the tab, browsing presets and moving dials do not start GPUs.
+When no workers are reachable, **Start studio session** explicitly schedules a `studio_session` job for John and the six GPU workers. Choose a duration, defaulting to two hours. Cold model preparation can take tens of minutes on this six-card fleet because the validated shared-cache publication stage is serialized; session time includes startup. Existing workboard admission, GPU ownership, thermal checks and the absolute deadline still apply. The UI reuses a current studio session or reachable fleet instead of automatically launching another. **Jobs & schedules** shows durable startup/status events; **Stop this studio session** requests cooperative cleanup of that session's own resources. Opening the tab, browsing presets and moving dials do not start GPUs.
 
 The original 16 presets are:
 
@@ -172,13 +172,13 @@ python3 persona/persona_coactivity_extract.py --root "$PWD"
 
 The default output is `results/persona_coactivity.npz`, created exclusively. Explicit `--replace` requires preservation of prior rows except audited duplicate exclusions. `--stream` emits the numeric archive to stdout for direct transfer to the explorer host; progress goes to stderr. The archive contains only candidate activations, coordinates, corpus labels and source hashes, with no passage text. Keep it private with the other results. `persona/persona_neighbors.py` validates that publication against the current model/map and caches corpus statistics for interactive queries; it never scans raw captures during a click or starts GPU work. The source and viewer extend the independently implemented exploration workflow inspired by [Lyra's neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer).
 
-### Schedule John and the six Quincies
+### Schedule the planner and six GPU workers
 
 Open **Jobs & schedules** to create a timed **Big Five discovery expansion** or **Adaptive neighborhood search**. Choose a local date, IANA time zone, duration, target, hard cap and seed. The default proposes the next 2 AM in America/Los_Angeles; nothing runs until you save a schedule. The server resolves the date and rejects ambiguous or nonexistent daylight-saving times. Job details show the actual start/deadline, scheduler heartbeat, progress, recorded errors and cooperative cancellation.
 
-The fixed fleet adapter launches John with a 128K context and six distinct, UUID-bound Quincy workers through gpu-workboard. Waiting for existing work, admission and model startup consumes the scheduled window. Existing workloads are preserved. A job can therefore finish below its requested target; the UI reports actual counts. Services have a bounded lifetime, and cleanup verifies the job's own launch identity. The scheduler persists schedules, requests, raw responses, invalid outputs and accepted samples in `results/persona_jobs.sqlite`. Restart recovery keeps completed evidence and does not blindly replay model requests.
+The fixed fleet adapter launches the local planner model with a 128K context and six distinct, UUID-bound GPU workers through the GPU scheduler. Waiting for existing work, admission and model startup consumes the scheduled window. Existing workloads are preserved. A job can therefore finish below its requested target; the UI reports actual counts. Services have a bounded lifetime, and cleanup verifies the job's own launch identity. The scheduler persists schedules, requests, raw responses, invalid outputs and accepted samples in `results/persona_jobs.sqlite`. Restart recovery keeps completed evidence and does not blindly replay model requests.
 
-**Big Five expansion** produces short, original scenario prompts across the five traits, thirty facet design categories and varied situations. John assigns six batches, then the Quincies generate them in parallel. The harness validates complete responses and removes normalized text duplicates before counting accepted prompts. Invalid or truncated responses are quarantined. The resulting rows are **synthetic discovery material**, not a validated psychometric inventory or measured personality labels. Their local publication appends to `data/persona_manager_corpus.jsonl`, preserving all previous records and heldout splits; `data/persona_generated_big_five.jsonl` and its manifest identify the generated subset. These private data files are not published to GitHub.
+**Big Five expansion** produces short, original scenario prompts across the five traits, thirty facet design categories and varied situations. John assigns six batches, then the GPU workers generate them in parallel. The harness validates complete responses and removes normalized text duplicates before counting accepted prompts. Invalid or truncated responses are quarantined. The resulting rows are **synthetic discovery material**, not a validated psychometric inventory or measured personality labels. Their local publication appends to `data/persona_manager_corpus.jsonl`, preserving all previous records and heldout splits; `data/persona_generated_big_five.jsonl` and its manifest identify the generated subset. These private data files are not published to GitHub.
 
 **Adaptive neighborhood search** starts with explicit neuron coordinates and selected discovery corpora. Use **Plan adaptive search** from a neuron's neighborhood, or enter any model-valid coordinate at a calibrated layer. John chooses bounded prompt families and doses from a fixed catalog. Each admitted experiment includes baseline, zero, random, positive and negative controls, matched source variants and seeds. A hard cap never truncates a control set. The objective rewards new source coverage and within-family variation, rather than a large pooled correlation. Repeating a seed does not create a new independent prompt. Complete-rollout followups require prior matched prefill evidence and an answer budget of at least 2,048 tokens.
 
@@ -370,7 +370,7 @@ Plan/status output contains counts and hashes, not raw text. Repeating enqueue w
 The private SQLite index preserves source book/document hashes, split, normalized-document offsets, raw model responses, failed attempts and coverage counts. Its corpus and planner-runtime binding prevents silently resuming against changed inputs. The October 25 run is underway across all 6,645 original chunks from eleven books, including both discovery and heldout splits. An early checkpoint recorded roughly 96 complete and 75 failed chunks under strict evidence validation; these pipeline statuses are not accuracy estimates or completed corpus coverage. The index remains provisional: source-phrase acceptance does not validate character classification, recall or aliases. All splits and index outputs remain isolated from adaptive experiment planning. The sampling order covers attributed dialogue, other dialogue and narrative across books before continuing; chunk-attempt limits, a deadline and error budgets bound the run, and outputs are capped at 2,048 tokens. Rejected attempts remain audited, and neither exhaustive completion nor character accuracy is claimed.
 
 ```bash
-# On John, using its existing planner lease and launcher readiness manifest:
+# On the planner host, using its existing planner lease and launcher readiness manifest:
 python persona/persona_characters.py run --lease GPU_WORKBOARD_PLANNER_JOB_ID \
   --limit 8 --batch-size 1 --minutes 5
 python persona/persona_characters.py status
@@ -537,12 +537,12 @@ from the evidence, saves immutable provenance, and combines these neuron pushes
 with Big Five under the same aggregate dose bound. Names such as rage are
 hypothesis labels; paired behavioral tests are still required.
 
-Overnight mapping uses the six isolated Quincy workers. `GET /api/overnight`
+Overnight mapping uses the six isolated GPU workers. `GET /api/overnight`
 reports the remote coordinator; the banner's pause control waits for in-flight
 captures to drain before admitting interactive inference. Resume refuses active
 interactive jobs. Browsing saved results does not require pausing. The reservation
 is `results/persona_overnight_session.json`; remote status and raw capture artifacts
-remain in the existing `activation-search` directory on v100.
+remain on the capture host.
 
 `GET /api/overnight/features` reads the derived emotion contrast artifact. Concept
 discovery shows ranked coordinates, four-frame agreement, lexical controls and
@@ -626,9 +626,8 @@ complete artifacts before publication. The metadata watcher polls every five min
 publishes at 500 records, after fifteen minutes or at run completion. A separate watcher
 on the capture host sends up to 32 original NPZs per raw shard directly to HF; it continues
 draining after inference stops. Both verify committed hashes before advancing durable
-checkpoints and reconcile uncertain uploads without repeating inference. The reference
-services are `character-persona-hub-research.service` on Devbox and
-`character-persona-hub-raw.service` on the capture host. These are CPU/network publishers,
+checkpoints and reconcile uncertain uploads without repeating inference. Both run as
+user services, one beside the explorer and one on the capture host. These are CPU/network publishers,
 not additional GPU inference jobs.
 
 `persona/persona_read_research.py` is a small CPU-only reader. It pins one Hub commit,

@@ -78,8 +78,8 @@ Its separate PriorityQueue checks the five fixed study databases and interactive
 viewer tables before claiming and again before HTTP submission. Foreground work
 or an unreadable priority database blocks new claims; submitted batches drain.
 Only demonstrably unsubmitted claims may be released. The existing Manager and
-GPU service remain unchanged. The reference run has finite 07:58 dispatch and
-08:00 PDT publication deadlines. Its public file is
+GPU service remain unchanged. The reference run has finite dispatch and
+publication deadlines. Its public file is
 `persona_perturbation_mapping_public.json`: original synthetic inputs, answers,
 status and capture hashes, with raw-array coverage explicitly excluded. Uploads
 occur at 48-terminal-job milestones and final/deadline, with durable intent and
@@ -94,8 +94,8 @@ Each scene has one shared baseline and candidate/reversal/matched-random arms
 for each recipe: 12,800 maximum jobs. Every contrast points to its shared
 baseline job ID. The existing PriorityQueue yields at claim and before submission;
 already submitted batches drain. No judge calls or preset promotion occur here.
-The reference run stops dispatch at 07:49 PDT, reserving the 600-second request
-timeout plus a validation margin before 08:00. Its atomic public report is
+The reference run stops dispatch early enough to reserve the 600-second request
+timeout plus a validation margin before its cutoff. Its atomic public report is
 `persona_contrastive_backfill_public.json`, with authored text, saved answers,
 exact interventions and capture hashes; raw arrays are not included in that JSON.
 `persona_contrastive_publication.py --root PATH --input-sha256 PLAN_HASH --publish`
@@ -106,7 +106,7 @@ a separate SQLite ledger of immutable bytes and conditional parent commits.
 It does not control inference or modify the other publication ledgers.
 
 `persona_adaptive_trials.py` supplies a strict, source-bound menu and producer-only
-Manager queue. `persona_adaptive_loop.py` lets John make short idle-only review
+Manager queue. `persona_adaptive_loop.py` lets the local planner model make short idle-only review
 and planning calls: it chooses existing menu IDs, never arbitrary coordinates.
 The loop keeps a bounded planning buffer while review receipts accumulate.
 There are 66 deduplicated programs, derived only from discovery recipes and
@@ -128,19 +128,18 @@ identity anchor as the first probe for every new neuron, feature, recipe or
 mapping suite. Preserve frozen historical attempts; add missing identity evidence
 as separately bound trials. Interactive users may still choose another scene.
 
-The run uses five qualified native-B4 workers, excluding Quincy 5. Its separate
+The run uses five qualified native-B4 workers; the sixth card was assigned to other work. Its separate
 `results/persona_adaptive.sqlite` permits at most 128 outstanding and 4,096 total
 jobs. Priority checks run before claim and submission; one adaptive batch and
 one background batch may wait on a card's serialized engine. There is no hard
-preemption. No new GPU service or lease is created. Dispatch ends at epoch
-`1793112540` (07:49 PDT, October 27, 2026), with the finite 08:00 cutoff
-`1793113200`. Heldout prompts, confirmation ratings and failures never enter
+preemption. No new GPU service or lease is created. Dispatch ends at a finite
+epoch set before launch, followed by a finite cutoff. Heldout prompts, confirmation ratings and failures never enter
 selection. These records are research-only, with no automatic promotion.
 
 Preparation and validation do not start inference:
 
 ```bash
-python persona/persona_adaptive_trials.py --root "$PWD" --until 1793113200 --prepare-only
+python persona/persona_adaptive_trials.py --root "$PWD" --until "$CUTOFF_EPOCH" --prepare-only
 python persona/persona_adaptive_loop.py --root "$PWD" --validate-only
 ```
 
@@ -148,7 +147,7 @@ The commands require the configured root matching the frozen local paths,
 compatible calibration, and the reference run's finite window; a fork must
 prepare its own bindings and admissions. Only an explicitly launched controller
 without `--validate-only` starts the admitted workers. It retains menu/config,
-queue and John intent/response receipts separately, with no uncertain POST replay.
+queue and planner intent/response receipts separately, with no uncertain POST replay.
 
 `results/persona_adaptive_public.json` contains original prompts, saved answers,
 exact programs, source hashes and explicitly automatic reviews. The separate
@@ -158,7 +157,7 @@ read-only validation. Publication occurs every 16 terminal jobs, four terminal
 review/proposal changes, or final cutoff; an initial planning proposal can be
 published before answers exist. `results/persona_adaptive_publication.sqlite`
 retains immutable byte snapshots and conditional-parent commit recovery. Its
-08:05 cutoff does not extend inference. Public reports contain capture hashes,
+publication cutoff does not extend inference. Public reports contain capture hashes,
 not an assertion that raw activation arrays have been uploaded.
 
 `persona_preset_publication.py --root PATH --until EPOCH --publish` publishes
@@ -178,9 +177,34 @@ unknown outcome is reconciled against bounded history before retrying the same
 conditional parent. Only an explicit parent conflict allows refreshing that
 parent. The allowlist contains the two reports and these two guides. It has no
 inference controls or request replay, and the reference observer stops at
-08:05 PDT. Run its `--validate-only` preflight before starting a new observer;
+its finite publication cutoff. Run its `--validate-only` preflight before starting a new observer;
 changing its source or reconciliation lineage requires a separately reviewed
 ledger, not overwriting the existing one.
+
+## Neuron atlas and the "who are you" identity sweep
+
+`persona/persona_neuron_atlas.py build` writes `results/neuron_atlas/` (git-ignored): one category per MLP neuron
+(64 × 17,408) for four colour modes. Lens up/down comes from `results/persona_atlas_L*.npz`: token kinds of the top
+12 lens tokens, with a lexicon for feelings, desire, temperament, morals and relationships. "What activates it" is
+the prompt type with the largest standardized mean difference (≥ 0.8 SD; types need ≥ 60 prompts; uncategorized
+prompts never win), computed over final-prefill planes of unsteered captures only (null or all-zero steering).
+Evidence comes from concept labels, recipe pushes, association hits and Big Five candidates. The explorer serves it
+at `/neuron-atlas`, with `/api/neuron-atlas{,/layer,/neuron,/library,/library.csv,/sweep}`.
+
+`persona/persona_identity_sweep.py` runs beside the native batch workers: SQLite queue, greedy, 160 tokens,
+`who are you`, one `mlp_input` neuron push per request through the calibrated vector bank. Each direction cascades
+1, 0.5, 0.25, 0.125, 0.0625, 0.03125 while the reply collapses (empty, < 4 tokens, special tokens or a repetition
+loop). On this checkpoint a dose of 1 usually collapses the reply. New neurons start one level stronger than the
+median coherent level of layers L±2. A submitted batch whose reply is lost is marked `uncertain` and not replayed.
+`persona/persona_identity_supervisor.py` relaunches the recorded batch workers whenever none run (30-minute
+cooldown), restarts the runner, queues menu batches when the queue is low (the planner chooses only if it is
+already running) and stops queueing after a 5 TB raw-capture budget. `persona/persona_identity_hub.py` publishes
+append-only JSONL shards to the `identity_sweep` config (`identity_sweep/answers-NNNNN.jsonl`, `manifest.json`,
+`README.md`); raw captures are referenced by SHA-256, not uploaded. Keep the largest-`|dose|` row with
+`coherent_auto = true` per neuron and direction.
+
+Deployment values live in the git-ignored `identity_sweep.local.json`: `host` (SSH alias of the GPU host),
+`remote_root`, `remote_python`, `checkpoint`, `runner_cpus`, `explorer_url`, `planner_url`, `planner_model`.
 
 ## Capture performance evidence
 
@@ -504,7 +528,7 @@ full download/hash audit of every remote NPZ or vocabulary-logit array.
 
 ## Literary KV interventions: first adapter and remaining work
 
-Owner requested Phantom-KV after the current sweep/viewer integration, for contrastive
+Phantom-KV was requested after the current sweep/viewer integration, for contrastive
 horror/romance prose and persona experiments, with coherence recovery as a separate
 hypothesis. The first implementation accepts checkpoint-bound `hybrid_text_prefix`
 controls: an ordinary text prefix's full recurrent/convolution/attention state, with
@@ -653,7 +677,7 @@ Preserved requirements for completing learned-graft integration:
 1. Preserve the frozen capture runtime and ledger. Add a separately bound interactive
    adapter with exact model, tokenizer, runtime, cache-layout, rotary-position and
    artifact hashes. Reject mismatches before inference. GPU qualification uses fleet
-   admission. Historical chemistry reservation is superseded by the owner’s finite John planner authorization; coexist through workboard admission without displacing active chemistry.
+   admission and must coexist with other admitted workloads without displacing them.
 2. Establish cached benign literary context equivalence using the complete hybrid
    state. This is a cached-text control, not a learned Phantom-KV result. A learned
    attention-only graft must be labelled as such and independently qualified; it has

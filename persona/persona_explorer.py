@@ -37,6 +37,7 @@ from persona_literature_harness import save_prompt
 from persona_literature_embeddings import neighbors as literature_neighbors
 from persona_literature_nlp import status as literature_nlp_status, graph as literature_nlp_graph, latest_run as literature_nlp_run
 from persona_atlas import WeightAtlas
+from persona_neuron_atlas import NeuronAtlas
 from persona_trace_lab import TraceLab
 from persona_jobs import JobStore
 from persona_overnight import OvernightMap
@@ -202,6 +203,7 @@ class Explorer:
         self.model = ModelSpec.load(root / "data/persona_model.json")
         self.neighbors = CoactivityCohorts(root, self.model)
         self.atlas = WeightAtlas(root, self.model)
+        self.neuron_atlas = NeuronAtlas(root)
         self.bank = VectorBank(root / "results", self.model,
             **({"checkpoint": Path(config["checkpoint"])} if config.get("checkpoint") else {}))
         self.bank_lock = threading.RLock()
@@ -896,12 +898,37 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     body = (app.root / "ui/atlas-logo.png").read_bytes()
                     self.send_response(200); self.send_header("Content-Type", "image/png")
                     self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
-                elif path.path in ('/persona_response_study.js','/persona_neuron_labels.js','/persona_neuron_labels.css','/persona_coherence.js','/persona_coherence.css','/persona_overnight.js', '/persona_literature.js', '/persona_literature.css', '/persona_concept_controls.js', '/persona_concept_controls.css', '/persona_activation_search.js', '/persona_activation_search.css', '/persona_prompt_browser.js', '/persona_prompt_browser.css', '/persona_concepts.js', '/persona_trace.js', '/persona_trace.css', '/persona_atlas.js', '/persona_atlas.css', '/persona_graph.js', '/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css'):
+                elif path.path in ('/persona_response_study.js','/persona_neuron_labels.js','/persona_neuron_labels.css','/persona_coherence.js','/persona_coherence.css','/persona_overnight.js', '/persona_literature.js', '/persona_literature.css', '/persona_concept_controls.js', '/persona_concept_controls.css', '/persona_activation_search.js', '/persona_activation_search.css', '/persona_prompt_browser.js', '/persona_prompt_browser.css', '/persona_concepts.js', '/persona_trace.js', '/persona_trace.css', '/persona_atlas.js', '/persona_atlas.css', '/persona_graph.js', '/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css', '/persona_neuron_atlas.js', '/persona_neuron_atlas.css'):
                     name = path.path[1:]
                     body = (app.root / 'ui' / name).read_bytes()
                     content_type = 'application/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8'
                     self.send_response(200); self.send_header('Content-Type', content_type); self.send_header('Cache-Control', 'no-cache')
                     self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+                elif path.path == '/neuron-atlas':
+                    body = (app.root / 'ui/persona_neuron_atlas.html').read_bytes()
+                    self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8'); self.send_header('Cache-Control', 'no-cache')
+                    self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+                elif path.path == '/neuron-atlas/atlas.bin':
+                    body = app.neuron_atlas.binary()
+                    self.send_response(200); self.send_header('Content-Type', 'application/octet-stream'); self.send_header('Cache-Control', 'no-cache')
+                    self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+                elif path.path == '/api/neuron-atlas': self.send(app.neuron_atlas.status())
+                elif path.path == '/api/neuron-atlas/sweep': self.send(app.neuron_atlas.sweep_state())
+                elif path.path == '/api/neuron-atlas/layer': self.send(app.neuron_atlas.layer(parse_qs(path.query).get('layer', [''])[0]))
+                elif path.path == '/api/neuron-atlas/neuron':
+                    query = parse_qs(path.query)
+                    self.send(app.neuron_atlas.neuron(query.get('layer', [''])[0], query.get('neuron', [''])[0]))
+                elif path.path in ('/api/neuron-atlas/library', '/api/neuron-atlas/library.csv'):
+                    query = {k: v[0] for k, v in parse_qs(path.query).items()}
+                    options = dict(q=query.get('q', ''), mode=query.get('mode', 'up'), category=query.get('category', ''),
+                                   lmin=int(query.get('lmin', 0)), lmax=int(query.get('lmax', 63)), evidence_only=bool(query.get('evidence')),
+                                   sort=query.get('sort', 'strength'))
+                    if path.path.endswith('.csv'):
+                        body = app.neuron_atlas.library_csv(**options)
+                        self.send_response(200); self.send_header('Content-Type', 'text/csv; charset=utf-8')
+                        self.send_header('Content-Disposition', 'attachment; filename="neuron-atlas.csv"')
+                        self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+                    else: self.send(app.neuron_atlas.library(**options, offset=int(query.get('offset', 0)), limit=int(query.get('limit', 60))))
                 elif path.path == '/api/overnight': self.send(app.overnight.status())
                 elif path.path == '/api/neuron-labels': self.send(read_neuron_labels(app.root/'results/persona_neuron_labels.json', app.model.identity, layers=app.model.layers, neurons_per_layer=app.model.intermediate))
                 elif path.path == '/api/literature/experiments': self.send(literary_eval.catalog(app))
@@ -1006,6 +1033,10 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                         raise ValueError('Scheduled job changes require application/json')
                 if self.path in ('/api/activation-searches','/api/activation-comparisons','/api/activation-session','/api/compare','/api/batches','/api/traces','/api/sculptor/campaigns','/api/sculptor/preset-comparisons'):
                     app.overnight.require_interactive()
+                if self.path == '/api/neuron-atlas/sweep':
+                    self.send(app.neuron_atlas.sweep(name=value.get('name', ''), q=str(value.get('q', '')), mode=value.get('mode', 'up'),
+                        category=value.get('category', ''), lmin=int(value.get('lmin', 0)), lmax=int(value.get('lmax', 63)),
+                        evidence_only=bool(value.get('evidence')), sort=value.get('sort', 'strength')), 202); return
                 if self.path == '/api/overnight': self.send(app.overnight.action(value)); return
                 if self.path == '/api/coherence/runs': self.send(app.coherence.submit(value), 202); return
                 if self.path == '/api/coherence/cancel': self.send(app.coherence.cancel(value)); return
