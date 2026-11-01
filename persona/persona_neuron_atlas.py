@@ -566,9 +566,31 @@ class NeuronAtlas:
                 'evidence': self.evidence.get(str(key), {'kinds': []}),
                 'identity': self._identity_rows(layer, neuron)}
 
+    def _full_sweep(self, layer, neuron):
+        """Rows of the full single-neuron sweep (neuropedia monkey/atlas_sweep, schema neuropedia.atlas-sweep.v1) for one
+        neuron, shaped like the legacy identity rows, plus its per-direction causal summary. Read-only; absent = {}."""
+        import sqlite3
+        path = self.out / 'atlas_sweep' / 'atlas_sweep.sqlite'
+        if not path.exists(): return {}
+        try:
+            with sqlite3.connect(f'file:{path}?mode=ro', uri=True, timeout=5) as db:
+                found = db.execute('SELECT sign, record FROM directions WHERE layer=? AND neuron=?', (layer, neuron)).fetchall()
+        except sqlite3.Error: return {}
+        out = {}
+        for sign, raw in found:
+            rec = json.loads(raw)
+            rows = [{'sweep': rec['sweep'], 'layer': layer, 'neuron': neuron, 'dose': p['dose'], 'level': p['level'],
+                     'coherent': int(p['coherent_auto']), 'answer': p['answer'], 'finish': p['finish_reason'], 'tokens': p['tokens'],
+                     'declined': p['declined_auto'], 'token_ids': p['token_ids'], 'lens': p['lens'], 'max_tokens': 48} for p in rec['probes']]
+            out[sign] = {'rows': rows, 'causal': rec.get('causal')}
+        return out
+
     def _identity_rows(self, layer, neuron):
         self._identity()
         rows = [r for r in self.identity.get((layer, neuron), []) if r.get('level') is not None]
+        full = self._full_sweep(layer, neuron)
+        if full:  # the full sweep's protocol is uniform (48 tokens, cascade from 1x); it replaces older rows per direction
+            rows = [r for r in rows if (1 if r['dose'] > 0 else -1) not in full] + [r for f in full.values() for r in f['rows']]
         answers = []
         for sign in (1, -1):  # strongest coherent reply per direction, with the strengths that collapsed first
             side = sorted((r for r in rows if (r['dose'] > 0) == (sign > 0)), key=lambda r: -abs(r['dose']))
@@ -576,7 +598,11 @@ class NeuronAtlas:
             if side: answers.append({**(kept or side[-1]), 'kept': kept is not None,
                                      'collapsed': [abs(r['dose']) for r in side if not r.get('coherent')]})
         base = self.identity.get((-1, -1), [])
-        return {'prompt': 'who are you', 'answers': answers, 'baseline': base[0] if base else None}
+        value = {'prompt': 'who are you', 'answers': answers, 'baseline': base[0] if base else None}
+        if full:
+            value['full_sweep'] = {'schema': 'neuropedia.atlas-sweep.v1', 'max_tokens': 48,
+                                   'causal': {('up' if s > 0 else 'down'): f['causal'] for s, f in full.items()}}
+        return value
 
     def library(self, *, q='', mode='up', category='', lmin=0, lmax=LAYERS - 1, evidence_only=False,
                 sort='strength', offset=0, limit=60):

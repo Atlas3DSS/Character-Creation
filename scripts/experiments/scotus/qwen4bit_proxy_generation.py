@@ -26,13 +26,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from qwen_eval_budget import (
-    DEFAULT_COMPLETE_ANSWER_TOKENS,
-    MIN_COMPLETE_ANSWER_TOKENS,
-    enforce_complete_answer_budget,
-    qwen_budget_metadata,
-)
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PROMPT_BANK = PROJECT_ROOT / "data" / "scotus" / "scotus_poke_prompts_v1.jsonl"
@@ -815,7 +808,6 @@ def write_report(out_dir: Path, *, manifest: dict[str, Any], rows: list[dict[str
                 ["Rows", len(rows)],
                 ["Endpoints", ", ".join(endpoint["name"] for endpoint in manifest["endpoints"])],
                 ["Max tokens", manifest["max_tokens"]],
-                ["Short-budget smoke", manifest["short_answer_budget"]],
                 ["Random temperature", manifest["random_temperature"]],
                 ["Top p", manifest["top_p"]],
                 ["Proxy-only", "yes; llama.cpp generation has no activation hooks"],
@@ -918,15 +910,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prompt-ids", default="")
     parser.add_argument("--max-prompts", type=int, default=20)
     parser.add_argument("--random-controls", type=int, default=50)
-    parser.add_argument("--max-tokens", type=int, default=DEFAULT_COMPLETE_ANSWER_TOKENS)
-    parser.add_argument(
-        "--allow-short-max-tokens",
-        action="store_true",
-        help=(
-            f"Permit max-token budgets below {MIN_COMPLETE_ANSWER_TOKENS}. "
-            "Short-budget Qwen legal generations are smoke/debug only."
-        ),
-    )
+    parser.add_argument("--max-tokens", type=int, default=128)
     parser.add_argument("--base-temperature", type=float, default=0.2)
     parser.add_argument("--random-temperature", type=float, default=0.7)
     parser.add_argument("--top-p", type=float, default=0.9)
@@ -941,13 +925,6 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    enforce_complete_answer_budget(
-        args.max_tokens,
-        allow_short=args.allow_short_max_tokens,
-        label="max_tokens",
-        purpose="SCOTUS 4-bit proxy generation run",
-        opt_in_flag="--allow-short-max-tokens",
-    )
     started = now_iso()
     endpoints = parse_endpoints(args.endpoints)
     conditions = parse_csv(args.conditions)
@@ -973,7 +950,6 @@ def main() -> None:
         "conditions": conditions,
         "random_controls": args.random_controls,
         "max_tokens": args.max_tokens,
-        **qwen_budget_metadata(args.max_tokens),
         "base_temperature": args.base_temperature,
         "random_temperature": args.random_temperature,
         "top_p": args.top_p,

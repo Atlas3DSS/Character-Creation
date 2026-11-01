@@ -917,7 +917,7 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     body = (app.root / "ui/atlas-logo.png").read_bytes()
                     self.send_response(200); self.send_header("Content-Type", "image/png")
                     self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
-                elif path.path in ('/persona_response_study.js','/persona_neuron_labels.js','/persona_neuron_labels.css','/persona_coherence.js','/persona_coherence.css','/persona_overnight.js', '/persona_literature.js', '/persona_literature.css', '/persona_concept_controls.js', '/persona_concept_controls.css', '/persona_activation_search.js', '/persona_activation_search.css', '/persona_prompt_browser.js', '/persona_prompt_browser.css', '/persona_concepts.js', '/persona_trace.js', '/persona_trace.css', '/persona_atlas.js', '/persona_atlas.css', '/persona_graph.js', '/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css', '/persona_neuron_atlas.js', '/persona_neuron_atlas.css'):
+                elif path.path in ('/persona_response_study.js','/persona_neuron_labels.js','/persona_neuron_labels.css','/persona_coherence.js','/persona_coherence.css','/persona_overnight.js', '/persona_literature.js', '/persona_literature.css', '/persona_concept_controls.js', '/persona_concept_controls.css', '/persona_activation_search.js', '/persona_activation_search.css', '/persona_prompt_browser.js', '/persona_prompt_browser.css', '/persona_concepts.js', '/persona_trace.js', '/persona_trace.css', '/persona_atlas.js', '/persona_atlas.css', '/persona_graph.js', '/persona_lab.js', '/persona_lab.css', '/persona_neighbors.js', '/persona_neighbors.css', '/persona_jobs.js', '/persona_jobs.css', '/persona_sculptor.js', '/persona_sculptor.css', '/persona_neuron_atlas.js', '/persona_neuron_atlas.css', '/persona_compare_library.js', '/persona_compare_library.css'):
                     name = path.path[1:]
                     body = (app.root / 'ui' / name).read_bytes()
                     content_type = 'application/javascript; charset=utf-8' if name.endswith('.js') else 'text/css; charset=utf-8'
@@ -995,6 +995,14 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif path.path == '/api/traces': self.send(app.traces.listing())
                 elif path.path == '/api/trace': self.send(app.traces.get(parse_qs(path.query).get('id',[''])[0]))
                 elif path.path == "/api/response-study": self.send(response_study_summary(app.root))
+                elif path.path in ('/api/response-study/compare-library', '/api/response-study/compare-library/item'):
+                    # prefilled − / 0 / + comparisons (studio runs, Neuropedia cards, identity sweep); under /api/response-study/ so the public /viewer blocks it
+                    from persona_compare_library import library as compare_library
+                    query = parse_qs(path.query)
+                    if path.path.endswith('/item'): self.send(compare_library(app).item(query.get('key', [''])[0]))
+                    else: self.send(compare_library(app).listing(q=query.get('q', [''])[0], full_only=query.get('full', ['0'])[0] == '1',
+                        kind=query.get('kind', ['all'])[0], source=query.get('source', ['all'])[0],
+                        offset=int(query.get('offset', ['0'])[0]), limit=int(query.get('limit', ['60'])[0])))
                 elif path.path == "/api/state": self.send(app.state())
                 elif path.path == '/api/capacity': self.send(app.capacity())
                 elif path.path == '/api/sculptor': self.send(app.sculptor.catalog())
@@ -1092,6 +1100,9 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif self.path == '/api/literature/prompt': self.send(save_prompt(app.root / 'results/persona_literature.sqlite', value))
                 elif self.path == '/api/traces': self.send(app.traces.submit(value),202)
                 elif self.path == "/api/compare": self.send({"id": app.submit(value)}, 202)
+                elif self.path == '/api/response-study/compare-library/queue-reverse':
+                    from persona_compare_library import library as compare_library
+                    self.send(compare_library(app).queue_reverse(value), 202)
                 elif self.path == '/api/sculptor/plan': self.send(app.sculptor.plan(value))
                 elif self.path == '/api/sculptor/build': self.send(app.sculptor.build(value))
                 elif self.path == '/api/sculptor/preset-comparisons': self.send(app.sculptor.compare_presets(value), 202)

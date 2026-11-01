@@ -29,8 +29,8 @@ from typing import Any
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DEFAULT_REMOTE = os.environ.get("REMOTE_HOST", "orwel@192.168.1.90")
-SWEEP_SCRIPTS = {"personality_sweep_v2.py", "personality_sweep_v3_two_pass.py"}
+DEFAULT_REMOTE = os.environ.get("REMOTE_HOST", "orwel@192.168.86.66")
+SWEEP_SCRIPT = "personality_sweep_v2.py"
 
 
 @dataclass
@@ -146,7 +146,6 @@ def parse_process_flags(cmd: str) -> dict[str, Any]:
     out: dict[str, Any] = {
         "output": None,
         "quantize": None,
-        "backend": None,
         "shard": None,
         "n_shards": None,
         "shard_list": None,
@@ -161,7 +160,7 @@ def parse_process_flags(cmd: str) -> dict[str, Any]:
         tok = toks[i]
         if tok.startswith("CUDA_VISIBLE_DEVICES="):
             out["cuda_visible_devices"] = tok.split("=", 1)[1]
-        elif tok in {"--output", "--quantize", "--backend", "--shard", "--n-shards", "--shard-list"}:
+        elif tok in {"--output", "--quantize", "--shard", "--n-shards", "--shard-list"}:
             if i + 1 < len(toks):
                 val = toks[i + 1]
                 key = tok.lstrip("-").replace("-", "_")
@@ -171,8 +170,6 @@ def parse_process_flags(cmd: str) -> dict[str, Any]:
             out["output"] = tok.split("=", 1)[1]
         elif tok.startswith("--quantize="):
             out["quantize"] = tok.split("=", 1)[1]
-        elif tok.startswith("--backend="):
-            out["backend"] = tok.split("=", 1)[1]
         elif tok.startswith("--shard="):
             out["shard"] = tok.split("=", 1)[1]
         elif tok.startswith("--n-shards="):
@@ -193,7 +190,7 @@ def get_sweep_processes(host: HostSpec) -> list[dict[str, Any]]:
         if len(parts) != 3:
             continue
         pid_s, etimes_s, args = parts
-        if not any(script in args for script in SWEEP_SCRIPTS):
+        if SWEEP_SCRIPT not in args:
             continue
         try:
             toks = shlex.split(args)
@@ -231,7 +228,7 @@ def resolve_output_dir(output: str | None) -> Path | None:
 
 
 def progress_local(output_dir: Path) -> dict[str, Any]:
-    data: dict[str, Any] = {"responses": 0, "generated": 0, "last_mtime": None, "config": {}}
+    data: dict[str, Any] = {"responses": 0, "last_mtime": None, "config": {}}
     cfg = output_dir / "sweep_config.json"
     if cfg.exists():
         try:
@@ -240,32 +237,21 @@ def progress_local(output_dir: Path) -> dict[str, Any]:
             data["config"] = {}
 
     resp_dir = output_dir / "responses"
-    gen_dir = output_dir / "generated"
-    total_resp = 0
-    total_gen = 0
+    if not resp_dir.exists():
+        return data
+
+    total = 0
     last_mtime = 0.0
-    if resp_dir.exists():
-        for f in resp_dir.glob("char_*.jsonl"):
-            try:
-                with f.open("rb") as fh:
-                    total_resp += sum(1 for _ in fh)
-                mtime = f.stat().st_mtime
-                if mtime > last_mtime:
-                    last_mtime = mtime
-            except Exception:  # noqa: BLE001
-                continue
-    if gen_dir.exists():
-        for f in gen_dir.glob("char_*.jsonl"):
-            try:
-                with f.open("rb") as fh:
-                    total_gen += sum(1 for _ in fh)
-                mtime = f.stat().st_mtime
-                if mtime > last_mtime:
-                    last_mtime = mtime
-            except Exception:  # noqa: BLE001
-                continue
-    data["responses"] = total_resp
-    data["generated"] = total_gen
+    for f in resp_dir.glob("char_*.jsonl"):
+        try:
+            with f.open("rb") as fh:
+                total += sum(1 for _ in fh)
+            mtime = f.stat().st_mtime
+            if mtime > last_mtime:
+                last_mtime = mtime
+        except Exception:  # noqa: BLE001
+            continue
+    data["responses"] = total
     data["last_mtime"] = last_mtime if last_mtime > 0 else None
     return data
 
@@ -277,7 +263,7 @@ import sys
 from pathlib import Path
 
 p = Path(sys.argv[1])
-out = {"responses": 0, "generated": 0, "last_mtime": None, "config": {}}
+out = {"responses": 0, "last_mtime": None, "config": {}}
 cfg = p / "sweep_config.json"
 if cfg.exists():
     try:
@@ -285,10 +271,9 @@ if cfg.exists():
     except Exception:
         out["config"] = {}
 resp_dir = p / "responses"
-gen_dir = p / "generated"
-last = 0.0
 if resp_dir.exists():
     total = 0
+    last = 0.0
     for f in resp_dir.glob("char_*.jsonl"):
         try:
             with f.open("rb") as fh:
@@ -299,37 +284,24 @@ if resp_dir.exists():
         except Exception:
             pass
     out["responses"] = total
-if gen_dir.exists():
-    total = 0
-    for f in gen_dir.glob("char_*.jsonl"):
-        try:
-            with f.open("rb") as fh:
-                total += sum(1 for _ in fh)
-            mt = f.stat().st_mtime
-            if mt > last:
-                last = mt
-        except Exception:
-            pass
-    out["generated"] = total
-if last > 0:
-    out["last_mtime"] = last
+    if last > 0:
+        out["last_mtime"] = last
 print(json.dumps(out))
 """
     cmd = f"python3 -c {shlex.quote(script)} {shlex.quote(str(output_dir))}"
     ok, raw = run_cmd(host, cmd, timeout=20)
     if not ok:
-        return {"responses": 0, "generated": 0, "last_mtime": None, "config": {}, "error": raw}
+        return {"responses": 0, "last_mtime": None, "config": {}, "error": raw}
     try:
         return json.loads(raw)
     except Exception:  # noqa: BLE001
-        return {"responses": 0, "generated": 0, "last_mtime": None, "config": {}, "error": "bad json"}
+        return {"responses": 0, "last_mtime": None, "config": {}, "error": "bad json"}
 
 
 def estimate_status(proc: dict[str, Any], progress: dict[str, Any]) -> tuple[str, str]:
     now = time.time()
     elapsed_min = max(proc["etimes"] / 60.0, 1e-6)
     responses = int(progress.get("responses", 0) or 0)
-    generated = int(progress.get("generated", 0) or 0)
     config = progress.get("config", {}) or {}
     total_expected = None
     if config:
@@ -337,14 +309,8 @@ def estimate_status(proc: dict[str, Any], progress: dict[str, Any]) -> tuple[str
         n_prompts = config.get("n_prompts_per_char")
         if isinstance(n_chars, int) and isinstance(n_prompts, int):
             total_expected = n_chars * n_prompts
-    pipeline = config.get("pipeline")
-    is_two_pass = isinstance(pipeline, str) and "two_pass" in pipeline
-    if is_two_pass:
-        pass1_rate = generated / elapsed_min
-        pass2_rate = responses / elapsed_min
-    else:
-        pass1_rate = 0.0
-        pass2_rate = responses / elapsed_min
+    rate = responses / elapsed_min
+    min_per_resp = (1.0 / rate) if rate > 0 else None
     last_mtime = progress.get("last_mtime")
     idle_age_sec = None
     if last_mtime:
@@ -352,25 +318,17 @@ def estimate_status(proc: dict[str, Any], progress: dict[str, Any]) -> tuple[str
 
     if total_expected is not None and responses >= total_expected:
         return "Completed", "-"
-    if responses == 0 and generated == 0 and proc["etimes"] < 180:
+    if responses == 0 and proc["etimes"] < 180:
         return "Starting...", "-"
     if idle_age_sec is not None and idle_age_sec > 900:
         return f"Stalled ({int(idle_age_sec // 60)}m no writes)", "-"
-    if is_two_pass and responses == 0 and pass1_rate > 0:
-        min_per_resp = 1.0 / pass1_rate
-        eta = "-"
-        if total_expected is not None and generated < total_expected:
-            remain = total_expected - generated
-            eta = f"{(remain / pass1_rate):.0f}m ETA(pass1)"
-        return f"Generating pass1, ~{min_per_resp:.2f} min/resp", eta
-    if pass2_rate > 0:
-        min_per_resp = 1.0 / pass2_rate
+    if rate > 0:
         eta = "-"
         if total_expected is not None and responses < total_expected:
             remain = total_expected - responses
-            eta = f"{(remain / pass2_rate):.0f}m ETA"
-        label = "Generating pass2" if is_two_pass else "Generating"
-        return f"{label}, ~{min_per_resp:.2f} min/resp", eta
+            eta_min = remain / rate
+            eta = f"{eta_min:.0f}m ETA"
+        return f"Generating, ~{min_per_resp:.2f} min/resp", eta
     if proc["etimes"] >= 180:
         return "Warm but no outputs", "-"
     return "Starting...", "-"
@@ -442,7 +400,6 @@ def build_rows(host: HostSpec) -> list[dict[str, str]]:
             if g["util_pct"] < 10 and g["mem_used_mb"] < 1000
             else f"Busy ({g['util_pct']:.0f}% util)",
             "eta": "-",
-            "_workers": [],
         }
 
     compute = get_compute_map(host)
@@ -480,42 +437,10 @@ def build_rows(host: HostSpec) -> list[dict[str, str]]:
         row = rows.get(key)
         if row is None:
             continue
-        row["_workers"].append(
-            {
-                "quantize": quant or "?",
-                "status": status,
-                "eta": eta,
-            }
-        )
-
-    final_rows: list[dict[str, str]] = []
-    for key in sorted(rows):
-        row = rows[key]
-        workers = row.pop("_workers", [])
-        if workers:
-            quant_set = sorted({w["quantize"] for w in workers if w["quantize"]})
-            row["quantize"] = "+".join(quant_set) if quant_set else "?"
-            n = len(workers)
-            if n == 1:
-                row["status"] = workers[0]["status"]
-                row["eta"] = workers[0]["eta"]
-            else:
-                statuses = [w["status"] for w in workers]
-                if any(s.startswith("Generating pass2") for s in statuses):
-                    row["status"] = f"Generating pass2 ({n} workers)"
-                elif any(s.startswith("Generating pass1") for s in statuses):
-                    row["status"] = f"Generating pass1 ({n} workers)"
-                elif any(s.startswith("Generating") for s in statuses):
-                    row["status"] = f"Generating ({n} workers)"
-                elif all("Starting" in s for s in statuses):
-                    row["status"] = f"Starting ({n} workers)"
-                elif any("Stalled" in s for s in statuses):
-                    row["status"] = f"Partially stalled ({n} workers)"
-                else:
-                    row["status"] = f"Active ({n} workers)"
-                row["eta"] = "-"
-        final_rows.append(row)
-    return final_rows
+        row["quantize"] = quant or "?"
+        row["status"] = status
+        row["eta"] = eta
+    return [rows[k] for k in sorted(rows)]
 
 
 def main() -> None:

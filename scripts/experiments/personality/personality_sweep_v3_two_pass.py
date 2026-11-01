@@ -529,11 +529,6 @@ class ReplayMeanCapture:
 
         return hook_fn
 
-    def _mean_or_zero(self, hidden: torch.Tensor, start: int, end: int) -> torch.Tensor:
-        if end > start:
-            return hidden[start:end].float().mean(dim=0).cpu()
-        return torch.zeros(self.hidden_dim)
-
     def extract_means(
         self,
         model,
@@ -541,38 +536,24 @@ class ReplayMeanCapture:
         attention_mask: torch.Tensor,
         prompt_lens: list[int],
         gen_lens: list[int],
-        think_lens: list[int],
-        response_lens: list[int],
-    ) -> list[dict[str, dict[int, torch.Tensor]]]:
+    ) -> list[dict[int, torch.Tensor]]:
         self._cache.clear()
         with torch.no_grad():
             model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)
 
         bsz = input_ids.shape[0]
-        out: list[dict[str, dict[int, torch.Tensor]]] = []
+        out: list[dict[int, torch.Tensor]] = []
         valid_lens = attention_mask.sum(dim=1).tolist()
         for bi in range(bsz):
+            sample: dict[int, torch.Tensor] = {}
             start = int(prompt_lens[bi])
             end = min(start + int(gen_lens[bi]), int(valid_lens[bi]))
-            gen_len = max(0, end - start)
-            think_end = min(start + max(0, int(think_lens[bi])), end)
-            response_start = think_end
-            response_end = min(response_start + max(0, int(response_lens[bi])), end)
-            early_end = start + ((gen_len + 1) // 2)
-            sample = {
-                "mean": {},
-                "think": {},
-                "response": {},
-                "early": {},
-                "late": {},
-            }
             for idx in self.target_indices:
                 hidden = self._cache[idx][bi]  # (seq, hidden)
-                sample["mean"][idx] = self._mean_or_zero(hidden, start, end)
-                sample["think"][idx] = self._mean_or_zero(hidden, start, think_end)
-                sample["response"][idx] = self._mean_or_zero(hidden, response_start, response_end)
-                sample["early"][idx] = self._mean_or_zero(hidden, start, early_end)
-                sample["late"][idx] = self._mean_or_zero(hidden, early_end, end)
+                if end > start:
+                    sample[idx] = hidden[start:end].float().mean(dim=0).cpu()
+                else:
+                    sample[idx] = torch.zeros(self.hidden_dim)
             out.append(sample)
         self._cache.clear()
         return out
@@ -640,40 +621,15 @@ class ShardWriter:
         self.target_layers = target_layers
         self.hidden_dim = hidden_dim
         self.resp_dir = output_dir / "responses"
-        self.activation_views = ("mean", "think", "response", "early", "late")
-        self.act_roots = {
-            "mean": output_dir / "activations",
-            "think": output_dir / "activations_think",
-            "response": output_dir / "activations_response",
-            "early": output_dir / "activations_early",
-            "late": output_dir / "activations_late",
-        }
+        self.act_dir = output_dir / "activations"
         self.resp_dir.mkdir(parents=True, exist_ok=True)
-        for root in self.act_roots.values():
-            for l in target_layers:
-                (root / f"L{l:02d}").mkdir(parents=True, exist_ok=True)
+        for l in target_layers:
+            (self.act_dir / f"L{l:02d}").mkdir(parents=True, exist_ok=True)
 
-        self._act_buffers: dict[str, dict[int, list[torch.Tensor]]] = {
-            view: {l: [] for l in target_layers} for view in self.activation_views
-        }
-        self._act_meta: dict[str, dict[int, list[dict[str, Any]]]] = {
-            view: {l: [] for l in target_layers} for view in self.activation_views
-        }
-        self._shard_idx = self._detect_next_shard_idx()
+        self._act_buffers: dict[int, list[torch.Tensor]] = {l: [] for l in target_layers}
+        self._act_meta: dict[int, list[dict[str, Any]]] = {l: [] for l in target_layers}
+        self._shard_idx = 0
         self._buffer_limit = 5000
-
-    def _detect_next_shard_idx(self) -> int:
-        next_idx = 0
-        for root in self.act_roots.values():
-            for l in self.target_layers:
-                layer_dir = root / f"L{l:02d}"
-                for shard_path in layer_dir.glob("mean_shard_*.pt"):
-                    try:
-                        shard_num = int(shard_path.stem.split("_")[-1])
-                    except Exception:  # noqa: BLE001
-                        continue
-                    next_idx = max(next_idx, shard_num + 1)
-        return next_idx
 
     def write_response(self, char_id: int, data: dict[str, Any]):
         f = self.resp_dir / f"char_{char_id:04d}.jsonl"
@@ -685,41 +641,36 @@ class ShardWriter:
         self,
         char_id: int,
         char_name: str,
-        prompt_idx: int,
         prompt_cat: str,
         b5_combo: str,
-        activations: dict[str, dict[int, torch.Tensor]],
+        activations: dict[int, torch.Tensor],
     ):
         meta = {
             "char_id": char_id,
             "char_name": char_name,
-            "prompt_idx": prompt_idx,
             "prompt_category": prompt_cat,
             "b5_combo": b5_combo,
         }
-        for view in self.activation_views:
-            for l in self.target_layers:
-                if l in activations[view]:
-                    self._act_buffers[view][l].append(activations[view][l])
-                    self._act_meta[view][l].append(meta)
-        if len(self._act_buffers["mean"][self.target_layers[0]]) >= self._buffer_limit:
+        for l in self.target_layers:
+            if l in activations:
+                self._act_buffers[l].append(activations[l])
+                self._act_meta[l].append(meta)
+        if len(self._act_buffers[self.target_layers[0]]) >= self._buffer_limit:
             self.flush_activations()
 
     def flush_activations(self):
-        for view in self.activation_views:
-            root = self.act_roots[view]
-            for l in self.target_layers:
-                if not self._act_buffers[view][l]:
-                    continue
-                tensor = torch.stack(self._act_buffers[view][l])
-                shard_path = root / f"L{l:02d}" / f"mean_shard_{self._shard_idx:04d}.pt"
-                torch.save(tensor, shard_path)
-                meta_path = root / f"L{l:02d}" / f"mean_shard_{self._shard_idx:04d}_meta.jsonl"
-                with open(meta_path, "w") as fh:
-                    for m in self._act_meta[view][l]:
-                        fh.write(json.dumps(m) + "\n")
-                self._act_buffers[view][l].clear()
-                self._act_meta[view][l].clear()
+        for l in self.target_layers:
+            if not self._act_buffers[l]:
+                continue
+            tensor = torch.stack(self._act_buffers[l])
+            shard_path = self.act_dir / f"L{l:02d}" / f"mean_shard_{self._shard_idx:04d}.pt"
+            torch.save(tensor, shard_path)
+            meta_path = self.act_dir / f"L{l:02d}" / f"mean_shard_{self._shard_idx:04d}_meta.jsonl"
+            with open(meta_path, "w") as fh:
+                for m in self._act_meta[l]:
+                    fh.write(json.dumps(m) + "\n")
+            self._act_buffers[l].clear()
+            self._act_meta[l].clear()
         self._shard_idx += 1
 
     def get_completed_chars(self, n_prompts: int) -> set[int]:
@@ -883,7 +834,6 @@ def main():
         "replay_quantization": replay_quantize,
         "replay_batch_size": args.replay_batch_size,
         "replay_max_total_tokens": args.replay_max_total_tokens,
-        "activation_views": ["mean", "think", "response", "early", "late"],
         "skip_pass1": args.skip_pass1,
         "skip_pass2": args.skip_pass2,
     }
@@ -1048,8 +998,6 @@ def main():
                     attention_mask=attention_mask,
                     prompt_lens=prompt_lens,
                     gen_lens=gen_lens,
-                    think_lens=[int(s["n_think_tokens"]) for s in batch],
-                    response_lens=[int(s["n_response_tokens"]) for s in batch],
                 )
                 for bi, sample in enumerate(batch):
                     writer.write_response(
@@ -1073,7 +1021,6 @@ def main():
                     writer.buffer_activations(
                         sample["char_id"],
                         sample["char_name"],
-                        sample["prompt_idx"],
                         sample["prompt_category"],
                         sample["b5_combo"],
                         acts[bi],
@@ -1143,10 +1090,7 @@ def main():
 
                     # If pass-1 had no token IDs for this prompt, keep text output but write zero activations.
                     if not gen_ids:
-                        zero_acts = {
-                            view: {l: torch.zeros(hidden_dim) for l in target_layers}
-                            for view in writer.activation_views
-                        }
+                        zero_acts = {l: torch.zeros(hidden_dim) for l in target_layers}
                         writer.write_response(
                             char.char_id,
                             {
@@ -1166,12 +1110,7 @@ def main():
                             },
                         )
                         writer.buffer_activations(
-                            char.char_id,
-                            char.name,
-                            pi,
-                            prompt_category,
-                            b5_combo,
-                            zero_acts,
+                            char.char_id, char.name, prompt_category, b5_combo, zero_acts
                         )
                         pass2_responses += 1
                         continue
@@ -1262,7 +1201,6 @@ def main():
         "timestamp": datetime.now().isoformat(),
         "model": args.model,
         "target_layers": target_layers,
-        "activation_views": ["mean", "think", "response", "early", "late"],
         "shard": shard_list[0] if len(shard_list) == 1 else None,
         "shard_list": shard_list,
     }
