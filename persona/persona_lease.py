@@ -60,9 +60,18 @@ def main():
     spec = importlib.util.spec_from_file_location('persona_installed_lease', wrapper)
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
     original = module.wb
+    any_card = os.environ.get('PERSONA_LEASE_ANY_CARD') == '1'
+
+    def any_card_args(args):
+        """PERSONA_LEASE_ANY_CARD=1: the single placeholder card label becomes a workboard any-card request (as monkey/fable_lease.py)."""
+        values = list(args)
+        at = values.index('--gpu'); values[at + 1] = 'any'
+        at = values.index('--label'); values[at + 1] = values[at + 1].rsplit('-v100-', 1)[0] + '-any'
+        return values
+
     def bound(*args):
         if args[0] == 'submit':
-            return original(*submission_args(args, lane))
+            return original(*submission_args(any_card_args(args) if any_card else args, lane))
         if args[0] == 'start':
             return original(*args, '--unit', unit)
         return original(*args)
