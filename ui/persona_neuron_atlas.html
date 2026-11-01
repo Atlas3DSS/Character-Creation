@@ -48,8 +48,11 @@
   <p class="dim" id="bylayer-title"></p>
   <div id="bylayer" class="bylayer"></div>
   <div id="concept-top" hidden><h3>Strongest neurons for <span id="concept-name"></span></h3>
-    <p class="hint">Chosen on discovery scenes; “held-out” is the same neuron re-measured on scenes it never saw. Click to open.</p>
-    <div id="concept-cards" class="cards"></div></div>
+    <p class="hint">Click a bar above for one layer, or pick a band. d = how much more (lime) or less (rose) active the neuron is when the concept holds, chosen on discovery scenes; “held-out” is the same neuron re-measured on scenes it never saw. Click a card to open the neuron.</p>
+    <div id="concept-bands" class="legend concept-bands"></div>
+    <p id="concept-count" class="dim"></p>
+    <div id="concept-cards" class="cards"></div>
+    <button type="button" id="concept-more" hidden>Show more</button></div>
 </section>
 
 <section id="library">

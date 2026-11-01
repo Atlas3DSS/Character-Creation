@@ -896,6 +896,9 @@ class Explorer:
             db.execute("UPDATE comparisons SET state=?,output=? WHERE id=?", (state, json.dumps(output), identity))
 
 
+NEUROPEDIA_ATLAS = os.environ.get('NEUROPEDIA_ATLAS_URL', 'http://127.0.0.1:8798/flat-map')  # '' keeps the bare atlas here
+
+
 def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         def send(self, value: object, status: int = 200) -> None:
@@ -932,6 +935,10 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                     self.send_response(200); self.send_header('Content-Type', {'html': 'text/html; charset=utf-8', 'js': 'application/javascript; charset=utf-8',
                         'css': 'text/css; charset=utf-8'}.get(kind, 'application/json; charset=utf-8')); self.send_header('Cache-Control', 'no-store')
                     self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+                elif path.path == '/neuron-atlas' and not self.headers.get('X-Neuropedia-Proxy') and NEUROPEDIA_ATLAS:
+                    # owner 2026-10-31: one site, one ribbon: a direct visit goes to Neuropedia's copy (same atlas, the shared
+                    # ribbon on top); Neuropedia's own proxy marks its requests and still gets the page below
+                    self.send_response(302); self.send_header('Location', NEUROPEDIA_ATLAS); self.send_header('Content-Length', '0'); self.end_headers()
                 elif path.path == '/neuron-atlas':
                     body = (app.root / 'ui/persona_neuron_atlas.html').read_bytes()
                     self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8'); self.send_header('Cache-Control', 'no-cache')
@@ -944,6 +951,9 @@ def handler(app: Explorer) -> type[BaseHTTPRequestHandler]:
                 elif path.path == '/api/neuron-atlas/sweep': self.send(app.neuron_atlas.sweep_state())
                 elif path.path == '/api/neuron-atlas/concepts': self.send(app.neuron_atlas.concepts())
                 elif path.path == '/api/neuron-atlas/concept': self.send(app.neuron_atlas.concept(parse_qs(path.query).get('name', [''])[0]))
+                elif path.path == '/api/neuron-atlas/concept/neurons':
+                    q = {k: v[0] for k, v in parse_qs(path.query).items()}
+                    self.send(app.neuron_atlas.concept_neurons(q.get('name', ''), q.get('lmin', 0), q.get('lmax', 63), q.get('offset', 0), q.get('limit', 48)))
                 elif path.path == '/api/neuron-atlas/layer': self.send(app.neuron_atlas.layer(parse_qs(path.query).get('layer', [''])[0]))
                 elif path.path == '/api/neuron-atlas/neuron':
                     query = parse_qs(path.query)

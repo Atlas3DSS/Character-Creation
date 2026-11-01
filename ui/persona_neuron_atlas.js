@@ -37,13 +37,24 @@ async function init() {
   buildGrid(); setMode('up'); hero(); fillCats(); library(true); openFromHash(); sweepStatus(); loadConcepts();
 }
 
-/* hero: saved "who are you" answers from multi-neuron recipes, next to their matched baseline */
+/* hero: real personas from Neuropedia's persona index (one slide each, strongest evidence first, with the recipe that produced
+   it and the unsteered answer to the same question when one was recorded); older summaries carry the adaptive-recipe answers */
 function hero() {
-  const rows = S.sum.hero || [];
+  const rows = S.sum.hero || [], personas = S.sum.hero_kind === 'personas', link = S.sum.hero_link || '';
+  const ask = document.querySelector('.hero-chat .prompt');
   const show = () => { if (!rows.length) { $('h-slide').innerHTML = '<p class="dim">No saved identity comparisons yet.</p>'; return; }
     const r = rows[S.hero]; $('h-pos').textContent = `${S.hero + 1} / ${rows.length}`;
-    $('h-slide').innerHTML = `<p class="sender">Qwen3.8-27B · ${esc(r.target.replace(/^experimental-/, ''))} recipe ${r.arm === 'reversal' ? 'reversed' : 'applied'} · ${r.pushes} pushes · seed ${esc(r.seed)}</p>
-      <p class="bubble">${esc(r.answer)}</p><p class="sender">Same seed, no pushes</p><p class="bubble base">${esc(r.baseline)}</p>`; };
+    if (!personas) {
+      $('h-slide').innerHTML = `<p class="sender">Qwen3.8-27B · ${esc(r.target.replace(/^experimental-/, ''))} recipe ${r.arm === 'reversal' ? 'reversed' : 'applied'} · ${r.pushes} pushes · seed ${esc(r.seed)}</p>
+      <p class="bubble">${esc(r.answer)}</p><p class="sender">Same seed, no pushes</p><p class="bubble base">${esc(r.baseline)}</p>`; return; }
+    if (ask) ask.textContent = r.prompt ? (r.prefilled ? `${r.prompt}…` : r.prompt) : 'who are you';
+    const href = `${link}/personas/${encodeURIComponent(r.slug)}`;
+    $('h-slide').innerHTML = `<p class="persona-head"><a class="persona-name" href="${esc(href)}" target="${link ? '_blank' : '_self'}" rel="noopener">${esc(r.persona)}</a>
+        <span class="grade" title="${esc(r.grade_help)}">${esc(r.grade)}</span><span class="dim">${esc(r.kind)} · ${fmt(r.evidence_rows)} answers · ${fmt(r.recipes)} recipes</span></p>
+      <p class="sender">Qwen3.8-27B · ${r.pushes ? `${r.pushes} neuron push${r.pushes === 1 ? '' : 'es'}` : 'no pushes'}${r.prefilled ? ' · answer prefilled with the line above' : ''} · ${esc(r.source)}</p>
+      <p class="bubble">${esc(r.answer).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')}</p>
+      ${r.recipe ? `<p class="hero-recipe" title="${esc(r.recipe)}">${esc(r.recipe)}</p>` : ''}
+      ${r.baseline ? `<details class="base-wrap"><summary class="sender">Unsteered answer to the same question</summary><p class="bubble base">${esc(r.baseline)}</p></details>` : ''}`; };
   $('h-prev').onclick = () => { S.hero = (S.hero - 1 + rows.length) % rows.length; show(); };
   $('h-next').onclick = () => { S.hero = (S.hero + 1) % rows.length; show(); };
   show();
@@ -149,16 +160,27 @@ let debounce; for (const id of ['q', 'l-cat', 'l-min', 'l-max', 'l-sort', 'l-evi
 $('l-mode').onchange = () => { fillCats(); library(true); };
 $('more').onclick = () => library(false);
 async function sweepStatus() {
-  try { const r = await getJSON('/api/neuron-atlas/sweep'), c = (r.status || {}).counts || {}, recent = (r.status || {}).last_10_min || {};
-    $('sweep-status').textContent = r.status ? `Identity sweep: ${fmt(c.done || 0)} answers done, ${fmt(c.queued || 0)} queued, ${fmt(c.running || 0)} running${c.uncertain ? `, ${fmt(c.uncertain)} uncertain` : ''}. ${fmt(r.neurons_answered)} neurons have answers. Last 10 min: ${fmt(recent.answers)} answers, ${fmt(recent.tokens)} tokens.` : 'Identity sweep: no results synced yet.';
+  try { const r = await getJSON('/api/neuron-atlas/sweep'), c = (r.status || {}).counts || {}, recent = (r.status || {}).last_10_min || {}, w = r.workers;
+    const line = r.status ? `Identity sweep: ${fmt(c.done || 0)} answers done, ${fmt(c.queued || 0)} queued, ${fmt(c.running || 0)} running${c.uncertain ? `, ${fmt(c.uncertain)} uncertain` : ''}. ${fmt(r.neurons_answered)} neurons have answers. Last 10 min: ${fmt(recent.answers)} answers, ${fmt(recent.tokens)} tokens.` : 'Identity sweep: no results synced yet.';
+    // queued work with no worker: say so and why, instead of looking like nothing happened
+    let workers = '';
+    if (w && (c.queued || c.running)) {
+      if (w.up) workers = ` ${fmt(w.up)} GPU worker${w.up === 1 ? '' : 's'} up${w.runner === 'active' ? ', answering' : ', runner starting'}.`;
+      else if (w.waiting) workers = ` Waiting for a GPU worker: ${w.waiting}. Next try ${w.retry_after ? new Date(w.retry_after * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'within the hour'}.`;
+      else workers = ' Waiting for a GPU worker to start (checked every minute).';
+    }
+    $('sweep-status').innerHTML = (S.sweepNote ? `<b>${esc(S.sweepNote)}</b> ` : '') + esc(line) + (workers ? `<span class="sweep-wait">${esc(workers)}</span>` : '');
   } catch (e) { $('sweep-status').textContent = 'Identity sweep status unavailable: ' + e.message; }
 }
 $('sweep').onclick = async () => {
   const name = prompt('Name this sweep batch', ($('q').value || $('l-cat').value || 'batch').slice(0, 40)); if (!name) return;
   $('sweep').disabled = true;
   try { const p = Object.fromEntries(query()); const r = await fetch('/api/neuron-atlas/sweep', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...p, name }) });
-    const v = await r.json(); if (!r.ok) throw new Error(v.error); toast(`Queued ${fmt(v.queued_neurons)} neurons (${fmt(v.added)} new answers)`); sweepStatus();
-  } catch (e) { toast(e.message); } finally { $('sweep').disabled = false; }
+    const v = await r.json(); if (!r.ok) throw new Error(v.error);
+    S.sweepNote = v.added ? `Queued ${fmt(v.queued_neurons)} neurons as “${name}” (${fmt(v.added)} new answers to run).`
+      : `All ${fmt(v.queued_neurons)} matching neurons were already asked: open one to read its answers.`;
+    toast(S.sweepNote); sweepStatus();
+  } catch (e) { S.sweepNote = 'Could not queue: ' + e.message; toast(S.sweepNote); sweepStatus(); } finally { $('sweep').disabled = false; }
 };
 setInterval(sweepStatus, 60000);
 $('open').onsubmit = e => { e.preventDefault(); openNeuron(+$('o-layer').value, +$('o-neuron').value, null); };
@@ -228,22 +250,54 @@ async function pickConcept(name) {
   $('concepts').querySelectorAll('button[data-concept]').forEach(b => b.setAttribute('aria-pressed', b.dataset.concept === (S.concept || {}).name));
   $('concept-clear').hidden = !S.concept; $('concept-top').hidden = !S.concept;
   history.replaceState(null, '', S.concept ? '#concept=' + encodeURIComponent(S.concept.name) : location.pathname + '#atlas');
-  paint(); bylayer(); if (S.concept) conceptCards();
+  S.crange = [0, 63]; paint(); bylayer(); if (S.concept) conceptCards();
 }
 function conceptBars() {
   const c = S.concept, top = Math.max(...c.layers.map(l => l.max), 1e-9), peak = c.layers.reduce((b, l, L) => l.max > c.layers[b].max ? L : b, 0);
   $('bylayer-head').textContent = `Trace of “${c.name}” through the layers`;
   $('bylayer-title').textContent = `Bar height = strongest separation in that layer (|d|, concept vs hard negatives). Peak at layer ${peak}. Faded bars: under half of that layer's top ${S.concepts.top_per_layer} neurons held up on held-out scenes.`;
   $('bylayer').innerHTML = c.layers.map((l, L) => `<div style="height:${(l.max / top * 100).toFixed(1)}%;background:#a6d860;opacity:${l.replicated >= .5 ? 1 : .35}" title="Layer ${L}: strongest |d| ${l.max.toFixed(2)} · ${fmt(l.strong)} neurons with |d| ≥ ${S.concepts.strong} · ${(l.replicated * 100).toFixed(0)}% of top ${S.concepts.top_per_layer} replicated"></div>`).join('');
-  $('bylayer').querySelectorAll('div').forEach((b, L) => b.onclick = () => document.querySelector(`.tile[data-layer="${L}"]`).scrollIntoView({ block: 'center', behavior: 'smooth' }));
+  $('bylayer').querySelectorAll('div').forEach((b, L) => b.onclick = () => { conceptRange(L, L); $('concept-top').scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+  markBars();
 }
+function markBars() {   // the bars inside the listed layer range stay bright; the rest fade back
+  if (!S.concept || !S.crange) return;
+  $('bylayer').querySelectorAll('div').forEach((b, L) => b.classList.toggle('in-range', L >= S.crange[0] && L <= S.crange[1]));
+  $('bylayer').classList.toggle('ranged', !(S.crange[0] === 0 && S.crange[1] === 63));
+}
+/* a concept's neurons in a layer range, strongest |d| first (owner 2026-10-31: "pride is a late layer: when I click that it
+   should give me all the late layer neurons associated with pride, strongest to weakest"); bars pick one layer, bands a range */
+const BANDS = [['All layers', 0, 63], ['Early 0–15', 0, 15], ['Early-mid 16–31', 16, 31], ['Mid 32–47', 32, 47], ['Late 48–63', 48, 63]];
 function conceptCards() {
-  const c = S.concept, rows = c.layers.flatMap((l, L) => l.neurons.map(([n, d, h]) => ({ layer: L, neuron: n, d, h }))).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 24);
-  $('concept-name').textContent = c.name;
-  $('concept-cards').innerHTML = rows.map((r, i) => { const ok = Math.sign(r.d) === Math.sign(r.h) && Math.abs(r.h) >= S.concepts.replicates;
-    return `<button type="button" class="card" data-i="${i}"><span class="id">L${r.layer} N${r.neuron}</span>
-      <div class="dirs"><em>d</em><span style="color:${r.d > 0 ? 'var(--lime-strong)' : 'var(--rose)'}">${r.d > 0 ? '+' : '−'}${Math.abs(r.d).toFixed(2)}</span><em>held-out</em><span class="held ${ok ? 'ok' : 'no'}">${r.h >= 0 ? '+' : '−'}${Math.abs(r.h).toFixed(2)} ${ok ? '✓' : '✗'}</span></div></button>`; }).join('');
-  $('concept-cards').querySelectorAll('.card').forEach(b => b.onclick = () => { const i = +b.dataset.i; openNeuron(rows[i].layer, rows[i].neuron, { rows, at: i }); });
+  const c = S.concept; $('concept-name').textContent = c.name;
+  const peak = c.layers.reduce((b, l, L) => l.max > c.layers[b].max ? L : b, 0);
+  $('concept-bands').innerHTML = BANDS.map(([label, a, b]) => `<button type="button" data-a="${a}" data-b="${b}"${a <= peak && peak <= b && label !== 'All layers' ? ' class="peak" title="the peak layer is in this band"' : ''}>${label}</button>`).join('')
+    + '<span id="concept-layer" class="dim"></span>';
+  $('concept-bands').querySelectorAll('button').forEach(b => b.onclick = () => conceptRange(+b.dataset.a, +b.dataset.b));
+  conceptRange(...(S.crange || [0, 63]));
+}
+async function conceptRange(a, b, more) {
+  const c = S.concept; if (!c) return;
+  if (!more) { S.crange = [a, b]; S.clist = { rows: [], total: 0 }; $('concept-cards').innerHTML = ''; }
+  $('concept-bands').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', +x.dataset.a === a && +x.dataset.b === b));
+  $('concept-layer').textContent = a === b ? `Layer ${a}` : ''; markBars();
+  let r; try { r = await getJSON(`/api/neuron-atlas/concept/neurons?name=${encodeURIComponent(c.name)}&lmin=${a}&lmax=${b}&offset=${S.clist.rows.length}&limit=48`); }
+  catch (e) { $('concept-count').textContent = e.message; return; }
+  if (S.concept !== c || S.crange[0] !== a || S.crange[1] !== b) return;   // a newer pick won
+  const start = S.clist.rows.length; S.clist.rows.push(...r.rows); S.clist.total = r.total;
+  const where = a === b ? `layer ${a}` : a === 0 && b === 63 ? 'all layers' : `layers ${a}–${b}`;
+  $('concept-count').textContent = r.complete
+    ? `${fmt(r.total)} neurons in ${where} with |d| ≥ ${r.strong}, strongest first.`
+    : `${fmt(r.total)} neurons in ${where}: only the top ${r.top_per_layer} per layer are stored for this concept so far, strongest first.`;
+  const rows = S.clist.rows;
+  $('concept-cards').insertAdjacentHTML('beforeend', r.rows.map((x, j) => { const i = start + j;
+    return `<button type="button" class="card" data-i="${i}"><span class="id">#${i + 1} · L${x.layer} N${x.neuron}</span>
+      <div class="dirs"><em>d</em><span style="color:${x.d > 0 ? 'var(--lime-strong)' : 'var(--rose)'}">${x.d > 0 ? '+' : '−'}${Math.abs(x.d).toFixed(2)} ${x.d > 0 ? 'more active' : 'less active'}</span>
+      <em>held-out</em><span class="held ${x.replicated ? 'ok' : 'no'}">${x.h >= 0 ? '+' : '−'}${Math.abs(x.h).toFixed(2)} ${x.replicated ? '✓' : '✗'}</span>
+      <em>↑</em><span>${tok(x.up)}</span><em>↓</em><span>${tok(x.down)}</span></div></button>`; }).join(''));
+  $('concept-cards').querySelectorAll('.card').forEach(el => el.onclick = () => { const i = +el.dataset.i; openNeuron(rows[i].layer, rows[i].neuron, { rows, at: i }); });
+  $('concept-more').hidden = rows.length >= r.total;
 }
 
+$('concept-more').onclick = () => conceptRange(S.crange[0], S.crange[1], true);
 init().catch(e => { $('grid').innerHTML = `<p class="dim">The atlas has not been built yet: ${esc(e.message)}</p>`; });

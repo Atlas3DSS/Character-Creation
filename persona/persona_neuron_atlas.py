@@ -400,6 +400,10 @@ class NeuronAtlas:
                 subprocess.run(['scp', '-q', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10',
                                 f"{d['host']}:{d['remote_root']}/results/neuron_atlas/concept_trace.json",
                                 str(self.out / 'concept_trace.json')], timeout=120, check=False)
+                # the full per-concept rankings (persona_concept_trace.py); rsync only moves changed files
+                subprocess.run(['rsync', '-a', '--delete', '-e', 'ssh -o BatchMode=yes -o ConnectTimeout=10',
+                                f"{d['host']}:{d['remote_root']}/results/neuron_atlas/concept_full/", str(self.out / 'concept_full') + '/'],
+                               timeout=300, check=False, capture_output=True)
             finally: self.sync_lock.release()
         threading.Thread(target=copy, daemon=True).start()
 
@@ -458,11 +462,54 @@ class NeuronAtlas:
     def concept(self, name):
         c = self._traces()['concepts'].get(name)
         if not c or 'layers' not in c: raise ValueError('Unknown or untraced concept')
-        return {'name': name, **c}
+        return {'name': name, **c, 'full': (self.out / 'concept_full' / f'{name}.npz').exists()}
+
+    def concept_neurons(self, name, lmin=0, lmax=LAYERS - 1, offset=0, limit=48):
+        """A concept's neurons in a layer range, strongest |d| first (owner 2026-10-31: click a layer or a band of a trace,
+        e.g. pride in the late layers, and get its neurons strongest to weakest). The full ranking (every neuron with
+        |d| >= strong, concept_full/<name>.npz from persona_concept_trace.py) when present, else the trace's top per layer."""
+        traces = self._traces(); c = traces['concepts'].get(name)
+        if not c or 'layers' not in c: raise ValueError('Unknown or untraced concept')
+        lmin, lmax = max(0, int(lmin)), min(LAYERS - 1, int(lmax)); offset, limit = max(0, int(offset)), max(1, min(500, int(limit)))
+        if lmin > lmax: raise ValueError('Layer range is empty')
+        path = self.out / 'concept_full' / f'{name}.npz'
+        if path.exists():
+            stamp = path.stat().st_mtime; cache = getattr(self, 'full_cache', {})
+            if cache.get(name, (None,))[0] != stamp:
+                with np.load(path, allow_pickle=False) as z: cache[name] = (stamp, z['index'], z['d'].astype(np.float32), z['h'].astype(np.float32))
+                self.full_cache = dict(list(cache.items())[-8:])
+            _, index, dd, hh = self.full_cache[name]
+            layer = index // WIDTH; pick = np.flatnonzero((layer >= lmin) & (layer <= lmax))   # already sorted by -|d|
+            complete, keys, ds, hs = True, index[pick], dd[pick], hh[pick]
+        else:
+            items = sorted(((L * WIDTH + n, d, h) for L in range(lmin, lmax + 1) for n, d, h in c['layers'][L]['neurons']), key=lambda x: -abs(x[1]))
+            complete = False
+            keys, ds, hs = (np.array([x[i] for x in items]) for i in range(3)) if items else (np.array([], int),) * 3
+        self._load(); det = self.detail; rows = []
+        for key, d, h in zip(keys[offset:offset + limit].tolist(), ds[offset:offset + limit].tolist(), hs[offset:offset + limit].tolist()):
+            L, n = divmod(int(key), WIDTH)
+            rows.append({'layer': L, 'neuron': n, 'd': round(d, 3), 'h': round(h, 3), 'up': self.names[det['label_up'][key]], 'down': self.names[det['label_down'][key]],
+                         'replicated': bool(np.sign(d) == np.sign(h) and abs(h) >= traces['replicates'])})
+        return {'name': name, 'lmin': lmin, 'lmax': lmax, 'total': int(len(keys)), 'offset': offset, 'rows': rows, 'complete': complete,
+                'strong': traces['strong'], 'top_per_layer': traces['top_per_layer'], 'replicates': traces['replicates']}
 
     def sweep_state(self):
         self._identity()
-        return {'status': self.sweep_status, 'neurons_answered': sum(1 for k in self.identity if k[0] >= 0)}
+        return {'status': self.sweep_status, 'neurons_answered': sum(1 for k in self.identity if k[0] >= 0), 'workers': self._workers()}
+
+    def _workers(self):
+        """The identity supervisor's view of its GPU workers (identity_supervisor.json), so the page can say why queued
+        answers wait (owner 2026-10-31: the "who are you" button "doesn't appear to work" while no worker could start)."""
+        try: s = json.loads((self.out / 'identity_supervisor.json').read_text())
+        except (OSError, ValueError): return None
+        launch = next((e for e in reversed(s.get('events') or []) if e.get('event') == 'workers_relaunched'), None)
+        waiting = None
+        if launch and not launch.get('units'):
+            waiting = ('every GPU is leased to other work and workers may only start on a free card (any-card leases are not installed yet)'
+                       if launch.get('blocker') else 'the last launch started no worker')
+        return {'up': s.get('workers_up', 0), 'runner': s.get('runner'), 'need': s.get('worker_need'), 'updated': s.get('updated'),
+                'last_launch': launch and {'at': launch.get('time'), 'mode': launch.get('mode'), 'started': len(launch.get('units') or [])},
+                'retry_after': launch and launch.get('time', 0) + 1800, 'waiting': waiting}
 
     def _load(self):
         stamp = (self.out / 'summary.json').stat().st_mtime
@@ -477,7 +524,20 @@ class NeuronAtlas:
         self.stamp = stamp
 
     def status(self):
-        self._load(); return self.summary
+        """The built summary; its opening carousel is replaced by Neuropedia's persona slides (persona_hero.json, written by
+        neuropedia_server.atlas_hero from the persona index) when that file is present (owner 2026-10-31: real personas, not
+        the 15 adaptive-recipe answers)."""
+        self._load()
+        path = self.out / 'persona_hero.json'
+        try:
+            stamp = path.stat().st_mtime
+            if getattr(self, 'hero_stamp', None) != stamp:
+                self.hero_file, self.hero_stamp = json.loads(path.read_text()), stamp
+            if self.hero_file.get('hero'):
+                return {**self.summary, 'hero': self.hero_file['hero'], 'hero_kind': 'personas', 'hero_link': self.hero_file.get('hero_link', '')}
+        except (OSError, ValueError):
+            pass
+        return self.summary
 
     def binary(self):
         return (self.out / 'atlas.bin').read_bytes()

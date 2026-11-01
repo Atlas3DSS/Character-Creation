@@ -24,6 +24,7 @@ REPLICATES = 0.5    # held-out contrast of the same sign and at least this size 
 MIN_SCENES = 12     # per class in each split
 DB = 'results/label_qualify/qualify.sqlite'
 OUT = 'results/neuron_atlas/concept_trace.json'
+FULL = 'results/neuron_atlas/concept_full'   # <concept>.npz: every neuron with |discovery contrast| >= STRONG, strongest first
 
 
 def scenes(root):
@@ -50,7 +51,7 @@ def contrast(acc):
 
 def trace(args):
     import numpy as np
-    name, rows = args
+    name, rows, root = args
     acc = {split: {label: [0, np.zeros(LAYERS * WIDTH), np.zeros(LAYERS * WIDTH)] for label in (0, 1)}
            for split in ('discovery', 'heldout')}
     for label, split, path in rows:
@@ -67,6 +68,15 @@ def trace(args):
         return name, {'skipped': 'too few captured scenes', 'scenes': counts}
     disc = contrast(acc['discovery']).reshape(LAYERS, WIDTH)
     held = contrast(acc['heldout']).reshape(LAYERS, WIDTH)
+    # the full ranking (owner 2026-10-31: click a layer or band of a trace and get all its neurons, strongest to weakest):
+    # every strong neuron, not just the top per layer; flat index = layer * WIDTH + neuron
+    flat_d, flat_h = disc.reshape(-1), held.reshape(-1)
+    keep = np.flatnonzero(np.abs(flat_d) >= STRONG)
+    keep = keep[np.argsort(-np.abs(flat_d[keep]), kind='stable')]
+    full = Path(root) / FULL; full.mkdir(parents=True, exist_ok=True)
+    tmp = full / f'.{name}.tmp.npz'
+    np.savez(tmp, index=keep.astype(np.int32), d=flat_d[keep].astype(np.float16), h=flat_h[keep].astype(np.float16))
+    os.replace(tmp, full / f'{name}.npz')
     layers = []
     for L in range(LAYERS):
         top = np.argsort(-np.abs(disc[L]))[:TOP]
@@ -78,13 +88,13 @@ def trace(args):
     return name, {'scenes': counts, 'layers': layers}
 
 
-def build(root, workers):
+def build(root, workers, full_only=False):
     started = time.time()
     concepts, rows = scenes(root)
     names = sorted(n for n in rows if n in concepts)
     out = {}
     with ProcessPoolExecutor(min(workers, len(names) or 1)) as pool:
-        for name, result in pool.map(trace, [(n, rows[n]) for n in names]):
+        for name, result in pool.map(trace, [(n, rows[n], root) for n in names]):
             res = concepts[name]['result']
             result.update(state=concepts[name]['state'], passed=bool(res.get('passed')),
                           qualified=[res['layer'], res['neuron'], res.get('direction')] if res.get('passed') else None)
@@ -95,6 +105,8 @@ def build(root, workers):
              'method': 'Standardized contrast (concept scenes vs hard negatives) per neuron; top neurons per layer chosen on '
                        'discovery scenes only, then re-measured on held-out scenes.',
              'concepts': out}
+    if full_only:   # only the concept_full/*.npz rankings: concept_trace.json (hashed by threshold manifests) stays byte-identical
+        return {'concepts': len(out), 'traced': sum('layers' in v for v in out.values()), 'seconds': value['seconds'], 'full': str(Path(root) / FULL)}
     path = Path(root) / OUT; path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix('.tmp'); tmp.write_text(json.dumps(value, separators=(',', ':'))); tmp.replace(path)
     return {'concepts': len(out), 'traced': sum('layers' in v for v in out.values()), 'seconds': value['seconds'], 'path': str(path)}
@@ -104,8 +116,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', default=str(Path(__file__).resolve().parent))
     parser.add_argument('--workers', type=int, default=max(1, (os.cpu_count() or 2) - 1))
+    parser.add_argument('--full-only', action='store_true', help='write concept_full/*.npz only, leave concept_trace.json untouched')
     a = parser.parse_args()
-    print(json.dumps(build(a.root, a.workers)))
+    print(json.dumps(build(a.root, a.workers, a.full_only)))
 
 
 if __name__ == '__main__':

@@ -35,6 +35,7 @@ section{padding:34px 0;border-bottom:1px solid var(--line)}
 .slide .sender{font-size:11px;color:var(--dim);margin:0 0 4px;text-transform:uppercase;letter-spacing:.05em}
 .slide .bubble{background:var(--panel-2);border-radius:14px 14px 14px 2px;padding:10px 14px;margin:0 0 10px;white-space:pre-wrap}
 .slide .bubble.base{opacity:.7;font-size:13px}
+.persona-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 6px}.persona-name{font-size:20px;font-weight:700;color:var(--lime-strong);text-decoration:none}.persona-name:hover{text-decoration:underline}.persona-head .grade{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--dim)}.persona-head .dim{font-size:12px}.slide .bubble{max-height:300px;overflow:auto}.hero-recipe{font:11px/1.5 ui-monospace,monospace;color:var(--dim);margin:0 0 8px;white-space:normal;overflow-wrap:anywhere;max-height:7.5em;overflow:auto}.hero>*,.hero-chat>*{min-width:0}.base-wrap summary{cursor:pointer;list-style-position:inside}
 .hero-nav{display:flex;align-items:center;justify-content:space-between}
 .section-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap}
 .section-head p{max-width:70ch;margin:4px 0 0}
@@ -104,3 +105,5 @@ section{padding:34px 0;border-bottom:1px solid var(--line)}
 .concepts button.unqualified{color:var(--dim)}
 .concepts button.unqualified i{background:var(--line)!important}
 .card .held.ok{color:var(--lime-strong)}.card .held.no{color:var(--dim)}
+.sweep-wait{color:#efc77c}
+.bylayer.ranged div{opacity:.25!important}.bylayer.ranged div.in-range{opacity:1!important}.concept-bands button[aria-pressed="true"]{border-color:var(--lime);color:var(--ink)}.concept-bands button.peak::after{content:" ★";color:var(--lime-strong)}#concept-layer{margin-left:8px;font-weight:600}#concept-more{margin-top:10px}
