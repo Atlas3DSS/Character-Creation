@@ -23,9 +23,11 @@ import os
 import re
 from pathlib import Path
 import sqlite3
+import subprocess
 import threading
 import time
 import urllib.request
+import persona_threshold as threshold
 
 PROMPT = 'who are you'
 LEVELS = (1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125)  # cascade; the 27B collapses near 0.3 at L0, so ±1 alone is mostly empty
@@ -101,7 +103,9 @@ def start_level(by_layer, layer):
 
 def enqueue(root, sweep, neurons, db=None):
     """Adds each neuron's first up and down push once; the unsteered baseline is layer -1."""
-    db = db or connect(root); learned = kept_levels(db)
+    db = db or connect(root)
+    if threshold.blocked_menu(db, sweep): return 0
+    learned = kept_levels(db)
     rows = [(-1, -1, 0.0, None)]
     for l, n in neurons:
         level = start_level(learned, int(l))
@@ -172,16 +176,54 @@ def fetch(url, payload=None, timeout=600):
         return json.loads(reply.read())
 
 
+
+def lace_has_priority(root, port):
+    """Read-only, active-campaign gate; unreadable/malformed lace state fails closed."""
+    path = Path(root) / 'monkey/lace_sweep.sqlite'
+    if not path.exists():
+        return False
+    try:
+        with sqlite3.connect(f'file:{path}?mode=ro', uri=True, timeout=5) as lace:
+            record = lace.execute("SELECT value FROM metadata WHERE key='manifest'").fetchone()
+            if record is None:
+                raise ValueError('Missing active lace manifest')
+            campaign = json.loads(record[0])['campaign_id']
+            if not isinstance(campaign, str) or not campaign:
+                raise ValueError('Invalid active lace campaign')
+            queued = lace.execute("SELECT 1 FROM jobs WHERE campaign_id=? AND state IN ('queued','preparing') LIMIT 1", (campaign,)).fetchone()
+            running = lace.execute("SELECT 1 FROM jobs WHERE campaign_id=? AND state='submitted' AND endpoint=? LIMIT 1",
+                                   (campaign, f'http://127.0.0.1:{port}')).fetchone()
+            return bool(queued or running)
+    except (sqlite3.Error, OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        return True
+
 def claim(root, port, baseline=False):
     """One batch of one kind: baseline pairs when asked (else identity work), falling back to the other kind."""
     db = connect(root)
     try:
         db.execute('BEGIN IMMEDIATE')
-        order = ("SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer=-3 ORDER BY created, id LIMIT ?",
-                 "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer!=-3 ORDER BY layer=-4 DESC, layer=-1 DESC, level DESC, created, id LIMIT ?")
-        held = "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer=-4 ORDER BY created, id LIMIT ?"
-        for query in (held,) + (order if baseline else order[::-1]):  # held-back jobs go first on every turn
-            rows = db.execute(query, (BATCH,)).fetchall()
+        if lace_has_priority(root, port):
+            db.rollback()
+            return []
+        ordinary = "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer!=-3 AND campaign_id IS NULL"
+        if threshold.status(db)['pause_ladder_menus']:
+            ordinary += " AND NOT (coalesce(sweep,'') GLOB 'lens-*' OR coalesce(sweep,'') GLOB 'word-*')"
+        ordinary += " ORDER BY layer=-4 DESC,layer=-1 DESC,level DESC,created,id LIMIT ?"
+        base_query = "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer=-3 ORDER BY created,id LIMIT ?"
+        edge_query = """SELECT j.id,j.layer,j.neuron,j.dose,j.pushes,j.prompt FROM jobs j
+          JOIN threshold_campaigns c ON c.id=j.campaign_id
+          LEFT JOIN threshold_searches s ON s.id=j.search_id
+          WHERE j.state='queued' AND c.state IN ('baseline','searching')
+          AND ? BETWEEN 8931 AND 8935 AND (j.target_port IS NULL OR j.target_port=?)
+          ORDER BY j.probe_role='baseline' DESC,coalesce(s.priority,-1),j.created,j.id LIMIT ?"""
+        held = "SELECT id,layer,neuron,dose,pushes,prompt FROM jobs WHERE state='queued' AND layer=-4 ORDER BY created,id LIMIT ?"
+        queries = [(held,(BATCH,))]
+        # Recheck immediately before the identity DB claim. Never hold either DB lock across HTTP.
+        edge = [(edge_query,(port,port,BATCH))]
+        queries += ([(base_query,(BATCH,))] + edge + [(ordinary,(BATCH,))] if baseline
+                    else edge + [(ordinary,(BATCH,)),(base_query,(BATCH,))])
+        for query,params in queries:
+            rows = db.execute(query,params).fetchall()
             if rows: break
         db.executemany("UPDATE jobs SET state='running',started=?,port=? WHERE id=?", [(time.time(), port, r[0]) for r in rows])
         db.commit(); return rows
@@ -190,8 +232,9 @@ def claim(root, port, baseline=False):
 
 def finish(root, updates):
     with connect(root) as db:
-        db.executemany('UPDATE jobs SET state=?,finished=?,answer=?,finish=?,tokens=?,artifact=?,artifact_sha256=?,program_sha256=?,error=? WHERE id=?', updates)
+        db.executemany('UPDATE jobs SET state=?,finished=?,answer=?,finish=?,tokens=?,artifact=?,artifact_sha256=?,program_sha256=?,error=?,binding_json=? WHERE id=?', updates)
         for state, _, answer, _, tokens, *_, identity in updates:
+            if threshold.finish(db, identity, coherent): continue
             if state != 'done': continue
             sweep, layer, neuron, dose, level, pushes, kind = db.execute('SELECT sweep,layer,neuron,dose,level,pushes,kind FROM jobs WHERE id=?', (identity,)).fetchone()
             ok = coherent(answer, tokens); db.execute('UPDATE jobs SET coherent=?, declined=? WHERE id=?', (int(ok), int(declined(answer)), identity))
@@ -207,6 +250,49 @@ def finish(root, updates):
                 db.execute("INSERT OR IGNORE INTO jobs(id,sweep,layer,neuron,dose,level,state,created) VALUES(?,?,?,?,?,?,'queued',?)",
                            (job_id(layer, neuron, weaker), sweep, layer, neuron, weaker, level + 1, time.time()))
 
+
+
+def verify_response(root, row, request, result, descriptor):
+    """Fail closed on response order; verify threshold artifacts before committing."""
+    from persona_vectors import canonical_digest
+    identity = row[0]
+    request_hash = canonical_digest(request)
+    if not isinstance(result, dict) or result.get('request_sha256') != request_hash:
+        raise ValueError('Completion response request hash/order differs')
+    response = result['response']
+    if response.get('model_identity') != descriptor['flare']['model_identity']:
+        raise ValueError('Completion model differs')
+    choice = response['choices'][0]
+    if not isinstance(choice['message']['content'], str) or choice['finish_reason'] not in ('stop', 'length'):
+        raise ValueError('Malformed completion response')
+    with connect(root) as db:
+        campaign = db.execute('SELECT campaign_id FROM jobs WHERE id=?', (identity,)).fetchone()
+    if not campaign or campaign[0] is None:
+        return response
+    import numpy as np
+    artifact = response['activation_artifact']; provenance = response['provenance_artifact']
+    path, proof = Path(artifact['path']), Path(provenance['path'])
+    for item, filename in ((artifact,path),(provenance,proof)):
+        if item.get('request_sha256') != request_hash or not filename.is_file():
+            raise ValueError('Threshold evidence request/path differs')
+        with filename.open('rb') as f:
+            if hashlib.file_digest(f, 'sha256').hexdigest() != item.get('sha256'):
+                raise ValueError('Threshold evidence hash differs')
+    report = json.loads(proof.read_text())
+    binding = descriptor['flare']['batch']['binding']
+    if (report.get('status') != 'complete' or report.get('state_restored') is not True
+            or report.get('request_sha256') != request_hash or report.get('request') != request
+            or any(response.get(k) != v or report.get(k) != v for k,v in binding.items())
+            or report.get('activation_artifact') != artifact
+            or report.get('response',{}).get('choices') != response['choices']
+            or report.get('response',{}).get('usage') != response['usage']):
+        raise ValueError('Threshold response, binding or restoration differs')
+    with np.load(path, allow_pickle=False) as z:
+        if (any(str(z[k].item()) != v for k,v in binding.items())
+                or str(z['request_sha256'].item()) != request_hash
+                or len(z['generated_token_ids']) != response['usage']['completion_tokens']):
+            raise ValueError('Threshold NPZ binding or token count differs')
+    return response
 
 def worker(root, port, bank, until, stop, log):
     from persona_vectors import canonical_digest
@@ -240,8 +326,18 @@ def worker(root, port, bank, until, stop, log):
             requests.append(request); programs.append(canonical_digest(program) if program else None)
         envelope = {'batch_id': os.urandom(16).hex(), 'requests': requests}
         try:
+            with connect(root) as db:
+                for row,request in zip(rows,requests):
+                    threshold.request_record(db,row[0],descriptor,port,request)
             preflight = fetch(base + '/v1/batch/preflight', envelope, timeout=120)
-            if not preflight.get('fits'): raise ValueError('Batch does not fit: ' + str(preflight.get('reason')))
+            if (preflight.get('fits') is not True or preflight.get('batch_id') != envelope['batch_id']
+                    or preflight.get('binding') != descriptor['flare']['batch']['binding']
+                    or preflight.get('request_sha256') != [canonical_digest(r) for r in requests]):
+                raise ValueError('Batch preflight coverage, binding or capacity differs')
+        except threshold.IntegrityError as exc:
+            with connect(root) as db:
+                threshold.block_integrity(db,[r[0] for r in rows],str(exc))
+            log(port,'threshold_integrity_blocked',str(exc)); stop.wait(10); continue
         except Exception as exc:  # nothing was submitted, so the claim is released
             with connect(root) as db:
                 db.executemany("UPDATE jobs SET state='queued',started=NULL,port=NULL WHERE id=?", [(r[0],) for r in rows])
@@ -250,14 +346,16 @@ def worker(root, port, bank, until, stop, log):
             reply = fetch(base + '/v1/batch/completions', envelope, timeout=3600 if rows[0][1] == BASE else 900)
             results = reply['results']
             if reply.get('batch_id') != envelope['batch_id'] or len(results) != len(rows): raise ValueError('Batch coverage differs')
+            checked = [verify_response(root, row, request, result, descriptor)
+                       for row, request, result in zip(rows, requests, results)]
         except Exception as exc:
-            finish(root, [('uncertain', time.time(), None, None, None, None, None, p, repr(exc)[:500], r[0]) for r, p in zip(rows, programs)])
+            finish(root, [('uncertain', time.time(), None, None, None, None, None, p, repr(exc)[:500], None, r[0]) for r, p in zip(rows, programs)])
             log(port, 'uncertain_no_retry', repr(exc)[:200]); continue
         updates = []
-        for (identity, *_), program, result in zip(rows, programs, results):
-            response = result['response']; choice = response['choices'][0]; artifact = response.get('activation_artifact') or {}
+        for (identity, *_), program, response in zip(rows, programs, checked):
+            choice = response['choices'][0]; artifact = response.get('activation_artifact') or {}
             updates.append(('done', time.time(), choice['message']['content'], choice.get('finish_reason'),
-                            response['usage']['completion_tokens'], artifact.get('path'), artifact.get('sha256'), program, None, identity))
+                            response['usage']['completion_tokens'], artifact.get('path'), artifact.get('sha256'), program, None, json.dumps({k:response.get(k) for k in ('model_identity','runtime_identity','prepared_identity')},sort_keys=True,separators=(',',':')), identity))
         finish(root, updates)
 
 
@@ -265,10 +363,12 @@ def export(root):
     """Atomic JSONL of finished answers for the explorer to copy."""
     path = Path(root) / OUT / 'answers.jsonl'; temporary = path.with_suffix('.tmp')
     with connect(root) as db, temporary.open('w') as stream:
-        for row in db.execute("SELECT sweep,layer,neuron,dose,level,coherent,answer,finish,tokens,finished,artifact_sha256,kind,pushes,declined FROM jobs WHERE state='done' AND layer>-3 ORDER BY layer,neuron,dose"):
+        for row in db.execute("SELECT sweep,layer,neuron,dose,level,coherent,answer,finish,tokens,finished,artifact_sha256,kind,pushes,declined FROM jobs WHERE state='done' AND layer>-3 AND campaign_id IS NULL ORDER BY layer,neuron,dose"):
             value = dict(zip(('sweep', 'layer', 'neuron', 'dose', 'level', 'coherent', 'answer', 'finish', 'tokens', 'finished', 'artifact_sha256', 'kind', 'pushes', 'declined'), row))
             value['declined'] = bool(value['declined'])
-            if value['pushes'] is None: del value['kind'], value['pushes']
+            if value['pushes'] is None:
+                del value['pushes']
+                if not str(value['kind']).startswith('threshold:'): del value['kind']
             else: value['pushes'] = json.loads(value['pushes'])
             stream.write(json.dumps(value, ensure_ascii=False) + '\n')
     os.replace(temporary, path)
@@ -279,10 +379,24 @@ def export(root):
             if value['pushes']: value['pushes'] = json.loads(value['pushes'])
             stream.write(json.dumps(value, ensure_ascii=False) + '\n')
     os.replace(temporary, flagged)
+    export_threshold(root)
     export_baseline(root)
     if (Path(root) / HELD_SOURCE).exists(): export_held(root)
     return status(root)
 
+
+
+def export_threshold(root):
+    """Separate lossless local JSONL; legacy public/HF export cannot represent exact doses."""
+    path=Path(root)/OUT/'threshold_answers.jsonl'
+    temporary=path.with_suffix('.tmp')
+    fields=('id','campaign_id','search_id','probe_role','layer','neuron','dose','dose_hex','kind',
+            'answer','finish','tokens','coherent','artifact','artifact_sha256','program_sha256',
+            'request_json','request_sha256','binding_json','metrics_json','port','finished')
+    with connect(root) as db, temporary.open('w') as stream:
+        for row in db.execute('SELECT '+','.join(fields)+" FROM jobs WHERE campaign_id IS NOT NULL AND state='done' ORDER BY finished,id"):
+            stream.write(json.dumps(dict(zip(fields,row)),ensure_ascii=False,allow_nan=False)+'\n')
+    os.replace(temporary,path)
 
 def export_baseline(root):
     """baseline40k_pairs.jsonl: every finished unsteered pair, at most every 10 minutes."""
@@ -306,18 +420,19 @@ def backfill_flags(root):
 
 def status(root):
     with connect(root) as db:
-        counts = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer>-3 GROUP BY state').fetchall())  # identity work only
+        counts = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer>-3 AND campaign_id IS NULL GROUP BY state').fetchall())  # identity work only
         held = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer=-4 GROUP BY state').fetchall())
         baseline = dict(db.execute('SELECT state,count(*) FROM jobs WHERE layer=-3 GROUP BY state').fetchall())
         sweeps = {name: dict(db.execute('SELECT state,count(*) FROM jobs WHERE sweep=? GROUP BY state', (name,)).fetchall())
                   for name, in db.execute('SELECT DISTINCT sweep FROM jobs') if name not in (BASE_SWEEP, HELD_SWEEP)}
-        flagged = db.execute("SELECT count(*) FROM jobs WHERE state='done' AND declined=1 AND layer>-3").fetchone()[0]
-        recent = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>? AND layer>-3", (time.time() - 600,)).fetchone()
+        flagged = db.execute("SELECT count(*) FROM jobs WHERE state='done' AND declined=1 AND layer>-3 AND campaign_id IS NULL").fetchone()[0]
+        recent = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>? AND layer>-3 AND campaign_id IS NULL", (time.time() - 600,)).fetchone()
         recent_base = db.execute("SELECT count(*),sum(tokens) FROM jobs WHERE state='done' AND finished>? AND layer=-3", (time.time() - 600,)).fetchone()
+        threshold_state = threshold.status(db)
         learned = kept_levels(db)
     cliffs = {f'L{g * 8}-{g * 8 + 7}': LEVELS[sorted(v)[len(v) // 2]] for g in range(8)
               for v in [[x for l in range(g * 8, g * 8 + 8) for x in learned.get(l, [])]] if len(v) >= 10}
-    value = {'time': time.time(), 'counts': counts, 'sweeps': sweeps, 'last_10_min': {'answers': recent[0], 'tokens': recent[1] or 0},
+    value = {'time': time.time(), 'threshold': threshold_state, 'counts': counts, 'sweeps': sweeps, 'last_10_min': {'answers': recent[0], 'tokens': recent[1] or 0},
              'median_strongest_coherent_dose': cliffs, 'declined': flagged,
              'baseline40k': {'counts': baseline, 'last_10_min': {'answers': recent_base[0], 'tokens': recent_base[1] or 0}}, 'held_back': held}
     (Path(root) / OUT / 'status.json').write_text(json.dumps(value))
@@ -332,9 +447,44 @@ def run(root, until, ports, checkpoint):
         with lock, (Path(root) / OUT / 'events.jsonl').open('a') as stream:
             stream.write(json.dumps({'time': time.time(), 'port': port, 'event': kind, 'detail': detail}) + '\n')
     with connect(root) as db:  # a crash leaves claimed rows; their outcome is unknown, never replayed
+        interrupted = [r[0] for r in db.execute("SELECT id FROM jobs WHERE state='running' AND campaign_id IS NOT NULL")]
         db.execute("UPDATE jobs SET state='uncertain',error='Runner restarted while running' WHERE state='running'")
+        for identity in interrupted: threshold.finish(db,identity,coherent)
+    def audit_worker():
+        # Thread-local idle IO priority protects the owner's front-of-queue lace work.
+        tid=threading.get_native_id()
+        try:
+            os.setpriority(os.PRIO_PROCESS,tid,10)
+            subprocess.run(['ionice','-c','3','-p',str(tid)],check=True,capture_output=True)
+        except (OSError,subprocess.SubprocessError) as exc:
+            log(None,'threshold_auditor_priority_failed',repr(exc)[:300])
+            return
+        audit_bank=VectorBank(Path(root)/'results',ModelSpec.load(Path(root)/'data/persona_model.json'),checkpoint=Path(checkpoint))
+        descriptors=None;refreshed=0;completed=0
+        while not stop.is_set() and time.time()<until:
+            try:
+                if descriptors is None or time.time()-refreshed>60:
+                    descriptors={p:fetch(f'http://127.0.0.1:{p}/v1/models',timeout=10)['data'][0] for p in range(8931,8936)}
+                    refreshed=time.time()
+                with connect(root) as db:
+                    value=threshold.audit_next(db,descriptors,audit_bank,coherent)
+                if value is None:
+                    stop.wait(5)
+                else:
+                    completed+=1
+                    if completed<=4 or completed%16==0:
+                        log(None,'threshold_audit_complete',value)
+            except threshold.IntegrityError as exc:
+                with connect(root) as db:
+                    db.execute("UPDATE threshold_campaigns SET state='blocked',error=? WHERE state IN ('baseline','searching')",
+                               ('audit_integrity: '+str(exc),))
+                log(None,'threshold_audit_blocked',str(exc)[:300]);stop.wait(10)
+            except Exception as exc:
+                log(None,'threshold_audit_waiting',repr(exc)[:300]);descriptors=None;stop.wait(10)
     threads = [threading.Thread(target=worker, args=(root, p, bank, until, stop, log), daemon=True) for p in ports]
+    audit_thread=threading.Thread(target=audit_worker,daemon=True)
     for t in threads: t.start()
+    audit_thread.start()
     try:
         while time.time() < until and any(t.is_alive() for t in threads):
             export(root); stop.wait(60)
@@ -344,14 +494,26 @@ def run(root, until, ports, checkpoint):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('enqueue', 'enqueue-combos', 'enqueue-baseline', 'enqueue-held-back', 'run', 'export', 'status', 'backfill-flags'))
+    parser.add_argument('command', choices=('migrate-threshold', 'enqueue-threshold', 'enqueue', 'enqueue-combos', 'enqueue-baseline', 'enqueue-held-back', 'run', 'export', 'status', 'backfill-flags'))
     parser.add_argument('--root', default=str(Path(__file__).resolve().parent))
     parser.add_argument('--sweep', default='manual'); parser.add_argument('--neurons', help='JSON file of [layer, neuron] pairs')
+    parser.add_argument('--threshold-spec', help='Frozen JSON target list with priority, target_bits and evidence hashes')
     parser.add_argument('--combos', help='JSON file of combos (see enqueue_combos)')
     parser.add_argument('--until', type=float); parser.add_argument('--ports', default='8930-8935')
     parser.add_argument('--checkpoint', help='Local checkpoint directory (required for run)')
     args = parser.parse_args()
-    if args.command == 'enqueue':
+    if args.command == 'migrate-threshold':
+        with connect(args.root) as db: threshold.schema(db)
+        print(json.dumps({'threshold_schema': 'ready'}))
+    elif args.command == 'enqueue-threshold':
+        if not args.threshold_spec: raise SystemExit('--threshold-spec is required')
+        descriptors = {p:fetch(f'http://127.0.0.1:{p}/v1/models',timeout=10)['data'][0] for p in range(8931,8936)}
+        if not args.checkpoint: raise SystemExit('--checkpoint is required for provenance audit')
+        from persona_vectors import VectorBank, ModelSpec
+        bank=VectorBank(Path(args.root)/'results',ModelSpec.load(Path(args.root)/'data/persona_model.json'),checkpoint=Path(args.checkpoint))
+        with connect(args.root) as db:
+            print(json.dumps(threshold.enqueue(db,json.loads(Path(args.threshold_spec).read_text()),descriptors,bank=bank)))
+    elif args.command == 'enqueue':
         print(json.dumps({'added': enqueue(args.root, args.sweep, json.loads(Path(args.neurons).read_text()))}))
     elif args.command == 'enqueue-combos':
         print(json.dumps({'added': enqueue_combos(args.root, args.sweep, json.loads(Path(args.combos).read_text()))}))

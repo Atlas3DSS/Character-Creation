@@ -249,3 +249,8 @@ data/persona_private_*.json
 /data/persona_reasoning_battery.json
 
 /data/persona_reasoning_sources.json
+
+# Local clone of anthropics/jacobian-lens, and local backups and test logs
+external/
+*.bak-*
+*.tests-*.log

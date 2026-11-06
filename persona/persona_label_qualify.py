@@ -36,6 +36,42 @@ ALIASES = {'confused': 'confusion', 'happy': 'joy', 'sad': 'sadness'}
 Z = 1.959963984540054
 EVIDENCE_SCHEMA = 'character-creation.neuron-label-evidence.v1'
 MEASUREMENT = 'final_prompt_token_swiglu_product'
+# Authoring briefs (2026-10-31): these nine kept under 36 of ~120 positive scenes at the check because the generic author
+# request drifted to the look-alikes their definitions exclude (panic -> fear, unease -> dread, sexual desire -> romance).
+# Definitions and the check are unchanged; only positive author rounds >= AUTHOR_ROUNDS (added by `reauthor`) carry a brief.
+BRIEFS = {
+    'boredom': 'The person is bored right now: the activity in front of them is dull and gives them nothing to engage with, '
+               'and they feel it as restless disinterest (fidgeting, minutes dragging, attention sliding off, wishing anything '
+               'at all would happen). They are not tired, not indifferent to life in general, and not merely waiting.',
+    'despair': 'The person has, in this moment, lost all hope: they believe nothing they do can change the outcome, and the '
+               'scene shows that conviction in their thoughts (there is no way out, it is over, it will never get better) and '
+               'in their behaviour (they stop trying, sink down). Not sadness, worry or frustration alone; the core is that '
+               'hope is gone.',
+    'dread': 'A specific bad event is coming and has not happened yet (a verdict, a diagnosis, a dismissal, a confrontation). '
+             'Name the event and how soon it arrives; the person is waiting for it with a heavy, slow, sinking apprehension '
+             'that colours everything they do now. Not a sudden fright at a danger already present, not regret about the past.',
+    'empathic distress': 'The person is watching or hearing someone else suffer right now, and that suffering overwhelms the '
+                         "observer's own body and mind: their chest tightens, they feel sick, they cannot bear to look, they "
+                         'want to escape. The focus is on their own pain, not on comforting or helping. Not calm compassion, '
+                         'not kind concern, not detached watching.',
+    'jealousy': 'Three parties: the person, someone they are close to (partner, best friend, a parent), and a rival. Right now '
+                'the person sees the rival drawing that someone away and feels threatened, insecure and resentful about losing '
+                'them. Not envy of possessions or success, not plain anger, not vague suspicion with no rival in view.',
+    'panic': 'The person is in the grip of a sudden, overwhelming terror right now and is losing control: racing heart, '
+             'gasping or hyperventilating, shaking, frantic disorganised action, thoughts spinning. Make clear the fear has '
+             'become uncontrollable, beyond ordinary fright or worry, and name what triggered it.',
+    'unease': 'Something small is off and the person cannot say what: a mild, nagging, nervous discomfort, a sense that '
+              'something is not quite right. Keep it low-key and present; no danger is confirmed and nothing bad has happened. '
+              'The person is not afraid, not anxious about a named worry, and not in physical pain.',
+    'physical arousal': 'An adult is sexually aroused right now in a consensual adult situation (a lover\'s kiss, a partner\'s '
+                        'touch, undressing together). Describe the bodily signs and make clear they are sexual excitement: '
+                        'flushed with arousal, breath quickening with want, heat low in the body, a sexual response they cannot '
+                        'hide. Not nerves, exertion, fear or tender romance. Non-graphic: no sexual acts or anatomy described.',
+    'sexual desire': 'Make both people explicitly adults (an age or an adult role: "the 34-year-old architect", "her husband") and '
+                     'make the wanting explicitly sexual: lust, craving sex with them, wanting to take them to bed. Romance, '
+                     'tenderness, admiring beauty or wanting to hold someone close is not enough. Non-graphic: name the desire, '
+                     'do not describe acts.',
+}
 
 
 def digest(value):
@@ -89,7 +125,8 @@ def request(stage, concept, definition, label, rnd, scene, model):
         kind = ('scenes in which the definition clearly holds' if label else
                 'hard negative scenes in which the definition does NOT hold, although they share vocabulary, setting or '
                 'tone with it (the word itself, a hypothetical, a quoted line, an absent or past state, a look-alike concept)')
-        text = (f'Concept: {concept}\nDefinition: {definition}\n\nWrite {PER_REQUEST} short, original, third-person {kind}. '
+        brief = f'Guidance for these scenes: {BRIEFS[concept]}\n\n' if label and rnd >= AUTHOR_ROUNDS and concept in BRIEFS else ''
+        text = (f'Concept: {concept}\nDefinition: {definition}\n\n{brief}Write {PER_REQUEST} short, original, third-person {kind}. '
                 'Each scene is one to three sentences about different people, places and situations, with no two sharing a '
                 'scenario. Adults only; nothing graphic. Reply with JSON only: a list of objects '
                 '{"family": "<three-word scenario id>", "scene": "..."}')
@@ -105,6 +142,19 @@ def request(stage, concept, definition, label, rnd, scene, model):
 def parse_json(text):
     match = re.search(r'(\[.*\]|\{.*\})', text or '', re.S)
     return json.loads(match.group(1)) if match else None
+
+
+def reauthor(root, names, rounds):
+    """Queue more briefed positive author rounds for concepts short of verified positives; plan() carries them through."""
+    with connect(root) as db:
+        for name in names:
+            if name not in BRIEFS: raise ValueError(f'No authoring brief for {name}')
+            last = db.execute("SELECT max(round) FROM tasks WHERE concept=? AND stage='author' AND label=1", (name,)).fetchone()[0]
+            first = max(AUTHOR_ROUNDS, (last if last is not None else -1) + 1)
+            for rnd in range(first, first + rounds): add_task(db, 'author', name, 1, rnd)
+            db.execute("UPDATE concepts SET state='authoring' WHERE name=?", (name,))
+        return {name: db.execute("SELECT count(*) FROM tasks WHERE concept=? AND stage='author' AND state='queued'", (name,)).fetchone()[0]
+                for name in names}
 
 
 def plan(root):
@@ -125,6 +175,8 @@ def plan(root):
                 db.execute("UPDATE concepts SET state='verifying' WHERE name=?", (name,))
             elif state == 'verifying' and not db.execute("SELECT 1 FROM tasks WHERE concept=? AND stage='verify' AND state IN ('queued','running')", (name,)).fetchone():
                 for label in (1, 0):
+                    # a reauthored concept is split again from scratch (same seed, so its negatives keep their splits)
+                    db.execute('UPDATE scenes SET split=NULL WHERE concept=? AND label=?', (name, label))
                     ids = [r[0] for r in db.execute('SELECT id FROM scenes WHERE concept=? AND label=? AND verified=1 ORDER BY id', (name, label))]
                     random.Random(digest([name, label])).shuffle(ids)
                     for i, sid in enumerate(ids[:DISCOVERY + HELDOUT]):
@@ -312,9 +364,10 @@ def run(root, until, ports, workers):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('init', 'run', 'status'))
+    parser.add_argument('command', choices=('init', 'reauthor', 'run', 'status'))
     parser.add_argument('--root', default=str(Path(__file__).resolve().parent))
-    parser.add_argument('--concepts', help='JSON list of concept names (init)')
+    parser.add_argument('--concepts', help='JSON list of concept names (init); comma-separated names (reauthor)')
+    parser.add_argument('--rounds', type=int, default=8, help='briefed positive author rounds to add per concept (reauthor)')
     parser.add_argument('--definitions', help='JSON object of existing definitions (init)')
     parser.add_argument('--until', type=float); parser.add_argument('--ports', default='8930-8935')
     parser.add_argument('--workers', type=int, default=16)
@@ -322,6 +375,8 @@ def main():
     if args.command == 'init':
         print(json.dumps({'concepts': init(args.root, json.loads(Path(args.concepts).read_text()),
                                            json.loads(Path(args.definitions).read_text()) if args.definitions else {})}))
+    elif args.command == 'reauthor':
+        print(json.dumps(reauthor(args.root, [n.strip() for n in args.concepts.split(',')], args.rounds)))
     elif args.command == 'run':
         low, high = map(int, args.ports.split('-'))
         run(args.root, args.until, range(low, high + 1), args.workers)
